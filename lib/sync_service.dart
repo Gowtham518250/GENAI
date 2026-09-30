@@ -1027,6 +1027,8 @@ class SyncService {
             'decrease_stock',
             'create_purchase_order',
             'update_purchase_order_status',
+            'attendance_check_in',
+            'attendance_check_out',
           };
 
           final isCritical = criticalActions.contains(action);
