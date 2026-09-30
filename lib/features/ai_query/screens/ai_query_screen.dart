@@ -139,10 +139,10 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Dark slate navy
+      backgroundColor: AppColors.background,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
+        backgroundColor: AppColors.primary,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
@@ -282,7 +282,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -295,7 +295,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
             style: GoogleFonts.inter(
               fontSize: 13.5,
               fontWeight: FontWeight.w400,
-              color: Colors.white.withValues(alpha: 0.65),
+              color: AppColors.textSecondary,
             ),
           ),
         ],
