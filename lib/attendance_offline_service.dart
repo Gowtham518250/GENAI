@@ -92,16 +92,23 @@ class OfflineAttendanceService {
   static Future<bool> checkOut({required int employeeId,int? workerId}) async {
     final now=DateTime.now();
     final date=_date(now);
-    final open=await _findOpenSession(employeeId:employeeId,workerId:workerId,date:date);
+    final open=await _findOpenSession(
+      employeeId:employeeId,
+      workerId:workerId,
+      date:date,
+    );
     if(open==null)return true;
 
     final sessionIndex=_sessionIndexOf(open);
     DateTime? checkIn;
     final raw=open['check_in_time'];
     if(raw!=null)checkIn=DateTime.tryParse(raw.toString());
-    final hours=checkIn==null?null:now.difference(checkIn.toLocal()).inSeconds/3600.0;
+    final hours=checkIn==null
+        ? null
+        : now.difference(checkIn.toLocal()).inSeconds/3600.0;
     final operationId='ATT_OUT_${workerId??employeeId}_${date}_s$sessionIndex';
 
+    // Persist locally first so the UI closes the session immediately.
     await _upsertSession(
       employeeId:employeeId,
       workerId:workerId,
@@ -111,6 +118,51 @@ class OfflineAttendanceService {
       workingHours:hours,
       status:'PRESENT',
     );
+
+    // Online-first: call the backend directly. Queue only when the
+    // request is unavailable/unsuccessful.
+    try {
+      final response = await ApiClient.postJson(
+        '${ApiClient.attendancePrefix}/check-out?employee_id=$employeeId',
+        {},
+      ).timeout(const Duration(seconds:15));
+
+      if(response.statusCode==200 || response.statusCode==201){
+        await markSynced(
+          employeeId:employeeId,
+          workerId:workerId,
+          date:date,
+          sessionIndex:sessionIndex,
+        );
+        await SyncQueueManager.removeByBusinessOperation(
+          'attendance_check_out',
+          operationId,
+        );
+        if(kDebugMode){
+          debugPrint(
+            '✅ [Attendance] Online worker checkout accepted: worker=' +
+            employeeId.toString() +
+            ' session=' + sessionIndex.toString(),
+          );
+        }
+        return true;
+      }
+
+      if(kDebugMode){
+        debugPrint(
+          '⚠️ [Attendance] Online worker checkout returned ' +
+          response.statusCode.toString() +
+          '; keeping durable fallback',
+        );
+      }
+    } catch(e){
+      if(kDebugMode){
+        debugPrint(
+          '⚠️ [Attendance] Online worker checkout unavailable; queueing fallback: ' +
+          e.toString(),
+        );
+      }
+    }
 
     final queued=await SyncQueueManager.enqueue(
       'attendance_check_out',
@@ -123,39 +175,14 @@ class OfflineAttendanceService {
         'session_index':sessionIndex,
       },
     );
-    if(!queued)throw StateError('Unable to persist attendance check-out to durable outbox');
-
-    // Refresh from the backend immediately when possible. The local record
-    // remains authoritative while the queue is pending; once the server
-    // confirms the checkout, mergeRemoteRecords will clear local_pending.
-    try {
-      final response = await ApiClient.getJson(
-        '${ApiClient.attendancePrefix}/employee/$employeeId',
+    if(!queued){
+      throw StateError(
+        'Unable to persist attendance check-out to durable outbox',
       );
-      if(response.statusCode==200){
-        final decoded=jsonDecode(response.body);
-        if(decoded is Map && decoded['records'] is List){
-          final remote=(decoded['records'] as List)
-              .whereType<Map>()
-              .map((e)=>Map<String,dynamic>.from(e))
-              .toList();
-          if(remote.isNotEmpty) await mergeRemoteRecords(remote);
-        } else if(decoded is List){
-          final remote=decoded
-              .whereType<Map>()
-              .map((e)=>Map<String,dynamic>.from(e))
-              .toList();
-          if(remote.isNotEmpty) await mergeRemoteRecords(remote);
-        }
-      }
-    } catch (_) {
-      // Offline or temporarily unavailable: the durable local checkout and
-      // outbox entry remain intact and will be reconciled by SyncService.
     }
 
     return true;
   }
-
   /// The open session for today, if any — the single source of truth the UI
   /// should use to decide whether the next tap is a check-in or check-out.
   static Future<Map<String,dynamic>?> openSessionToday({required int employeeId,int? workerId}) => _findOpenSession(employeeId:employeeId,workerId:workerId,date:_date(DateTime.now()));
