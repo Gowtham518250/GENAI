@@ -855,16 +855,38 @@ class _AttendancePageState extends State<AttendancePage>
       return recordWorkerId.toString() == worker.id.toString() && recDate == today;
     }).toList();
 
-    // A worker can have several sessions today (multiple check-in/outs), so
-    // "currently in" means ANY session is still open — not just the first
-    // record found — otherwise the button could get stuck on a closed
-    // session while a later one is actually open, or vice versa.
-    final openWorkerRecord = workerRecords.cast<Map?>().firstWhere(
-      (r) => r != null && r['check_in_time'] != null && r['check_out_time'] == null,
-      orElse: () => null,
-    );
-    final workerRecord = openWorkerRecord ?? (workerRecords.isNotEmpty ? workerRecords.last : null);
-    bool isIn = openWorkerRecord != null;
+    // A worker can have several sessions on the same day. Do NOT use
+    // "any open row" as the current state: the backend stores a daily row
+    // plus session metadata, and a stale open-looking row can coexist with
+    // a newer completed checkout. Determine the current state from the
+    // latest check-in/check-out event instead.
+    DateTime? latestCheckIn;
+    DateTime? latestCheckOut;
+    Map<String, dynamic>? latestRecord;
+
+    DateTime? eventTime(dynamic value) => _parseServerTime(value);
+
+    for (final raw in workerRecords) {
+      if (raw is! Map) continue;
+      final record = Map<String, dynamic>.from(raw);
+      final cin = eventTime(record['check_in_time']);
+      final cout = eventTime(record['check_out_time']);
+
+      if (cin != null && (latestCheckIn == null || cin.isAfter(latestCheckIn!))) {
+        latestCheckIn = cin;
+        latestRecord = record;
+      }
+      if (cout != null && (latestCheckOut == null || cout.isAfter(latestCheckOut!))) {
+        latestCheckOut = cout;
+        latestRecord = record;
+      }
+    }
+
+    // Checked in only when the latest check-in happened after the latest
+    // checkout (or there has never been a checkout).
+    final isIn = latestCheckIn != null &&
+        (latestCheckOut == null || latestCheckIn.isAfter(latestCheckOut));
+    final workerRecord = latestRecord;
     
     // Calculate monthly hours from backend records
     final workerId = int.tryParse(worker.id) ?? 0;
