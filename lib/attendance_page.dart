@@ -882,40 +882,46 @@ class _AttendancePageState extends State<AttendancePage>
       return recordWorkerId.toString() == worker.id.toString() && recDate == today;
     }).toList();
 
-    // A worker can have several sessions on the same day. Do NOT use
-    // "any open row" as the current state: the backend stores a daily row
-    // plus session metadata, and a stale open-looking row can coexist with
-    // a newer completed checkout. Determine the current state from the
-    // latest check-in/check-out event instead.
+    // A worker can have several sessions on the same day. Use both the
+    // collapsed daily row and the backend's nested per-session map.
     DateTime? latestCheckIn;
     DateTime? latestCheckOut;
     Map<String, dynamic>? latestRecord;
 
-    DateTime? eventTime(dynamic value) => _parseServerTime(value);
+    void consider(Map<dynamic, dynamic> record) {
+      final cin = _parseServerTime(record['check_in_time']);
+      final cout = _parseServerTime(record['check_out_time']);
 
-    for (final raw in workerRecords) {
-      if (raw is! Map) continue;
-      final record = Map<String, dynamic>.from(raw);
-      final cin = eventTime(record['check_in_time']);
-      final cout = eventTime(record['check_out_time']);
-
-      if (cin != null && (latestCheckIn == null || cin.isAfter(latestCheckIn!))) {
+      if (cin != null &&
+          (latestCheckIn == null || cin.isAfter(latestCheckIn!))) {
         latestCheckIn = cin;
-        latestRecord = record;
+        latestRecord = Map<String, dynamic>.from(record);
       }
-      if (cout != null && (latestCheckOut == null || cout.isAfter(latestCheckOut!))) {
+      if (cout != null &&
+          (latestCheckOut == null || cout.isAfter(latestCheckOut!))) {
         latestCheckOut = cout;
-        latestRecord = record;
+        latestRecord ??= Map<String, dynamic>.from(record);
       }
     }
 
-    // Checked in only when the latest check-in happened after the latest
-    // checkout (or there has never been a checkout).
+    for (final raw in workerRecords) {
+      if (raw is! Map) continue;
+      consider(raw);
+
+      final nested = raw['sessions'];
+      if (nested is Map) {
+        for (final value in nested.values) {
+          if (value is Map) consider(value);
+        }
+      }
+    }
+
+    // Currently in only when the newest check-in is newer than the newest
+    // checkout. A completed latest session therefore renders CHECK IN.
     final isIn = latestCheckIn != null &&
         (latestCheckOut == null || latestCheckIn.isAfter(latestCheckOut));
     final workerRecord = latestRecord;
-    
-    // Calculate monthly hours from backend records
+        // Calculate monthly hours from backend records
     final workerId = int.tryParse(worker.id) ?? 0;
     final monthlyHours = _calculateWorkerMonthlyHours(workerId);
     final predictedSalary = worker.salary > 0 ? (monthlyHours / 200.0) * worker.salary : 0.0;
