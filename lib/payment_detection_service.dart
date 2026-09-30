@@ -135,6 +135,7 @@ class PaymentUiState {
   final bool            isUserConfirmed;
   final bool            isUserRejected;
   final String?         saleId; // FIX 4: Mapping Payment -> Sale
+  final String           rawText;
 
   const PaymentUiState({
     required this.id,
