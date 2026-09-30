@@ -68,8 +68,44 @@ class PaymentProcessingManager {
         paymentDetails: {'amount': payment.amount, 'error': e.toString()},
       );
       
-      // Queue as fallback
-      await _offlineQueue.queuePaymentOffline(payment);
+      // Canonical fallback: persist the same payment operation into
+      // SyncQueueManager instead of using the legacy payment queue.
+      try {
+        final invoiceNumber = payment.saleId?.trim() ?? '';
+        if (invoiceNumber.isNotEmpty) {
+          await LocalStorageService.recordUnifiedPayment(
+            '',
+            payment.amount,
+            invoiceNumber: invoiceNumber,
+            paymentMethod: 'ONLINE',
+            paymentDate: payment.timestamp.toIso8601String(),
+            idempotencyKey: payment.fingerprint,
+          );
+
+          await SyncQueueManager.enqueue('record_payment', {
+            'operation_id': 'PAYMENT_${payment.fingerprint}',
+            'idempotency_key': payment.fingerprint,
+            'invoice_number': invoiceNumber,
+            'amount': payment.amount,
+            'reference_id': payment.referenceId,
+            'payer_name': payment.payerName,
+            'source': payment.detectionSource,
+            'timestamp': payment.timestamp.toIso8601String(),
+            'payment_method': 'ONLINE',
+            'vpa': payment.vpa,
+            'bank_name': payment.bankName,
+          });
+        }
+      } catch (fallbackError) {
+        await _errorLogger.logPaymentError(
+          detectionSource: payment.detectionSource,
+          errorReason: 'Canonical payment fallback failed',
+          paymentDetails: {
+            'amount': payment.amount,
+            'error': fallbackError.toString(),
+          },
+        );
+      }
     }
   }
   
@@ -137,74 +173,68 @@ class PaymentProcessingManager {
     try {
       final queued = await _offlineQueue.getQueuedPayments();
       if (queued.isEmpty) return;
-      
-      if (kDebugMode) print('$_tag Syncing ${queued.length} queued payments...');
-      
-      int synced = 0;
+
+      int migrated = 0;
       int failed = 0;
-      
+
       for (final item in queued) {
         if (item['status'] != 'PENDING') continue;
-        
-        // FIX-6: Exponential backoff based on retry count
-        // Prevents hammering backend on repeated failures
-        final retryCount = item['retryCount'] as int? ?? 0;
-        if (retryCount > 0) {
-          final backoffMs = math.min(1000 * math.pow(2, retryCount).toInt(), 30000);
-          if (kDebugMode) print('$_tag Waiting ${backoffMs}ms before retry (attempt ${retryCount + 1})');
-          await Future.delayed(Duration(milliseconds: backoffMs));
+
+        final invoiceNumber = item['invoice_number']?.toString().trim() ?? '';
+        final idempotencyKey =
+            item['idempotency_key']?.toString().trim() ?? item['id']?.toString().trim() ?? '';
+        if (invoiceNumber.isEmpty || idempotencyKey.isEmpty) {
+          failed++;
+          continue;
         }
-        
+
+        final payload = <String, dynamic>{
+          'operation_id': 'PAYMENT_$idempotencyKey',
+          'idempotency_key': idempotencyKey,
+          'invoice_number': invoiceNumber,
+          'amount': item['amount'],
+          'reference_id': item['reference_id'] ?? item['referenceId'],
+          'payer_name': item['payer_name'] ?? item['payerName'],
+          'source': item['source'] ?? item['detectionSource'],
+          'timestamp': item['timestamp'],
+          'payment_method': item['payment_method'] ?? 'ONLINE',
+          'vpa': item['vpa'],
+          'bank_name': item['bankName'] ?? item['bank_name'],
+        };
+
         try {
-          final invoiceNumber = item['invoice_number']?.toString().trim() ?? '';
-          if (invoiceNumber.isEmpty) {
-            await _offlineQueue.incrementRetryCount(item['id']);
-            failed++;
-            continue;
-          }
+          await SyncQueueManager.enqueue('record_payment', payload);
+          await SyncService.processQueueSafe();
 
-          // Real sync call to backend. The same idempotency key survives
-          // retries, so reconnects cannot create duplicate payment rows.
-          final response = await ApiClient.postJson(
-            ApiClient.invoicesPayments,
-            item,
+          final stillPending = await SyncQueueManager.containsBusinessOperation(
+            'record_payment',
+            idempotencyKey,
           );
-
-          if (response.statusCode != 200 && response.statusCode != 201) {
-            throw Exception('Sync failed');
+          if (!stillPending) {
+            await _offlineQueue.markAsSynced(item['id'].toString());
+            migrated++;
           }
-          
-          await _offlineQueue.markAsSynced(item['id']);
-          synced++;
-          
-          onSyncProgress?.call(item['amount'], synced);
         } catch (e) {
-          final canRetry = await _offlineQueue.incrementRetryCount(item['id']);
-          if (!canRetry) {
-            failed++;
-            
-            await _errorLogger.logPaymentError(
-              detectionSource: 'OFFLINE_SYNC',
-              errorReason: 'Max retries exceeded for queued payment',
-              paymentDetails: {'paymentId': item['id'], 'amount': item['amount']},
-            );
+          failed++;
+          if (kDebugMode) {
+            print('$_tag Failed migrating legacy payment ${item['id']}: $e');
           }
         }
       }
-      
-      await _offlineQueue.updateSyncStatus(synced: synced, failed: failed);
+
+      if (migrated > 0 || failed > 0) {
+        await _offlineQueue.updateSyncStatus(synced: migrated, failed: failed);
+      }
       onSyncComplete?.call();
-      
-      if (kDebugMode) print('$_tag Sync complete: $synced synced, $failed failed');
     } catch (e) {
       await _errorLogger.logError(
-        message: 'Error syncing queued payments: $e',
+        message: 'Error migrating legacy payment queue: $e',
         source: 'PaymentSync',
         severity: 'ERROR',
       );
     }
   }
-  
+
   /// Show offline notification to user
   void _showOfflineNotification(PaymentEvent payment) {
     // This would show a toast/snackbar in the UI
