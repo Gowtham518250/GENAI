@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'api_client.dart';
+import 'local_storage_service.dart';
 import 'sync_queue_manager.dart';
 import 'sync_service.dart';
 import 'offline_payment_queue.dart';
@@ -102,8 +103,18 @@ class PaymentProcessingManager {
     };
 
     try {
-      // Canonical local-first: persist the operation before attempting the
-      // network. The sync engine is responsible for delivery/retry.
+      // Canonical local-first: update the local invoice ledger first, then
+      // persist the same idempotent operation in the durable outbox.
+      // This makes the payment visible immediately even without a network.
+      await LocalStorageService.recordUnifiedPayment(
+        '',
+        payment.amount,
+        invoiceNumber: invoiceNumber,
+        paymentMethod: 'ONLINE',
+        paymentDate: payment.timestamp.toIso8601String(),
+        idempotencyKey: payment.fingerprint,
+      );
+
       await SyncQueueManager.enqueue('record_payment', payload);
       unawaited(SyncService.processQueueSafe());
 
