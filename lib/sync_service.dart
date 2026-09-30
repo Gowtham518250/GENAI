@@ -905,6 +905,10 @@ class SyncService {
               success = await _recordKhataPaymentItem(data);
               break;
 
+            case 'update_khata_deadline':
+              success = await _updateKhataDeadlineItem(data);
+              break;
+
             case 'save_customer':
             case 'create_customer':
               success = await _saveCustomerItem(data);
@@ -962,6 +966,7 @@ class SyncService {
               'update_invoice_paid',
               'update_invoice_unpaid',
               'record_khata_payment',
+              'update_khata_deadline',
               'record_payment',
               'decrease_stock',
               'create_purchase_order',
@@ -1030,6 +1035,7 @@ class SyncService {
             'update_invoice_paid',
             'update_invoice_unpaid',
             'record_khata_payment',
+            'update_khata_deadline',
             'record_payment',
             'decrease_stock',
             'create_purchase_order',
@@ -1507,6 +1513,29 @@ static Future<bool> _updatePurchaseOrderStatusItem(Map<String, dynamic> data) as
   }
 
 
+static Future<bool> _updateKhataDeadlineItem(Map<String, dynamic> data) async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return false;
+
+      final payload = <String, dynamic>{
+        'customer_phone': data['customer_phone'],
+        'customer_id': data['customer_id'],
+        'due_date': data['due_date'],
+      }..removeWhere((key, value) => value == null || value.toString().trim().isEmpty);
+
+      final res = await ApiClient.postJson(
+        '/api/khata/update-deadline',
+        payload,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 15));
+
+      return res.statusCode == 200 || res.statusCode == 201;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Error syncing Khata deadline: $e');
+      return false;
+    }
+  }
 static Future<bool> _recordKhataPaymentItem(
     Map<String, dynamic> data,
   ) async {
