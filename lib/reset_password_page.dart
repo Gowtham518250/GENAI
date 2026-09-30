@@ -121,7 +121,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     try {
       // Local OTP verification + hardened backend authorization.
-      final verifyResult = await OTPService.verifyOTP(email, otp);
+      final verifyResult = await OTPService.verifyPasswordResetOTP(email, otp);
 
       if (!mounted) return;
 
