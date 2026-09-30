@@ -119,22 +119,44 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         final decoded = jsonDecode(raw);
         if (decoded is List) list.addAll(decoded);
       }
-      final localOrder = {...payload, 'id': 'LOCAL-PO-${DateTime.now().millisecondsSinceEpoch}', 'status': 'PENDING', 'created_at': DateTime.now().toIso8601String(), 'sync_status': 'pending'};
+
+      final operationId =
+          'PO_CREATE_${DateTime.now().millisecondsSinceEpoch}';
+      final localOrder = {
+        ...payload,
+        'id': 'LOCAL-PO-${DateTime.now().millisecondsSinceEpoch}',
+        'status': 'PENDING',
+        'created_at': DateTime.now().toIso8601String(),
+        'sync_status': 'pending',
+        'operation_id': operationId,
+      };
+
       list.insert(0, localOrder);
       await prefs.setString('purchase_orders_data', jsonEncode(list));
       if (mounted) setState(() => _orders = list);
 
-      final res = await ApiClient.postJson('/purchase-orders/', payload).timeout(const Duration(seconds: 15));
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        await _fetchOrders();
-        return;
-      }
-      throw Exception('Backend rejected PO: ${res.statusCode} ${res.body}');
-    } catch (e) {
-      debugPrint('⚠️ PO create failed live, queuing for retry: $e');
-      await SyncQueueManager.enqueue('create_purchase_order', payload);
+      await SyncQueueManager.enqueue('create_purchase_order', {
+        ...payload,
+        'operation_id': operationId,
+        'local_id': localOrder['id'],
+      });
+
+      // Canonical local-first path: the UI is already committed. Try to
+      // deliver immediately; the durable outbox remains authoritative offline.
       unawaited(SyncService.processQueueSafe());
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Purchase order saved offline and queued for sync.')));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Purchase order saved locally and queued for sync.')),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ PO local save failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save purchase order: $e')),
+        );
+      }
     }
   }
 
