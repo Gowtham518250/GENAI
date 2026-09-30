@@ -340,6 +340,12 @@ class SyncQueueManager {
         }
 
         final now = DateTime.now().toUtc();
+        final prefs = await SharedPreferences.getInstance();
+        final ownerRole = (prefs.getString('user_type') ??
+                prefs.getString('role') ??
+                'OWNER')
+            .trim()
+            .toUpperCase();
         final actionId = sha256
             .convert(
               utf8.encode(
@@ -354,6 +360,7 @@ class SyncQueueManager {
           'action': action,
           'data': Map<String, dynamic>.from(data),
           'owner_user_id': userId,
+          'owner_role': ownerRole,
           'timestamp': now.millisecondsSinceEpoch,
           'created_at': now.toIso8601String(),
           'updated_at': now.toIso8601String(),
