@@ -130,35 +130,37 @@ class BackgroundSyncWorker {
   /// Sync high-priority operations only
   Future<void> _syncHighPriorityOperations() async {
     if (_isProcessing) return;
-    
+
     try {
       final connectivityResult = await Connectivity().checkConnectivity();
       final hasNetwork = connectivityResult != ConnectivityResult.none;
-      
+
       if (!hasNetwork) return;
-      
+
+      // Process the canonical durable queue first. This includes worker
+      // attendance check-in/check-out operations.
       try {
         await SyncService.processQueueSafe();
       } catch (e) {
-        if (kDebugMode) debugPrint('❌ Durable high-priority sync failed: $e');
+        if (kDebugMode) {
+          debugPrint('❌ Durable high-priority sync failed: $e');
+        }
       }
 
       final stats = await OperationQueueService.instance.getQueueStats();
       if (stats.highPriorityPending == 0) return;
-      
+
       if (kDebugMode) {
-        debugPrint('🔥 Syncing legacy high-priority operations: ${stats.highPriorityPending}');
+        debugPrint(
+          '🔥 Syncing legacy high-priority operations: ${stats.highPriorityPending}',
+        );
       }
-      
-      await _processOperations(priorityOnly: OperationPriority.high);  }
-      
+
       await _processOperations(priorityOnly: OperationPriority.high);
-      
     } catch (e) {
       if (kDebugMode) debugPrint('❌ High-priority sync error: $e');
     }
   }
-  
   /// 🔒 DATA VALIDATION: Validate operation data before sending to backend
   Future<ValidationResult> _validateOperationData(Operation operation) async {
     try {
