@@ -27,7 +27,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
   int _currentStep = 1; // 1: Email, 2: OTP, 3: New Password
   String _errorMessage = '';
   bool _otpVerified = false;
-  String? _resetAuthorizationToken;
 
   late AnimationController _bgController;
   late AnimationController _glowController;
@@ -89,7 +88,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
       _isLoading = true;
       _errorMessage = '';
       _otpVerified = false;
-      _resetAuthorizationToken = null;
     });
 
     try {
@@ -104,9 +102,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'OTP sent to $email. Open the email and confirm your mailbox first.',
-            ),
+            content: Text('OTP sent to $email. Check your inbox and spam folder.'),
           ),
         );
       } else {
