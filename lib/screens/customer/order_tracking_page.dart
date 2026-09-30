@@ -6,6 +6,7 @@ import '../../api_client.dart';
 import '../../pdf_invoice_service.dart';
 import '../../realtime_client.dart';
 import '../../secure_token_storage.dart';
+import '../../services/order_history_service.dart';
 
 class OrderTrackingPage extends StatefulWidget {
   const OrderTrackingPage({super.key});
@@ -90,31 +91,47 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   Future<void> _fetchOrders({bool silent = false}) async {
     if (!silent) setState(() => _isLoading = true);
+
+    // Local order history renders immediately, including orders waiting for
+    // backend acknowledgement.
+    final localOrders = await OrderHistoryService.getAllOrders();
+    if (mounted && localOrders.isNotEmpty) {
+      setState(() => _orders = localOrders);
+    }
+
     try {
       final res = await ApiClient.getJson('/store/my-orders');
       if (res.statusCode == 200) {
-        final List data = json.decode(res.body)['orders'] ?? json.decode(res.body);
-        if (mounted) {
-          // 🔧 FIX: Deduplicate orders by order_id to prevent duplicate entries
-          final Set<String> seenOrderIds = {};
-          final List<Map<String, dynamic>> deduplicatedOrders = [];
-          
-          for (var e in data) {
-            final orderId = e['order_id']?.toString() ?? e['id']?.toString() ?? '';
-            if (orderId.isNotEmpty && !seenOrderIds.contains(orderId)) {
-              seenOrderIds.add(orderId);
-              deduplicatedOrders.add(e as Map<String, dynamic>);
-            }
-          }
-          
-          setState(() {
-            _orders = deduplicatedOrders;
-            _isLoading = false;
-          });
+        final body = json.decode(res.body);
+        final raw = body is Map && body['orders'] is List ? body['orders'] : body;
+        final remote = raw is List
+            ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+            : <Map<String, dynamic>>[];
+
+        final merged = <String, Map<String, dynamic>>{};
+        for (final local in localOrders) {
+          final key = (local['server_order_id'] ?? local['order_id'] ?? '').toString();
+          if (key.isNotEmpty) merged[key] = local;
         }
+        for (final remoteOrder in remote) {
+          final key = (remoteOrder['order_id'] ?? remoteOrder['id'] ?? '').toString();
+          if (key.isEmpty) continue;
+          final existing = merged[key];
+          if (existing != null && existing['sync_status'] == 'pending') {
+            merged[key] = {...remoteOrder, ...existing, 'sync_status': 'pending'};
+          } else {
+            merged[key] = {...?existing, ...remoteOrder, 'sync_status': 'synced'};
+          }
+        }
+
+        final mergedList = merged.values.toList();
+        await OrderHistoryService.saveOrders(mergedList);
+        if (mounted) setState(() => _orders = mergedList);
       }
     } catch (e) {
       debugPrint('Failed to fetch orders: $e');
+      // Keep local orders; offline is a valid state.
+    } finally {
       if (mounted && !silent) setState(() => _isLoading = false);
     }
   }
