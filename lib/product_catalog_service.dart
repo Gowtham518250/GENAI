@@ -257,6 +257,9 @@ class ProductCatalogService {
             'product_name': e.canonicalName,
             'price': e.defaultPrice,
             'unit': e.defaultUnit,
+            // Pass learned multilingual aliases into the NLP matcher so
+            // future speech can resolve directly without another translation hop.
+            'aliases': e.allAliases,
           })
       .toList();
 
