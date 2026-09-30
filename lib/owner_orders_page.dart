@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'api_client.dart';
 import 'online_orders_listener.dart';
 import 'dart:async';
+import 'package:uuid/uuid.dart';
 
 class OwnerOrdersPage extends StatefulWidget {
   const OwnerOrdersPage({super.key});
@@ -60,7 +61,12 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
   Future<void> _updateOrder(dynamic orderId, String action, {String? reason}) async {
     try {
       String url = '/store/owner/orders/$orderId/action?action=${action.toUpperCase()}';
-      await ApiClient.postJson(url, {});
+      final idempotencyKey = 'owner-order-' + orderId.toString() + '-' + action.toUpperCase() + '-' + const Uuid().v4();
+      await ApiClient.postJson(
+        url,
+        {},
+        headers: {'Idempotency-Key': idempotencyKey},
+      );
       await _fetchOrders();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
