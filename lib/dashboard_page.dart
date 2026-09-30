@@ -709,6 +709,7 @@ class _DashboardPageState extends State<DashboardPage>
       });
       await SyncService.updateSalePayment(invoiceNumber, newStatus, newPaid);
       await SyncService.processQueueSafe();
+      await _refreshExistingInvoiceStateFromBackend();
       SyncService.triggerDashboardRefresh();
       if (mounted) {
         _addToActivityFeed(
@@ -1768,6 +1769,136 @@ class _DashboardPageState extends State<DashboardPage>
     // Skip loading cached data - always compute fresh from sales
     // This ensures we get latest data, not stale cached values
     return;
+  }
+
+  // DASHBOARD_PAYMENT_SYNC_V2: Reconcile existing local invoices with
+  // canonical backend payment state so stale local PENDING/UNPAID copies do not
+  // overwrite a successful payment acknowledgement.
+  Future<bool> _refreshExistingInvoiceStateFromBackend() async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return false;
+
+      final response = await ApiClient.getJson(
+        ApiClient.invoicesList,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) return false;
+
+      final decoded = jsonDecode(response.body);
+      final List<dynamic> remote = decoded is List
+          ? decoded
+          : (decoded is Map && decoded['invoices'] is List
+              ? decoded['invoices'] as List
+              : (decoded is Map && decoded['results'] is List
+                  ? decoded['results'] as List
+                  : const <dynamic>[]));
+      if (remote.isEmpty) return false;
+
+      String keyOf(Map<String, dynamic> row) {
+        for (final key in const [
+          'invoice_number',
+          'sale_id',
+          'invoice_id',
+          'invoiceId',
+          'backend_id',
+          'id',
+        ]) {
+          final value = row[key]?.toString().trim() ?? '';
+          if (value.isNotEmpty && value != '0' && value != 'null') {
+            return value.toLowerCase();
+          }
+        }
+        return '';
+      }
+
+      double money(dynamic value) {
+        if (value is num) return value.toDouble();
+        return double.tryParse(value?.toString() ?? '') ?? 0.0;
+      }
+
+      final remoteById = <String, Map<String, dynamic>>{};
+      for (final raw in remote) {
+        if (raw is! Map) continue;
+        final row = Map<String, dynamic>.from(raw);
+        final id = keyOf(row);
+        if (id.isNotEmpty) remoteById[id] = row;
+      }
+
+      bool changed = false;
+      final localSales = await LocalStorageService.loadSales();
+      final updatedSales = localSales.map((raw) {
+        if (raw is! Map) return raw;
+        final row = Map<String, dynamic>.from(raw);
+        final remoteRow = remoteById[keyOf(row)];
+        if (remoteRow == null) return raw;
+
+        final remoteStatus =
+            (remoteRow['payment_status'] ?? remoteRow['status'])?.toString();
+        final remotePaid = remoteRow['paid_amount'] ??
+            remoteRow['amount_paid'] ??
+            remoteRow['paid'];
+        final remoteMethod = remoteRow['payment_method'];
+        if (remoteStatus == null &&
+            remotePaid == null &&
+            remoteMethod == null) {
+          return raw;
+        }
+
+        final next = <String, dynamic>{
+          ...row,
+          if (remoteStatus != null) 'payment_status': remoteStatus,
+          if (remoteStatus != null) 'status': remoteStatus,
+          if (remotePaid != null) 'paid_amount': money(remotePaid),
+          if (remotePaid != null) 'amount_paid': money(remotePaid),
+          if (remoteMethod != null) 'payment_method': remoteMethod,
+          'sync_status': 'synced',
+        };
+        if (jsonEncode(next) != jsonEncode(row)) changed = true;
+        return next;
+      }).toList();
+
+      if (changed) {
+        await LocalStorageService.saveSales(updatedSales);
+      }
+
+      try {
+        final localInvoices = await LocalStorageService.loadLocalInvoices();
+        final updatedInvoices = localInvoices.map((raw) {
+          if (raw is! Map) return raw;
+          final row = Map<String, dynamic>.from(raw);
+          final remoteRow = remoteById[keyOf(row)];
+          if (remoteRow == null) return raw;
+          final remoteStatus =
+              (remoteRow['payment_status'] ?? remoteRow['status'])?.toString();
+          final remotePaid = remoteRow['paid_amount'] ??
+              remoteRow['amount_paid'] ??
+              remoteRow['paid'];
+          final remoteMethod = remoteRow['payment_method'];
+          return {
+            ...row,
+            if (remoteStatus != null) 'payment_status': remoteStatus,
+            if (remoteStatus != null) 'status': remoteStatus,
+            if (remotePaid != null) 'paid_amount': money(remotePaid),
+            if (remotePaid != null) 'amount_paid': money(remotePaid),
+            if (remoteMethod != null) 'payment_method': remoteMethod,
+            'sync_status': 'synced',
+          };
+        }).toList();
+        await LocalStorageService.saveLocalInvoices(updatedInvoices);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Local invoice ledger refresh skipped: $e');
+        }
+      }
+
+      return changed;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Existing invoice state refresh failed: $e');
+      }
+      return false;
+    }
   }
 
   Future<bool> _fetchInvoicesFromBackend() async {

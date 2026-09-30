@@ -43,3 +43,19 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local Android signing credentials
+/android/key.properties
+**/key.properties
+*.jks
+*.keystore
+
+# Generated/debug artifacts accidentally committed during troubleshooting
+/android.zip
+/lib*.zip
+/android/build/
+/android/*_output.txt
+/android/dependency_tree*.txt
+/android/manifest_output.txt
+/android/logcat*.txt
+/retail_mind_crash.txt

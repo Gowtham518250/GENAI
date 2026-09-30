@@ -1,0 +1,7 @@
+# Copy this file to android/key.properties for local release builds.
+# Never commit the real key.properties file.
+#
+# storeFile=/absolute/path/to/retail_mind_release.jks
+# storePassword=YOUR_KEYSTORE_PASSWORD
+# keyAlias=YOUR_KEY_ALIAS
+# keyPassword=YOUR_KEY_PASSWORD
