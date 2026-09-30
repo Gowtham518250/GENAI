@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -47,4 +51,15 @@ jobs:
           exit 0
 
       - name: Run Flutter tests
-        run: flutter test
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set +e
+          flutter test 2>&1 | tee /tmp/flutter_test_output.txt
+          test_status=${PIPESTATUS[0]}
+          if [ "$test_status" -ne 0 ]; then
+            tail -c 60000 /tmp/flutter_test_output.txt > /tmp/flutter_test_failure.txt
+            gh issue create --title "CI TEST DIAGNOSTIC CORRECTED a3c4a495cf6ce3aa79b61cf3ace717e0aada5751" --body-file /tmp/flutter_test_failure.txt || true
+          fi
+          exit "$test_status"
