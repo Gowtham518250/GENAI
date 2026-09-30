@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'app_localizations.dart';
 import 'visual_widgets.dart'; // AppBackground, GlassContainer, AppColors
+import 'shop_profile_persistence_service.dart';
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  GiftCardPage
@@ -88,6 +89,21 @@ class GiftCardPage extends StatefulWidget {
 
 class _GiftCardPageState extends State<GiftCardPage>
     with TickerProviderStateMixin {
+  String _userNameValue = 'Valued User';
+  String _shopNameValue = 'Digital Store';
+  String _locationValue = 'Global City';
+  String? _shopTypeValue;
+  String? _contactPersonValue;
+  String? _phoneValue;
+  String? _emailValue;
+  String? _gstNumberValue;
+  String? _categoriesValue;
+  String? _openingHourValue;
+  String? _closingHourValue;
+  String? _websiteValue;
+  String? _taglineValue;
+  Uint8List? _logoBytesValue;
+
   bool _showBack = false;
   bool _isEditing = false;
   int _selectedThemeIndex = 0;
@@ -185,11 +201,29 @@ class _GiftCardPageState extends State<GiftCardPage>
   @override
   void initState() {
     super.initState();
-    _userNameController = TextEditingController(text: widget.userName);
-    _shopNameController = TextEditingController(text: widget.shopName);
-    _locationController = TextEditingController(text: widget.location);
-    _phoneController = TextEditingController(text: widget.phone ?? '');
-    _taglineController = TextEditingController(text: widget.tagline ?? '');
+    _userNameController = TextEditingController(text: _userNameValue);
+    _shopNameController = TextEditingController(text: _shopNameValue);
+    _locationController = TextEditingController(text: _locationValue);
+    _phoneController = TextEditingController(text: _phoneValue ?? '');
+    _taglineController = TextEditingController(text: _taglineValue ?? '');
+    _userNameValue = _userNameValue;
+    _shopNameValue = _shopNameValue;
+    _locationValue = _locationValue;
+    _shopTypeValue = _shopTypeValue;
+    _contactPersonValue = _contactPersonValue;
+    _phoneValue = _phoneValue;
+    _emailValue = _emailValue;
+    _gstNumberValue = _gstNumberValue;
+    _categoriesValue = _categoriesValue;
+    _openingHourValue = _openingHourValue;
+    _closingHourValue = _closingHourValue;
+    _websiteValue = _websiteValue;
+    _taglineValue = _taglineValue;
+    _logoBytesValue = _logoBytesValue;
+
+    _hydratePersistedProfile();
+
+
 
     // â”€â”€ Flip â”€â”€
     _flipController = AnimationController(
@@ -238,6 +272,83 @@ class _GiftCardPageState extends State<GiftCardPage>
     // No auto-redirect: user should see the card and decide actions.
   }
 
+  Future<void> _hydratePersistedProfile() async {
+    try {
+      final profile = await ShopProfilePersistenceService.getProfile();
+      if (profile != null) {
+        await ShopProfilePersistenceService.applyProfileToPrefs(profile);
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final shopDataRaw = profile?['profile'] ?? profile;
+      final shopData = shopDataRaw is Map
+          ? Map<String, dynamic>.from(shopDataRaw)
+          : <String, dynamic>{};
+
+      final categoryRaw = shopData['shop_categories'] ?? prefs.getString('shop_categories');
+      String? categories;
+      if (categoryRaw is List) {
+        categories = categoryRaw.map((e) => e.toString()).join(', ');
+      } else if (categoryRaw != null) {
+        categories = categoryRaw.toString();
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _userNameValue = prefs.getString('user_name') ??
+            prefs.getString('username') ??
+            _userNameValue;
+        _shopNameValue = shopData['shop_name']?.toString() ??
+            prefs.getString('shop_name') ??
+            _shopNameValue;
+        _locationValue = shopData['location']?.toString() ??
+            shopData['address']?.toString() ??
+            prefs.getString('location') ??
+            _locationValue;
+        _shopTypeValue = shopData['shop_type']?.toString() ??
+            prefs.getString('shop_type') ??
+            _shopTypeValue;
+        _contactPersonValue = shopData['contact_person_name']?.toString() ??
+            prefs.getString('contact_person') ??
+            _contactPersonValue;
+        _phoneValue = shopData['phone']?.toString() ??
+            prefs.getString('shop_phone') ??
+            _phoneValue;
+        _emailValue = shopData['email']?.toString() ??
+            prefs.getString('shop_email') ??
+            prefs.getString('email') ??
+            _emailValue;
+        _gstNumberValue = shopData['gst_number']?.toString() ??
+            prefs.getString('gst_number') ??
+            prefs.getString('shop_gst') ??
+            _gstNumberValue;
+        _categoriesValue = categories ?? _categoriesValue;
+        _websiteValue = shopData['website']?.toString() ??
+            prefs.getString('website') ??
+            _websiteValue;
+        _taglineValue = shopData['shop_tagline']?.toString() ??
+            prefs.getString('shop_tagline') ??
+            prefs.getString('tagline') ??
+            _taglineValue;
+
+        _userNameController.text = _userNameValue;
+        _shopNameController.text = _shopNameValue;
+        _locationController.text = _locationValue;
+        _phoneController.text = _phoneValue ?? '';
+        _taglineController.text = _taglineValue ?? '';
+
+        final logoBase64 = prefs.getString('logo_base64');
+        if (logoBase64 != null && logoBase64.isNotEmpty) {
+          try {
+            _logoBytesValue = base64Decode(logoBase64);
+          } catch (_) {}
+        }
+      });
+    } catch (e) {
+      debugPrint('GiftCard profile hydration failed: $e');
+    }
+  }
+
   @override
   void dispose() {
     _flipController.dispose();
@@ -255,25 +366,25 @@ class _GiftCardPageState extends State<GiftCardPage>
   // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   String _buildFullDetails() {
-    final name = _isEditing ? _userNameController.text : widget.userName;
-    final shop = _isEditing ? _shopNameController.text : widget.shopName;
-    final loc = _isEditing ? _locationController.text : widget.location;
-    final phone = _isEditing ? _phoneController.text : widget.phone;
-    final tagline = _isEditing ? _taglineController.text : widget.tagline;
+    final name = _isEditing ? _userNameController.text : _userNameValue;
+    final shop = _isEditing ? _shopNameController.text : _shopNameValue;
+    final loc = _isEditing ? _locationController.text : _locationValue;
+    final phone = _isEditing ? _phoneController.text : _phoneValue;
+    final tagline = _isEditing ? _taglineController.text : _taglineValue;
 
     final buf = StringBuffer()
       ..writeln('Shop: $shop')
       ..writeln('Owner: $name')
       ..writeln('Location: $loc');
-    if (widget.shopType?.isNotEmpty == true) buf.writeln('Shop Type: ${widget.shopType}');
-    if (widget.contactPerson?.isNotEmpty == true) buf.writeln('Contact Person: ${widget.contactPerson}');
+    if (_shopTypeValue?.isNotEmpty == true) buf.writeln('Shop Type: ${_shopTypeValue}');
+    if (_contactPersonValue?.isNotEmpty == true) buf.writeln('Contact Person: ${_contactPersonValue}');
     if (phone?.isNotEmpty == true) buf.writeln('Phone: $phone');
-    if (widget.email?.isNotEmpty == true) buf.writeln('Email: ${widget.email}');
-    if (widget.gstNumber?.isNotEmpty == true) buf.writeln('GST Number: ${widget.gstNumber}');
-    if (widget.categories?.isNotEmpty == true) buf.writeln('Categories: ${widget.categories}');
-    if (widget.openingHour?.isNotEmpty == true) buf.writeln('Opens: ${widget.openingHour}');
-    if (widget.closingHour?.isNotEmpty == true) buf.writeln('Closes: ${widget.closingHour}');
-    if (widget.website?.isNotEmpty == true) buf.writeln('Website: ${widget.website}');
+    if (_emailValue?.isNotEmpty == true) buf.writeln('Email: ${_emailValue}');
+    if (_gstNumberValue?.isNotEmpty == true) buf.writeln('GST Number: ${_gstNumberValue}');
+    if (_categoriesValue?.isNotEmpty == true) buf.writeln('Categories: ${_categoriesValue}');
+    if (_openingHourValue?.isNotEmpty == true) buf.writeln('Opens: ${_openingHourValue}');
+    if (_closingHourValue?.isNotEmpty == true) buf.writeln('Closes: ${_closingHourValue}');
+    if (_websiteValue?.isNotEmpty == true) buf.writeln('Website: ${_websiteValue}');
     if (tagline?.isNotEmpty == true) buf.writeln('"$tagline"');
     return buf.toString();
   }
@@ -313,14 +424,14 @@ class _GiftCardPageState extends State<GiftCardPage>
 
       // Create a temporary file for the image
       final tempDir = await getTemporaryDirectory();
-      final fileName = widget.shopName
+      final fileName = _shopNameValue
           .replaceAll(' ', '_')
           .replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '');
       final imageFile = File('${tempDir.path}/giftcard_$fileName.png');
       await imageFile.writeAsBytes(bytes);
 
       // Share both the image and text details
-      final subject = 'Check out ${widget.shopName}';
+      final subject = 'Check out ${_shopNameValue}';
       final text = _buildFullDetails();
       await Share.shareXFiles([XFile(imageFile.path)],
         subject: subject,
@@ -344,7 +455,7 @@ class _GiftCardPageState extends State<GiftCardPage>
       }
       Share.share(
         _buildFullDetails(),
-        subject: 'Check out ${widget.shopName}',
+        subject: 'Check out ${_shopNameValue}',
       );
     }
   }
@@ -463,6 +574,12 @@ class _GiftCardPageState extends State<GiftCardPage>
               await prefs.setString('phone', _phoneController.text);
               await prefs.setString('location', _locationController.text);
               await prefs.setString('tagline', _taglineController.text);
+              _userNameValue = _userNameController.text;
+              _shopNameValue = _shopNameController.text;
+              _locationValue = _locationController.text;
+              _phoneValue = _phoneController.text;
+              _taglineValue = _taglineController.text;
+
             }
             setState(() => _isEditing = !_isEditing);
           },
@@ -933,8 +1050,8 @@ class _GiftCardPageState extends State<GiftCardPage>
         ],
       ),
       child: ClipOval(
-        child: widget.logoBytes != null
-            ? Image.memory(widget.logoBytes!, fit: BoxFit.cover)
+        child: _logoBytesValue != null
+            ? Image.memory(_logoBytesValue!, fit: BoxFit.cover)
             : _buildProfileFallback(),
       ),
     );
@@ -951,7 +1068,7 @@ class _GiftCardPageState extends State<GiftCardPage>
         ],
       ),
       child: QrImageView(
-        data: 'Shop: ${widget.shopName}\nContact: ${widget.phone}\nOwner: ${widget.userName}',
+        data: 'Shop: ${_shopNameValue}\nContact: ${_phoneValue}\nOwner: ${_userNameValue}',
         version: QrVersions.auto,
         size: size,
         gapless: false,
@@ -978,20 +1095,20 @@ class _GiftCardPageState extends State<GiftCardPage>
             _buildEditField(_phoneController, l.phone, theme)
           else
             _DetailRow(icon: Icons.phone_rounded, label: l.phone, value: _phoneController.text, theme: theme),
-          if (widget.email?.isNotEmpty == true) ...[
+          if (_emailValue?.isNotEmpty == true) ...[
             const SizedBox(height: 16),
-            _DetailRow(icon: Icons.email_rounded, label: l.email, value: widget.email!, theme: theme),
+            _DetailRow(icon: Icons.email_rounded, label: l.email, value: _emailValue!, theme: theme),
           ],
-          if (widget.gstNumber?.isNotEmpty == true) ...[
+          if (_gstNumberValue?.isNotEmpty == true) ...[
             const SizedBox(height: 16),
-            _DetailRow(icon: Icons.receipt_long_rounded, label: 'GSTIN', value: widget.gstNumber!, theme: theme),
+            _DetailRow(icon: Icons.receipt_long_rounded, label: 'GSTIN', value: _gstNumberValue!, theme: theme),
           ],
-          if (widget.shopType?.isNotEmpty == true || widget.categories?.isNotEmpty == true) ...[
+          if (_shopTypeValue?.isNotEmpty == true || _categoriesValue?.isNotEmpty == true) ...[
             const SizedBox(height: 16),
             _DetailRow(
               icon: Icons.storefront_rounded, 
               label: 'Identity', 
-              value: [widget.shopType ?? '', widget.categories ?? ''].where((s) => s.isNotEmpty).join(' • '), 
+              value: [_shopTypeValue ?? '', _categoriesValue ?? ''].where((s) => s.isNotEmpty).join(' • '), 
               theme: theme
             ),
           ],
@@ -1013,7 +1130,7 @@ class _GiftCardPageState extends State<GiftCardPage>
           const Icon(Icons.access_time_filled_rounded, size: 14, color: Colors.white70),
           const SizedBox(width: 8),
           Text(
-            '${widget.openingHour} – ${widget.closingHour}',
+            '${_openingHourValue} – ${_closingHourValue}',
             style: GoogleFonts.poppins(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ],
@@ -1079,9 +1196,9 @@ class _GiftCardPageState extends State<GiftCardPage>
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
       ),
-      child: widget.logoBytes != null
+      child: _logoBytesValue != null
           ? Image.memory(
-              widget.logoBytes!,
+              _logoBytesValue!,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => _buildProfileFallbackCover(),
             )
@@ -1169,7 +1286,7 @@ class _GiftCardPageState extends State<GiftCardPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.shopName,
+                  _shopNameValue,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.playfairDisplay(
@@ -1214,80 +1331,80 @@ class _GiftCardPageState extends State<GiftCardPage>
           _DetailRow(
             icon: Icons.person_rounded,
             label: l.owner,
-            value: widget.userName,
+            value: _userNameValue,
           ),
           const SizedBox(height: 12),
           _DetailRow(
             icon: Icons.location_on_rounded,
             label: l.location,
-            value: widget.location,
+            value: _locationValue,
           ),
 
-          if (widget.shopType?.isNotEmpty == true) ...[
+          if (_shopTypeValue?.isNotEmpty == true) ...[
             const SizedBox(height: 12),
             _DetailRow(
               icon: Icons.store_mall_directory_rounded,
               label: 'Shop Type',
-              value: widget.shopType!,
+              value: _shopTypeValue!,
             ),
           ],
-          if (widget.contactPerson?.isNotEmpty == true) ...[
+          if (_contactPersonValue?.isNotEmpty == true) ...[
             const SizedBox(height: 12),
             _DetailRow(
               icon: Icons.contact_phone_rounded,
               label: 'Contact Person',
-              value: widget.contactPerson!,
+              value: _contactPersonValue!,
             ),
           ],
-          if (widget.phone?.isNotEmpty == true) ...[
+          if (_phoneValue?.isNotEmpty == true) ...[
             const SizedBox(height: 12),
             _DetailRow(
               icon: Icons.phone_rounded,
               label: l.phone,
-              value: widget.phone!,
+              value: _phoneValue!,
             ),
           ],
-          if (widget.email?.isNotEmpty == true) ...[
+          if (_emailValue?.isNotEmpty == true) ...[
             const SizedBox(height: 12),
             _DetailRow(
               icon: Icons.email_rounded,
               label: l.email,
-              value: widget.email!,
+              value: _emailValue!,
             ),
           ],
-          if (widget.gstNumber?.isNotEmpty == true) ...[
+          if (_gstNumberValue?.isNotEmpty == true) ...[
             const SizedBox(height: 12),
             _DetailRow(
               icon: Icons.receipt_long_rounded,
               label: 'GST Number',
-              value: widget.gstNumber!,
+              value: _gstNumberValue!,
             ),
           ],
-          if (widget.categories?.isNotEmpty == true) ...[
+          if (_categoriesValue?.isNotEmpty == true) ...[
             const SizedBox(height: 12),
             _DetailRow(
               icon: Icons.local_offer_rounded,
               label: 'Categories',
-              value: widget.categories!,
+              value: _categoriesValue!,
             ),
           ],
-          if (widget.openingHour?.isNotEmpty == true || widget.closingHour?.isNotEmpty == true) ...[
+          if (_openingHourValue?.isNotEmpty == true || _closingHourValue?.isNotEmpty == true) ...[
             const SizedBox(height: 12),
             _DetailRow(
               icon: Icons.schedule_rounded,
               label: 'Working Hours',
-              value: '${widget.openingHour ?? "N/A"} - ${widget.closingHour ?? "N/A"}',
+              value: '${_openingHourValue ?? "N/A"} - ${_closingHourValue ?? "N/A"}',
             ),
           ],
-          if (widget.website?.isNotEmpty == true) ...[
+          if (_websiteValue?.isNotEmpty == true) ...[
             const SizedBox(height: 12),
             _DetailRow(
               icon: Icons.language_rounded,
               label: l.website,
-              value: widget.website!,
+              value: _websiteValue!,
             ),
           ],
-          if (widget.tagline?.isNotEmpty == true) ...[
+          if (_taglineValue?.isNotEmpty == true) ...[
             const SizedBox(height: 14),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1296,7 +1413,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    widget.tagline!,
+                    _taglineValue!,
                     maxLines: 2,
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 12,
@@ -1366,7 +1483,7 @@ class _GiftCardPageState extends State<GiftCardPage>
             ),
             const SizedBox(height: 8),
             Text(
-              widget.shopName.toUpperCase(),
+              _shopNameValue.toUpperCase(),
               style: GoogleFonts.playfairDisplay(
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
@@ -1381,16 +1498,16 @@ class _GiftCardPageState extends State<GiftCardPage>
 
   String _getQrData() {
     return [
-      'Shop: ${widget.shopName}',
-      'Owner: ${widget.userName}',
-      'Location: ${widget.location}',
-      if (widget.shopType?.isNotEmpty == true) 'Type: ${widget.shopType}',
-      if (widget.contactPerson?.isNotEmpty == true) 'Contact: ${widget.contactPerson}',
-      if (widget.phone?.isNotEmpty == true) 'Phone: ${widget.phone}',
-      if (widget.email?.isNotEmpty == true) 'Email: ${widget.email}',
-      if (widget.gstNumber?.isNotEmpty == true) 'GST: ${widget.gstNumber}',
-      if (widget.website?.isNotEmpty == true) 'Web: ${widget.website}',
-      if (widget.tagline?.isNotEmpty == true) 'Tagline: ${widget.tagline}',
+      'Shop: ${_shopNameValue}',
+      'Owner: ${_userNameValue}',
+      'Location: ${_locationValue}',
+      if (_shopTypeValue?.isNotEmpty == true) 'Type: ${_shopTypeValue}',
+      if (_contactPersonValue?.isNotEmpty == true) 'Contact: ${_contactPersonValue}',
+      if (_phoneValue?.isNotEmpty == true) 'Phone: ${_phoneValue}',
+      if (_emailValue?.isNotEmpty == true) 'Email: ${_emailValue}',
+      if (_gstNumberValue?.isNotEmpty == true) 'GST: ${_gstNumberValue}',
+      if (_websiteValue?.isNotEmpty == true) 'Web: ${_websiteValue}',
+      if (_taglineValue?.isNotEmpty == true) 'Tagline: ${_taglineValue}',
     ].join('\n');
   }
 
@@ -1415,11 +1532,11 @@ class _GiftCardPageState extends State<GiftCardPage>
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: widget.logoBytes != null
+                child: _logoBytesValue != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.memory(
-                          widget.logoBytes!,
+                          _logoBytesValue!,
                           fit: BoxFit.cover,
                         ),
                       )
@@ -1438,7 +1555,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.shopName,
+                      _shopNameValue,
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -1475,36 +1592,36 @@ class _GiftCardPageState extends State<GiftCardPage>
           ),
           const SizedBox(height: 10),
           // Contact info preview
-          _buildPreviewInfo(Icons.person_rounded, widget.userName, 9),
+          _buildPreviewInfo(Icons.person_rounded, _userNameValue, 9),
           const SizedBox(height: 6),
-          _buildPreviewInfo(Icons.location_on_rounded, widget.location, 9),
-          if (widget.shopType?.isNotEmpty == true) ...[
+          _buildPreviewInfo(Icons.location_on_rounded, _locationValue, 9),
+          if (_shopTypeValue?.isNotEmpty == true) ...[
             const SizedBox(height: 6),
-            _buildPreviewInfo(Icons.store_mall_directory_rounded, widget.shopType!, 9),
+            _buildPreviewInfo(Icons.store_mall_directory_rounded, _shopTypeValue!, 9),
           ],
-          if (widget.contactPerson?.isNotEmpty == true) ...[
+          if (_contactPersonValue?.isNotEmpty == true) ...[
             const SizedBox(height: 6),
-            _buildPreviewInfo(Icons.contact_mail_rounded, widget.contactPerson!, 9),
+            _buildPreviewInfo(Icons.contact_mail_rounded, _contactPersonValue!, 9),
           ],
-          if (widget.phone?.isNotEmpty == true) ...[
+          if (_phoneValue?.isNotEmpty == true) ...[
             const SizedBox(height: 6),
-            _buildPreviewInfo(Icons.phone_rounded, widget.phone!, 9),
+            _buildPreviewInfo(Icons.phone_rounded, _phoneValue!, 9),
           ],
-          if (widget.email?.isNotEmpty == true) ...[
+          if (_emailValue?.isNotEmpty == true) ...[
             const SizedBox(height: 6),
-            _buildPreviewInfo(Icons.email_rounded, widget.email!, 9),
+            _buildPreviewInfo(Icons.email_rounded, _emailValue!, 9),
           ],
-          if (widget.categories?.isNotEmpty == true) ...[
+          if (_categoriesValue?.isNotEmpty == true) ...[
             const SizedBox(height: 6),
-            _buildPreviewInfo(Icons.local_offer_rounded, widget.categories!, 9),
+            _buildPreviewInfo(Icons.local_offer_rounded, _categoriesValue!, 9),
           ],
-          if (widget.openingHour?.isNotEmpty == true) ...[
+          if (_openingHourValue?.isNotEmpty == true) ...[
             const SizedBox(height: 6),
-            _buildPreviewInfo(Icons.schedule_rounded, 'Opens: ${widget.openingHour}', 9),
+            _buildPreviewInfo(Icons.schedule_rounded, 'Opens: ${_openingHourValue}', 9),
           ],
-          if (widget.website?.isNotEmpty == true) ...[
+          if (_websiteValue?.isNotEmpty == true) ...[
             const SizedBox(height: 6),
-            _buildPreviewInfo(Icons.language_rounded, widget.website!, 9),
+            _buildPreviewInfo(Icons.language_rounded, _websiteValue!, 9),
           ],
         ],
       ),
