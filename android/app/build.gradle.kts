@@ -10,7 +10,27 @@ android {
     namespace = "com.retailmind.app"
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
-    val releaseKeystore = file(System.getProperty("user.home") + "/retail_mind_release.jks")
+    val signingProperties = java.util.Properties().apply {
+        val propertiesFile = rootProject.file("key.properties")
+        if (propertiesFile.exists()) {
+            propertiesFile.inputStream().use { load(it) }
+        }
+    }
+
+    fun signingValue(propertyName: String, environmentName: String): String? {
+        return System.getenv(environmentName)?.takeIf { it.isNotBlank() }
+            ?: signingProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
+    }
+
+    val releaseKeystorePath = signingValue("storeFile", "ANDROID_KEYSTORE_PATH")
+    val releaseStorePassword = signingValue("storePassword", "ANDROID_KEYSTORE_PASSWORD")
+    val releaseKeyAlias = signingValue("keyAlias", "ANDROID_KEY_ALIAS")
+    val releaseKeyPassword = signingValue("keyPassword", "ANDROID_KEY_PASSWORD")
+    val hasReleaseSigning =
+        !releaseKeystorePath.isNullOrBlank() &&
+        !releaseStorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank()
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -31,20 +51,20 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file(System.getProperty("user.home") + "/retail_mind_release.jks")
-            storePassword = "retail_mind_2026"
-            keyAlias = "retail_mind_key"
-            keyPassword = "retail_mind_2026"
+            if (hasReleaseSigning) {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
         }
     }
 
     buildTypes {
         release {
             // 🔧 CRITICAL: Set your own signing config before publishing to Play Store.
-            signingConfig = if (releaseKeystore.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
             }
             // 🔧 FIX: this was missing entirely — the release build runs R8
             // minification (Flutter's default) with zero app-level keep
@@ -76,4 +96,20 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.sqlite:sqlite-framework:2.4.0")
     implementation("androidx.sqlite:sqlite:2.4.0")
+}
+
+// Never silently produce a debug-signed production artifact.
+// Debug builds remain usable without signing secrets; release builds require
+// an explicitly configured release keystore and credentials.
+gradle.taskGraph.whenReady {
+    val isReleaseBuild = allTasks.any { task ->
+        task.name.contains("Release", ignoreCase = true)
+    }
+    if (isReleaseBuild && !hasReleaseSigning) {
+        throw GradleException(
+            "Release signing is not configured. Set ANDROID_KEYSTORE_PATH, " +
+                "ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD " +
+                "or provide android/key.properties."
+        )
+    }
 }
