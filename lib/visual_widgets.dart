@@ -11,76 +11,75 @@ import 'package:google_fonts/google_fonts.dart';
 
 // ── PRIMARY COLOR PALETTE ─────────────────────────────────────────────────
 class AppColors {
-
   // Semantic tokens for SalesEntryPage
-  static const brand        = Color(0xFF6366F1);
-  static const brandLight   = Color(0xFFEEF2FF);
-  static const brandHover   = Color(0xFF4F46E5);
-  static const brandSubtle  = Color(0xFF818CF8);
-  static const positive     = Color(0xFF10B981);
-  static const listening    = Color(0xFF22C55E);
-  static const caution      = Color(0xFFF59E0B);
-  static const critical     = Color(0xFFEF4444);
-  static const rowSurface   = Color(0xFFF9FAFB);
-  static const rowBorder    = Color(0xFFE5E7EB);
+  static const brand = Color(0xFF6366F1);
+  static const brandLight = Color(0xFFEEF2FF);
+  static const brandHover = Color(0xFF4F46E5);
+  static const brandSubtle = Color(0xFF818CF8);
+  static const positive = Color(0xFF10B981);
+  static const listening = Color(0xFF22C55E);
+  static const caution = Color(0xFFF59E0B);
+  static const critical = Color(0xFFEF4444);
+  static const rowSurface = Color(0xFFF9FAFB);
+  static const rowBorder = Color(0xFFE5E7EB);
   static const subtotalSurface = Color(0xFFF1F5F9);
-  static const subtotalText    = Color(0xFF0F172A);
+  static const subtotalText = Color(0xFF0F172A);
 
   // Brand Colors (Professional Navy Theme)
-  static const primary        = Color(0xFF1B3A6B);   // Navy Blue - Main Brand
-  static const primaryHover   = Color(0xFF142B52);   // Darker Navy
-  static const primaryLight   = Color(0xFFE8EEF8);   // Navy Tint
-  
+  static const primary = Color(0xFF1B3A6B); // Navy Blue - Main Brand
+  static const primaryHover = Color(0xFF142B52); // Darker Navy
+  static const primaryLight = Color(0xFFE8EEF8); // Navy Tint
+
   // Status Colors
-  static const success        = Color(0xFF10B981);   // Green
-  static const warning        = Color(0xFFF59E0B);   // Amber
-  static const danger         = Color(0xFFEF4444);   // Red
-  static const info           = Color(0xFF3B82F6);   // Blue
-  
+  static const success = Color(0xFF10B981); // Green
+  static const warning = Color(0xFFF59E0B); // Amber
+  static const danger = Color(0xFFEF4444); // Red
+  static const info = Color(0xFF3B82F6); // Blue
+
   // Background & Surface
-  static const background     = Color(0xFFF8FAFC);   // Light Slate Gray
-  static const surface        = Color(0xFFFFFFFF);   // Pure White
-  static const surfaceAlt     = Color(0xFFF1F5F9);   // Slate 100
-  static const surfaceHover   = Color(0xFFE2E8F0);   // Slate 200
-  
+  static const background = Color(0xFFF8FAFC); // Light Slate Gray
+  static const surface = Color(0xFFFFFFFF); // Pure White
+  static const surfaceAlt = Color(0xFFF1F5F9); // Slate 100
+  static const surfaceHover = Color(0xFFE2E8F0); // Slate 200
+
   // Text Colors
-  static const textPrimary    = Color(0xFF0F172A);   // Slate 900
-  static const textSecondary  = Color(0xFF475569);   // Slate 600
-  static const textTertiary   = Color(0xFF94A3B8);   // Slate 400
-  static const textMuted      = textTertiary;
-  static const textInverse    = Color(0xFFFFFFFF);   // White Text
-  
+  static const textPrimary = Color(0xFF0F172A); // Slate 900
+  static const textSecondary = Color(0xFF475569); // Slate 600
+  static const textTertiary = Color(0xFF94A3B8); // Slate 400
+  static const textMuted = textTertiary;
+  static const textInverse = Color(0xFFFFFFFF); // White Text
+
   // Borders & Dividers
-  static const border         = Color(0xFFE5E7EB);   // Light Border
-  static const borderDark     = Color(0xFFD1D5DB);   // Darker Border
-  static const divider        = Color(0xFFF3F4F6);   // Divider Color
-  
+  static const border = Color(0xFFE5E7EB); // Light Border
+  static const borderDark = Color(0xFFD1D5DB); // Darker Border
+  static const divider = Color(0xFFF3F4F6); // Divider Color
+
   // Legacy Aliases (for compatibility)
-  static const secondary      = primary;
-  static const accent         = primary;
-  static const electric       = primary;
-  static const coral          = danger;
-  static const cardDark       = Color(0xFF1E293B);   // Slate 800
-  static const surfaceDark    = Color(0xFF0F172A);   // Slate 900
-  static const surfaceDark2   = Color(0xFF1E293B);   // Slate 800
-  static const borderDark2    = Color(0xFF334155);   // Slate 700
-  static const text1          = textPrimary;
-  static const text2          = textSecondary;
-  static const error          = danger;
+  static const secondary = primary;
+  static const accent = primary;
+  static const electric = primary;
+  static const coral = danger;
+  static const cardDark = Color(0xFF1E293B); // Slate 800
+  static const surfaceDark = Color(0xFF0F172A); // Slate 900
+  static const surfaceDark2 = Color(0xFF1E293B); // Slate 800
+  static const borderDark2 = Color(0xFF334155); // Slate 700
+  static const text1 = textPrimary;
+  static const text2 = textSecondary;
+  static const error = danger;
 }
 
 // ── SPACING SYSTEM (ONLY 8, 16, 24, 32) ──────────────────────────────────
 class AppSpacing {
-  static const double xs   = 8.0;     // Extra Small
-  static const double sm   = 16.0;    // Small
-  static const double md   = 24.0;    // Medium
-  static const double lg   = 32.0;    // Large
-  
+  static const double xs = 8.0; // Extra Small
+  static const double sm = 16.0; // Small
+  static const double md = 24.0; // Medium
+  static const double lg = 32.0; // Large
+
   // Common combinations
-  static const EdgeInsets paddingXs  = EdgeInsets.all(8);
-  static const EdgeInsets paddingSm  = EdgeInsets.all(16);
-  static const EdgeInsets paddingMd  = EdgeInsets.all(24);
-  static const EdgeInsets paddingLg  = EdgeInsets.all(32);
+  static const EdgeInsets paddingXs = EdgeInsets.all(8);
+  static const EdgeInsets paddingSm = EdgeInsets.all(16);
+  static const EdgeInsets paddingMd = EdgeInsets.all(24);
+  static const EdgeInsets paddingLg = EdgeInsets.all(32);
 }
 
 // ── TYPOGRAPHY SYSTEM (Google Fonts Inter) ─────────────────────────────
@@ -93,7 +92,7 @@ class AppTypography {
     letterSpacing: -0.5,
     height: 1.2,
   );
-  
+
   // Section Title - 22px SemiBold
   static TextStyle titleMedium = GoogleFonts.inter(
     fontSize: 22,
@@ -101,34 +100,34 @@ class AppTypography {
     color: AppColors.textPrimary,
     letterSpacing: -0.3,
   );
-  
+
   // Card Title - 18px SemiBold
   static TextStyle titleSmall = GoogleFonts.inter(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
-  
+
   // Body Text - 16px
   static TextStyle bodyLarge = GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     color: AppColors.textPrimary,
   );
-  
+
   static TextStyle bodyMedium = GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
   );
-  
+
   // Small Text - 13px
   static TextStyle bodySmall = GoogleFonts.inter(
     fontSize: 13,
     fontWeight: FontWeight.w500,
     color: AppColors.textSecondary,
   );
-  
+
   // Caption - 12px
   static TextStyle caption = GoogleFonts.inter(
     fontSize: 12,
@@ -147,7 +146,7 @@ class AppShadows {
       offset: const Offset(0, 8),
     ),
   ];
-  
+
   // Elevated shadow for interactive elements
   static final elevated = [
     BoxShadow(
@@ -156,18 +155,18 @@ class AppShadows {
       offset: const Offset(0, 12),
     ),
   ];
-  
+
   // None
   static final none = <BoxShadow>[];
 }
 
 // ── BORDER RADIUS ─────────────────────────────────────────────────────────
 class AppRadii {
-  static const double card    = 24.0;   // Card radius
-  static const double button  = 16.0;   // Button radius
-  static const double input   = 12.0;   // Input radius
-  static const double small   = 8.0;    // Small elements
-  static const double large   = 32.0;   // Large elements
+  static const double card = 24.0; // Card radius
+  static const double button = 16.0; // Button radius
+  static const double input = 12.0; // Input radius
+  static const double small = 8.0; // Small elements
+  static const double large = 32.0; // Large elements
 }
 
 // ── COMPONENT STYLES ─────────────────────────────────────────────────────
@@ -179,7 +178,7 @@ class AppComponentStyles {
     border: Border.all(color: AppColors.border),
     boxShadow: AppShadows.subtle,
   );
-  
+
   // Input decoration
   static InputDecoration inputDecoration = InputDecoration(
     filled: true,
@@ -201,17 +200,11 @@ class AppComponentStyles {
 class AppBackground extends StatelessWidget {
   final Widget child;
 
-  const AppBackground({
-    super.key,
-    required this.child,
-  });
+  const AppBackground({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.background,
-      child: child,
-    );
+    return Container(color: AppColors.background, child: child);
   }
 }
 
@@ -282,7 +275,7 @@ class SaasButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bgColor = color ?? AppColors.primary;
-    
+
     return Material(
       child: InkWell(
         onTap: isEnabled && !isLoading ? onPressed : null,
@@ -315,7 +308,9 @@ class SaasButton extends StatelessWidget {
                       if (icon != null) ...[
                         Icon(
                           icon,
-                          color: outlined ? AppColors.textPrimary : AppColors.textInverse,
+                          color: outlined
+                              ? AppColors.textPrimary
+                              : AppColors.textInverse,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -325,7 +320,9 @@ class SaasButton extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: outlined ? AppColors.textPrimary : AppColors.textInverse,
+                          color: outlined
+                              ? AppColors.textPrimary
+                              : AppColors.textInverse,
                         ),
                       ),
                     ],
@@ -360,25 +357,7 @@ class BackendLoadingOverlay extends StatefulWidget {
   State<BackendLoadingOverlay> createState() => _BackendLoadingOverlayState();
 }
 
-class _BackendLoadingOverlayState extends State<BackendLoadingOverlay>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
+class _BackendLoadingOverlayState extends State<BackendLoadingOverlay> {
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -402,7 +381,9 @@ class _BackendLoadingOverlayState extends State<BackendLoadingOverlay>
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.96),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: widget.accentColor.withValues(alpha: 0.18)),
+                          border: Border.all(
+                            color: widget.accentColor.withValues(alpha: 0.18),
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: widget.accentColor.withValues(alpha: 0.16),
@@ -414,33 +395,7 @@ class _BackendLoadingOverlayState extends State<BackendLoadingOverlay>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            AnimatedBuilder(
-                              animation: _controller,
-                              builder: (context, child) {
-                                return Transform.rotate(
-                                  angle: _controller.value * 2 * math.pi,
-                                  child: child,
-                                );
-                              },
-                              child: Container(
-                                width: 72,
-                                height: 72,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [widget.accentColor, widget.accentColor.withValues(alpha: 0.7)],
-                                  ),
-                                  borderRadius: BorderRadius.circular(24),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: widget.accentColor.withValues(alpha: 0.22),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(widget.icon, color: Colors.white, size: 32),
-                              ),
-                            ),
+                            InfinityLoader(color: widget.accentColor, size: 84),
                             const SizedBox(height: 16),
                             Text(
                               widget.title,
@@ -467,7 +422,9 @@ class _BackendLoadingOverlayState extends State<BackendLoadingOverlay>
                               child: LinearProgressIndicator(
                                 minHeight: 8,
                                 backgroundColor: AppColors.surfaceAlt,
-                                valueColor: AlwaysStoppedAnimation<Color>(widget.accentColor),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  widget.accentColor,
+                                ),
                               ),
                             ),
                           ],
@@ -482,6 +439,129 @@ class _BackendLoadingOverlayState extends State<BackendLoadingOverlay>
       ],
     );
   }
+}
+
+class InfinityLoader extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const InfinityLoader({
+    super.key,
+    this.color = AppColors.primary,
+    this.size = 56,
+  });
+
+  @override
+  State<InfinityLoader> createState() => _InfinityLoaderState();
+}
+
+class _InfinityLoaderState extends State<InfinityLoader>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.size,
+      height: widget.size * 0.55,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) => CustomPaint(
+          painter: _InfinityLoaderPainter(
+            progress: _controller.value,
+            color: widget.color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InfinityLoaderPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  const _InfinityLoaderPainter({required this.progress, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width * 0.05, size.height / 2)
+      ..cubicTo(
+        size.width * 0.25,
+        size.height * 0.05,
+        size.width * 0.4,
+        size.height * 0.05,
+        size.width / 2,
+        size.height / 2,
+      )
+      ..cubicTo(
+        size.width * 0.6,
+        size.height * 0.95,
+        size.width * 0.75,
+        size.height * 0.95,
+        size.width * 0.95,
+        size.height / 2,
+      )
+      ..cubicTo(
+        size.width * 0.75,
+        size.height * 0.05,
+        size.width * 0.6,
+        size.height * 0.05,
+        size.width / 2,
+        size.height / 2,
+      )
+      ..cubicTo(
+        size.width * 0.4,
+        size.height * 0.95,
+        size.width * 0.25,
+        size.height * 0.95,
+        size.width * 0.05,
+        size.height / 2,
+      );
+    final trackPaint = Paint()
+      ..color = color.withValues(alpha: 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.height * 0.11
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(path, trackPaint);
+
+    final metric = path.computeMetrics().first;
+    final segmentLength = metric.length * 0.3;
+    final start = metric.length * progress;
+    final end = start + segmentLength;
+    final activePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.height * 0.11
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    if (end <= metric.length) {
+      canvas.drawPath(metric.extractPath(start, end), activePaint);
+    } else {
+      canvas.drawPath(metric.extractPath(start, metric.length), activePaint);
+      canvas.drawPath(metric.extractPath(0, end - metric.length), activePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _InfinityLoaderPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.color != color;
 }
 
 // ── MODERN SECTION HEADER ──────────────────────────────────────────────────
@@ -618,10 +698,7 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SaasCard(
-      padding: padding,
-      child: child,
-    );
+    return SaasCard(padding: padding, child: child);
   }
 }
 
@@ -679,15 +756,22 @@ class _KpiGlassCardState extends State<KpiGlassCard>
       decoration: widget.isHighlighted
           ? BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadii.card),
-              gradient: widget.isWhite ? const LinearGradient(colors: [Colors.white, Colors.white]) : LinearGradient(
-                colors: [
-                  widget.color.withValues(alpha: 0.15),
-                  const Color(0xFF151525).withValues(alpha: 0.95),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              gradient: widget.isWhite
+                  ? const LinearGradient(colors: [Colors.white, Colors.white])
+                  : LinearGradient(
+                      colors: [
+                        widget.color.withValues(alpha: 0.15),
+                        const Color(0xFF151525).withValues(alpha: 0.95),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+              border: Border.all(
+                color: widget.isWhite
+                    ? Colors.grey.withValues(alpha: 0.2)
+                    : widget.color.withValues(alpha: 0.5),
+                width: 1.5,
               ),
-              border: Border.all(color: widget.isWhite ? Colors.grey.withValues(alpha: 0.2) : widget.color.withValues(alpha: 0.5), width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color: widget.color.withValues(alpha: 0.3),
@@ -701,7 +785,9 @@ class _KpiGlassCardState extends State<KpiGlassCard>
       child: SaasCard(
         onTap: widget.onTap,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        backgroundColor: widget.isHighlighted ? Colors.transparent : AppColors.surface,
+        backgroundColor: widget.isHighlighted
+            ? Colors.transparent
+            : AppColors.surface,
         elevated: widget.isHighlighted,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -717,7 +803,7 @@ class _KpiGlassCardState extends State<KpiGlassCard>
               child: Icon(widget.icon, color: widget.color, size: 20),
             ),
             const SizedBox(width: 12),
-            
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -725,12 +811,16 @@ class _KpiGlassCardState extends State<KpiGlassCard>
                 children: [
                   // Label
                   Text(
-                    widget.label, 
+                    widget.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: widget.isHighlighted 
-                        ? AppTypography.bodySmall.copyWith(color: widget.isWhite ? Colors.grey[800] : Colors.white70) 
-                        : AppTypography.bodySmall
+                    style: widget.isHighlighted
+                        ? AppTypography.bodySmall.copyWith(
+                            color: widget.isWhite
+                                ? Colors.grey[800]
+                                : Colors.white70,
+                          )
+                        : AppTypography.bodySmall,
                   ),
                   const SizedBox(height: 2),
                   // Value
@@ -738,11 +828,16 @@ class _KpiGlassCardState extends State<KpiGlassCard>
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Text(
-                    widget.value, 
-                    style: widget.isHighlighted 
-                        ? AppTypography.titleSmall.copyWith(color: widget.isWhite ? Colors.black : Colors.white, fontWeight: FontWeight.bold) 
-                        : AppTypography.titleSmall.copyWith(fontSize: 18)
-                  ),
+                      widget.value,
+                      style: widget.isHighlighted
+                          ? AppTypography.titleSmall.copyWith(
+                              color: widget.isWhite
+                                  ? Colors.black
+                                  : Colors.white,
+                              fontWeight: FontWeight.bold,
+                            )
+                          : AppTypography.titleSmall.copyWith(fontSize: 18),
+                    ),
                   ),
                 ],
               ),
@@ -755,12 +850,12 @@ class _KpiGlassCardState extends State<KpiGlassCard>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Icon(
-                    widget.trendPercent! >= 0 
-                      ? Icons.trending_up 
-                      : Icons.trending_down,
-                    color: widget.trendPercent! >= 0 
-                      ? AppColors.success 
-                      : AppColors.danger,
+                    widget.trendPercent! >= 0
+                        ? Icons.trending_up
+                        : Icons.trending_down,
+                    color: widget.trendPercent! >= 0
+                        ? AppColors.success
+                        : AppColors.danger,
                     size: 16,
                   ),
                   Text(
@@ -768,9 +863,9 @@ class _KpiGlassCardState extends State<KpiGlassCard>
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: widget.trendPercent! >= 0 
-                        ? AppColors.success 
-                        : AppColors.danger,
+                      color: widget.trendPercent! >= 0
+                          ? AppColors.success
+                          : AppColors.danger,
                     ),
                   ),
                 ],
@@ -782,9 +877,6 @@ class _KpiGlassCardState extends State<KpiGlassCard>
     );
   }
 }
-
-
-
 
 class CompactProductRow extends StatefulWidget {
   final Map<String, TextEditingController> entry;
@@ -825,7 +917,7 @@ class _CompactProductRowState extends State<CompactProductRow> {
 
   @override
   Widget build(BuildContext context) {
-    final name  = widget.entry['item']?.text ?? '';
+    final name = widget.entry['item']?.text ?? '';
     final qtyText = widget.entry['qty']?.text ?? '1';
     final priceText = widget.entry['price']?.text ?? '';
     final qty = double.tryParse(qtyText) ?? 1.0;
@@ -840,7 +932,9 @@ class _CompactProductRowState extends State<CompactProductRow> {
             : AppColors.rowSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: widget.isHighlighted ? AppColors.positive : AppColors.rowBorder,
+          color: widget.isHighlighted
+              ? AppColors.positive
+              : AppColors.rowBorder,
         ),
       ),
       child: Column(
@@ -853,7 +947,10 @@ class _CompactProductRowState extends State<CompactProductRow> {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.brand.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
@@ -861,7 +958,8 @@ class _CompactProductRowState extends State<CompactProductRow> {
                     child: Text(
                       '${widget.index + 1}',
                       style: GoogleFonts.poppins(
-                        fontSize: 11, fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.brand,
                       ),
                     ),
@@ -873,8 +971,11 @@ class _CompactProductRowState extends State<CompactProductRow> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.poppins(
-                        fontSize: 13, fontWeight: FontWeight.w600,
-                        color: name.isEmpty ? AppColors.textTertiary : AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: name.isEmpty
+                            ? AppColors.textTertiary
+                            : AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -882,14 +983,17 @@ class _CompactProductRowState extends State<CompactProductRow> {
                     Text(
                       '${qty.toStringAsFixed(0)}×₹${price.toStringAsFixed(0)}',
                       style: GoogleFonts.poppins(
-                        fontSize: 12, fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(width: 6),
                   ],
                   Icon(
-                    _expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                    _expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
                     size: 18,
                     color: AppColors.textTertiary,
                   ),
@@ -897,7 +1001,11 @@ class _CompactProductRowState extends State<CompactProductRow> {
                     const SizedBox(width: 4),
                     GestureDetector(
                       onTap: widget.onDelete,
-                      child: const Icon(Icons.close_rounded, size: 16, color: AppColors.critical),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: AppColors.critical,
+                      ),
                     ),
                   ],
                 ],
@@ -922,8 +1030,6 @@ class _CompactProductRowState extends State<CompactProductRow> {
     );
   }
 }
-
-
 
 class ExpandedProductFields extends StatefulWidget {
   final int index;
@@ -974,7 +1080,8 @@ class _ExpandedProductFieldsState extends State<ExpandedProductFields> {
     final isHighlighted = widget.isHighlighted;
 
     final double price = double.tryParse(entry['price']!.text) ?? 0;
-    final double discount = double.tryParse(entry['discount']?.text ?? '0') ?? 0;
+    final double discount =
+        double.tryParse(entry['discount']?.text ?? '0') ?? 0;
     final double qty = double.tryParse(entry['qty']!.text) ?? 0;
     final double subtotal = qty * (price - discount);
 
@@ -982,12 +1089,12 @@ class _ExpandedProductFieldsState extends State<ExpandedProductFields> {
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isHighlighted 
+        color: isHighlighted
             ? AppColors.positive.withValues(alpha: 0.12)
             : Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isHighlighted 
+          color: isHighlighted
               ? AppColors.positive
               : Colors.white.withValues(alpha: 0.08),
           width: isHighlighted ? 1.5 : 1,
@@ -1003,7 +1110,10 @@ class _ExpandedProductFieldsState extends State<ExpandedProductFields> {
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [AppColors.brand, Color(0xFF8B5CF6)],
@@ -1032,9 +1142,15 @@ class _ExpandedProductFieldsState extends State<ExpandedProductFields> {
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
+                      border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.25),
+                      ),
                     ),
-                    child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 15),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Colors.redAccent,
+                      size: 15,
+                    ),
                   ),
                 ),
             ],
@@ -1045,20 +1161,23 @@ class _ExpandedProductFieldsState extends State<ExpandedProductFields> {
             textEditingController: entry['item']!,
             focusNode: _itemFocusNode,
             optionsBuilder: (TextEditingValue t) {
-              if (t.text.isEmpty) return const Iterable<Map<String, dynamic>>.empty();
+              if (t.text.isEmpty)
+                return const Iterable<Map<String, dynamic>>.empty();
               // Simplified mock autocomplete since it doesn't have access to global datasets easily here
               return const Iterable<Map<String, dynamic>>.empty();
             },
             displayStringForOption: (o) => o['name'].toString(),
             onSelected: (Map<String, dynamic> selection) {
               entry['item']!.text = selection['name'].toString();
-              if (selection['price'] != null && selection['price'].toString() != '0') {
+              if (selection['price'] != null &&
+                  selection['price'].toString() != '0') {
                 entry['price']?.text = selection['price'].toString();
               }
               if (selection['gst'] != null) {
                 entry['gst']?.text = selection['gst'].toString();
               }
-              if (selection['barcode'] != null && selection['barcode'].toString().isNotEmpty) {
+              if (selection['barcode'] != null &&
+                  selection['barcode'].toString().isNotEmpty) {
                 entry['barcode']?.text = selection['barcode'].toString();
               }
               widget.onChanged();
@@ -1069,7 +1188,9 @@ class _ExpandedProductFieldsState extends State<ExpandedProductFields> {
                 focusNode: focus,
                 label: 'Product Name',
                 icon: Icons.inventory_2_outlined,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter product name' : null,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Please enter product name'
+                    : null,
                 onChanged: (newName) {
                   widget.onChanged();
                 },
@@ -1090,13 +1211,15 @@ class _ExpandedProductFieldsState extends State<ExpandedProductFields> {
             suffixIcon: IconButton(
               icon: const Icon(Icons.barcode_reader, size: 18),
               color: const Color(0xFF8B5CF6).withValues(alpha: 0.8),
-              onPressed: () { if (widget.onScan != null) widget.onScan!(); },
+              onPressed: () {
+                if (widget.onScan != null) widget.onScan!();
+              },
               tooltip: 'Scan barcode',
             ),
             textInputAction: TextInputAction.next,
             onSubmitted: (val) {
               if (val.trim().isNotEmpty && widget.onScan != null) {
-                 widget.onScan!();
+                widget.onScan!();
               }
             },
             onChanged: (_) => widget.onChanged(),
@@ -1110,7 +1233,7 @@ class _ExpandedProductFieldsState extends State<ExpandedProductFields> {
                 child: SalesField(
                   controller: entry['qty']!,
                   label: 'Qty',
-                  icon: Icons.add_box_rounded, 
+                  icon: Icons.add_box_rounded,
                   keyboardType: TextInputType.number,
                   accentColor: const Color(0xFF059669),
                   onChanged: (_) => widget.onChanged(),
@@ -1135,7 +1258,6 @@ class _ExpandedProductFieldsState extends State<ExpandedProductFields> {
     );
   }
 }
-
 
 class SalesField extends StatefulWidget {
   const SalesField({
@@ -1226,23 +1348,19 @@ class _SalesFieldState extends State<SalesField> {
       style: GoogleFonts.poppins(
         fontSize: 16,
         color: Colors.black,
-        fontWeight: FontWeight.bold
+        fontWeight: FontWeight.bold,
       ),
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hint,
         labelStyle: GoogleFonts.poppins(
           fontSize: 14,
-          color: _focused
-              ? widget.accentColor
-              : const Color(0xFF6B7280),
+          color: _focused ? widget.accentColor : const Color(0xFF6B7280),
         ),
         prefixIcon: Icon(
           widget.icon,
           size: 20,
-          color: _focused
-              ? widget.accentColor
-              : const Color(0xFF9CA3AF)
+          color: _focused ? widget.accentColor : const Color(0xFF9CA3AF),
         ),
         isDense: true,
         filled: true,
@@ -1251,7 +1369,7 @@ class _SalesFieldState extends State<SalesField> {
             : const Color(0xFFF9FAFB),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1273,7 +1391,10 @@ class _SalesFieldState extends State<SalesField> {
           fontSize: 12,
           color: AppColors.critical,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         suffixIcon: widget.suffixIcon,
       ),
     );

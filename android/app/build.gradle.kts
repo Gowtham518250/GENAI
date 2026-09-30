@@ -8,8 +8,9 @@ plugins {
 
 android {
     namespace = "com.retailmind.app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
+    val releaseKeystore = file(System.getProperty("user.home") + "/retail_mind_release.jks")
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -40,7 +41,11 @@ android {
     buildTypes {
         release {
             // 🔧 CRITICAL: Set your own signing config before publishing to Play Store.
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (releaseKeystore.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             // 🔧 FIX: this was missing entirely — the release build runs R8
             // minification (Flutter's default) with zero app-level keep
             // rules, which is what caused the WorkDatabase crash. See

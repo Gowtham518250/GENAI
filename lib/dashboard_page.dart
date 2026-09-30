@@ -38,7 +38,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'language_provider.dart';
 import 'tutorial_service.dart';
 import 'security_service.dart';
-import 'providers/payment_state.dart';
+import 'providers/payment_state.dart' hide PaymentDecision;
 import 'providers/invoice_state.dart';
 import 'role_selection_page.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -49,6 +49,7 @@ import 'gst_filing_page.dart';
 import 'gst_compliance.dart';
 import 'session_management.dart';
 import 'scoped_shared_preferences.dart';
+import 'features/ai_query/widgets/dashboard_ai_card.dart';
 
 import 'charts/bar_chart.dart';
 import 'charts/line_chart.dart';
@@ -72,6 +73,7 @@ import 'session_logout_service.dart';
 import 'validation_helper.dart';
 import 'sync_queue_manager.dart';
 import 'sync_service.dart';
+import 'simple_loader.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'csv_import_service.dart';
@@ -216,7 +218,7 @@ class _DashboardPageState extends State<DashboardPage>
   List<Map<String, dynamic>> _lowStockProducts = [];
   int _dailyHealthScore = 0;
   bool _dailyHealthScoreLoading = true;
-  
+
   // Performance optimization: Cache today's metrics to avoid recalculation
   double? _cachedTodaySales;
   int? _cachedTodayOrders;
@@ -241,7 +243,7 @@ class _DashboardPageState extends State<DashboardPage>
   // connectivity_plus instance and subscription for cloud sync status
   late final Connectivity _connectivity;
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
-  
+
   // Online Store status tracking
   bool _isOnlineStoreActive = false;
   bool _onlineStoreLoading = true;
@@ -249,7 +251,8 @@ class _DashboardPageState extends State<DashboardPage>
   int _onlineTodayOrders = 0;
   double _onlineTodayRevenue = 0.0;
   int _onlinePaidCount = 0;
-  int _unsyncedBillsCount = 0; // Surfaced as a persistent dashboard warning, not just used for the health score
+  int _unsyncedBillsCount =
+      0; // Surfaced as a persistent dashboard warning, not just used for the health score
 
   void _addToActivityFeed(String activity) {
     setState(() {
@@ -335,13 +338,24 @@ class _DashboardPageState extends State<DashboardPage>
         if (parsed > 0) return parsed;
 
         final price = double.tryParse(s['price']?.toString() ?? '') ?? 0.0;
-        final qty = double.tryParse(s['quantity']?.toString() ?? s['qty']?.toString() ?? '1') ?? 1.0;
+        final qty =
+            double.tryParse(
+              s['quantity']?.toString() ?? s['qty']?.toString() ?? '1',
+            ) ??
+            1.0;
         return (price * qty).clamp(0.0, double.infinity);
       }
 
       final Set<String> processedTodayBills = {};
       for (final sale in todaysSales) {
-        final billId = (sale['_bill_id'] ?? sale['invoice_number'] ?? sale['sale_id'] ?? sale['id'])?.toString().trim() ?? '';
+        final billId =
+            (sale['_bill_id'] ??
+                    sale['invoice_number'] ??
+                    sale['sale_id'] ??
+                    sale['id'])
+                ?.toString()
+                .trim() ??
+            '';
         final invoiceKey = billId.isNotEmpty
             ? billId
             : '${sale['product_name'] ?? sale['product'] ?? sale['item'] ?? ''}_${sale['date'] ?? sale['business_date'] ?? sale['sale_date'] ?? sale['created_at'] ?? ''}';
@@ -352,7 +366,14 @@ class _DashboardPageState extends State<DashboardPage>
 
       final Set<String> processedYesterdayBills = {};
       for (final sale in yesterdaysSales) {
-        final billId = (sale['_bill_id'] ?? sale['invoice_number'] ?? sale['sale_id'] ?? sale['id'])?.toString().trim() ?? '';
+        final billId =
+            (sale['_bill_id'] ??
+                    sale['invoice_number'] ??
+                    sale['sale_id'] ??
+                    sale['id'])
+                ?.toString()
+                .trim() ??
+            '';
         final invoiceKey = billId.isNotEmpty
             ? billId
             : '${sale['product_name'] ?? sale['product'] ?? sale['item'] ?? ''}_${sale['date'] ?? sale['business_date'] ?? sale['sale_date'] ?? sale['created_at'] ?? ''}';
@@ -386,7 +407,16 @@ class _DashboardPageState extends State<DashboardPage>
   StreamSubscription? _syncSubscription;
 
   DateTime _getLocalDate(Map<String, dynamic> sale) {
-    final dateStr = (sale['business_date'] ?? sale['sale_date'] ?? sale['invoice_date'] ?? sale['date'] ?? sale['created_at'] ?? sale['createdAt'])?.toString().trim() ?? '';
+    final dateStr =
+        (sale['business_date'] ??
+                sale['sale_date'] ??
+                sale['invoice_date'] ??
+                sale['date'] ??
+                sale['created_at'] ??
+                sale['createdAt'])
+            ?.toString()
+            .trim() ??
+        '';
     if (dateStr.isEmpty) return DateTime(1970);
 
     try {
@@ -395,8 +425,21 @@ class _DashboardPageState extends State<DashboardPage>
       }
 
       final parsed = DateTime.parse(dateStr);
-      final hasExplicitZone = dateStr.endsWith('Z') || RegExp(r'[+-]\d{2}:?\d{2}\$').hasMatch(dateStr);
-      return hasExplicitZone ? parsed.toLocal() : DateTime(parsed.year, parsed.month, parsed.day, parsed.hour, parsed.minute, parsed.second, parsed.millisecond, parsed.microsecond);
+      final hasExplicitZone =
+          dateStr.endsWith('Z') ||
+          RegExp(r'[+-]\d{2}:?\d{2}\$').hasMatch(dateStr);
+      return hasExplicitZone
+          ? parsed.toLocal()
+          : DateTime(
+              parsed.year,
+              parsed.month,
+              parsed.day,
+              parsed.hour,
+              parsed.minute,
+              parsed.second,
+              parsed.millisecond,
+              parsed.microsecond,
+            );
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Invalid sale date format: $dateStr');
       return DateTime(1970);
@@ -421,10 +464,7 @@ class _DashboardPageState extends State<DashboardPage>
       vsync: this,
       duration: const Duration(milliseconds: 1100),
     );
-    _paymentDetectionPulse = Tween<double>(
-      begin: 0.92,
-      end: 1.0,
-    ).animate(
+    _paymentDetectionPulse = Tween<double>(begin: 0.92, end: 1.0).animate(
       CurvedAnimation(
         parent: _paymentDetectionPulseController,
         curve: Curves.easeInOut,
@@ -453,48 +493,57 @@ class _DashboardPageState extends State<DashboardPage>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
 
-      await Future.wait<dynamic>([
-        _loadDailyInsightFromPrefs(),
-        _loadSales(),
-        _loadQr(),
-        _checkPaymentsConfig(),
-        _checkPermissions(),
-        _replayBackgroundSms(),
-        _showOnboardingIfNeeded(),
-        _connectRealtime(),
-        _loadWelcomeCardState(),
-        _checkSoundboxStatus(),
-        _loadOnlineStoreStatus(),
-        (() async {
-          try {
-            final prefs = await SharedPreferences.getInstance();
-            final userId = prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
-            if (userId > 0) {
-              if (kDebugMode) debugPrint('🔄 Fetching shop profile from backend first...');
-              await _fetchShopProfileFromBackend(userId);
+      await Future.wait<dynamic>(
+        [
+          _loadDailyInsightFromPrefs(),
+          _loadSales(),
+          _loadQr(),
+          _checkPaymentsConfig(),
+          _checkPermissions(),
+          _replayBackgroundSms(),
+          _showOnboardingIfNeeded(),
+          _connectRealtime(),
+          _loadWelcomeCardState(),
+          _checkSoundboxStatus(),
+          _loadOnlineStoreStatus(),
+          (() async {
+            try {
+              final prefs = await SharedPreferences.getInstance();
+              final userId =
+                  prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
+              if (userId > 0) {
+                if (kDebugMode)
+                  debugPrint('🔄 Fetching shop profile from backend first...');
+                await _fetchShopProfileFromBackend(userId);
+              }
+            } catch (e) {
+              if (kDebugMode) debugPrint('Error fetching shop profile: $e');
             }
-          } catch (e) {
-            if (kDebugMode) debugPrint('Error fetching shop profile: $e');
-          }
-        })(),
-        (() async {
-          try {
-            if (kDebugMode) debugPrint('🔄 Fetching workers from backend first...');
-            await _fetchWorkersFromBackend();
-          } catch (e) {}
-        })(),
-        (() async {
-          await _loadShopAndWorkerDataLocally();
-        })(),
-      ].map((future) => future.catchError((_) => null)));
+          })(),
+          (() async {
+            try {
+              if (kDebugMode)
+                debugPrint('🔄 Fetching workers from backend first...');
+              await _fetchWorkersFromBackend();
+            } catch (e) {}
+          })(),
+          (() async {
+            await _loadShopAndWorkerDataLocally();
+          })(),
+        ].map((future) => future.catchError((_) => null)),
+      );
 
       // 🔒 SECURITY: Use scoped SharedPreferences for staff mode check
-      final scopedPrefsCheck = await ScopedSharedPreferences.getBool('is_staff_mode');
+      final scopedPrefsCheck = await ScopedSharedPreferences.getBool(
+        'is_staff_mode',
+      );
       if (!mounted) return;
       if (!(scopedPrefsCheck ?? false) && !kIsWeb) {
         await SecurityService.enforceBiometricLoginRequiresVerification();
         if (mounted && await SecurityService.shouldShowOwnerBiometricGate()) {
-          Navigator.of(context).pushReplacementNamed('/owner-biometric-register');
+          Navigator.of(
+            context,
+          ).pushReplacementNamed('/owner-biometric-register');
         }
       }
     });
@@ -544,13 +593,22 @@ class _DashboardPageState extends State<DashboardPage>
       final rawInvoices = await LocalStorageService.loadLocalInvoices();
       if (rawInvoices.isEmpty) return;
 
-      String normalize(dynamic value) => value?.toString().trim().toLowerCase() ?? '';
+      String normalize(dynamic value) =>
+          value?.toString().trim().toLowerCase() ?? '';
       double money(dynamic value) {
         if (value is num) return value.toDouble();
         return double.tryParse(value?.toString() ?? '') ?? 0.0;
       }
+
       String recordId(Map<String, dynamic> row) {
-        for (final key in const ['invoice_id','sale_id','invoice_number','invoiceId','backend_id','id']) {
+        for (final key in const [
+          'invoice_id',
+          'sale_id',
+          'invoice_number',
+          'invoiceId',
+          'backend_id',
+          'id',
+        ]) {
           final value = normalize(row[key]);
           if (value.isNotEmpty && value != '0' && value != 'null') return value;
         }
@@ -563,34 +621,62 @@ class _DashboardPageState extends State<DashboardPage>
       for (final raw in rawInvoices) {
         if (raw is! Map) continue;
         final row = Map<String, dynamic>.from(raw);
-        final total = money(row['total_amount'] ?? row['total'] ?? row['invoice_total'] ?? row['grand_total']);
-        final paid = money(row['paid_amount'] ?? row['amount_paid'] ?? row['paid']);
+        final total = money(
+          row['total_amount'] ??
+              row['total'] ??
+              row['invoice_total'] ??
+              row['grand_total'],
+        );
+        final paid = money(
+          row['paid_amount'] ?? row['amount_paid'] ?? row['paid'],
+        );
         final due = (total - paid).clamp(0.0, double.infinity);
         if (total <= 0 || due < 0.01 || amount > due + 0.01) continue;
         if (saleId.isNotEmpty && recordId(row) == saleId) {
-          candidates..clear()..add(row);
+          candidates
+            ..clear()
+            ..add(row);
           break;
         }
         if (payer.isNotEmpty) {
           final customer = normalize(row['customer_name'] ?? row['name']);
-          if (customer.isNotEmpty && !customer.contains(payer) && !payer.contains(customer)) continue;
+          if (customer.isNotEmpty &&
+              !customer.contains(payer) &&
+              !payer.contains(customer))
+            continue;
         }
         candidates.add(row);
       }
 
       if (candidates.length != 1) {
         if (kDebugMode && candidates.length > 1) {
-          debugPrint('⚠️ Payment ₹$amount matched ${candidates.length} invoices; manual confirmation required.');
+          debugPrint(
+            '⚠️ Payment ₹$amount matched ${candidates.length} invoices; manual confirmation required.',
+          );
         }
         return;
       }
 
       final target = candidates.first;
-      final total = money(target['total_amount'] ?? target['total'] ?? target['invoice_total'] ?? target['grand_total']);
-      final oldPaid = money(target['paid_amount'] ?? target['amount_paid'] ?? target['paid']);
+      final total = money(
+        target['total_amount'] ??
+            target['total'] ??
+            target['invoice_total'] ??
+            target['grand_total'],
+      );
+      final oldPaid = money(
+        target['paid_amount'] ?? target['amount_paid'] ?? target['paid'],
+      );
       final newPaid = (oldPaid + amount).clamp(0.0, total);
       final newStatus = newPaid >= total - 0.01 ? 'PAID' : 'PARTIAL';
-      final invoiceNumber = (target['invoice_number'] ?? target['sale_id'] ?? target['invoice_id'] ?? target['id'])?.toString().trim() ?? '';
+      final invoiceNumber =
+          (target['invoice_number'] ??
+                  target['sale_id'] ??
+                  target['invoice_id'] ??
+                  target['id'])
+              ?.toString()
+              .trim() ??
+          '';
       if (invoiceNumber.isEmpty) return;
 
       final updated = <String, dynamic>{
@@ -601,8 +687,10 @@ class _DashboardPageState extends State<DashboardPage>
         'status': newStatus,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
         'last_payment_amount': amount,
-        'last_payment_source': event.detectionSource?.toString() ?? 'payment_detection',
-        if (event.referenceId != null) 'last_payment_utr': event.referenceId.toString(),
+        'last_payment_source':
+            event.detectionSource?.toString() ?? 'payment_detection',
+        if (event.referenceId != null)
+          'last_payment_utr': event.referenceId.toString(),
       };
       final targetId = recordId(target);
       final updatedInvoices = rawInvoices.map((raw) {
@@ -623,9 +711,11 @@ class _DashboardPageState extends State<DashboardPage>
       await SyncService.processQueueSafe();
       SyncService.triggerDashboardRefresh();
       if (mounted) {
-        _addToActivityFeed(newStatus == 'PAID'
-            ? 'Invoice $invoiceNumber marked PAID (₹${newPaid.toStringAsFixed(2)})'
-            : 'Invoice $invoiceNumber updated PARTIAL (₹${newPaid.toStringAsFixed(2)} / ₹${total.toStringAsFixed(2)})');
+        _addToActivityFeed(
+          newStatus == 'PAID'
+              ? 'Invoice $invoiceNumber marked PAID (₹${newPaid.toStringAsFixed(2)})'
+              : 'Invoice $invoiceNumber updated PARTIAL (₹${newPaid.toStringAsFixed(2)} / ₹${total.toStringAsFixed(2)})',
+        );
       }
     } catch (e, st) {
       if (kDebugMode) {
@@ -698,7 +788,9 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       FlutterBackgroundService().invoke('restart_payment_detection');
       if (kDebugMode) {
-        debugPrint('🔁 Signaled background isolate to restart payment detection');
+        debugPrint(
+          '🔁 Signaled background isolate to restart payment detection',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
@@ -724,7 +816,8 @@ class _DashboardPageState extends State<DashboardPage>
     }
 
     try {
-      final batteryOk = await PaymentDetectionService.isBatteryOptimizationIgnored();
+      final batteryOk =
+          await PaymentDetectionService.isBatteryOptimizationIgnored();
       if (!batteryOk) {
         await PaymentDetectionService.requestBatteryExemption();
       }
@@ -735,7 +828,9 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       FlutterBackgroundService().invoke('setAsForeground');
       if (kDebugMode) {
-        debugPrint('⬆️ Signaled background isolate to promote to foreground service');
+        debugPrint(
+          '⬆️ Signaled background isolate to promote to foreground service',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
@@ -931,9 +1026,7 @@ class _DashboardPageState extends State<DashboardPage>
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
           decoration: BoxDecoration(
-            color: granted
-                ? const Color(0xFFECFDF5)
-                : const Color(0xFFFEF2F2),
+            color: granted ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
             borderRadius: BorderRadius.circular(11),
             border: Border.all(
               color: granted
@@ -992,7 +1085,10 @@ class _DashboardPageState extends State<DashboardPage>
         final workersData = json.decode(response.body);
         if (workersData is List) {
           // 🔒 SECURITY: Save to scoped local storage to prevent data leakage
-          await ScopedSharedPreferences.setString('workers_json', json.encode(workersData));
+          await ScopedSharedPreferences.setString(
+            'workers_json',
+            json.encode(workersData),
+          );
 
           setState(() {
             _workers = List<Map<String, dynamic>>.from(
@@ -1002,7 +1098,9 @@ class _DashboardPageState extends State<DashboardPage>
           });
 
           if (kDebugMode) {
-            debugPrint('✅ Fetched ${_workers.length} workers from backend (scoped)');
+            debugPrint(
+              '✅ Fetched ${_workers.length} workers from backend (scoped)',
+            );
           }
         }
       }
@@ -1043,7 +1141,9 @@ class _DashboardPageState extends State<DashboardPage>
       }
 
       // Load shop profile JSON
-      final shopJson = await ScopedSharedPreferences.getString('shop_profile_json');
+      final shopJson = await ScopedSharedPreferences.getString(
+        'shop_profile_json',
+      );
       if (shopJson != null && mounted) {
         try {
           setState(() {
@@ -1056,7 +1156,9 @@ class _DashboardPageState extends State<DashboardPage>
       // FIX: written via ScopedSharedPreferences (line ~505 below), which
       // stores under 'user_<id>_workers_json' — reading the raw key here
       // was a self-inconsistent no-op.
-      final workersJson = await ScopedSharedPreferences.getString('workers_json');
+      final workersJson = await ScopedSharedPreferences.getString(
+        'workers_json',
+      );
       if (workersJson != null && mounted) {
         try {
           final parsed = json.decode(workersJson);
@@ -1093,7 +1195,8 @@ class _DashboardPageState extends State<DashboardPage>
         try {
           final tokenValid = await SessionManagementService.isTokenValid();
           if (!tokenValid) {
-            if (kDebugMode) debugPrint('🔐 Dashboard: Token invalid, attempting auto-login');
+            if (kDebugMode)
+              debugPrint('🔐 Dashboard: Token invalid, attempting auto-login');
             await SessionManagementService.autoLogin();
           }
         } catch (e) {
@@ -1353,15 +1456,22 @@ class _DashboardPageState extends State<DashboardPage>
         if (mounted && isPublished != cachedStatus) {
           setState(() => _isOnlineStoreActive = isPublished);
           // 🔒 SECURITY: Also persist the fresh value locally (scoped)
-          await ScopedSharedPreferences.setBool('online_store_active', isPublished);
+          await ScopedSharedPreferences.setBool(
+            'online_store_active',
+            isPublished,
+          );
           if (isPublished) {
             _loadOnlineStoreStats();
           }
         }
-        if (kDebugMode) debugPrint('✅ Online store status refreshed from backend: $isPublished');
+        if (kDebugMode)
+          debugPrint(
+            '✅ Online store status refreshed from backend: $isPublished',
+          );
       } catch (e) {
         // Backend fetch failed — cached value already shown, no action needed
-        if (kDebugMode) debugPrint('⚠️ Backend online store check failed (using cached): $e');
+        if (kDebugMode)
+          debugPrint('⚠️ Backend online store check failed (using cached): $e');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Failed to load online store status: $e');
@@ -1376,16 +1486,19 @@ class _DashboardPageState extends State<DashboardPage>
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final shopId = (prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0).toString();
+      final shopId = (prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0)
+          .toString();
       final metrics = await OnlineOrderService.getAnalytics(shopId);
       if (!mounted) return;
       setState(() {
         _onlinePendingOrders = (metrics['pending'] as num?)?.toInt() ?? 0;
         _onlineTodayOrders = (metrics['todayCount'] as num?)?.toInt() ?? 0;
-        _onlineTodayRevenue = (metrics['todayRevenue'] as num?)?.toDouble() ?? 0.0;
+        _onlineTodayRevenue =
+            (metrics['todayRevenue'] as num?)?.toDouble() ?? 0.0;
         _onlinePaidCount = (metrics['paidCount'] as num?)?.toInt() ?? 0;
         _cachedTodayOnlineOrders = _onlineTodayOrders;
-        _cachedTotalOnlineOrders = (metrics['totalCount'] as num?)?.toInt() ?? 0;
+        _cachedTotalOnlineOrders =
+            (metrics['totalCount'] as num?)?.toInt() ?? 0;
       });
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Failed to load online stats: $e');
@@ -1407,7 +1520,7 @@ class _DashboardPageState extends State<DashboardPage>
         // 🔒 SECURITY: Persist with scoped SharedPreferences
         await ScopedSharedPreferences.setBool('online_store_active', enable);
         await ScopedSharedPreferences.setBool('shop_published_online', enable);
-        
+
         if (enable) {
           _loadOnlineStoreStats();
         } else {
@@ -1418,13 +1531,15 @@ class _DashboardPageState extends State<DashboardPage>
             _onlinePaidCount = 0;
           });
         }
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(enable 
-                ? '✅ Online Store enabled! Customers can find you nearby.' 
-                : '✅ Online Store disabled.'),
+              content: Text(
+                enable
+                    ? '✅ Online Store enabled! Customers can find you nearby.'
+                    : '✅ Online Store disabled.',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -1436,7 +1551,9 @@ class _DashboardPageState extends State<DashboardPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to update status: ${result['error'] ?? "Unknown error"}'),
+              content: Text(
+                'Failed to update status: ${result['error'] ?? "Unknown error"}',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -1448,10 +1565,7 @@ class _DashboardPageState extends State<DashboardPage>
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -1459,7 +1573,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildOnlineStoreStatusCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     if (_isOnlineStoreActive) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1469,7 +1583,11 @@ class _DashboardPageState extends State<DashboardPage>
             children: [
               Row(
                 children: [
-                  const Icon(Icons.storefront_rounded, color: Colors.green, size: 20),
+                  const Icon(
+                    Icons.storefront_rounded,
+                    color: Colors.green,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Online Store is Live',
@@ -1535,7 +1653,9 @@ class _DashboardPageState extends State<DashboardPage>
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6366F1).withValues(alpha: isDark ? 0.15 : 0.05),
+              color: const Color(
+                0xFF6366F1,
+              ).withValues(alpha: isDark ? 0.15 : 0.05),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -1568,7 +1688,9 @@ class _DashboardPageState extends State<DashboardPage>
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : const Color(0xFF1F2937),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF1F2937),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -1621,7 +1743,10 @@ class _DashboardPageState extends State<DashboardPage>
                 icon: const Icon(Icons.settings, size: 18),
                 label: Text(
                   'Configure Online Store',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4F46E5),
@@ -1638,7 +1763,7 @@ class _DashboardPageState extends State<DashboardPage>
       );
     }
   }
-  
+
   Future<void> _loadDailyInsightFromPrefs() async {
     // Skip loading cached data - always compute fresh from sales
     // This ensures we get latest data, not stale cached values
@@ -1649,9 +1774,9 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       final token = await SecureTokenStorage.getToken() ?? '';
       if (token.isEmpty) return false;
-      
+
       final List<dynamic> allItems = [];
-      
+
       // 1. Fetch sales from /auth/sales
       // Canonical cloud source: invoices. The legacy /auth/sales line-item feed
       // is intentionally not merged here because it can represent the same bill
@@ -1667,7 +1792,8 @@ class _DashboardPageState extends State<DashboardPage>
           // Handle both formats: list directly or inside {'invoices': [...]}
           if (invoiceData is List) {
             allItems.addAll(invoiceData);
-          } else if (invoiceData is Map && invoiceData.containsKey('invoices')) {
+          } else if (invoiceData is Map &&
+              invoiceData.containsKey('invoices')) {
             allItems.addAll(invoiceData['invoices'] as List);
           } else if (invoiceData is Map && invoiceData.containsKey('results')) {
             allItems.addAll(invoiceData['results'] as List);
@@ -1678,15 +1804,18 @@ class _DashboardPageState extends State<DashboardPage>
       }
 
       if (allItems.isEmpty) return false;
-      
+
       final List<dynamic> currentLocal = await LocalStorageService.loadSales();
-      final Set<String> existingIds = currentLocal.map((e) => e['sale_id'].toString()).toSet();
+      final Set<String> existingIds = currentLocal
+          .map((e) => e['sale_id'].toString())
+          .toSet();
       bool added = false;
-      
+
       // Group by sale_id/invoice_number
       final Map<String, List<dynamic>> grouped = {};
       for (var item in allItems) {
-        final id = item['sale_id']?.toString() ?? item['invoice_number']?.toString();
+        final id =
+            item['sale_id']?.toString() ?? item['invoice_number']?.toString();
         if (id == null) continue;
         if (!grouped.containsKey(id)) {
           grouped[id] = [];
@@ -1711,28 +1840,42 @@ class _DashboardPageState extends State<DashboardPage>
           // got permanently saved as a duplicate "sale". Only treat a real
           // line-items array as line items; otherwise synthesize a single
           // line item from the invoice's own total/product fields.
-          final rawLineItemsField = firstItem['line_items'] ?? firstItem['items'];
+          final rawLineItemsField =
+              firstItem['line_items'] ?? firstItem['items'];
           final List rawLineItems;
           if (rawLineItemsField is List && rawLineItemsField.isNotEmpty) {
             rawLineItems = rawLineItemsField;
           } else {
-            final fallbackTotal = firstItem['total_amount'] ??
+            final fallbackTotal =
+                firstItem['total_amount'] ??
                 firstItem['total'] ??
                 firstItem['grand_total'] ??
                 firstItem['invoice_total'] ??
                 0;
             rawLineItems = [
               {
-                'product_name': (firstItem['product'] ?? firstItem['product_name'] ?? 'Invoice').toString(),
+                'product_name':
+                    (firstItem['product'] ??
+                            firstItem['product_name'] ??
+                            'Invoice')
+                        .toString(),
                 'price': fallbackTotal,
                 'quantity': 1,
                 'total': fallbackTotal,
-              }
+              },
             ];
           }
           final processedItems = rawLineItems.map((s) {
-            final rawName = (s['product_name'] ?? s['product'] ?? s['name'] ?? s['description'] ?? '').toString().trim();
-            final displayName = rawName.isEmpty || rawName.toLowerCase() == 'product'
+            final rawName =
+                (s['product_name'] ??
+                        s['product'] ??
+                        s['name'] ??
+                        s['description'] ??
+                        '')
+                    .toString()
+                    .trim();
+            final displayName =
+                rawName.isEmpty || rawName.toLowerCase() == 'product'
                 ? 'Unknown Product'
                 : AnalyticsEngine.formatProductName(rawName);
             return {
@@ -1748,11 +1891,17 @@ class _DashboardPageState extends State<DashboardPage>
           currentLocal.add({
             'sale_id': id,
             'invoice_number': id,
-            'date': firstItem['date'] ?? firstItem['created_at'] ?? firstItem['invoice_date'],
+            'date':
+                firstItem['date'] ??
+                firstItem['created_at'] ??
+                firstItem['invoice_date'],
             'items': processedItems,
             'customer_name': firstItem['customer_name'] ?? '',
             'customer_phone': firstItem['customer_phone'] ?? '',
-            'total': firstItem['totalAmount']?.toString() ?? firstItem['total']?.toString() ?? firstItem['total_amount']?.toString(),
+            'total':
+                firstItem['totalAmount']?.toString() ??
+                firstItem['total']?.toString() ??
+                firstItem['total_amount']?.toString(),
             'payment_method': firstItem['payment_method'] ?? 'CASH',
             'payment_status': firstItem['payment_status'] ?? 'PAID',
             'sync_status': 'synced',
@@ -1805,10 +1954,16 @@ class _DashboardPageState extends State<DashboardPage>
 
           // 🔒 SECURITY: Save shop profile fields to scoped SharedPreferences for quick access
           if (profile['shop_name'] != null) {
-            await ScopedSharedPreferences.setString('shop_name', profile['shop_name'].toString());
+            await ScopedSharedPreferences.setString(
+              'shop_name',
+              profile['shop_name'].toString(),
+            );
           }
           if (profile['location'] != null) {
-            await ScopedSharedPreferences.setString('location', profile['location'].toString());
+            await ScopedSharedPreferences.setString(
+              'location',
+              profile['location'].toString(),
+            );
           }
           if (profile['phone_number'] != null) {
             await ScopedSharedPreferences.setString(
@@ -1817,7 +1972,10 @@ class _DashboardPageState extends State<DashboardPage>
             );
           }
           if (profile['email'] != null) {
-            await ScopedSharedPreferences.setString('shop_email', profile['email'].toString());
+            await ScopedSharedPreferences.setString(
+              'shop_email',
+              profile['email'].toString(),
+            );
           }
           if (profile['logo_url'] != null &&
               profile['logo_url'].toString().isNotEmpty) {
@@ -1828,7 +1986,10 @@ class _DashboardPageState extends State<DashboardPage>
           }
 
           // 🔒 SECURITY: Save full profile as JSON for detailed dashboard use (scoped)
-          await ScopedSharedPreferences.setString('shop_profile_json', json.encode(profile));
+          await ScopedSharedPreferences.setString(
+            'shop_profile_json',
+            json.encode(profile),
+          );
 
           // Update UI if shop name changed
           if (mounted && (profile['shop_name'] ?? '').toString().isNotEmpty) {
@@ -2509,7 +2670,8 @@ class _DashboardPageState extends State<DashboardPage>
       engine.productAnalyticsCache;
   Map<String, Map<int, double>> get _monthlyProductSales =>
       engine.monthlyProductSales;
-  int get _analyticsIntegrityErrorCount => engine.analyticsIntegrityErrors.length;
+  int get _analyticsIntegrityErrorCount =>
+      engine.analyticsIntegrityErrors.length;
 
   // ═══════════════════════════════════════════════════════════════════════
   // KPI CARDS - Show FILTERED PERIOD data (based on selected time filter)
@@ -2780,18 +2942,27 @@ class _DashboardPageState extends State<DashboardPage>
   void _shareDailyReport() async {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
-    final todayBills = engine.sales.where((sale) {
-      final d = engine.getLocalDate(sale);
-      return DateTime(d.year, d.month, d.day) == todayStart;
-    }).toList()
-      ..sort((a, b) => engine.getLocalDate(b).compareTo(engine.getLocalDate(a)));
+    final todayBills =
+        engine.sales.where((sale) {
+          final d = engine.getLocalDate(sale);
+          return DateTime(d.year, d.month, d.day) == todayStart;
+        }).toList()..sort(
+          (a, b) => engine.getLocalDate(b).compareTo(engine.getLocalDate(a)),
+        );
     double amountOf(Map<String, dynamic> sale) => (sale['gross_revenue'] is num)
         ? (sale['gross_revenue'] as num).toDouble()
-        : double.tryParse((sale['total_amount'] ?? sale['total'] ?? 0).toString()) ?? 0.0;
-    final total = todayBills.fold<double>(0.0, (sum, sale) => sum + amountOf(sale));
+        : double.tryParse(
+                (sale['total_amount'] ?? sale['total'] ?? 0).toString(),
+              ) ??
+              0.0;
+    final total = todayBills.fold<double>(
+      0.0,
+      (sum, sale) => sum + amountOf(sale),
+    );
     final count = todayBills.length;
     final avg = count == 0 ? 0.0 : total / count;
-    final dateStr = '${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}';
+    final dateStr =
+        '${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}';
     final buffer = StringBuffer()
       ..writeln('🚀 RETAIL MIND — DAILY SALES REPORT')
       ..writeln('🏪 $shopName')
@@ -2807,10 +2978,21 @@ class _DashboardPageState extends State<DashboardPage>
     } else {
       for (var i = 0; i < todayBills.length; i++) {
         final sale = todayBills[i];
-        final invoice = (sale['invoice_number'] ?? sale['sale_id'] ?? sale['_bill_id'] ?? 'SALE-${i + 1}').toString();
-        final customer = (sale['customer_name'] ?? sale['customer_phone'] ?? 'Walk-in Customer').toString();
+        final invoice =
+            (sale['invoice_number'] ??
+                    sale['sale_id'] ??
+                    sale['_bill_id'] ??
+                    'SALE-${i + 1}')
+                .toString();
+        final customer =
+            (sale['customer_name'] ??
+                    sale['customer_phone'] ??
+                    'Walk-in Customer')
+                .toString();
         final product = _dashboardProductDisplayName(sale);
-        buffer.writeln('${i + 1}. $invoice — $customer — ${product.isEmpty ? 'Sale' : product} — ₹${amountOf(sale).toStringAsFixed(2)}');
+        buffer.writeln(
+          '${i + 1}. $invoice — $customer — ${product.isEmpty ? 'Sale' : product} — ₹${amountOf(sale).toStringAsFixed(2)}',
+        );
       }
     }
     buffer.writeln('━━━━━━━━━━━━━━━━━━');
@@ -2821,7 +3003,14 @@ class _DashboardPageState extends State<DashboardPage>
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
       await Clipboard.setData(ClipboardData(text: dashboardMsg));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Daily report copied to clipboard (WhatsApp not found).')));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Daily report copied to clipboard (WhatsApp not found).',
+            ),
+          ),
+        );
     }
   }
 
@@ -2872,29 +3061,44 @@ class _DashboardPageState extends State<DashboardPage>
 
     for (var tx in localHistory) {
       final List<dynamic> items = tx['items'] ?? [];
-      final date = tx['business_date'] ??
+      final date =
+          tx['business_date'] ??
           tx['sale_date'] ??
           tx['invoice_date'] ??
           tx['date'] ??
           tx['created_at'] ??
           tx['createdAt'];
       if (date == null || date.toString().trim().isEmpty) {
-        if (kDebugMode) debugPrint('⚠️ Skipping sale without business_date during dashboard flattening');
+        if (kDebugMode)
+          debugPrint(
+            '⚠️ Skipping sale without business_date during dashboard flattening',
+          );
         continue;
       }
-      
+
       // 🔧 FIX: Use invoice_number as primary deduplication key for invoice-level deduplication
-      final invoiceNumberRaw = tx['invoice_number']?.toString() ??
+      final invoiceNumberRaw =
+          tx['invoice_number']?.toString() ??
           tx['sale_id']?.toString() ??
           tx['_bill_id']?.toString();
-      final fallbackInvoiceNumber = tx['id']?.toString() ?? tx['created_at']?.toString() ?? tx['createdAt']?.toString() ?? '';
-      final invoiceNumber = (invoiceNumberRaw?.trim().isNotEmpty == true ? invoiceNumberRaw : fallbackInvoiceNumber)
-          .toString()
-          .trim()
-          .toLowerCase();
+      final fallbackInvoiceNumber =
+          tx['id']?.toString() ??
+          tx['created_at']?.toString() ??
+          tx['createdAt']?.toString() ??
+          '';
+      final invoiceNumber =
+          (invoiceNumberRaw?.trim().isNotEmpty == true
+                  ? invoiceNumberRaw
+                  : fallbackInvoiceNumber)
+              .toString()
+              .trim()
+              .toLowerCase();
 
       if (invoiceNumber.isEmpty) {
-        if (kDebugMode) debugPrint('⚠️ Skipping sale with invalid invoice_number and no fallback ID');
+        if (kDebugMode)
+          debugPrint(
+            '⚠️ Skipping sale with invalid invoice_number and no fallback ID',
+          );
         continue;
       }
 
@@ -2907,18 +3111,33 @@ class _DashboardPageState extends State<DashboardPage>
             1;
         final double t =
             double.tryParse(tx['total']?.toString() ?? '0') ?? (p * q);
-            
-        final String prodName = (tx['product_name'] ?? tx['product'] ?? tx['item'] ?? tx['title'] ?? tx['name'] ?? '').toString().trim();
-        if (prodName.isEmpty || prodName.toLowerCase() == 'unknown' || prodName.toLowerCase() == 'unknown item' || prodName.toLowerCase() == 'cloud item') {
-             continue; // Skip synthetic invalid records
+
+        final String prodName =
+            (tx['product_name'] ??
+                    tx['product'] ??
+                    tx['item'] ??
+                    tx['title'] ??
+                    tx['name'] ??
+                    '')
+                .toString()
+                .trim();
+        if (prodName.isEmpty ||
+            prodName.toLowerCase() == 'unknown' ||
+            prodName.toLowerCase() == 'unknown item' ||
+            prodName.toLowerCase() == 'cloud item') {
+          continue; // Skip synthetic invalid records
         }
 
         // 🔧 FIX: Use invoice_number as primary key (not date+product)
-        final String fingerprint = '${invoiceNumber}_0'; // Single item = index 0
+        final String fingerprint =
+            '${invoiceNumber}_0'; // Single item = index 0
         if (seenFingerprints.contains(fingerprint)) continue;
         seenFingerprints.add(fingerprint);
-        
-        if (kDebugMode) debugPrint('SALE DISPLAYED:\ninvoice_number: $invoiceNumber\nproduct_name: $prodName\nquantity: $q\nprice: $p');
+
+        if (kDebugMode)
+          debugPrint(
+            'SALE DISPLAYED:\ninvoice_number: $invoiceNumber\nproduct_name: $prodName\nquantity: $q\nprice: $p',
+          );
 
         flattened.add({
           'product': prodName,
@@ -2949,7 +3168,8 @@ class _DashboardPageState extends State<DashboardPage>
         if (items.length > 1) prodName += ' (+${items.length - 1} more)';
 
         pending.add({
-          'id': invoiceNumber,  // 🔧 FIX: Use invoiceNumber instead of undefined billId
+          'id':
+              invoiceNumber, // 🔧 FIX: Use invoiceNumber instead of undefined billId
           'total': total,
           'paid': paid,
           'due_date': dueDate,
@@ -2968,10 +3188,29 @@ class _DashboardPageState extends State<DashboardPage>
       for (int idx = 0; idx < constrainedItems.length; idx++) {
         final rawItem = constrainedItems[idx];
         // Normalize item for consistent parsing
-        final double price = double.tryParse(rawItem['price']?.toString() ?? rawItem['unit_price']?.toString() ?? '0') ?? 0.0;
-        final double qty = double.tryParse(rawItem['qty']?.toString() ?? rawItem['quantity']?.toString() ?? '1') ?? 1.0;
-        final double lineTotal = double.tryParse(rawItem['total']?.toString() ?? rawItem['line_total']?.toString() ?? rawItem['total_with_tax']?.toString() ?? CurrencyManager.multiply(price, qty).toString()) ?? CurrencyManager.multiply(price, qty);
-        
+        final double price =
+            double.tryParse(
+              rawItem['price']?.toString() ??
+                  rawItem['unit_price']?.toString() ??
+                  '0',
+            ) ??
+            0.0;
+        final double qty =
+            double.tryParse(
+              rawItem['qty']?.toString() ??
+                  rawItem['quantity']?.toString() ??
+                  '1',
+            ) ??
+            1.0;
+        final double lineTotal =
+            double.tryParse(
+              rawItem['total']?.toString() ??
+                  rawItem['line_total']?.toString() ??
+                  rawItem['total_with_tax']?.toString() ??
+                  CurrencyManager.multiply(price, qty).toString(),
+            ) ??
+            CurrencyManager.multiply(price, qty);
+
         final item = {
           ...rawItem,
           'price': price,
@@ -2998,9 +3237,11 @@ class _DashboardPageState extends State<DashboardPage>
 
         // Final fallback format (Title Case)
         final displayProd = AnalyticsEngine.formatProductName(prod);
-        
-        if (displayProd.isEmpty || displayProd.toLowerCase() == 'unknown' || displayProd.toLowerCase() == 'unknown item') {
-             continue; // Skip synthetic invalid records
+
+        if (displayProd.isEmpty ||
+            displayProd.toLowerCase() == 'unknown' ||
+            displayProd.toLowerCase() == 'unknown item') {
+          continue; // Skip synthetic invalid records
         }
 
         // [STRICT MODE] Fallback for untracked items to ensure grouping doesn't break
@@ -3010,13 +3251,16 @@ class _DashboardPageState extends State<DashboardPage>
 
         final double parsedPrice = price;
         final double parsedQty = qty;
-            
+
         // 🔧 FIX: Use invoice_number + item_index as primary key (not date+product)
         final String fingerprint = '${invoiceNumber}_${idx}';
         if (seenFingerprints.contains(fingerprint)) continue;
         seenFingerprints.add(fingerprint);
-        
-        if (kDebugMode) debugPrint('SALE DISPLAYED:\ninvoice_number: $invoiceNumber\nproduct_name: $displayProd\nquantity: $parsedQty\nprice: $parsedPrice');
+
+        if (kDebugMode)
+          debugPrint(
+            'SALE DISPLAYED:\ninvoice_number: $invoiceNumber\nproduct_name: $displayProd\nquantity: $parsedQty\nprice: $parsedPrice',
+          );
 
         flattened.add({
           'product': displayProd,
@@ -3031,7 +3275,8 @@ class _DashboardPageState extends State<DashboardPage>
           'business_date': date,
           'barcode': bCode,
           'is_local': true,
-          '_bill_id': invoiceNumber, // ← CORE DEDUPLICATION ANCHOR (invoice_number)
+          '_bill_id':
+              invoiceNumber, // ← CORE DEDUPLICATION ANCHOR (invoice_number)
           '_item_idx': idx, // ← CORE DEDUPLICATION OFFSET
           'invoice_number': invoiceNumber, // ← Explicit invoice_number field
         });
@@ -3049,9 +3294,9 @@ class _DashboardPageState extends State<DashboardPage>
                   'totalAmount': (p['total'] ?? 0.0),
                   'paymentStatus': p['status'] ?? 'UNPAID',
                   'createdDate': p['date'] != null
-                          ? (DateTime.tryParse(p['date'].toString()) ??
+                      ? (DateTime.tryParse(p['date'].toString()) ??
                             DateTime(1970))
-                          : DateTime(1970),
+                      : DateTime(1970),
                 },
               )
               .toList(),
@@ -3063,11 +3308,12 @@ class _DashboardPageState extends State<DashboardPage>
     return flattened;
   }
 
-  
   Future<void> _loadRemarketing() async {
     if (_isStaffMode) return;
     try {
-      final response = await ApiClient.getJson('${ApiClient.remarketing}?threshold_days=30');
+      final response = await ApiClient.getJson(
+        '${ApiClient.remarketing}?threshold_days=30',
+      );
       if (response.statusCode == 200 && mounted) {
         setState(() {
           _remarketingCount = (jsonDecode(response.body) as List).length;
@@ -3101,7 +3347,7 @@ class _DashboardPageState extends State<DashboardPage>
         },
       );
       // #endregion
-      
+
       List<Map<String, dynamic>> localSalesFlattened = [];
       try {
         localSalesFlattened = _flattenLocalSales(history);
@@ -3117,7 +3363,8 @@ class _DashboardPageState extends State<DashboardPage>
           // Invalidate metrics cache when sales are loaded
           _cachedTodaySales = null;
           _cachedTodayOrders = null;
-          _cachedTodayOnlineOrders = null; // 🔒 NEW: Invalidate online orders cache
+          _cachedTodayOnlineOrders =
+              null; // 🔒 NEW: Invalidate online orders cache
           _lastMetricsCacheDate = null;
           _recalculateAnalytics();
           _computeAndStoreDailyInsight();
@@ -3141,7 +3388,7 @@ class _DashboardPageState extends State<DashboardPage>
           // dYs" CHECK LOW STOCK (Local & Backend)
           _dailyHealthScoreLoading = true;
           _checkLowStock();
-          
+
           loading = false;
           if (_selectedChartIndex >= _chartLabels.length) {
             _selectedChartIndex = 0;
@@ -3166,7 +3413,8 @@ class _DashboardPageState extends State<DashboardPage>
               });
             }
           } catch (e) {
-            if (kDebugMode) debugPrint('⚠️ Background dashboard reconciliation failed: $e');
+            if (kDebugMode)
+              debugPrint('⚠️ Background dashboard reconciliation failed: $e');
           }
         }());
 
@@ -3181,8 +3429,10 @@ class _DashboardPageState extends State<DashboardPage>
       }
 
       final sName = await ScopedSharedPreferences.getString('shop_name') ?? '';
-      final sLogo = await ScopedSharedPreferences.getString('logo_base64') ?? '';
-      final isStaff = await ScopedSharedPreferences.getBool('is_staff_mode') ?? false;
+      final sLogo =
+          await ScopedSharedPreferences.getString('logo_base64') ?? '';
+      final isStaff =
+          await ScopedSharedPreferences.getBool('is_staff_mode') ?? false;
       final userId = prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
 
       if (mounted) {
@@ -3210,7 +3460,6 @@ class _DashboardPageState extends State<DashboardPage>
       if (userId > 0) {
         _fetchShopProfileFromBackend(userId);
       }
-
     } catch (e) {
       if (kDebugMode) debugPrint('Error in _loadSales: $e');
       if (mounted) {
@@ -3590,7 +3839,10 @@ class _DashboardPageState extends State<DashboardPage>
       'generatedAt': DateTime.now().toIso8601String(),
     };
     // 🔒 SECURITY: Use scoped SharedPreferences for daily insights
-    await ScopedSharedPreferences.setString('dashboard_daily_insight_v1', json.encode(summary));
+    await ScopedSharedPreferences.setString(
+      'dashboard_daily_insight_v1',
+      json.encode(summary),
+    );
   }
 
   String _formatHourRange(int hour) {
@@ -3738,23 +3990,27 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  
   Widget _buildMarketingBanner() {
     if (_remarketingCount == 0) return const SizedBox.shrink();
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MarketingPage())).then((_) => _loadRemarketing()),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MarketingPage()),
+      ).then((_) => _loadRemarketing()),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [Colors.orange[400]!, Colors.orange[600]!]),
+          gradient: LinearGradient(
+            colors: [Colors.orange[400]!, Colors.orange[600]!],
+          ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
               color: Colors.orange.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 4),
-            )
+            ),
           ],
         ),
         child: Row(
@@ -3774,7 +4030,11 @@ class _DashboardPageState extends State<DashboardPage>
                 children: [
                   Text(
                     '$_remarketingCount Dormant Customers',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
                   ),
                   const Text(
                     'Tap to send WhatsApp discounts and boost sales!',
@@ -4160,7 +4420,13 @@ class _DashboardPageState extends State<DashboardPage>
       int paidCount = 0, unpaidCount = 0;
 
       for (var sale in todaySales) {
-        final rawAmount = sale['total_amount'] ?? sale['total'] ?? sale['grand_total'] ?? sale['final_amount'] ?? sale['totalAmount'] ?? '0';
+        final rawAmount =
+            sale['total_amount'] ??
+            sale['total'] ??
+            sale['grand_total'] ??
+            sale['final_amount'] ??
+            sale['totalAmount'] ??
+            '0';
         final amount = double.tryParse(rawAmount.toString()) ?? 0;
         totalRevenue += amount;
 
@@ -4299,16 +4565,22 @@ class _DashboardPageState extends State<DashboardPage>
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Tooltip(
-              message: _isOnlineStoreActive ? 'Online Store is Active - Manage Settings' : 'Enable Online Store',
+              message: _isOnlineStoreActive
+                  ? 'Online Store is Active - Manage Settings'
+                  : 'Enable Online Store',
               child: ElevatedButton.icon(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const OnlineStoreManagerPage()),
+                    MaterialPageRoute(
+                      builder: (_) => const OnlineStoreManagerPage(),
+                    ),
                   ).then((_) => _loadOnlineStoreStatus());
                 },
                 icon: Icon(
-                  _isOnlineStoreActive ? Icons.storefront : Icons.storefront_outlined,
+                  _isOnlineStoreActive
+                      ? Icons.storefront
+                      : Icons.storefront_outlined,
                   semanticLabel: 'Storefront',
                   size: 18,
                 ),
@@ -4317,8 +4589,8 @@ class _DashboardPageState extends State<DashboardPage>
                   style: const TextStyle(fontSize: 12),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _isOnlineStoreActive 
-                      ? const Color(0xFF10B981) 
+                  backgroundColor: _isOnlineStoreActive
+                      ? const Color(0xFF10B981)
                       : const Color(0xFF8B5CF6),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
@@ -4737,8 +5009,10 @@ class _DashboardPageState extends State<DashboardPage>
             )
           : null,
       onTap: () async {
-        // 🔒 SECURITY: Use scoped SharedPreferences for payment language
+        // 🔒 SECURITY: Use scoped SharedPreferences for payment language, and mirror to base prefs
         await ScopedSharedPreferences.setString('payment_sound_lang', code);
+        final basePrefs = await SharedPreferences.getInstance();
+        await basePrefs.setString('payment_sound_lang', code);
 
         // Update services immediately on language change
         PaymentDetectionService().setLanguage(
@@ -4934,12 +5208,14 @@ class _DashboardPageState extends State<DashboardPage>
         'chg': gText,
       },
       {
-        'lbl': 'Total Bills', // 🔒 CHANGED: From "Transactions" to "Total Bills"
+        'lbl':
+            'Total Bills', // 🔒 CHANGED: From "Transactions" to "Total Bills"
         'val': '$totalTransactions',
         'chg': gText,
       },
       {
-        'lbl': 'Online Orders', // 🔒 CHANGED: From "Avg Order" to "Online Orders"
+        'lbl':
+            'Online Orders', // 🔒 CHANGED: From "Avg Order" to "Online Orders"
         'val': '${_cachedTotalOnlineOrders ?? engine.totalOnlineOrders}',
         'chg': gText,
       },
@@ -5338,12 +5614,16 @@ class _DashboardPageState extends State<DashboardPage>
                   if (_isOnlineStoreActive) {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const OnlineStoreHubPage()),
+                      MaterialPageRoute(
+                        builder: (_) => const OnlineStoreHubPage(),
+                      ),
                     );
                   } else {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const OnlineStoreManagerPage()),
+                      MaterialPageRoute(
+                        builder: (_) => const OnlineStoreManagerPage(),
+                      ),
                     ).then((_) => _loadOnlineStoreStatus());
                   }
                 },
@@ -5390,8 +5670,8 @@ class _DashboardPageState extends State<DashboardPage>
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: _isOnlineStoreActive 
-                              ? const Color(0xFF10B981) 
+                          color: _isOnlineStoreActive
+                              ? const Color(0xFF10B981)
                               : const Color(0xFFF59E0B),
                         ),
                       ),
@@ -6458,7 +6738,13 @@ class _DashboardPageState extends State<DashboardPage>
       if (v.isEmpty || AnalyticsEngine.isPlaceholderProductName(v)) return '';
       return AnalyticsEngine.formatProductName(v);
     }
-    for (final key in const ['product_name', 'product', 'item', 'description']) {
+
+    for (final key in const [
+      'product_name',
+      'product',
+      'item',
+      'description',
+    ]) {
       final value = clean((sale[key] ?? '').toString());
       if (value.isNotEmpty) return value;
     }
@@ -6467,12 +6753,23 @@ class _DashboardPageState extends State<DashboardPage>
       final names = <String>[];
       for (final raw in rawItems) {
         if (raw is! Map) continue;
-        for (final key in const ['product_name', 'product', 'item', 'description']) {
+        for (final key in const [
+          'product_name',
+          'product',
+          'item',
+          'description',
+        ]) {
           final value = clean((raw[key] ?? '').toString());
-          if (value.isNotEmpty && !names.contains(value)) { names.add(value); break; }
+          if (value.isNotEmpty && !names.contains(value)) {
+            names.add(value);
+            break;
+          }
         }
       }
-      if (names.isNotEmpty) return names.length == 1 ? names.first : '${names.first} + ${names.length - 1} more';
+      if (names.isNotEmpty)
+        return names.length == 1
+            ? names.first
+            : '${names.first} + ${names.length - 1} more';
     }
     return '';
   }
@@ -6499,32 +6796,66 @@ class _DashboardPageState extends State<DashboardPage>
     final result = <String, Map<String, dynamic>>{};
     void addLine(String rawName, double total, double qty) {
       final name = rawName.trim();
-      if (name.isEmpty || AnalyticsEngine.isPlaceholderProductName(name)) return;
+      if (name.isEmpty || AnalyticsEngine.isPlaceholderProductName(name))
+        return;
       final displayName = AnalyticsEngine.formatProductName(name);
-      final entry = result.putIfAbsent(displayName, () => <String, dynamic>{'total': 0.0, 'count': 0, 'quantity': 0.0});
+      final entry = result.putIfAbsent(
+        displayName,
+        () => <String, dynamic>{'total': 0.0, 'count': 0, 'quantity': 0.0},
+      );
       entry['total'] = (entry['total'] as double) + total;
       entry['count'] = (entry['count'] as int) + 1;
       entry['quantity'] = (entry['quantity'] as double) + qty;
     }
+
     for (final sale in source) {
       final rawItems = sale['items'] ?? sale['line_items'];
       if (rawItems is List && rawItems.isNotEmpty) {
         for (final raw in rawItems) {
           if (raw is! Map) continue;
-          final name = (raw['product_name'] ?? raw['product'] ?? raw['item'] ?? raw['description'] ?? '').toString();
-          final qty = _chartNumber(raw['quantity'] ?? raw['qty'] ?? raw['units'] ?? 1);
-          final lineTotal = _chartNumber(raw['line_total'] ?? raw['total_with_tax'] ?? raw['total']);
+          final name =
+              (raw['product_name'] ??
+                      raw['product'] ??
+                      raw['item'] ??
+                      raw['description'] ??
+                      '')
+                  .toString();
+          final qty = _chartNumber(
+            raw['quantity'] ?? raw['qty'] ?? raw['units'] ?? 1,
+          );
+          final lineTotal = _chartNumber(
+            raw['line_total'] ?? raw['total_with_tax'] ?? raw['total'],
+          );
           final unitPrice = _chartNumber(raw['unit_price'] ?? raw['price']);
           addLine(name, lineTotal > 0 ? lineTotal : unitPrice * qty, qty);
         }
       } else {
-        final name = (sale['product_name'] ?? sale['product'] ?? sale['item'] ?? sale['name'] ?? sale['description'] ?? '').toString();
-        final total = _chartNumber(sale['invoice_total'] ?? sale['total_amount'] ?? sale['grand_total'] ?? sale['final_amount'] ?? sale['totalAmount'] ?? sale['total']);
-        final qty = _chartNumber(sale['quantity'] ?? sale['qty'] ?? sale['units'] ?? 1);
+        final name =
+            (sale['product_name'] ??
+                    sale['product'] ??
+                    sale['item'] ??
+                    sale['name'] ??
+                    sale['description'] ??
+                    '')
+                .toString();
+        final total = _chartNumber(
+          sale['invoice_total'] ??
+              sale['total_amount'] ??
+              sale['grand_total'] ??
+              sale['final_amount'] ??
+              sale['totalAmount'] ??
+              sale['total'],
+        );
+        final qty = _chartNumber(
+          sale['quantity'] ?? sale['qty'] ?? sale['units'] ?? 1,
+        );
         addLine(name, total, qty);
       }
     }
-    final grandTotal = result.values.fold<double>(0.0, (sum, value) => sum + (value['total'] as double? ?? 0.0));
+    final grandTotal = result.values.fold<double>(
+      0.0,
+      (sum, value) => sum + (value['total'] as double? ?? 0.0),
+    );
     for (final data in result.values) {
       final total = data['total'] as double? ?? 0.0;
       data['percentage'] = grandTotal > 0 ? (total / grandTotal) * 100.0 : 0.0;
@@ -6537,7 +6868,9 @@ class _DashboardPageState extends State<DashboardPage>
   ) {
     final result = <String, Map<int, double>>{};
     final now = DateTime.now();
-    var usable = source.where((sale) => _getLocalDate(sale).year == now.year).toList();
+    var usable = source
+        .where((sale) => _getLocalDate(sale).year == now.year)
+        .toList();
     if (usable.isEmpty) usable = source;
     for (final sale in usable) {
       final date = _getLocalDate(sale);
@@ -6545,21 +6878,48 @@ class _DashboardPageState extends State<DashboardPage>
       if (rawItems is List && rawItems.isNotEmpty) {
         for (final raw in rawItems) {
           if (raw is! Map) continue;
-          final name = (raw['product_name'] ?? raw['product'] ?? raw['item'] ?? raw['description'] ?? '').toString();
-          if (name.trim().isEmpty || AnalyticsEngine.isPlaceholderProductName(name)) continue;
+          final name =
+              (raw['product_name'] ??
+                      raw['product'] ??
+                      raw['item'] ??
+                      raw['description'] ??
+                      '')
+                  .toString();
+          if (name.trim().isEmpty ||
+              AnalyticsEngine.isPlaceholderProductName(name))
+            continue;
           final product = AnalyticsEngine.formatProductName(name);
-          final qty = _chartNumber(raw['quantity'] ?? raw['qty'] ?? raw['units'] ?? 1);
-          final lineTotal = _chartNumber(raw['line_total'] ?? raw['total_with_tax'] ?? raw['total']);
+          final qty = _chartNumber(
+            raw['quantity'] ?? raw['qty'] ?? raw['units'] ?? 1,
+          );
+          final lineTotal = _chartNumber(
+            raw['line_total'] ?? raw['total_with_tax'] ?? raw['total'],
+          );
           final unitPrice = _chartNumber(raw['unit_price'] ?? raw['price']);
           final value = lineTotal > 0 ? lineTotal : unitPrice * qty;
           final monthMap = result.putIfAbsent(product, () => <int, double>{});
           monthMap[date.month] = (monthMap[date.month] ?? 0.0) + value;
         }
       } else {
-        final name = (sale['product_name'] ?? sale['product'] ?? sale['item'] ?? sale['name'] ?? '').toString();
-        if (name.trim().isEmpty || AnalyticsEngine.isPlaceholderProductName(name)) continue;
+        final name =
+            (sale['product_name'] ??
+                    sale['product'] ??
+                    sale['item'] ??
+                    sale['name'] ??
+                    '')
+                .toString();
+        if (name.trim().isEmpty ||
+            AnalyticsEngine.isPlaceholderProductName(name))
+          continue;
         final product = AnalyticsEngine.formatProductName(name);
-        final value = _chartNumber(sale['invoice_total'] ?? sale['total_amount'] ?? sale['grand_total'] ?? sale['final_amount'] ?? sale['totalAmount'] ?? sale['total']);
+        final value = _chartNumber(
+          sale['invoice_total'] ??
+              sale['total_amount'] ??
+              sale['grand_total'] ??
+              sale['final_amount'] ??
+              sale['totalAmount'] ??
+              sale['total'],
+        );
         final monthMap = result.putIfAbsent(product, () => <int, double>{});
         monthMap[date.month] = (monthMap[date.month] ?? 0.0) + value;
       }
@@ -6766,7 +7126,6 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-
   Widget _buildEnhancedBarChart() {
     try {
       if (filteredSales.isEmpty)
@@ -6776,7 +7135,9 @@ class _DashboardPageState extends State<DashboardPage>
       for (final s in filteredSales) {
         try {
           final p = s['product'] ?? s['product_name'] ?? 'Unknown';
-          final val = s['total'] is num ? (s['total'] as num).toDouble() : (double.tryParse(s['total']?.toString() ?? '0') ?? 0.0);
+          final val = s['total'] is num
+              ? (s['total'] as num).toDouble()
+              : (double.tryParse(s['total']?.toString() ?? '0') ?? 0.0);
           map[p] = (map[p] ?? 0.0) + val;
         } catch (e) {
           if (kDebugMode) debugPrint('Error processing sale entry: $e');
@@ -7440,7 +7801,10 @@ class _DashboardPageState extends State<DashboardPage>
       return bVal.compareTo(aVal);
     });
     final topProducts = products.take(5).toList();
-    final grandTotal = topProducts.fold<double>(0, (s, e) => s + ((e.value['total'] as num?)?.toDouble() ?? 0.0));
+    final grandTotal = topProducts.fold<double>(
+      0,
+      (s, e) => s + ((e.value['total'] as num?)?.toDouble() ?? 0.0),
+    );
 
     return AnimatedBuilder(
       animation: _fadeAnimation,
@@ -7477,7 +7841,11 @@ class _DashboardPageState extends State<DashboardPage>
                             ),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.pie_chart_rounded, color: Colors.white, size: 18),
+                          child: const Icon(
+                            Icons.pie_chart_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Column(
@@ -7502,7 +7870,10 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                         const Spacer(),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF3F4F6),
                             borderRadius: BorderRadius.circular(20),
@@ -7538,16 +7909,25 @@ class _DashboardPageState extends State<DashboardPage>
                                     sectionsSpace: 3,
                                     centerSpaceRadius: 58,
                                     startDegreeOffset: -90,
-                                    sections: topProducts.asMap().entries.map((entry) {
+                                    sections: topProducts.asMap().entries.map((
+                                      entry,
+                                    ) {
                                       final index = entry.key;
                                       final product = entry.value;
-                                      final value = (product.value['total'] as num?)?.toDouble() ?? 0.0;
-                                      final perc = grandTotal > 0 ? (value / grandTotal * 100) : 0.0;
+                                      final value =
+                                          (product.value['total'] as num?)
+                                              ?.toDouble() ??
+                                          0.0;
+                                      final perc = grandTotal > 0
+                                          ? (value / grandTotal * 100)
+                                          : 0.0;
                                       final color = _getChartColor(index);
                                       return PieChartSectionData(
                                         color: color,
                                         value: value,
-                                        title: perc >= 10 ? '${perc.toStringAsFixed(0)}%' : '',
+                                        title: perc >= 10
+                                            ? '${perc.toStringAsFixed(0)}%'
+                                            : '',
                                         radius: 52,
                                         titleStyle: GoogleFonts.poppins(
                                           fontSize: 11,
@@ -7557,7 +7937,9 @@ class _DashboardPageState extends State<DashboardPage>
                                       );
                                     }).toList(),
                                   ),
-                                  swapAnimationDuration: const Duration(milliseconds: 600),
+                                  swapAnimationDuration: const Duration(
+                                    milliseconds: 600,
+                                  ),
                                   swapAnimationCurve: Curves.easeOutCubic,
                                 ),
                                 // Centre label
@@ -7591,11 +7973,18 @@ class _DashboardPageState extends State<DashboardPage>
                               padding: const EdgeInsets.only(right: 16),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: topProducts.asMap().entries.map((entry) {
+                                children: topProducts.asMap().entries.map((
+                                  entry,
+                                ) {
                                   final index = entry.key;
                                   final product = entry.value;
-                                  final val = (product.value['total'] as num?)?.toDouble() ?? 0.0;
-                                  final perc = grandTotal > 0 ? (val / grandTotal * 100) : 0.0;
+                                  final val =
+                                      (product.value['total'] as num?)
+                                          ?.toDouble() ??
+                                      0.0;
+                                  final perc = grandTotal > 0
+                                      ? (val / grandTotal * 100)
+                                      : 0.0;
                                   final color = _getChartColor(index);
                                   return Padding(
                                     padding: const EdgeInsets.only(bottom: 10),
@@ -7612,26 +8001,35 @@ class _DashboardPageState extends State<DashboardPage>
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                _cleanProductName(product.key, ''),
+                                                _cleanProductName(
+                                                  product.key,
+                                                  '',
+                                                ),
                                                 style: GoogleFonts.poppins(
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w600,
-                                                  color: const Color(0xFF374151),
+                                                  color: const Color(
+                                                    0xFF374151,
+                                                  ),
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                               Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
                                                 children: [
                                                   Text(
                                                     '₹${_formatCompactNumber(val)}',
                                                     style: GoogleFonts.poppins(
                                                       fontSize: 10,
-                                                      fontWeight: FontWeight.w700,
+                                                      fontWeight:
+                                                          FontWeight.w700,
                                                       color: color,
                                                     ),
                                                   ),
@@ -7647,11 +8045,19 @@ class _DashboardPageState extends State<DashboardPage>
                                               const SizedBox(height: 3),
                                               // Mini progress bar
                                               ClipRRect(
-                                                borderRadius: BorderRadius.circular(4),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                                 child: LinearProgressIndicator(
-                                                  value: grandTotal > 0 ? (val / grandTotal).clamp(0.0, 1.0) : 0.0,
-                                                  backgroundColor: color.withValues(alpha: 0.12),
-                                                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                                                  value: grandTotal > 0
+                                                      ? (val / grandTotal)
+                                                            .clamp(0.0, 1.0)
+                                                      : 0.0,
+                                                  backgroundColor: color
+                                                      .withValues(alpha: 0.12),
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                        Color
+                                                      >(color),
                                                   minHeight: 4,
                                                 ),
                                               ),
@@ -7744,8 +8150,10 @@ class _DashboardPageState extends State<DashboardPage>
       productData.forEach((product, data) {
         final qty = data?['quantity'];
         int qtyInt = 0;
-        if (qty is int) qtyInt = qty;
-        else if (qty is num) qtyInt = qty.toInt();
+        if (qty is int)
+          qtyInt = qty;
+        else if (qty is num)
+          qtyInt = qty.toInt();
         qtyMap[product] = qtyInt;
       });
 
@@ -7754,10 +8162,14 @@ class _DashboardPageState extends State<DashboardPage>
       topProducts = topProducts.take(6).toList();
 
       final totalQty = topProducts.fold<int>(0, (s, e) => s + e.value);
-      final maxQty = topProducts.isNotEmpty ? topProducts.first.value.toDouble() : 1.0;
+      final maxQty = topProducts.isNotEmpty
+          ? topProducts.first.value.toDouble()
+          : 1.0;
 
       // Build percentages for radar (relative to max)
-      final radarEntries = topProducts.map((e) => e.value.toDouble() / maxQty * 100).toList();
+      final radarEntries = topProducts
+          .map((e) => e.value.toDouble() / maxQty * 100)
+          .toList();
 
       // fl_chart RadarChart requires at least 3 data points
       while (topProducts.length < 3) {
@@ -7800,7 +8212,11 @@ class _DashboardPageState extends State<DashboardPage>
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.radar, color: Colors.white, size: 18),
+                            child: const Icon(
+                              Icons.radar,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Column(
@@ -7825,7 +8241,10 @@ class _DashboardPageState extends State<DashboardPage>
                           ),
                           const Spacer(),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFF1E293B),
                               borderRadius: BorderRadius.circular(20),
@@ -7849,7 +8268,9 @@ class _DashboardPageState extends State<DashboardPage>
                         padding: const EdgeInsets.all(12),
                         child: RadarChart(
                           RadarChartData(
-                            radarBackgroundColor: const Color(0xFF1E293B).withValues(alpha: 0.5),
+                            radarBackgroundColor: const Color(
+                              0xFF1E293B,
+                            ).withValues(alpha: 0.5),
                             borderData: FlBorderData(show: false),
                             radarBorderData: BorderSide(
                               color: Colors.white.withValues(alpha: 0.06),
@@ -7871,9 +8292,14 @@ class _DashboardPageState extends State<DashboardPage>
                             getTitle: (index, angle) {
                               try {
                                 if (index < topProducts.length) {
-                                  final clean = _cleanProductName(topProducts[index].key, '');
+                                  final clean = _cleanProductName(
+                                    topProducts[index].key,
+                                    '',
+                                  );
                                   return RadarChartTitle(
-                                    text: clean.length > 7 ? '${clean.substring(0, 6)}..' : clean,
+                                    text: clean.length > 7
+                                        ? '${clean.substring(0, 6)}..'
+                                        : clean,
                                     angle: angle,
                                     positionPercentageOffset: 0.12,
                                   );
@@ -7888,26 +8314,42 @@ class _DashboardPageState extends State<DashboardPage>
                             ),
                             dataSets: [
                               RadarDataSet(
-                                fillColor: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                                fillColor: const Color(
+                                  0xFF6366F1,
+                                ).withValues(alpha: 0.35),
                                 borderColor: const Color(0xFF6366F1),
                                 entryRadius: 5,
                                 dataEntries: radarEntries
-                                    .map((v) => RadarEntry(value: v.clamp(0.0, 100.0)))
+                                    .map(
+                                      (v) => RadarEntry(
+                                        value: v.clamp(0.0, 100.0),
+                                      ),
+                                    )
                                     .toList(),
                                 borderWidth: 2.5,
                               ),
                               RadarDataSet(
-                                fillColor: const Color(0xFF06B6D4).withValues(alpha: 0.15),
-                                borderColor: const Color(0xFF06B6D4).withValues(alpha: 0.7),
+                                fillColor: const Color(
+                                  0xFF06B6D4,
+                                ).withValues(alpha: 0.15),
+                                borderColor: const Color(
+                                  0xFF06B6D4,
+                                ).withValues(alpha: 0.7),
                                 entryRadius: 3,
                                 dataEntries: radarEntries
-                                    .map((v) => RadarEntry(value: (v * 0.6).clamp(0.0, 100.0)))
+                                    .map(
+                                      (v) => RadarEntry(
+                                        value: (v * 0.6).clamp(0.0, 100.0),
+                                      ),
+                                    )
                                     .toList(),
                                 borderWidth: 1.5,
                               ),
                             ],
                           ),
-                          swapAnimationDuration: const Duration(milliseconds: 800),
+                          swapAnimationDuration: const Duration(
+                            milliseconds: 800,
+                          ),
                           swapAnimationCurve: Curves.easeOutQuint,
                         ),
                       ),
@@ -7916,75 +8358,91 @@ class _DashboardPageState extends State<DashboardPage>
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                       child: Column(
-                        children: topProducts.take(4).toList().asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final product = entry.value;
-                          if (product.key == '—') return const SizedBox.shrink();
-                          final qty = product.value;
-                          final pct = maxQty > 0 ? qty / maxQty : 0.0;
-                          final colors = [
-                            const Color(0xFF6366F1),
-                            const Color(0xFF06B6D4),
-                            const Color(0xFF10B981),
-                            const Color(0xFFF59E0B),
-                          ];
-                          final color = colors[index % colors.length];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 80,
-                                  child: Text(
-                                    _cleanProductName(product.key, ''),
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      color: Colors.white60,
-                                      fontWeight: FontWeight.w500,
+                        children: topProducts
+                            .take(4)
+                            .toList()
+                            .asMap()
+                            .entries
+                            .map((entry) {
+                              final index = entry.key;
+                              final product = entry.value;
+                              if (product.key == '—')
+                                return const SizedBox.shrink();
+                              final qty = product.value;
+                              final pct = maxQty > 0 ? qty / maxQty : 0.0;
+                              final colors = [
+                                const Color(0xFF6366F1),
+                                const Color(0xFF06B6D4),
+                                const Color(0xFF10B981),
+                                const Color(0xFFF59E0B),
+                              ];
+                              final color = colors[index % colors.length];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 80,
+                                      child: Text(
+                                        _cleanProductName(product.key, ''),
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 10,
+                                          color: Colors.white60,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Stack(
-                                    children: [
-                                      Container(
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.06),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                      FractionallySizedBox(
-                                        widthFactor: pct.clamp(0.0, 1.0),
-                                        child: Container(
-                                          height: 6,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [color, color.withValues(alpha: 0.6)],
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Stack(
+                                        children: [
+                                          Container(
+                                            height: 6,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.06,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
                                             ),
-                                            borderRadius: BorderRadius.circular(10),
                                           ),
-                                        ),
+                                          FractionallySizedBox(
+                                            widthFactor: pct.clamp(0.0, 1.0),
+                                            child: Container(
+                                              height: 6,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    color,
+                                                    color.withValues(
+                                                      alpha: 0.6,
+                                                    ),
+                                                  ],
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '$qty',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: color,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '$qty',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: color,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+                              );
+                            })
+                            .toList(),
                       ),
                     ),
                   ],
@@ -8677,19 +9135,46 @@ class _DashboardPageState extends State<DashboardPage>
                                     children: [
                                       Builder(
                                         builder: (context) {
-                                          final productName = _dashboardProductDisplayName(s);
-                                          final invoice = (s['invoice_number'] ?? s['sale_id'] ?? s['_bill_id'] ?? '').toString().trim();
+                                          final productName =
+                                              _dashboardProductDisplayName(s);
+                                          final invoice =
+                                              (s['invoice_number'] ??
+                                                      s['sale_id'] ??
+                                                      s['_bill_id'] ??
+                                                      '')
+                                                  .toString()
+                                                  .trim();
                                           final title = productName.isNotEmpty
                                               ? productName
-                                              : ((s['customer_name'] ?? s['customer_phone'] ?? 'Walk-in Customer').toString());
+                                              : ((s['customer_name'] ??
+                                                        s['customer_phone'] ??
+                                                        'Walk-in Customer')
+                                                    .toString());
                                           return Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Color(0xFF1F2937)), overflow: TextOverflow.ellipsis),
+                                              Text(
+                                                title,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 15,
+                                                  color: Color(0xFF1F2937),
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
                                               if (invoice.isNotEmpty) ...[
                                                 const SizedBox(height: 2),
-                                                Text('Invoice: $invoice', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10.5), overflow: TextOverflow.ellipsis),
+                                                Text(
+                                                  'Invoice: $invoice',
+                                                  style: const TextStyle(
+                                                    color: Color(0xFF94A3B8),
+                                                    fontSize: 10.5,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
                                               ],
                                             ],
                                           );
@@ -9313,7 +9798,9 @@ class _DashboardPageState extends State<DashboardPage>
               color: const Color(0xFF8B5CF6), // Purple
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const WhatsappOrdersPage()),
+                MaterialPageRoute(
+                  builder: (context) => const WhatsappOrdersPage(),
+                ),
               ),
             ),
           ],
@@ -9523,7 +10010,9 @@ class _DashboardPageState extends State<DashboardPage>
                       try {
                         final status = await Permission.sms.request();
                         if (kDebugMode) {
-                          debugPrint('📱 SMS permission request result: $status');
+                          debugPrint(
+                            '📱 SMS permission request result: $status',
+                          );
                         }
                       } catch (e) {
                         if (kDebugMode) {
@@ -9539,10 +10028,7 @@ class _DashboardPageState extends State<DashboardPage>
                       if (!mounted) return;
                       await _checkPermissions(showReminderIfMissing: false);
                     },
-                    icon: const Icon(
-                      Icons.lock_open_rounded,
-                      size: 20,
-                    ),
+                    icon: const Icon(Icons.lock_open_rounded, size: 20),
                     label: Text(
                       'ENABLE PAYMENT DETECTION',
                       style: GoogleFonts.poppins(
@@ -9555,7 +10041,9 @@ class _DashboardPageState extends State<DashboardPage>
                       backgroundColor: const Color(0xFFDC2626),
                       foregroundColor: Colors.white,
                       elevation: 4,
-                      shadowColor: const Color(0xFFDC2626).withValues(alpha: 0.35),
+                      shadowColor: const Color(
+                        0xFFDC2626,
+                      ).withValues(alpha: 0.35),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(13),
                       ),
@@ -9612,7 +10100,11 @@ class _DashboardPageState extends State<DashboardPage>
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.orange,
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -9622,7 +10114,10 @@ class _DashboardPageState extends State<DashboardPage>
                   'Payment detection may have stopped',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
-                Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                ),
               ],
             ),
           ),
@@ -9658,9 +10153,7 @@ class _DashboardPageState extends State<DashboardPage>
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
           decoration: BoxDecoration(
-            color: granted
-                ? const Color(0xFFECFDF5)
-                : const Color(0xFFFFE4E6),
+            color: granted ? const Color(0xFFECFDF5) : const Color(0xFFFFE4E6),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: granted
@@ -9766,7 +10259,10 @@ class _DashboardPageState extends State<DashboardPage>
           await ScopedSharedPreferences.setString('user_name', name);
           await ScopedSharedPreferences.setString('shop_name', sName);
           if (logo != null) {
-            await ScopedSharedPreferences.setString('logo_base64', base64Encode(logo));
+            await ScopedSharedPreferences.setString(
+              'logo_base64',
+              base64Encode(logo),
+            );
           }
 
           await SecurePreferencesService.setUpiId(upi);
@@ -9948,7 +10444,9 @@ class _DashboardPageState extends State<DashboardPage>
           ElevatedButton(
             onPressed: () async {
               final current = await SecurityService.getMasterPin();
-              final inputHash = sha256.convert(utf8.encode(oldController.text)).toString();
+              final inputHash = sha256
+                  .convert(utf8.encode(oldController.text))
+                  .toString();
               if (inputHash == current) {
                 if (newController.text.length == 4) {
                   await SecurityService.setMasterPin(newController.text);
@@ -10353,7 +10851,9 @@ class _DashboardPageState extends State<DashboardPage>
             ElevatedButton(
               onPressed: () async {
                 final masterPin = await SecurityService.getMasterPin();
-                final inputHash = sha256.convert(utf8.encode(controller.text)).toString();
+                final inputHash = sha256
+                    .convert(utf8.encode(controller.text))
+                    .toString();
                 if (inputHash == masterPin) {
                   if (ctx.mounted) Navigator.pop(ctx);
                   onResult(true);
@@ -10457,12 +10957,18 @@ class _DashboardPageState extends State<DashboardPage>
       decoration: BoxDecoration(
         color: const Color(0xFFEF4444).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.35)),
+        border: Border.all(
+          color: const Color(0xFFEF4444).withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.cloud_off_rounded, color: Color(0xFFEF4444), size: 22),
+          const Icon(
+            Icons.cloud_off_rounded,
+            color: Color(0xFFEF4444),
+            size: 22,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -10481,7 +10987,10 @@ class _DashboardPageState extends State<DashboardPage>
                 const SizedBox(height: 3),
                 Text(
                   'Stay connected to the internet until these sync. Do NOT clear app data or uninstall until this warning disappears — that would permanently delete them.',
-                  style: GoogleFonts.poppins(fontSize: 11.5, color: const Color(0xFF7F1D1D)),
+                  style: GoogleFonts.poppins(
+                    fontSize: 11.5,
+                    color: const Color(0xFF7F1D1D),
+                  ),
                 ),
               ],
             ),
@@ -10498,12 +11007,18 @@ class _DashboardPageState extends State<DashboardPage>
       decoration: BoxDecoration(
         color: const Color(0xFFF59E0B).withValues(alpha: 0.13),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+        border: Border.all(
+          color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309), size: 22),
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Color(0xFFB45309),
+            size: 22,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -10523,13 +11038,13 @@ class _DashboardPageState extends State<DashboardPage>
   Widget _buildGreetingHeader() {
     final now = DateTime.now();
     final dateStr = '${now.day} ${_monthShort(now.month)} ${now.year}';
-    
+
     // Using calculate total functions
     final totalSales = _calculateTotalSales();
     final totalOrders = _calculateTotalOrders();
     final totalOnlineOrders = _calculateTotalOnlineOrders();
     final lowStockCount = _lowStockProducts.length;
-    
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
@@ -10610,11 +11125,21 @@ class _DashboardPageState extends State<DashboardPage>
               Row(
                 children: [
                   Expanded(
-                    child: _buildMetricCard('Total Sales', '₹${_formatCompactNumber(totalSales)}', Icons.attach_money, const Color(0xFF10B981)), // 🔒 CHANGED: "Today's Revenue" to "Total Sales"
+                    child: _buildMetricCard(
+                      'Total Sales',
+                      '₹${_formatCompactNumber(totalSales)}',
+                      Icons.attach_money,
+                      const Color(0xFF10B981),
+                    ), // 🔒 CHANGED: "Today's Revenue" to "Total Sales"
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: _buildMetricCard('Total Orders', totalOrders.toString(), Icons.shopping_cart, const Color(0xFF3B82F6)), // 🔒 CHANGED: "Today's Orders" to "Total Bills"
+                    child: _buildMetricCard(
+                      'Total Orders',
+                      totalOrders.toString(),
+                      Icons.shopping_cart,
+                      const Color(0xFF3B82F6),
+                    ), // 🔒 CHANGED: "Today's Orders" to "Total Bills"
                   ),
                 ],
               ),
@@ -10622,11 +11147,22 @@ class _DashboardPageState extends State<DashboardPage>
               Row(
                 children: [
                   Expanded(
-                    child: _buildMetricCard('Total Online Orders', totalOnlineOrders.toString(), Icons.language, const Color(0xFF6366F1)), // 🔒 NEW: Added Online Orders
+                    child: _buildMetricCard(
+                      'Total Online Orders',
+                      totalOnlineOrders.toString(),
+                      Icons.language,
+                      const Color(0xFF6366F1),
+                    ), // 🔒 NEW: Added Online Orders
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: _buildMetricCard('Low Stock', lowStockCount.toString(), Icons.warning, const Color(0xFFF59E0B), isWarning: lowStockCount > 0),
+                    child: _buildMetricCard(
+                      'Low Stock',
+                      lowStockCount.toString(),
+                      Icons.warning,
+                      const Color(0xFFF59E0B),
+                      isWarning: lowStockCount > 0,
+                    ),
                   ),
                 ],
               ),
@@ -10636,8 +11172,14 @@ class _DashboardPageState extends State<DashboardPage>
       ),
     );
   }
-  
-  Widget _buildMetricCard(String label, String value, IconData icon, Color color, {bool isWarning = false}) {
+
+  Widget _buildMetricCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color, {
+    bool isWarning = false,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -10663,7 +11205,9 @@ class _DashboardPageState extends State<DashboardPage>
             value,
             style: GoogleFonts.poppins(
               fontSize: 14,
-              color: isWarning ? const Color(0xFFEF4444) : const Color(0xFF1E293B),
+              color: isWarning
+                  ? const Color(0xFFEF4444)
+                  : const Color(0xFF1E293B),
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -10671,13 +11215,14 @@ class _DashboardPageState extends State<DashboardPage>
       ),
     );
   }
-  
+
   double _calculateTotalSales() {
     final Map<String, double> invoiceTotals = {};
 
     for (final sale in sales) {
       try {
-        final invoiceKey = sale['invoice_number']?.toString() ??
+        final invoiceKey =
+            sale['invoice_number']?.toString() ??
             sale['sale_id']?.toString() ??
             sale['_bill_id']?.toString() ??
             sale['id']?.toString() ??
@@ -10686,21 +11231,30 @@ class _DashboardPageState extends State<DashboardPage>
         if (invoiceKey.isEmpty) continue;
 
         if (!invoiceTotals.containsKey(invoiceKey)) {
-          final raw = sale['invoice_total'] ?? sale['total'] ?? sale['grand_total'] ?? sale['final_amount'] ?? sale['totalAmount'] ?? 0;
-          invoiceTotals[invoiceKey] = raw is num ? raw.toDouble() : double.tryParse(raw.toString()) ?? 0.0;
+          final raw =
+              sale['invoice_total'] ??
+              sale['total'] ??
+              sale['grand_total'] ??
+              sale['final_amount'] ??
+              sale['totalAmount'] ??
+              0;
+          invoiceTotals[invoiceKey] = raw is num
+              ? raw.toDouble()
+              : double.tryParse(raw.toString()) ?? 0.0;
         }
       } catch (_) {}
     }
 
     return invoiceTotals.values.fold(0.0, (sum, v) => sum + v);
   }
-  
+
   int _calculateTotalOrders() {
     final Set<String> invoiceKeys = {};
 
     for (final sale in sales) {
       try {
-        final invoiceKey = sale['invoice_number']?.toString() ??
+        final invoiceKey =
+            sale['invoice_number']?.toString() ??
             sale['sale_id']?.toString() ??
             sale['_bill_id']?.toString() ??
             sale['id']?.toString() ??
@@ -10709,7 +11263,7 @@ class _DashboardPageState extends State<DashboardPage>
         if (invoiceKey.isNotEmpty) invoiceKeys.add(invoiceKey);
       } catch (_) {}
     }
-    
+
     return invoiceKeys.length;
   }
 
@@ -10718,17 +11272,24 @@ class _DashboardPageState extends State<DashboardPage>
 
     for (final sale in sales) {
       try {
-        final invoiceKey = sale['invoice_number']?.toString() ??
+        final invoiceKey =
+            sale['invoice_number']?.toString() ??
             sale['sale_id']?.toString() ??
             sale['_bill_id']?.toString() ??
             sale['id']?.toString() ??
             sale['created_at']?.toString() ??
             '';
-            
-        final String source = (sale['source'] ?? sale['order_source'] ?? 'OFFLINE').toString().toUpperCase();
-        
+
+        final String source =
+            (sale['source'] ?? sale['order_source'] ?? 'OFFLINE')
+                .toString()
+                .toUpperCase();
+
         // Count as online if source is online OR if invoice starts with ONL
-        if (source == 'ONLINE' || source == 'WEB' || source == 'APP' || invoiceKey.toUpperCase().startsWith('ONL')) {
+        if (source == 'ONLINE' ||
+            source == 'WEB' ||
+            source == 'APP' ||
+            invoiceKey.toUpperCase().startsWith('ONL')) {
           if (invoiceKey.isNotEmpty) onlineInvoices.add(invoiceKey);
         }
       } catch (_) {}
@@ -12929,7 +13490,13 @@ class _DashboardPageState extends State<DashboardPage>
             sale['sale_date'] ?? sale['date'] ?? '',
           );
           if (saleDate.isAfter(startOfDay) && saleDate.isBefore(endOfDay)) {
-            final rawAmount = sale['total_amount'] ?? sale['total'] ?? sale['grand_total'] ?? sale['final_amount'] ?? sale['totalAmount'] ?? '0';
+            final rawAmount =
+                sale['total_amount'] ??
+                sale['total'] ??
+                sale['grand_total'] ??
+                sale['final_amount'] ??
+                sale['totalAmount'] ??
+                '0';
             revenue += double.tryParse(rawAmount.toString()) ?? 0;
           }
         } catch (_) {}
@@ -13210,129 +13777,102 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  // Centralized logout confirmation dialog with loading indicator
-  void _showLogoutLoadingDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        content: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(
-              width: 20, height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2.5),
-            ),
-            const SizedBox(width: 16),
-            Text(message),
-          ],
-        ),
-      ),
-    );
-  }
 
   // Centralized logout flow that preserves pending sync queue by default
-  Future<void> _performLogout(BuildContext context, {bool preserveSyncQueue = true}) async {
+  Future<void> _performLogout(
+    BuildContext context, {
+    bool preserveSyncQueue = true,
+  }) async {
     final int pendingCount = await SyncQueueManager.getQueueSize();
-    
+
     if (pendingCount > 0 && preserveSyncQueue) {
       if (!mounted) return;
-      _showLogoutLoadingDialog(context, 'Trying to sync pending data...');
+      // 🔧 FIX: Use SimpleLoader which dismisses via the dialog's own context,
+      // preventing the spinner from surviving pushNamedAndRemoveUntil.
       try {
-        await SyncService.processQueueSafe();
+        await SimpleLoader.run(context, 'Trying to sync pending data...', () {
+          return SyncService.processQueueSafe();
+        });
       } catch (e) {
         if (kDebugMode) debugPrint('⚠️ Logout sync attempt failed: $e');
-      } finally {
-        if (mounted) Navigator.pop(context);
       }
 
       final remaining = await SyncQueueManager.getQueueSize();
       if (remaining > 0 && mounted) {
-        final decision = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Pending data'),
-            content: Text(
-              '''${remaining.toString()} item(s) still need synchronization. They will remain safely in the encrypted, user-scoped outbox and retry after the next login.\n\nYou can logout now without losing the pending records.''',
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('LOGOUT SAFELY'),
+        final decision =
+            await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Pending data'),
+                content: Text(
+                  '''${remaining.toString()} item(s) still need synchronization. They will remain safely in the encrypted, user-scoped outbox and retry after the next login.\n\nYou can logout now without losing the pending records.''',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('CANCEL'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('LOGOUT SAFELY'),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ) ?? false;
+            ) ??
+            false;
         if (!decision) return;
       }
     }
 
     // Show logout confirmation
     if (!mounted) return;
-    final bool confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Logout?'),
-        content: const Text('Are you sure you want to logout? Your synced data will safely return when you log back in.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Logout?'),
+            content: const Text(
+              'Are you sure you want to logout? Your synced data will safely return when you log back in.',
             ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Logout'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Logout'),
+              ),
+            ],
           ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
 
     if (!confirmed) return;
 
-    // Show loading indicator during logout
-    if (!mounted) return;
-    _showLogoutLoadingDialog(context, 'Logging out...');
-
-    // Perform logout
-    // FIX: This used to call UserDataClearService.clearAllUserData() +
-    // AuthHelper.clearAuthData() directly, which is an incomplete duplicate
-    // of the real logout flow — it skipped closing this user's scoped Hive
-    // boxes, clearing scoped SharedPreferences, secure token storage, master
-    // PIN, payment/sync state, and server-side session invalidation. On a
-    // shared device that left the door open for the next logged-in account
-    // to read leftover state from this one. Route through the single
-    // canonical logout path instead (see session_logout_service.dart).
-    //
-    // 🔧 FIX: performOwnerLogout() was awaited with no try/catch. If any
-    // internal cleanup step threw, the exception propagated straight out of
-    // this handler — the loading dialog above was never popped and the
-    // Navigator call below never ran, leaving the user stuck behind an
-    // infinite "Logging out..." spinner ("logout button not working").
-    // Session logout's internal steps are now individually best-effort too,
-    // but this try/finally is the backstop: navigation to login must always
-    // happen once the user has confirmed logout, regardless of what fails.
+    // 🔧 FIX: Use SimpleLoader which dismisses via the dialog's own context.
+    // The old _showLogoutLoadingDialog used `if (mounted) Navigator.pop(context)`
+    // in the finally block — but `mounted` refers to DashboardPage which is
+    // already removed from the tree by pushNamedAndRemoveUntil, so the dialog
+    // was NEVER popped and stayed visible on top of the login page forever.
     if (kDebugMode) debugPrint('🧹 Logging out via SessionLogoutService...');
     try {
-      await SessionLogoutService.performOwnerLogout();
+      await SimpleLoader.run(context, 'Logging out...', () {
+        return SessionLogoutService.performOwnerLogout();
+      });
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Logout encountered an error but continuing: $e');
-    } finally {
-      if (mounted) Navigator.pop(context); // Close loading dialog
     }
 
     // Navigate to login
     if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/login',
-      (route) => false,
-    );
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
+
 
   Widget _buildBottomActionButton({
     required String label,
@@ -13379,7 +13919,7 @@ class _DashboardPageState extends State<DashboardPage>
   Widget build(BuildContext context) {
     // convert HTML dashboard layout into Flutter widgets
     return Scaffold(
-        backgroundColor: bg,
+      backgroundColor: bg,
       bottomNavigationBar: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Container(
@@ -13651,181 +14191,60 @@ class _DashboardPageState extends State<DashboardPage>
           if (kDebugMode) debugPrint('🔴 Dashboard Error: $error\n$stack');
         },
         child: AppBackground(
-        child: RefreshIndicator(
-          onRefresh: _loadSales,
-          color: AppColors.primary,
-          backgroundColor: Colors.black,
-          displacement: 40,
-          edgeOffset: 20,
-          child: ListView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
-            children: [
-              // 0. GREETING HEADER
-              _buildGreetingHeader(),
+          child: RefreshIndicator(
+            onRefresh: _loadSales,
+            color: AppColors.primary,
+            backgroundColor: Colors.black,
+            displacement: 40,
+            edgeOffset: 20,
+            child: ListView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 56, 16, 16),
+              children: [
+                // 0. GREETING HEADER
+                _buildGreetingHeader(),
 
-              // 0.001 PAYMENT DETECTION SETUP — keep this visible and highlighted
-              // until the OS reports that every required permission is enabled.
-              if (!_isStaffMode && _isPermissionsMissing) _buildPermissionWarning(),
+                // 0.001 PAYMENT DETECTION SETUP — keep this visible and highlighted
+                // until the OS reports that every required permission is enabled.
+                if (!_isStaffMode && _isPermissionsMissing)
+                  _buildPermissionWarning(),
 
-              // 0.002 PAYMENT DETECTION HEALTH — shown once permissions are
-              // granted. Previously, once the permission banner disappeared,
-              // a merchant had no way to know if detection quietly stopped
-              // working (OS killed the background service, channel went
-              // stale, etc.) — it just silently failed forever. This surfaces
-              // the watchdog heartbeat that already existed internally but
-              // was never rendered anywhere.
-              if (!_isStaffMode && !_isPermissionsMissing && _paymentPermissionCheckComplete)
-                _buildDetectionHealthIndicator(),
+                // 0.002 PAYMENT DETECTION HEALTH — shown once permissions are
+                // granted. Previously, once the permission banner disappeared,
+                // a merchant had no way to know if detection quietly stopped
+                // working (OS killed the background service, channel went
+                // stale, etc.) — it just silently failed forever. This surfaces
+                // the watchdog heartbeat that already existed internally but
+                // was never rendered anywhere.
+                if (!_isStaffMode &&
+                    !_isPermissionsMissing &&
+                    _paymentPermissionCheckComplete)
+                  _buildDetectionHealthIndicator(),
 
-              // 0.01 FIRST LOGIN PROFILE PROMPT
-              if (shopName.isEmpty || shopName == 'My Shop' || shopName == 'AI Shop Pro') ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFBFDBFE)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFDBEAFE),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.person_add_alt_1, color: Color(0xFF2563EB), size: 24),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Complete Customer Profile',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1E3A8A),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Please fill your profile details to get started.',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                color: const Color(0xFF3B82F6),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pushNamed(context, '/shop-profile'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          'Fill Now',
-                          style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              // 0.05 UNSYNCED SALES WARNING — the only real defense against
-              // OS-level "Clear app data" wiping local-only sales: make sure
-              // the shop owner can SEE there's something at risk before they
-              // ever go near phone settings, rather than finding out after.
-              if (_unsyncedBillsCount > 0) ...[
-                const SizedBox(height: 12),
-                _buildUnsyncedSalesWarning(),
-              ],
-
-              if (_analyticsIntegrityErrorCount > 0) ...[
-                const SizedBox(height: 12),
-                _buildAnalyticsIntegrityWarning(),
-              ],
-
-
-
-              // 0.07 FIRST-TIME WELCOME CARD (only once)
-              if (!_isStaffMode && !_welcomeCardDismissed) ...[
-                const SizedBox(height: 16),
-                _buildWelcomeCard(),
-              ],
-
-              // 0.0 Daily Health Score (single owner signal)
-              if (!_isStaffMode) _buildDailyHealthScoreCard(),
-
-              // 0.2 PERFORMANCE OVERVIEW
-              if (_hasDailyInsight && !_isStaffMode) ...[
-                _buildModernPerformanceOverview(),
-                const SizedBox(height: 8),
-              ],
-
-              // 0.3 LOW STOCK ALERT (NEW)
-              _buildLowStockBanner(),
-                if (!_isStaffMode) _buildMarketingBanner(),
-
-              // 0.5 LIVE SALES TICKER
-              _buildLiveSalesTicker(),
-
-              // 1. GETTING STARTED (Only for new users with no sales)
-              if (sales.isEmpty) ...[
-                _buildGettingStartedSection(),
-                const SizedBox(height: 32),
-              ],
-
-              // 2.5 UPCOMING DEADLINES (Payment Tracking)
-              if (_pendingInvoices.isNotEmpty) _buildPendingInvoices(),
-
-              // 3. SHOP SETUP ALERT (Only if not setup AND has sales - otherwise redundant with getting started)
-              if (!_isShopSetup && sales.isNotEmpty)
-                GestureDetector(
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    '/shop-profile',
-                  ).then((_) => _loadSales()),
-                  child: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 24),
+                // 0.01 FIRST LOGIN PROFILE PROMPT
+                if (shopName.isEmpty ||
+                    shopName == 'My Shop' ||
+                    shopName == 'AI Shop Pro') ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                      ),
+                      color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
+                      border: Border.all(color: const Color(0xFFBFDBFE)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFDBEAFE),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
-                            Icons.storefront_rounded,
-                            semanticLabel: 'Storefront Rounded',
-                            color: Colors.white,
+                            Icons.person_add_alt_1,
+                            color: Color(0xFF2563EB),
                             size: 24,
                           ),
                         ),
@@ -13835,131 +14254,280 @@ class _DashboardPageState extends State<DashboardPage>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                AppLocalizations.of(context).shopDetails,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                'Complete Customer Profile',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF1E3A8A),
                                 ),
                               ),
+                              const SizedBox(height: 4),
                               Text(
-                                AppLocalizations.of(context).allContactIncluded,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.85),
+                                'Please fill your profile details to get started.',
+                                style: GoogleFonts.poppins(
                                   fontSize: 12,
+                                  color: const Color(0xFF3B82F6),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          semanticLabel: 'Arrow Forward Ios Rounded',
-                          color: Colors.white,
-                          size: 16,
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/shop-profile'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2563EB),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'Fill Now',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
+                ],
 
-              // 4. SUMMARY METRICS (KPI Strip)
-              if (sales.isNotEmpty && !_isStaffMode) ...[
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 160,
-                        child: KpiGlassCard(
-                          label: AppLocalizations.of(context).sales,
-                          value: '₹${_formatCompactNumber(totalSales)}',
-                          subtitle: _currentFilterLabel.isEmpty
-                              ? 'All time'
-                              : _currentFilterLabel,
-                          icon: Icons.payments,
-                          color: AppColors.primary,
-                          trendPercent: _dailyGrowth,
-                          onTap: () => _scrollToCharts(1), // Open Line Chart
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 160,
-                        child: KpiGlassCard(
-                          label: AppLocalizations.of(context).transactions,
-                          value: totalTransactions.toString(),
-                          subtitle: AppLocalizations.of(context).bills,
-                          icon: Icons.receipt_long,
-                          color: AppColors.secondary,
-                          onTap: () => _scrollToCharts(0), // Open Bar Chart
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 160,
-                        child: KpiGlassCard(
-                          label: AppLocalizations.of(context).avgOrder,
-                          value: '₹${_formatCompactNumber(averageSale)}',
-                          subtitle: AppLocalizations.of(context).avgOrder,
-                          icon: Icons.insights,
-                          color: AppColors.accent,
-                          onTap: () => _scrollToCharts(2), // Open Pie Chart
-                        ),
-                      ),
-                    ],
+                // 0.05 UNSYNCED SALES WARNING — the only real defense against
+                // OS-level "Clear app data" wiping local-only sales: make sure
+                // the shop owner can SEE there's something at risk before they
+                // ever go near phone settings, rather than finding out after.
+                if (_unsyncedBillsCount > 0) ...[
+                  const SizedBox(height: 12),
+                  _buildUnsyncedSalesWarning(),
+                ],
+
+                if (_analyticsIntegrityErrorCount > 0) ...[
+                  const SizedBox(height: 12),
+                  _buildAnalyticsIntegrityWarning(),
+                ],
+
+                // 0.07 FIRST-TIME WELCOME CARD (only once)
+                if (!_isStaffMode && !_welcomeCardDismissed) ...[
+                  const SizedBox(height: 16),
+                  _buildWelcomeCard(),
+                ],
+
+                // 0.0 Daily Health Score (single owner signal)
+                if (!_isStaffMode) _buildDailyHealthScoreCard(),
+
+                // 0.2 PERFORMANCE OVERVIEW
+                if (_hasDailyInsight && !_isStaffMode) ...[
+                  _buildModernPerformanceOverview(),
+                  const SizedBox(height: 8),
+                ],
+
+                // 0.3 LOW STOCK ALERT (NEW)
+                _buildLowStockBanner(),
+                if (!_isStaffMode) _buildMarketingBanner(),
+
+                // 0.4 ASK RETAIL MIND (AI NATURAL LANGUAGE QUERY)
+                if (!_isStaffMode) ...[
+                  const SizedBox(height: 12),
+                  DashboardAiQueryCard(
+                    onTap: () => Navigator.pushNamed(context, '/query'),
                   ),
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: _buildEnhancedTimeFilter(),
-                ),
-                const SizedBox(height: 16),
-                _buildChartSelector(),
-                const SizedBox(height: 16),
-                _buildActiveChart(),
-                const SizedBox(height: 8),
-                const SizedBox(height: 12),
-                _buildMonthlyProductChart(),
-                const SizedBox(height: 24),
-              ],
+                ],
 
-              const SizedBox(height: 8),
-              // 5. SHOP MODULES
-              if (!_isStaffMode) ...[
-                ShopModulesSection(onModuleClosed: _loadSales),
-                const SizedBox(height: 24),
-              ],
+                // 0.5 LIVE SALES TICKER
+                _buildLiveSalesTicker(),
 
-              // 6. OPERATIONS & REPORTS
-              if (!_isStaffMode) ...[
-                OperationsReportsSection(
-                  onShareDailyReport: _shareDailyReport,
-                  onWorkerManagementClosed: _loadSales,
-                ),
-                const SizedBox(height: 16),
-                const PrinterMonetizationBanner(),
-                if (!kIsWeb) ...[
-                  const SizedBox(height: 14),
-                  const CompactQuickActions(),
+                // 1. GETTING STARTED (Only for new users with no sales)
+                if (sales.isEmpty) ...[
+                  _buildGettingStartedSection(),
+                  const SizedBox(height: 32),
+                ],
+
+                // 2.5 UPCOMING DEADLINES (Payment Tracking)
+                if (_pendingInvoices.isNotEmpty) _buildPendingInvoices(),
+
+                // 3. SHOP SETUP ALERT (Only if not setup AND has sales - otherwise redundant with getting started)
+                if (!_isShopSetup && sales.isNotEmpty)
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      '/shop-profile',
+                    ).then((_) => _loadSales()),
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 24),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF6366F1,
+                            ).withValues(alpha: 0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.storefront_rounded,
+                              semanticLabel: 'Storefront Rounded',
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context).shopDetails,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  ).allContactIncluded,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            semanticLabel: 'Arrow Forward Ios Rounded',
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // 4. SUMMARY METRICS (KPI Strip)
+                if (sales.isNotEmpty && !_isStaffMode) ...[
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 160,
+                          child: KpiGlassCard(
+                            label: AppLocalizations.of(context).sales,
+                            value: '₹${_formatCompactNumber(totalSales)}',
+                            subtitle: _currentFilterLabel.isEmpty
+                                ? 'All time'
+                                : _currentFilterLabel,
+                            icon: Icons.payments,
+                            color: AppColors.primary,
+                            trendPercent: _dailyGrowth,
+                            onTap: () => _scrollToCharts(1), // Open Line Chart
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 160,
+                          child: KpiGlassCard(
+                            label: AppLocalizations.of(context).transactions,
+                            value: totalTransactions.toString(),
+                            subtitle: AppLocalizations.of(context).bills,
+                            icon: Icons.receipt_long,
+                            color: AppColors.secondary,
+                            onTap: () => _scrollToCharts(0), // Open Bar Chart
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 160,
+                          child: KpiGlassCard(
+                            label: AppLocalizations.of(context).avgOrder,
+                            value: '₹${_formatCompactNumber(averageSale)}',
+                            subtitle: AppLocalizations.of(context).avgOrder,
+                            icon: Icons.insights,
+                            color: AppColors.accent,
+                            onTap: () => _scrollToCharts(2), // Open Pie Chart
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: _buildEnhancedTimeFilter(),
+                  ),
                   const SizedBox(height: 16),
-
-                  // 7. RECENT BILLS
-                  _buildEnhancedRecentTransactions(),
+                  _buildChartSelector(),
                   const SizedBox(height: 16),
+                  _buildActiveChart(),
+                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+                  _buildMonthlyProductChart(),
+                  const SizedBox(height: 24),
+                ],
+
+                const SizedBox(height: 8),
+                // 5. SHOP MODULES
+                if (!_isStaffMode) ...[
+                  ShopModulesSection(onModuleClosed: _loadSales),
+                  const SizedBox(height: 24),
+                ],
+
+                // 6. OPERATIONS & REPORTS
+                if (!_isStaffMode) ...[
+                  OperationsReportsSection(
+                    onShareDailyReport: _shareDailyReport,
+                    onWorkerManagementClosed: _loadSales,
+                  ),
+                  const SizedBox(height: 16),
+                  const PrinterMonetizationBanner(),
+                  if (!kIsWeb) ...[
+                    const SizedBox(height: 14),
+                    const CompactQuickActions(),
+                    const SizedBox(height: 16),
+
+                    // 7. RECENT BILLS
+                    _buildEnhancedRecentTransactions(),
+                    const SizedBox(height: 16),
+                  ],
                 ],
               ],
-            ],
+            ),
           ),
-        ),
-      ), // closes AppBackground
-    ), // closes ErrorBoundary
-  ); // closes Scaffold
-}
+        ), // closes AppBackground
+      ), // closes ErrorBoundary
+    ); // closes Scaffold
+  }
 
   void _showVoiceCustomizer(BuildContext context, StateSetter setDlgState) {
     final audioPlayer = AudioPlayer();

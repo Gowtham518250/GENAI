@@ -1885,9 +1885,11 @@ abstract class _Scorer {
     // ── FIX-49: Real Bank Name Validation ────────────────────────────────
     // Require at least one real bank keyword (HDFC, SBI, ICICI, AXIS, etc)
     // If missing: reduce score by 0.20 (soft penalty, not rejection)
+    // NOTE: Trusted apps (Google Pay, PhonePe, Paytm, etc.) identify via package,
+    // not bank keyword in notification text. Do NOT penalize verified apps.
     final hasRealBank = _BankNameValidator.hasRealBankName(text);
-    if (!hasRealBank && !validUtr && source == 'notification') {
-      // Penalty only for notifications without UTR
+    if (!hasRealBank && !isTrustedApp && !validUtr && source == 'notification') {
+      // Penalty only for unverified notifications without UTR
       // SMS messages may not always include bank name (shorter format)
       s -= 0.20;
       PdsLogger.d('SCORER', 'FIX-49: Missing real bank name -0.20');
@@ -1898,7 +1900,7 @@ abstract class _Scorer {
     final hasPunctuation    = RegExp(r'[.!,]').hasMatch(text);
     final hasCapitalization = RegExp(r'[A-Z]{2,}').hasMatch(text);
     final looksPolished     = hasPunctuation && hasCapitalization && text.length > 30;
-    if (looksPolished && !hasBankRef && !validUtr && source != 'sms') {
+    if (looksPolished && !hasBankRef && !isTrustedApp && !validUtr && source != 'sms') {
       s -= 0.10;
       PdsLogger.d('SCORER', 'FIX-46: Polished-but-no-bank spoof signal -0.10');
     }
@@ -2178,10 +2180,10 @@ class PaymentDetectionService {
     if (decision == PaymentDecision.confirmed) {
       final hasBankRef = _Extractor.bankName(cleanText, sender: sender) != null ||
           _Extractor.accountSuffix(cleanText) != null ||
-          RegExp(r'\b(bank|account|a\/c|upi|imps|neft|rtgs)\b', caseSensitive: false).hasMatch(cleanText);
+          _Classifier._bankRef.hasMatch(cleanText);
       final verifiedSender = _isVerifiedBankSender(sender);
       final hasPayerName = _Extractor.payerName(cleanText) != null && _Extractor.payerName(cleanText)!.isNotEmpty;
-      final hasStrongCtx = _Classifier.hasStructuredPaymentContext(text);
+      final hasStrongCtx = _Classifier.hasStructuredPaymentContext(cleanText);
 
       int structureScore = 0;
       if (validNumericUtr) structureScore++;
@@ -3260,13 +3262,18 @@ class PaymentDetectionService {
         }
       }
 
+      final isSmallTrustedPayment = amount < PdsConfig.highValueThreshold &&
+          isTrustedApp &&
+          _Classifier.hasStructuredPaymentContext(text);
+
       // ── FIX-50: Trusted App Limitation (CRITICAL) ─────────────────────
-      // Trusted app MUST NOT confirm alone
-      // CONFIRMED only if ANY: valid UTR, verified SMS sender, TCM match
+      // Trusted app MUST NOT confirm alone for high amounts, but small payments
+      // (< ₹2000) with structured context are safe to confirm.
+      // CONFIRMED only if ANY: valid UTR, verified SMS sender, TCM match, or small trusted payment
       if (decision == PaymentDecision.confirmed && isTrustedApp) {
         final verifiedSender  = _isVerifiedBankSender(sender);
         final hasTcmMatch     = matched != null;
-        final trustAnchors    = validNumericUtr || verifiedSender || hasTcmMatch;
+        final trustAnchors    = validNumericUtr || verifiedSender || hasTcmMatch || isSmallTrustedPayment;
 
         if (!trustAnchors) {
           decision = PaymentDecision.likely;
@@ -3277,9 +3284,8 @@ class PaymentDetectionService {
       }
 
       // ── FIX-52: Notification-only safety cap ───────────────────────────
-      // Notification-only events may still confirm when there is a strong
-      // independent anchor: a valid UTR or an exact local bill match from a
-      // verified payment app with strong structured payment context.
+      // Notification-only events may confirm when there is an anchor:
+      // a valid UTR, an exact local bill match, or a small trusted payment from a verified app.
       final strongVerifiedAppBillAnchor = source == 'notification' &&
           isTrustedApp &&
           billResult == BillMatchResult.exact &&
@@ -3288,7 +3294,8 @@ class PaymentDetectionService {
           source == 'notification' &&
           matched == null &&
           !validNumericUtr &&
-          !strongVerifiedAppBillAnchor) {
+          !strongVerifiedAppBillAnchor &&
+          !isSmallTrustedPayment) {
         decision = PaymentDecision.likely;
         PdsLogger.w('FIX-52',
             'FIX-52: Notification-only lacks independent anchor → LIKELY ₹$amount');
@@ -3297,7 +3304,7 @@ class PaymentDetectionService {
       // ── FIX-53: Final Confirm Lock ──────────────────────────────────────
       // CONFIRMED ONLY IF:
       // ( score ≥ threshold AND NOT fraud AND 
-      //   ( valid UTR OR verified SMS sender OR TCM match ) )
+      //   ( valid UTR OR verified SMS sender OR TCM match OR verified small trusted payment ) )
       // Else: ALWAYS downgrade to LIKELY
       if (decision == PaymentDecision.confirmed) {
         final verifiedSender  = _isVerifiedBankSender(sender);
@@ -3310,7 +3317,8 @@ class PaymentDetectionService {
         final hasConfirmAnchor = validNumericUtr ||
             verifiedSender ||
             hasTcmMatch ||
-            strongVerifiedAppBillAnchor;
+            strongVerifiedAppBillAnchor ||
+            isSmallTrustedPayment;
 
         if (score < PdsConfig.confirmedThreshold || isHardFraud || !hasConfirmAnchor) {
           decision = PaymentDecision.likely;
@@ -3773,9 +3781,15 @@ abstract class _TrustGate {
 abstract class _AppRegistry {
   static final _pkgs = <String, PaymentApp>{
     'com.google.android.apps.nbu.paisa.user':     PaymentApp.googlePay,
+    'com.google.android.apps.nbu.paisa.merchant': PaymentApp.googlePay,
     'net.one97.paytm':                            PaymentApp.paytm,
+    'com.paytm.business':                         PaymentApp.paytm,
     'com.phonepe.app':                            PaymentApp.phonePe,
+    'com.phonepe.app.business':                   PaymentApp.phonePe,
+    'com.phonepe.app.merchant':                   PaymentApp.phonePe,
+    'com.phonepe.business':                       PaymentApp.phonePe,
     'in.amazon.mShop.android.shopping':           PaymentApp.amazonPay,
+    'in.amazon.seller':                           PaymentApp.amazonPay,
     'in.org.npci.upiapp':                         PaymentApp.bhim,
     // 'com.whatsapp' entry removed: unreachable dead code, since
     // 'com.whatsapp' is unconditionally blocked in _TrustGate._blocked
@@ -3792,10 +3806,12 @@ abstract class _AppRegistry {
     'com.baroda.mpassbook':                       PaymentApp.bankApp,
     'com.canarabank.mobility':                    PaymentApp.bankApp,
     'com.freecharge.android':                     PaymentApp.bankApp,
+    'com.freecharge.merchant':                    PaymentApp.bankApp,
     'com.mobikwik_new':                           PaymentApp.bankApp,
     'com.jupiter.app':                            PaymentApp.bankApp,
     'com.epifi.fi':                               PaymentApp.bankApp,
     'com.bharatpe.app':                           PaymentApp.bankApp,
+    'com.bharatpe.merchant':                      PaymentApp.bankApp,
     'com.slicepay':                               PaymentApp.bankApp,
     // FIX: expanded whitelist with commonly-missed major Indian banks.
     // Note the content-based fallback added in _handleNotification means
@@ -3821,7 +3837,7 @@ abstract class _AppRegistry {
     final s = (sender ?? '').trim().toLowerCase();
     if (s.contains('phonepe')) return PaymentApp.phonePe;
     if (s.contains('paytm')) return PaymentApp.paytm;
-    if (s.contains('googlepay') || s.contains('gpay') || s.contains('google pay') || s.contains('paisa.user')) return PaymentApp.googlePay;
+    if (s.contains('googlepay') || s.contains('gpay') || s.contains('google pay') || s.contains('paisa.user') || s.contains('paisa.merchant')) return PaymentApp.googlePay;
     if (s.contains('amazon')) return PaymentApp.amazonPay;
     if (s.contains('bhim')) return PaymentApp.bhim;
     if (s.contains('whatsapp')) return PaymentApp.whatsappPay;
@@ -3886,7 +3902,11 @@ abstract class _Normaliser {
   static final _ms = RegExp(r' {2,}');
   static String clean(String raw) => raw
       .replaceAll(_ws, ' ')
-      .replaceAll(_dc, r'\1\2')
+      // replaceAll does NOT expand \1 backrefs — it inserted the literal
+      // characters "\1\2" and destroyed Indian comma amounts ("₹1,250"
+      // became "₹\1\250"), so extraction failed and real payments were
+      // dropped as "no amount".
+      .replaceAllMapped(_dc, (m) => '${m[1]}${m[2]}')
       .replaceAll(_ms, ' ')
       .trim();
 }
@@ -3932,7 +3952,10 @@ abstract class _Classifier {
     r'|spent\s+(?:(?:\u20b9|rs\.?|inr\.?)\s*[\d,]+(?:\.\d{1,2})?\s+)?at'
     r'|purchase(?:d)?\s+(?:of\s+)?(?:(?:\u20b9|rs\.?|inr\.?)\s*[\d,]+(?:\.\d{1,2})?\s+)?at'
     r'|withdrawn\s+from|withdrawal\s+of|deducted\s+from|charged\s+to'
-    r'|payment\s+made\s+to|transferred\s+to(?!.*to\s+your|.*to\s+you)'
+    // Incoming merchant SMS: "payment of Rs.500 made to your A/c" and
+    // "transferred to your account" must NOT be treated as outgoing debit.
+    r'|payment\s+made\s+to(?!\s+your)'
+    r'|transferred\s+to(?!\s+(?:your|you)\b)'
     r'|you\s+sent|you\s+have\s+sent)\b'
     r'|काटा\s+गया)',
     caseSensitive: false,
@@ -3981,7 +4004,7 @@ abstract class _Classifier {
   );
 
   static final _context = RegExp(
-    r'(?:\b(?:received|credited|credit|payment\s+received|payment\s+successful|payment\s+success|successfully\s+received|you\s+got|money\s+received|amount\s+credited|amount\s+received|transferred\s+(?:via\s+[A-Za-z0-9]+\s+)?to|paid\s+to\s+your|deposited|added\s+to\s+(?:your\s+)?(?:\w+\s+)?wallet|success|successful|recd|has\s+sent|sent\s+to\s+your|sent\s+to\s+you|prapt|mila|jama)\b'
+    r'(?:\b(?:received|credited|credit|payment\s+received|payment\s+successful|payment\s+success|successfully\s+received|you\s+got|you\s+have\s+received|money\s+received|amount\s+credited|amount\s+received|transferred\s+(?:via\s+[A-Za-z0-9]+\s+)?to\s+your|paid\s+to\s+your|paid\s+to\s+you|made\s+to\s+your|deposited|added\s+to\s+(?:your\s+)?(?:\w+\s+)?wallet|success|successful|recd|has\s+sent|sent\s+to\s+your|sent\s+to\s+you|prapt|mila|jama)\b'
     // FIX-39: Hindi
     r'|प्राप्त|जमा\s+हो|मिला|प्राप्त\s+हुआ|खाते\s+में\s+जमा'
     // FIX-39: Tamil
@@ -4000,14 +4023,29 @@ abstract class _Classifier {
     caseSensitive: false,
   );
 
+  // Incoming merchant credit — not an OTP/debit even if the SMS footer
+  // says "Never share OTP" or the body says "payment made to your A/c".
+  static final _incomingCredit = RegExp(
+    r'(?:\b(?:credited|received|deposited|you\s+got|you\s+have\s+received'
+    r'|money\s+received|paid\s+to\s+your|paid\s+to\s+you|made\s+to\s+your'
+    r'|sent\s+to\s+your|sent\s+to\s+you|has\s+sent|amount\s+credited'
+    r'|amount\s+received|payment\s+received)\b'
+    r'|प्राप्त|जमा\s+हो|जमा\s+हुआ|खाते\s+में\s+जमा'
+    r'|வரவு|பெறப்பட்டது|జమ\s+అయింది|ಜಮಾ\s+ಆಗಿದೆ|मिळाले)',
+    caseSensitive: false,
+  );
+
   static _ClassifyResult classify(String t) {
     if (_fraudStrict.hasMatch(t))     return _ClassifyResult.fraud;
     // FIX-A: conditional check
     if (_fraudConditional.hasMatch(t) && !_creditContext.hasMatch(t)) {
       return _ClassifyResult.fraud;
     }
-    if (_otp.hasMatch(t))   return _ClassifyResult.otp;
-    if (_debit.hasMatch(t)) return _ClassifyResult.debit;
+    final isIncoming = _incomingCredit.hasMatch(t);
+    // Real bank/UPI credit SMS almost always include "Do not share OTP".
+    // That used to hard-drop the payment as otp before amount scoring.
+    if (_otp.hasMatch(t) && !isIncoming)   return _ClassifyResult.otp;
+    if (_debit.hasMatch(t) && !isIncoming) return _ClassifyResult.debit;
     // FIX-V16-2: check promo before junk — more specific patterns first
     if (_promo.hasMatch(t) && !hasPaymentContext(t)) return _ClassifyResult.junk;
     // FIX-40: cashback with payment context → pass through (not junk)
@@ -4056,11 +4094,12 @@ abstract class _Classifier {
     caseSensitive: false,
   );
 
-  // FIX-18 retained + FIX-39: multilanguage bank references
+  // FIX-18 retained + FIX-39: multilanguage bank and UPI app references
   static final _bankRef = RegExp(
     r'(?:\b(?:account|a\/c|ac|bank|upi|imps|neft|rtgs|wallet|transaction|txn|tx'
-    r'|a\/c\s+no|acc|acct|savings|current|sb\s+a\/c)\b'
-    r'|खाते|खाता|ಖಾತೆ|கணக்கு|ఖాతా|ਖਾਤਾ)',
+    r'|a\/c\s+no|acc|acct|savings|current|sb\s+a\/c'
+    r'|google\s*pay|gpay|phonepe|paytm|bhim|amazon\s*pay|cred|bharatpe)\b'
+    r'|खाते|खाता|ಖಾತೆ|கணக்கு|ఖాతా|ਖਾਤਾ|गूगल\s*पे|फोनपे|पेटीएम|भीम)',
     caseSensitive: false,
   );
 

@@ -428,7 +428,10 @@ class VoiceEngine {
 
     for (int attempt = 0; attempt < 2; attempt++) {
       try {
-        final ok        = await _tts.isLanguageAvailable(locale);
+        final ok        = await _tts.isLanguageAvailable(locale).timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => false,
+        );
         final available = ok != null && (ok is int ? ok >= 0 : ok == true);
 
         if (available) {
@@ -475,7 +478,15 @@ class VoiceEngine {
   Future<void> _safeTtsSpeak(String text, {int retries = 0}) async {
     for (int i = 0; i <= retries; i++) {
       try {
-        await _tts.speak(text);
+        await _tts.speak(text).timeout(
+          const Duration(seconds: 8),
+          onTimeout: () {
+            _log.w('TTS speak timed out after 8s: "$text"');
+            _setSpeaking(false);
+            _stopAmpTimer();
+            return 0;
+          },
+        );
         return;
       } catch (e, st) {
         if (i < retries) {

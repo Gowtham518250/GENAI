@@ -24,7 +24,9 @@ class ComprehensiveLogger {
   static const bool _defaultEnableRemoteLogging = true;
   static const int _maxLocalLogs = 1000; // Prevent storage overflow
   static const int _batchSize = 10; // Send logs in batches
-  static const Duration _batchInterval = Duration(seconds: 30); // Send batch every 30s
+  static const Duration _batchInterval = Duration(
+    seconds: 30,
+  ); // Send batch every 30s
 
   // State
   static String? _sessionId;
@@ -39,12 +41,18 @@ class ComprehensiveLogger {
   // Get configuration from environment variables
   static String get _configuredLogLevel =>
       const String.fromEnvironment('LOG_LEVEL', defaultValue: _defaultLogLevel);
-  
-  static String get _configuredLogIngestUrl =>
-      const String.fromEnvironment('LOG_INGEST_URL', defaultValue: _defaultLogIngestUrl);
-  
+
+  static String get _configuredLogIngestUrl => const String.fromEnvironment(
+    'LOG_INGEST_URL',
+    defaultValue: _defaultLogIngestUrl,
+  );
+
   static bool get _configuredEnableRemoteLogging =>
-      const String.fromEnvironment('ENABLE_REMOTE_LOGGING', defaultValue: 'true') == 'true';
+      const String.fromEnvironment(
+        'ENABLE_REMOTE_LOGGING',
+        defaultValue: 'true',
+      ) ==
+      'true';
 
   /// Initialize the logging service
   static Future<void> initialize() async {
@@ -61,7 +69,9 @@ class ComprehensiveLogger {
 
       // Load user ID if available
       final prefs = await SharedPreferences.getInstance();
-      _userId = prefs.getInt('user_id')?.toString() ?? prefs.getInt('userId')?.toString();
+      _userId =
+          prefs.getInt('user_id')?.toString() ??
+          prefs.getInt('userId')?.toString();
 
       // Start batch timer for remote logging
       if (_enableRemoteLogging) {
@@ -113,11 +123,13 @@ class ComprehensiveLogger {
     Map<String, dynamic>? data,
   }) {
     final timestamp = DateTime.now().toIso8601String();
-    final timestampFormatted = timestamp.substring(0, 19).replaceFirst('T', ' ');
-    
+    final timestampFormatted = timestamp
+        .substring(0, 19)
+        .replaceFirst('T', ' ');
+
     final buffer = StringBuffer();
     buffer.write('[$timestampFormatted] [$level] [$location] $message');
-    
+
     if (data != null && data.isNotEmpty) {
       try {
         final sanitizedData = _sanitizeData(data);
@@ -126,7 +138,7 @@ class ComprehensiveLogger {
         buffer.write(' | data: <encoding error>');
       }
     }
-    
+
     return buffer.toString();
   }
 
@@ -134,10 +146,18 @@ class ComprehensiveLogger {
   static Map<String, dynamic> _sanitizeData(Map<String, dynamic> data) {
     final sanitized = Map<String, dynamic>.from(data);
     final sensitiveKeys = [
-      'password', 'token', 'secret', 'key', 'auth', 'credential',
-      'Authorization', 'Bearer', 'access_token', 'refresh_token'
+      'password',
+      'token',
+      'secret',
+      'key',
+      'auth',
+      'credential',
+      'Authorization',
+      'Bearer',
+      'access_token',
+      'refresh_token',
     ];
-    
+
     for (final key in sanitized.keys) {
       for (final sensitive in sensitiveKeys) {
         if (key.toLowerCase().contains(sensitive.toLowerCase())) {
@@ -146,7 +166,7 @@ class ComprehensiveLogger {
         }
       }
     }
-    
+
     return sanitized;
   }
 
@@ -245,11 +265,9 @@ class ComprehensiveLogger {
           : '$baseUrl$_logIngestUrl';
 
       // Send to backend
-      final response = await http.post(
-        Uri.parse(fullUrl),
-        headers: headers,
-        body: jsonEncode(payload),
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .post(Uri.parse(fullUrl), headers: headers, body: jsonEncode(payload))
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Remove sent logs from buffer
@@ -322,43 +340,81 @@ class ComprehensiveLogger {
     exportLogs().then((logs) {
       if (kIsWeb) {
         // For web, print logs to console with clear markers for easy copying
-        debugPrint('╔══════════════════════════════════════════════════════════════════════════════╗');
-        debugPrint('║                    APPLICATION LOGS EXPORT                                        ║');
-        debugPrint('║                    Copy from here to bottom                                     ║');
-        debugPrint('╚══════════════════════════════════════════════════════════════════════════════╝');
+        debugPrint(
+          '╔══════════════════════════════════════════════════════════════════════════════╗',
+        );
+        debugPrint(
+          '║                    APPLICATION LOGS EXPORT                                        ║',
+        );
+        debugPrint(
+          '║                    Copy from here to bottom                                     ║',
+        );
+        debugPrint(
+          '╚══════════════════════════════════════════════════════════════════════════════╝',
+        );
         debugPrint(logs);
-        debugPrint('╔══════════════════════════════════════════════════════════════════════════════╗');
-        debugPrint('║                    END OF LOGS                                                  ║');
-        debugPrint('╚══════════════════════════════════════════════════════════════════════════════╝');
+        debugPrint(
+          '╔══════════════════════════════════════════════════════════════════════════════╗',
+        );
+        debugPrint(
+          '║                    END OF LOGS                                                  ║',
+        );
+        debugPrint(
+          '╚══════════════════════════════════════════════════════════════════════════════╝',
+        );
         debugPrint('');
-        debugPrint('💡 To save logs: Select the text above, copy (Ctrl+C), and paste into a .txt file');
+        debugPrint(
+          '💡 To save logs: Select the text above, copy (Ctrl+C), and paste into a .txt file',
+        );
       } else {
         // Native: Just log the export
         debugPrint('Log export: ${logs.length} characters');
-        debugPrint('First 500 chars: ${logs.substring(0, logs.length > 500 ? 500 : logs.length)}');
+        debugPrint(
+          'First 500 chars: ${logs.substring(0, logs.length > 500 ? 500 : logs.length)}',
+        );
       }
     });
   }
 
   // Public logging methods
 
-  static void logDebug(String location, String message, [Map<String, dynamic>? data]) {
+  static void logDebug(
+    String location,
+    String message, [
+    Map<String, dynamic>? data,
+  ]) {
     _log(level: DEBUG, location: location, message: message, data: data);
   }
 
-  static void logInfo(String location, String message, [Map<String, dynamic>? data]) {
+  static void logInfo(
+    String location,
+    String message, [
+    Map<String, dynamic>? data,
+  ]) {
     _log(level: INFO, location: location, message: message, data: data);
   }
 
-  static void logWarning(String location, String message, [Map<String, dynamic>? data]) {
+  static void logWarning(
+    String location,
+    String message, [
+    Map<String, dynamic>? data,
+  ]) {
     _log(level: WARNING, location: location, message: message, data: data);
   }
 
-  static void logError({required String location, required String message, Map<String, dynamic>? data}) {
+  static void logError({
+    required String location,
+    required String message,
+    Map<String, dynamic>? data,
+  }) {
     _log(level: ERROR, location: location, message: message, data: data);
   }
 
-  static void logCritical(String location, String message, [Map<String, dynamic>? data]) {
+  static void logCritical(
+    String location,
+    String message, [
+    Map<String, dynamic>? data,
+  ]) {
     _log(level: CRITICAL, location: location, message: message, data: data);
   }
 
@@ -378,7 +434,12 @@ class ComprehensiveLogger {
         'method': method,
         'url': url,
         'headers': _sanitizeData(headers ?? {}),
-        if (body != null) 'body': _sanitizeData(body is Map ? Map<String, dynamic>.from(body) : {'data': body.toString()}),
+        if (body != null)
+          'body': _sanitizeData(
+            body is Map
+                ? Map<String, dynamic>.from(body)
+                : {'data': body.toString()},
+          ),
       },
     );
   }
@@ -402,7 +463,12 @@ class ComprehensiveLogger {
         'status_code': statusCode,
         'duration_ms': duration.inMilliseconds,
         'headers': _sanitizeData(headers ?? {}),
-        if (body != null) 'body': _sanitizeData(body is Map ? Map<String, dynamic>.from(body) : {'data': body.toString()}),
+        if (body != null)
+          'body': _sanitizeData(
+            body is Map
+                ? Map<String, dynamic>.from(body)
+                : {'data': body.toString()},
+          ),
       },
     );
   }

@@ -20,6 +20,33 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 subprojects {
+    val moduleName = name
+    val legacyNamespace = when (moduleName) {
+        "blue_thermal_printer" -> "id.kakzaki.blue_thermal_printer"
+        "record" -> "com.llfbandit.record"
+        "telephony" -> "com.shounakmulay.telephony"
+        else -> null
+    }
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.gradle.LibraryExtension> {
+            if (legacyNamespace != null) {
+                namespace = legacyNamespace
+            }
+            if (moduleName == "telephony") {
+                compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_1_8
+                    targetCompatibility = JavaVersion.VERSION_1_8
+                }
+            }
+        }
+        extensions.configure<com.android.build.api.variant.LibraryAndroidComponentsExtension> {
+            finalizeDsl { libraryExtension ->
+                libraryExtension.compileSdk = 37
+            }
+        }
+    }
+}
+subprojects {
     project.evaluationDependsOn(":app")
 }
 

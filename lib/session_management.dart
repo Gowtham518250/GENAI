@@ -1,4 +1,4 @@
-﻿/// Session Management Service
+/// Session Management Service
 /// 7-day auto-login with RefreshToken
 /// Prevents data loss on logout/login
 /// Syncs offline data when online
@@ -11,7 +11,8 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:synchronized/synchronized.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart' as flutter_secure_storage;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'
+    as flutter_secure_storage;
 import 'package:cloud_firestore/cloud_firestore.dart' as cloud_firestore;
 import 'api_client.dart';
 import 'sync_queue_manager.dart';
@@ -31,7 +32,8 @@ class SessionManagementService {
   static const String _userEmailKey = 'user_email';
   static const String _sessionTimeKey = 'session_time';
   static const String _identityVerifiedKeyPrefix = 'identity_verified_';
-  static const String _identityVerifiedRoleKeyPrefix = 'identity_verified_role_';
+  static const String _identityVerifiedRoleKeyPrefix =
+      'identity_verified_role_';
   static const String _identityVerifiedAtKeyPrefix = 'identity_verified_at_';
 
   static final Lock _sessionLock = Lock();
@@ -45,7 +47,10 @@ class SessionManagementService {
     _sessionExpiryTimer = Timer.periodic(_sessionCheckInterval, (_) async {
       await _checkAndHandleSessionExpiry();
     });
-    if (kDebugMode) debugPrint('🔔 Session expiry monitoring started - hybrid mode (online enforcement, offline grace)');
+    if (kDebugMode)
+      debugPrint(
+        '🔔 Session expiry monitoring started - hybrid mode (online enforcement, offline grace)',
+      );
   }
 
   static void stopSessionExpiryMonitoring() {
@@ -60,7 +65,8 @@ class SessionManagementService {
       final sessionTime = prefs.getInt(_sessionTimeKey);
 
       if (sessionTime == null) {
-        if (kDebugMode) debugPrint('🔔 No session time found, skipping expiry check');
+        if (kDebugMode)
+          debugPrint('🔔 No session time found, skipping expiry check');
         return;
       }
 
@@ -77,13 +83,20 @@ class SessionManagementService {
         // server can revoke tokens when online, while the local max-age keeps
         // an abandoned device from remaining authenticated forever offline.
         if (isOnline) {
-          if (kDebugMode) debugPrint('🔔 Session expired (online) - enforcing logout for security');
+          if (kDebugMode)
+            debugPrint(
+              '🔔 Session expired (online) - enforcing logout for security',
+            );
         } else {
-          if (kDebugMode) debugPrint('🔔 Session expired (offline) - enforcing local expiry');
+          if (kDebugMode)
+            debugPrint('🔔 Session expired (offline) - enforcing local expiry');
         }
-        await performSecureLogout(reason: isOnline ? 'Session expired' : 'Session expired offline');
+        await performSecureLogout(
+          reason: isOnline ? 'Session expired' : 'Session expired offline',
+        );
       } else {
-        if (kDebugMode) debugPrint('🔔 Session still valid (${sessionAge.inDays} days old)');
+        if (kDebugMode)
+          debugPrint('🔔 Session still valid (${sessionAge.inDays} days old)');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Session expiry check error: $e');
@@ -92,7 +105,10 @@ class SessionManagementService {
 
   static Future<void> performSecureLogout({String? reason}) async {
     try {
-      if (kDebugMode) debugPrint('🔔 Performing secure logout${reason != null ? ': $reason' : ''}');
+      if (kDebugMode)
+        debugPrint(
+          '🔔 Performing secure logout${reason != null ? ': $reason' : ''}',
+        );
       stopSessionExpiryMonitoring();
       await clearAllSessionData();
       if (reason != null) {
@@ -134,13 +150,17 @@ class SessionManagementService {
         try {
           final secureRandom = math.Random.secure();
           final timestamp = DateTime.now().microsecondsSinceEpoch;
-          final randomBytes = List<int>.generate(16, (_) => secureRandom.nextInt(256));
+          final randomBytes = List<int>.generate(
+            16,
+            (_) => secureRandom.nextInt(256),
+          );
           final combined = '$timestamp:$randomBytes';
           final hash = _generateHash(combined);
           platformDeviceId = 'RM_SECURE_${hash.substring(0, 32)}';
           if (kDebugMode) debugPrint('✅ Generated secure device ID');
         } catch (e) {
-          if (kDebugMode) debugPrint('⚠️ Platform device ID generation failed: $e');
+          if (kDebugMode)
+            debugPrint('⚠️ Platform device ID generation failed: $e');
           final random = math.Random().nextInt(999999);
           final ts = DateTime.now().microsecondsSinceEpoch;
           platformDeviceId = 'RM_SECURE_${ts}_$random';
@@ -183,35 +203,60 @@ class SessionManagementService {
           await SecureTokenStorage.saveUserId(userId);
         } catch (e) {
           if (kDebugMode) debugPrint('⚠️ Error saving scoped user id: $e');
-          ErrorLogHelper.logException(e, StackTrace.current, context: 'saveTokens: userId');
+          ErrorLogHelper.logException(
+            e,
+            StackTrace.current,
+            context: 'saveTokens: userId',
+          );
         }
         if (refreshToken != null && refreshToken.isNotEmpty) {
           try {
             await SecureTokenStorage.saveRefreshToken(refreshToken);
           } catch (e) {
             if (kDebugMode) debugPrint('⚠️ Error saving refresh token: $e');
-            ErrorLogHelper.logException(e, StackTrace.current, context: 'saveTokens: refresh');
+            ErrorLogHelper.logException(
+              e,
+              StackTrace.current,
+              context: 'saveTokens: refresh',
+            );
           }
         }
         try {
           await SecureTokenStorage.saveToken(accessToken);
         } catch (e) {
           if (kDebugMode) debugPrint('⚠️ Error saving access token: $e');
-          ErrorLogHelper.logException(e, StackTrace.current, context: 'saveTokens: access');
+          ErrorLogHelper.logException(
+            e,
+            StackTrace.current,
+            context: 'saveTokens: access',
+          );
         }
         try {
           await prefs.setString(_deviceIdKey, deviceId);
-          await prefs.setString(_refreshTokenExpiryKey, expiryDate.toIso8601String());
-          await prefs.setInt(_sessionTimeKey, DateTime.now().millisecondsSinceEpoch);
+          await prefs.setString(
+            _refreshTokenExpiryKey,
+            expiryDate.toIso8601String(),
+          );
+          await prefs.setInt(
+            _sessionTimeKey,
+            DateTime.now().millisecondsSinceEpoch,
+          );
           await prefs.setInt(_userIdKey, userId);
           await prefs.setString(_userNameKey, userName);
           await prefs.setString(_userEmailKey, userEmail);
         } catch (e) {
           if (kDebugMode) debugPrint('⚠️ Error saving user data to prefs: $e');
-          ErrorLogHelper.logException(e, StackTrace.current, context: 'saveTokens: prefs');
+          ErrorLogHelper.logException(
+            e,
+            StackTrace.current,
+            context: 'saveTokens: prefs',
+          );
         }
         startSessionExpiryMonitoring();
-        if (kDebugMode) debugPrint('✅ Tokens saved successfully with scoped user ID: $userId');
+        if (kDebugMode)
+          debugPrint(
+            '✅ Tokens saved successfully with scoped user ID: $userId',
+          );
       } catch (e, st) {
         if (kDebugMode) debugPrint('❌ Error saving tokens: $e');
         ErrorLogHelper.logException(e, st, context: 'saveTokens');
@@ -239,17 +284,16 @@ class SessionManagementService {
   static Future<void> clearIdentityVerification({int? userId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final resolvedUserId = userId ??
-          prefs.getInt(_userIdKey) ??
-          prefs.getInt('userId') ??
-          0;
+      final resolvedUserId =
+          userId ?? prefs.getInt(_userIdKey) ?? prefs.getInt('userId') ?? 0;
       if (resolvedUserId <= 0) return;
       _processIdentityVerification.remove(resolvedUserId);
       await prefs.remove(_identityVerificationKey(resolvedUserId));
       await prefs.remove(_identityVerificationRoleKey(resolvedUserId));
       await prefs.remove(_identityVerificationAtKey(resolvedUserId));
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Failed to clear identity verification: $e');
+      if (kDebugMode)
+        debugPrint('⚠️ Failed to clear identity verification: $e');
     }
   }
 
@@ -269,7 +313,9 @@ class SessionManagementService {
       await prefs.remove(_identityVerificationAtKey(userId));
 
       if (kDebugMode) {
-        debugPrint('✅ Identity verified for current app process: user $userId as $normalizedRole');
+        debugPrint(
+          '✅ Identity verified for current app process: user $userId as $normalizedRole',
+        );
       }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Failed to save identity verification: $e');
@@ -299,6 +345,7 @@ class SessionManagementService {
     String deviceId = 'flutter_app',
   }) async {
     if (kDebugMode) debugPrint('🔐 Initializing session for user ID $userId');
+    ApiClient.resetSessionExpiryNotification();
     // A fresh login session must pass identity verification again.
     await clearIdentityVerification(userId: userId);
     await SecureTokenStorage.clearAll();
@@ -317,61 +364,130 @@ class SessionManagementService {
   }
 
   static Future<Map<String, dynamic>?> autoLogin() async {
-    return await _sessionLock.synchronized(() async {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final refreshToken = await SecureTokenStorage.getRefreshToken();
-        final deviceId = prefs.getString(_deviceIdKey);
-        if (refreshToken == null || refreshToken.isEmpty) {
-          if (kDebugMode) debugPrint('⚠️ No saved refresh token');
-          return null;
-        }
-        final deviceFingerprint = await getDeviceId();
-        try {
-          final response = await ApiClient.postJson(
-            ApiClient.sessionRefresh,
-            {
-              'refresh_token': refreshToken,
-              'device_id': deviceFingerprint,
-            },
-          ).timeout(const Duration(seconds: 10));
-          if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
-            await saveTokens(
-              refreshToken: data['refresh_token'] ?? refreshToken,
-              accessToken: data['access_token'] ?? '',
-              deviceId: deviceId ?? 'flutter_app',
-              userId: data['user_id'] ?? (await getCurrentUserId()) ?? 0,
-              userName: data['user_name'] ?? '',
-              userEmail: data['email'] ?? '',
-            );
-            if (kDebugMode) debugPrint('✅ Auto-login successful');
-            return {
-              'success': true,
-              'user_id': data['user_id'],
-              'user_name': data['user_name'],
-              'email': data['email'],
-              'message': data['message'],
-            };
-          }
-          if (response.statusCode == 401 || response.statusCode == 403) {
-            if (kDebugMode) debugPrint('⚠️ Token refresh failed with auth error: ${response.statusCode}');
-            await clearTokens();
-          } else {
-            if (kDebugMode) debugPrint('⚠️ Token refresh failed (non-auth error): ${response.statusCode}');
-          }
-          return null;
-        } catch (e) {
-          if (kDebugMode) debugPrint('⚠️ Error calling refresh endpoint: $e');
-          ErrorLogHelper.logException(e, StackTrace.current, context: 'autoLogin: API call');
-          return null;
-        }
-      } catch (e, st) {
-        if (kDebugMode) debugPrint('❌ Critical error in auto-login: $e');
-        ErrorLogHelper.logException(e, st, context: 'autoLogin: critical');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final refreshToken = await SecureTokenStorage.getRefreshToken();
+      final deviceId = prefs.getString(_deviceIdKey);
+      if (refreshToken == null || refreshToken.isEmpty) {
+        if (kDebugMode) debugPrint('[AUTH] Refresh token available: false');
+        await clearTokens();
         return null;
       }
-    });
+      if (kDebugMode) debugPrint('[AUTH] Refresh token available: true');
+      final deviceFingerprint = await getDeviceId();
+      try {
+        if (kDebugMode)
+          debugPrint(
+            '[AUTH] Refresh requested: POST ${ApiClient.sessionRefresh}',
+          );
+        final response = await ApiClient.postJson(ApiClient.sessionRefresh, {
+          'refresh_token': refreshToken,
+          'device_id': deviceFingerprint,
+        });
+        if (kDebugMode) {
+          debugPrint('[AUTH] Refresh response status: ${response.statusCode}');
+        }
+        if (response.statusCode == 200) {
+          dynamic decoded;
+          try {
+            decoded = jsonDecode(response.body);
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint(
+                '[AUTH] Refresh response parsing failed: ${e.runtimeType}',
+              );
+            }
+            await clearTokens();
+            return null;
+          }
+          if (decoded is! Map<String, dynamic>) {
+            if (kDebugMode)
+              debugPrint(
+                '[AUTH] Refresh response parsing failed: expected JSON object',
+              );
+            await clearTokens();
+            return null;
+          }
+          final data = decoded;
+          final accessToken = data['access_token']?.toString() ?? '';
+          if (accessToken.isEmpty) {
+            if (kDebugMode)
+              debugPrint(
+                '[AUTH] Refresh response parsing failed: access_token missing',
+              );
+            await clearTokens();
+            return null;
+          }
+          final rotatedRefreshToken =
+              data['refresh_token']?.toString() ?? refreshToken;
+          final userId =
+              int.tryParse(data['user_id']?.toString() ?? '') ??
+              (await getCurrentUserId()) ??
+              0;
+          await saveTokens(
+            refreshToken: rotatedRefreshToken,
+            accessToken: accessToken,
+            deviceId: deviceId ?? 'flutter_app',
+            userId: userId,
+            userName:
+                data['user_name']?.toString() ??
+                prefs.getString(_userNameKey) ??
+                '',
+            userEmail:
+                data['email']?.toString() ??
+                prefs.getString(_userEmailKey) ??
+                '',
+          );
+          final storedAccessToken = await SecureTokenStorage.getToken();
+          final storedRefreshToken = await SecureTokenStorage.getRefreshToken();
+          if (storedAccessToken != accessToken ||
+              storedRefreshToken != rotatedRefreshToken) {
+            if (kDebugMode)
+              debugPrint(
+                '[AUTH] Refreshed credentials were not stored successfully',
+              );
+            await clearTokens();
+            return null;
+          }
+          if (kDebugMode) debugPrint('[AUTH] New access token received: true');
+          if (kDebugMode) debugPrint('[AUTH] Token storage updated');
+          return {
+            'success': true,
+            'user_id': data['user_id'],
+            'user_name': data['user_name'],
+            'email': data['email'],
+            'message': data['message'],
+          };
+        }
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          if (kDebugMode)
+            debugPrint(
+              '[AUTH] Refresh attempt failed with authentication status ${response.statusCode}',
+            );
+          await clearTokens();
+        } else {
+          if (kDebugMode)
+            debugPrint(
+              '[AUTH] Refresh attempt failed with status ${response.statusCode}',
+            );
+        }
+        return null;
+      } catch (e) {
+        if (kDebugMode)
+          debugPrint('[AUTH] Refresh request failed: ${e.runtimeType}');
+        ErrorLogHelper.logException(
+          e,
+          StackTrace.current,
+          context: 'autoLogin: API call',
+        );
+        return null;
+      }
+    } catch (e, st) {
+      if (kDebugMode)
+        debugPrint('[AUTH] Refresh setup failed: ${e.runtimeType}');
+      ErrorLogHelper.logException(e, st, context: 'autoLogin: critical');
+      return null;
+    }
   }
 
   static Future<String?> getAccessToken() async {
@@ -392,7 +508,8 @@ class SessionManagementService {
       }
       final isValid = await SecureTokenStorage.isSessionValid();
       if (!isValid) {
-        if (kDebugMode) debugPrint('⚠️ Session timestamp expired (older than 7 days)');
+        if (kDebugMode)
+          debugPrint('⚠️ Session timestamp expired (older than 7 days)');
       }
       return isValid;
     } catch (e) {
@@ -408,11 +525,7 @@ class SessionManagementService {
       final userName = prefs.getString(_userNameKey);
       final userEmail = prefs.getString(_userEmailKey);
       if (userId != null) {
-        return {
-          'user_id': userId,
-          'user_name': userName,
-          'email': userEmail,
-        };
+        return {'user_id': userId, 'user_name': userName, 'email': userEmail};
       }
       return null;
     } catch (e) {
@@ -441,7 +554,8 @@ class SessionManagementService {
             'access_token': accessToken,
           }).timeout(const Duration(seconds: 5));
         } catch (e) {
-          if (kDebugMode) debugPrint('⚠️ Server logout notification failed: $e');
+          if (kDebugMode)
+            debugPrint('⚠️ Server logout notification failed: $e');
         }
       }
       await clearTokens();
@@ -454,14 +568,18 @@ class SessionManagementService {
 
   static Future<bool> logoutAllDevices() async {
     try {
-      final response = await ApiClient.postJson(ApiClient.sessionLogoutAll, {}).timeout(const Duration(seconds: 5));
+      final response = await ApiClient.postJson(
+        ApiClient.sessionLogoutAll,
+        {},
+      ).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         await clearTokens();
         await UserDataClearService.clearAllUserData();
         // 🔧 FIX: Do NOT clear pending sync queue - preserves offline sales/invoices
         // await SyncQueueManager.clearQueue();
         // await SyncQueueManager.resetBoxReference();
-        if (kDebugMode) debugPrint('✅ Logged out from all devices (sync queue preserved)');
+        if (kDebugMode)
+          debugPrint('✅ Logged out from all devices (sync queue preserved)');
         return true;
       }
     } catch (e) {
@@ -505,7 +623,11 @@ class SessionManagementService {
           }
         } catch (e) {
           if (kDebugMode) debugPrint('⚠️ Error clearing SharedPreferences: $e');
-          ErrorLogHelper.logException(e, StackTrace.current, context: 'clearTokens: prefs');
+          ErrorLogHelper.logException(
+            e,
+            StackTrace.current,
+            context: 'clearTokens: prefs',
+          );
         }
         try {
           const _secureStorage = flutter_secure_storage.FlutterSecureStorage();
@@ -533,7 +655,8 @@ class SessionManagementService {
   }) async {
     try {
       await SyncQueueManager.enqueue('create_sale', saleData);
-      if (kDebugMode) debugPrint('📦 Diverted legacy sale to SyncQueueManager.');
+      if (kDebugMode)
+        debugPrint('📦 Diverted legacy sale to SyncQueueManager.');
     } catch (e) {
       if (kDebugMode) debugPrint('Error queuing offline sale: $e');
     }
@@ -542,7 +665,9 @@ class SessionManagementService {
   static Future<String> _offlineQueueKey() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
-    return userId > 0 ? 'offline_queue_$userId' : 'offline_queue_unauthenticated';
+    return userId > 0
+        ? 'offline_queue_$userId'
+        : 'offline_queue_unauthenticated';
   }
 
   static Future<int> syncOfflineQueue() async {
@@ -565,7 +690,10 @@ class SessionManagementService {
         try {
           final data = jsonDecode(item);
           if (data['type'] == 'sale') {
-            final response = await ApiClient.postJson('/api/sales/create', data['data']);
+            final response = await ApiClient.postJson(
+              '/api/sales/create',
+              data['data'],
+            );
             if (response.statusCode == 200 || response.statusCode == 201) {
               synced++;
               continue;

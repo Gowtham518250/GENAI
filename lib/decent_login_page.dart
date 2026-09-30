@@ -31,7 +31,6 @@ import 'inventory_sync_service.dart';
 import 'sales_restore_service.dart';
 import 'shop_profile_persistence_service.dart';
 
-
 class DecentLoginPage extends StatefulWidget {
   const DecentLoginPage({super.key});
 
@@ -70,41 +69,60 @@ class _DecentLoginPageState extends State<DecentLoginPage>
   Future<void> _signInWithGoogle() async {
     setState(() => _isGoogleLoading = true);
 
-    final result = await GoogleAuthService.signIn();
+    try {
+      final result = await GoogleAuthService.signIn();
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (result.success) {
-      if (result.token == null || result.token!.isEmpty) {
-        final prefs = await SharedPreferences.getInstance();
-        final hadOwner = (prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0) > 0;
-        if (hadOwner) {
-          await UserDataClearService.clearAllUserData();
-          await SecureTokenStorage.clearAll();
-          await LocalStorageService.clearOrphanSalesBoxes();
-        } else {
-          await SecureTokenStorage.clearAll();
+      if (result.success) {
+        if (result.token == null || result.token!.isEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          final hadOwner =
+              (prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0) > 0;
+          if (hadOwner) {
+            await UserDataClearService.clearAllUserData();
+            await SecureTokenStorage.clearAll();
+            await LocalStorageService.clearOrphanSalesBoxes();
+          } else {
+            await SecureTokenStorage.clearAll();
+          }
         }
-      }
 
-      if (result.isFallback && result.email != null) {
-        Navigator.pushNamed(context, '/register',
-            arguments: {'email': result.email, 'name': result.name});
+        if (result.isFallback && result.email != null) {
+          Navigator.pushNamed(
+            context,
+            '/register',
+            arguments: {'email': result.email, 'name': result.name},
+          );
+          return;
+        }
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (ctx) => RoleSelectionPage(email: result.email ?? ''),
+          ),
+        );
         return;
       }
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (ctx) => RoleSelectionPage(email: result.email ?? ''),
-        ),
-      );
-      return;
+      if (mounted) {
+        setState(() {
+          errorMessage = result.error ?? 'Google Sign-In failed.';
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Google Sign-In exception: $e');
+      if (mounted) {
+        setState(() {
+          errorMessage = 'Google Sign-In failed: ${e.toString().replaceAll('Exception:', '').trim()}';
+        });
+      }
+    } finally {
+      // 🔧 FIX: Always reset loading state — previously this was only reset on
+      // failure path, leaving the overlay permanently visible if the widget was
+      // revisited after a successful Google login (e.g., after pressing back).
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
-
-    setState(() {
-      errorMessage = result.error ?? 'Google Sign-In failed.';
-      _isGoogleLoading = false;
-    });
   }
   // ──────────────────────────────────────────────────────────────────────────
 
@@ -137,32 +155,42 @@ class _DecentLoginPageState extends State<DecentLoginPage>
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         // ✅ FIXED: Parse 'access_token' from response (not 'token')
         final accessToken = data['access_token']?.toString() ?? '';
         final refreshToken = data['refresh_token']?.toString() ?? '';
         final tokenType = data['token_type']?.toString() ?? 'bearer';
         final role = data['role']?.toString() ?? 'OWNER';
-        
+
         if (accessToken.isEmpty) {
           setState(() {
             errorMessage = 'Login failed: No access token received';
           });
           return;
         }
-        
+
         final userId = (() {
           try {
             final parts = accessToken.split('.');
-            if (parts.length != 3) return data['user_id'] is int ? data['user_id'] as int : int.tryParse(data['user_id']?.toString() ?? '') ?? 0;
-            String normalized = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+            if (parts.length != 3)
+              return data['user_id'] is int
+                  ? data['user_id'] as int
+                  : int.tryParse(data['user_id']?.toString() ?? '') ?? 0;
+            String normalized = parts[1]
+                .replaceAll('-', '+')
+                .replaceAll('_', '/');
             while (normalized.length % 4 != 0) {
               normalized += '=';
             }
             final payload = json.decode(utf8.decode(base64.decode(normalized)));
-            return int.tryParse(payload['sub']?.toString() ?? '') ?? (data['user_id'] is int ? data['user_id'] as int : int.tryParse(data['user_id']?.toString() ?? '') ?? 0);
+            return int.tryParse(payload['sub']?.toString() ?? '') ??
+                (data['user_id'] is int
+                    ? data['user_id'] as int
+                    : int.tryParse(data['user_id']?.toString() ?? '') ?? 0);
           } catch (_) {
-            return data['user_id'] is int ? data['user_id'] as int : int.tryParse(data['user_id']?.toString() ?? '') ?? 0;
+            return data['user_id'] is int
+                ? data['user_id'] as int
+                : int.tryParse(data['user_id']?.toString() ?? '') ?? 0;
           }
         })();
 
@@ -173,7 +201,9 @@ class _DecentLoginPageState extends State<DecentLoginPage>
         final existingToken = await SecureTokenStorage.getToken();
         if ((existingToken ?? '').isNotEmpty && existingToken != accessToken) {
           if (kDebugMode) {
-            debugPrint('🧹 Existing local session detected; clearing stale session data...');
+            debugPrint(
+              '🧹 Existing local session detected; clearing stale session data...',
+            );
           }
           try {
             await UserDataClearService.clearAllUserData().timeout(
@@ -207,15 +237,24 @@ class _DecentLoginPageState extends State<DecentLoginPage>
         final prefs = await SharedPreferences.getInstance();
         if (data['shop_name'] != null) {
           await prefs.setString('shop_name', data['shop_name'].toString());
-          await ScopedSharedPreferences.setString('shop_name', data['shop_name'].toString());
+          await ScopedSharedPreferences.setString(
+            'shop_name',
+            data['shop_name'].toString(),
+          );
         }
         if (data['location'] != null) {
           await prefs.setString('location', data['location'].toString());
-          await ScopedSharedPreferences.setString('location', data['location'].toString());
+          await ScopedSharedPreferences.setString(
+            'location',
+            data['location'].toString(),
+          );
         }
         if (data['shop_type'] != null) {
           await prefs.setString('shop_type', data['shop_type'].toString());
-          await ScopedSharedPreferences.setString('shop_type', data['shop_type'].toString());
+          await ScopedSharedPreferences.setString(
+            'shop_type',
+            data['shop_type'].toString(),
+          );
         }
 
         if (kDebugMode) {
@@ -234,24 +273,28 @@ class _DecentLoginPageState extends State<DecentLoginPage>
         } else {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (ctx) => RoleSelectionPage(email: emailController.text.trim()),
+              builder: (ctx) =>
+                  RoleSelectionPage(email: emailController.text.trim()),
             ),
           );
         }
 
         // 🔧 FIX: Run sync in background (fire-and-forget) so it doesn't block navigation
         unawaited(_runPostLoginSyncInBackground(userId));
-
       } else {
         setState(() {
           errorMessage = _extractErrorMessage(response);
         });
-        
-        if (kDebugMode) debugPrint('❌ Login error: ${errorMessage} (Status: ${response.statusCode})');
+
+        if (kDebugMode)
+          debugPrint(
+            '❌ Login error: ${errorMessage} (Status: ${response.statusCode})',
+          );
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Connection error: ${e.toString().replaceAll('Exception:', '').trim()}';
+        errorMessage =
+            'Connection error: ${e.toString().replaceAll('Exception:', '').trim()}';
       });
       if (kDebugMode) debugPrint('❌ Login exception: $e');
     } finally {
@@ -266,10 +309,10 @@ class _DecentLoginPageState extends State<DecentLoginPage>
     try {
       final data = json.decode(response.body);
       if (data is Map) {
-        return data['detail']?.toString() ?? 
-               data['message']?.toString() ?? 
-               data['error']?.toString() ?? 
-               'Login failed (Status: ${response.statusCode})';
+        return data['detail']?.toString() ??
+            data['message']?.toString() ??
+            data['error']?.toString() ??
+            'Login failed (Status: ${response.statusCode})';
       }
       return 'Login failed (Status: ${response.statusCode})';
     } catch (e) {
@@ -284,19 +327,25 @@ class _DecentLoginPageState extends State<DecentLoginPage>
   /// Run heavy post-login sync in the background so the user reaches the dashboard quickly
   Future<void> _runPostLoginSyncInBackground(int userId) async {
     try {
-      if (kDebugMode) debugPrint('🔄 [Background] Starting post-login sync flow...');
+      if (kDebugMode)
+        debugPrint('🔄 [Background] Starting post-login sync flow...');
 
       // Restore shop profile
       try {
-        final profileResult = await ShopProfilePersistenceService.restoreProfile();
+        final profileResult =
+            await ShopProfilePersistenceService.restoreProfile();
         if (!profileResult['success']) {
-          final localProfile = await ShopProfilePersistenceService.loadProfileLocally();
+          final localProfile =
+              await ShopProfilePersistenceService.loadProfileLocally();
           if (localProfile != null) {
-            await ShopProfilePersistenceService.applyProfileToPrefs(localProfile);
+            await ShopProfilePersistenceService.applyProfileToPrefs(
+              localProfile,
+            );
           }
         }
       } catch (e) {
-        if (kDebugMode) debugPrint('⚠️ [Background] Shop profile restore error: $e');
+        if (kDebugMode)
+          debugPrint('⚠️ [Background] Shop profile restore error: $e');
       }
 
       // Upload pending offline sales
@@ -312,15 +361,19 @@ class _DecentLoginPageState extends State<DecentLoginPage>
       // backend sales on every single login, which is wasted work and an
       // unnecessary duplication risk surface.
       try {
-        final alreadyRestored = await SalesRestoreService.wasRestorationCompleted();
+        final alreadyRestored =
+            await SalesRestoreService.wasRestorationCompleted();
         if (!alreadyRestored) {
-          final restorationResult = await SalesRestoreService.completeRestoration();
+          final restorationResult =
+              await SalesRestoreService.completeRestoration();
           if (restorationResult['success']) {
             await SalesRestoreService.markRestorationComplete();
           }
         } else {
           if (kDebugMode) {
-            debugPrint('ℹ️ [Background] Skipping sales restore — already completed for this user');
+            debugPrint(
+              'ℹ️ [Background] Skipping sales restore — already completed for this user',
+            );
           }
         }
       } catch (e) {
@@ -332,7 +385,8 @@ class _DecentLoginPageState extends State<DecentLoginPage>
         await InventorySyncService.refreshAllInventory();
         await InventorySyncService.updateLastSyncTimestamp();
       } catch (e) {
-        if (kDebugMode) debugPrint('⚠️ [Background] Inventory refresh error: $e');
+        if (kDebugMode)
+          debugPrint('⚠️ [Background] Inventory refresh error: $e');
       }
 
       // Start listeners
@@ -354,298 +408,501 @@ class _DecentLoginPageState extends State<DecentLoginPage>
 
     return BackendLoadingOverlay(
       isVisible: isLoading || _isGoogleLoading,
-      title: 'Welcome Back',
-      subtitle: 'Securing your session...',
+      title: 'Signing you in',
+      subtitle: 'Verifying your account...',
       icon: Icons.security_rounded,
       accentColor: const Color(0xFF6366F1),
       child: Scaffold(
-      backgroundColor: const Color(0xFF0F2447),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0F2447),
-              Color(0xFF1B3A6B),
-              Color(0xFF0A1628),
-            ],
+        backgroundColor: const Color(0xFF0F2447),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0F2447), Color(0xFF1B3A6B), Color(0xFF0A1628)],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // App logo + branding
-                    Container(
-                      width: 76,
-                      height: 76,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.25), width: 2),
-                      ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/shop_logo.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.storefront_rounded, color: Colors.white, size: 36),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l.appTitle,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l.tagline,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Animated white card
-                    ScaleTransition(
-                      scale: _cardScale,
-                      child: Container(
-                        width: double.infinity,
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // App logo + branding
+                      Container(
+                        width: 76,
+                        height: 76,
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 40,
-                              offset: const Offset(0, 16),
-                            ),
-                          ],
+                          color: Colors.white.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            width: 2,
+                          ),
                         ),
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        l.signIn,
-                                        style: GoogleFonts.inter(
-                                          color: const Color(0xFF0F172A),
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: -0.4,
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/shop_logo.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.storefront_rounded,
+                              color: Colors.white,
+                              size: 36,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        l.appTitle,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l.tagline,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Animated white card
+                      ScaleTransition(
+                        scale: _cardScale,
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 40,
+                                offset: const Offset(0, 16),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          l.signIn,
+                                          style: GoogleFonts.inter(
+                                            color: const Color(0xFF0F172A),
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: -0.4,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        l.enterCredentials,
-                                        style: GoogleFonts.inter(
-                                          color: const Color(0xFF64748B),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w400,
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          l.enterCredentials,
+                                          style: GoogleFonts.inter(
+                                            color: const Color(0xFF64748B),
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w400,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF1B3A6B,
+                                      ).withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: const Color(
+                                          0xFF1B3A6B,
+                                        ).withValues(alpha: 0.2),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.lock_rounded,
+                                          size: 12,
+                                          color: Color(0xFF1B3A6B),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Secure',
+                                          style: GoogleFonts.inter(
+                                            color: const Color(0xFF1B3A6B),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              if (errorMessage.isNotEmpty) ...[
+                                const SizedBox(height: 14),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF1B3A6B).withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: const Color(0xFF1B3A6B).withValues(alpha: 0.2)),
+                                    color: const Color(0xFFFEF2F2),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFFFCA5A5),
+                                    ),
                                   ),
                                   child: Row(
-                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.lock_rounded, size: 12, color: Color(0xFF1B3A6B)),
-                                      const SizedBox(width: 4),
-                                      Text('Secure', style: GoogleFonts.inter(color: const Color(0xFF1B3A6B), fontSize: 11, fontWeight: FontWeight.w700)),
+                                      const Icon(
+                                        Icons.error_outline_rounded,
+                                        color: Color(0xFFEF4444),
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          errorMessage,
+                                          style: GoogleFonts.inter(
+                                            color: const Color(0xFFDC2626),
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
                               ],
-                            ),
 
-                            if (errorMessage.isNotEmpty) ...[
-                              const SizedBox(height: 14),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFEF2F2),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFFCA5A5)),
+                              const SizedBox(height: 18),
+
+                              TextField(
+                                controller: emailController,
+                                enabled: !isLoading,
+                                keyboardType: TextInputType.emailAddress,
+                                style: GoogleFonts.inter(
+                                  color: const Color(0xFF0F172A),
+                                  fontSize: 14,
                                 ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 18),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        errorMessage,
-                                        style: GoogleFonts.inter(color: const Color(0xFFDC2626), fontSize: 12.5, fontWeight: FontWeight.w500),
+                                decoration: InputDecoration(
+                                  labelText: l.email,
+                                  hintText: l.enterEmail,
+                                  labelStyle: GoogleFonts.inter(
+                                    color: const Color(0xFF64748B),
+                                    fontSize: 13,
+                                  ),
+                                  hintStyle: GoogleFonts.inter(
+                                    color: const Color(0xFFCBD5E1),
+                                    fontSize: 13,
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  prefixIcon: const Icon(
+                                    Icons.email_outlined,
+                                    color: Color(0xFF94A3B8),
+                                    size: 20,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFE2E8F0),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFE2E8F0),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFF1B3A6B),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              TextField(
+                                controller: passwordController,
+                                enabled: !isLoading,
+                                obscureText: !isPasswordVisible,
+                                style: GoogleFonts.inter(
+                                  color: const Color(0xFF0F172A),
+                                  fontSize: 14,
+                                ),
+                                decoration: InputDecoration(
+                                  labelText: l.password,
+                                  hintText: l.enterPassword,
+                                  labelStyle: GoogleFonts.inter(
+                                    color: const Color(0xFF64748B),
+                                    fontSize: 13,
+                                  ),
+                                  hintStyle: GoogleFonts.inter(
+                                    color: const Color(0xFFCBD5E1),
+                                    fontSize: 13,
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  prefixIcon: const Icon(
+                                    Icons.lock_outline_rounded,
+                                    color: Color(0xFF94A3B8),
+                                    size: 20,
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      isPasswordVisible
+                                          ? Icons.visibility_off_rounded
+                                          : Icons.visibility_rounded,
+                                      color: const Color(0xFF94A3B8),
+                                      size: 20,
+                                    ),
+                                    onPressed: isLoading
+                                        ? null
+                                        : () => setState(
+                                            () => isPasswordVisible =
+                                                !isPasswordVisible,
+                                          ),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFE2E8F0),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFE2E8F0),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFF1B3A6B),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => Navigator.pushNamed(
+                                          context,
+                                          '/forgot-password',
+                                        ),
+                                  child: Text(
+                                    l.forgotPassword,
+                                    style: GoogleFonts.inter(
+                                      color: const Color(0xFF1B3A6B),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              ElevatedButton(
+                                onPressed: isLoading ? null : loginUser,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1B3A6B),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 15,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: isLoading
+                                    ? const InfinityLoader(
+                                        color: Colors.white,
+                                        size: 28,
+                                      )
+                                    : Text(
+                                        l.signIn,
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              // Divider OR
+                              Row(
+                                children: [
+                                  const Expanded(
+                                    child: Divider(color: Color(0xFFE2E8F0)),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
+                                    child: Text(
+                                      'OR',
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFF94A3B8),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                  ],
+                                  ),
+                                  const Expanded(
+                                    child: Divider(color: Color(0xFFE2E8F0)),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              // Google Sign-In
+                              _isGoogleLoading
+                                  ? const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
+                                        child: InfinityLoader(
+                                          color: Color(0xFF1B3A6B),
+                                          size: 32,
+                                        ),
+                                      ),
+                                    )
+                                  : OutlinedButton(
+                                      onPressed: isLoading
+                                          ? null
+                                          : _signInWithGoogle,
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 13,
+                                        ),
+                                        side: const BorderSide(
+                                          color: Color(0xFFE2E8F0),
+                                          width: 1.5,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                        ),
+                                        backgroundColor: Colors.white,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CustomPaint(
+                                              painter: _GoogleLogoPainter(),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            'Continue with Google',
+                                            style: GoogleFonts.inter(
+                                              color: const Color(0xFF0F172A),
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                              const SizedBox(height: 10),
+
+                              TextButton(
+                                onPressed: isLoading
+                                    ? null
+                                    : () => Navigator.pushNamed(
+                                        context,
+                                        '/register',
+                                      ),
+                                child: RichText(
+                                  text: TextSpan(
+                                    text: "Don't have an account? ",
+                                    style: GoogleFonts.inter(
+                                      color: const Color(0xFF64748B),
+                                      fontSize: 13,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: 'Register',
+                                        style: GoogleFonts.inter(
+                                          color: const Color(0xFF1B3A6B),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
-
-                            const SizedBox(height: 18),
-
-                            TextField(
-                              controller: emailController,
-                              enabled: !isLoading,
-                              keyboardType: TextInputType.emailAddress,
-                              style: GoogleFonts.inter(color: const Color(0xFF0F172A), fontSize: 14),
-                              decoration: InputDecoration(
-                                labelText: l.email,
-                                hintText: l.enterEmail,
-                                labelStyle: GoogleFonts.inter(color: const Color(0xFF64748B), fontSize: 13),
-                                hintStyle: GoogleFonts.inter(color: const Color(0xFFCBD5E1), fontSize: 13),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF94A3B8), size: 20),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1B3A6B), width: 1.5)),
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            TextField(
-                              controller: passwordController,
-                              enabled: !isLoading,
-                              obscureText: !isPasswordVisible,
-                              style: GoogleFonts.inter(color: const Color(0xFF0F172A), fontSize: 14),
-                              decoration: InputDecoration(
-                                labelText: l.password,
-                                hintText: l.enterPassword,
-                                labelStyle: GoogleFonts.inter(color: const Color(0xFF64748B), fontSize: 13),
-                                hintStyle: GoogleFonts.inter(color: const Color(0xFFCBD5E1), fontSize: 13),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF94A3B8), size: 20),
-                                suffixIcon: IconButton(
-                                  icon: Icon(isPasswordVisible ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: const Color(0xFF94A3B8), size: 20),
-                                  onPressed: isLoading ? null : () => setState(() => isPasswordVisible = !isPasswordVisible),
-                                ),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1B3A6B), width: 1.5)),
-                              ),
-                            ),
-
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: isLoading ? null : () => Navigator.pushNamed(context, '/forgot-password'),
-                                child: Text(l.forgotPassword, style: GoogleFonts.inter(color: const Color(0xFF1B3A6B), fontSize: 12, fontWeight: FontWeight.w600)),
-                              ),
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            ElevatedButton(
-                              onPressed: isLoading ? null : loginUser,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1B3A6B),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 15),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                elevation: 0,
-                              ),
-                              child: isLoading
-                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : Text(l.signIn, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.3)),
-                            ),
-
-                            const SizedBox(height: 10),
-
-                            // Divider OR
-                            Row(children: [
-                              const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                                child: Text('OR', style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w600)),
-                              ),
-                              const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
-                            ]),
-
-                            const SizedBox(height: 10),
-
-                            // Google Sign-In
-                            _isGoogleLoading
-                                ? const Center(child: Padding(padding: EdgeInsets.symmetric(vertical: 12), child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF1B3A6B)))))
-                                : OutlinedButton(
-                                    onPressed: isLoading ? null : _signInWithGoogle,
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 13),
-                                      side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                      backgroundColor: Colors.white,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        SizedBox(width: 20, height: 20, child: CustomPaint(painter: _GoogleLogoPainter())),
-                                        const SizedBox(width: 10),
-                                        Text('Continue with Google', style: GoogleFonts.inter(color: const Color(0xFF0F172A), fontWeight: FontWeight.w600, fontSize: 14)),
-                                      ],
-                                    ),
-                                  ),
-
-                            const SizedBox(height: 10),
-
-                            TextButton(
-                              onPressed: isLoading ? null : () => Navigator.pushNamed(context, '/register'),
-                              child: RichText(
-                                text: TextSpan(
-                                  text: "Don't have an account? ",
-                                  style: GoogleFonts.inter(color: const Color(0xFF64748B), fontSize: 13),
-                                  children: [TextSpan(text: 'Register', style: GoogleFonts.inter(color: const Color(0xFF1B3A6B), fontWeight: FontWeight.w700, fontSize: 13))],
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    const _LoginLanguageSelector(),
-                  ],
+                      const _LoginLanguageSelector(),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 }
 
@@ -656,9 +913,10 @@ class _LoginLanguageSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final languageProvider = Provider.of<LanguageProvider>(context);
     final currentCode = languageProvider.locale.languageCode;
-    final current =
-        LanguageProvider.languages.firstWhere((l) => l['code'] == currentCode,
-            orElse: () => LanguageProvider.languages.first);
+    final current = LanguageProvider.languages.firstWhere(
+      (l) => l['code'] == currentCode,
+      orElse: () => LanguageProvider.languages.first,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -681,8 +939,7 @@ class _LoginLanguageSelector extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     if (lang['code'] == currentCode)
-                      const Icon(Icons.check,
-                          size: 16, color: Colors.white70),
+                      const Icon(Icons.check, size: 16, color: Colors.white70),
                   ],
                 ),
               ),
@@ -693,8 +950,7 @@ class _LoginLanguageSelector extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.language_rounded,
-                  size: 18, color: Colors.white),
+              const Icon(Icons.language_rounded, size: 18, color: Colors.white),
               const SizedBox(width: 6),
               Text(
                 AppLocalizations.of(context).language,
@@ -713,8 +969,11 @@ class _LoginLanguageSelector extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(Icons.arrow_drop_down,
-                  size: 18, color: Colors.white.withValues(alpha: 0.7)),
+              Icon(
+                Icons.arrow_drop_down,
+                size: 18,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
             ],
           ),
         ),
@@ -722,7 +981,6 @@ class _LoginLanguageSelector extends StatelessWidget {
     );
   }
 }
-
 
 /// Draws the iconic Google 'G' logo using coloured arcs/paths.
 class _GoogleLogoPainter extends CustomPainter {
@@ -744,8 +1002,15 @@ class _GoogleLogoPainter extends CustomPainter {
     );
   }
 
-  void _drawArc(Canvas canvas, double cx, double cy, double r,
-      double startDeg, double sweepDeg, Color color) {
+  void _drawArc(
+    Canvas canvas,
+    double cx,
+    double cy,
+    double r,
+    double startDeg,
+    double sweepDeg,
+    Color color,
+  ) {
     const double deg2rad = 3.14159265358979 / 180;
     canvas.drawArc(
       Rect.fromCircle(center: Offset(cx, cy), radius: r),

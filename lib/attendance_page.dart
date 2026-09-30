@@ -10,7 +10,7 @@ import 'app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'language_provider.dart';
 import 'models.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'worker_local_storage.dart';
 import 'worker_attendance_detail_page.dart';
 import 'attendance_offline_service.dart';
@@ -338,6 +338,63 @@ class _AttendancePageState extends State<AttendancePage>
     return cin.isAfter(threshold);
   }
 
+  int _sessionIndex(Map r) {
+    final raw = r['session_index'];
+    if (raw is int) return raw;
+    return int.tryParse(raw?.toString() ?? '') ?? 0;
+  }
+
+  bool _isOpenSession(Map r) =>
+      r['check_in_time'] != null && r['check_out_time'] == null;
+
+  List<Map<String, dynamic>> _ownerSessionsToday() {
+    final today = _df.format(DateTime.now());
+    final sessions = _records.where((r) {
+      if (r is! Map) return false;
+      final recDate = (r['attendance_date'] ?? '').toString().split('T').first.trim();
+      if (recDate != today) return false;
+      final empId = r['employee_id'];
+      final workerId = r['worker_id'];
+      final isOwner = empId == _userId || empId.toString() == _userId.toString();
+      final notWorkerRow = workerId == null ||
+          workerId.toString().isEmpty ||
+          workerId.toString() == _userId.toString();
+      return isOwner && notWorkerRow;
+    }).map((r) => Map<String, dynamic>.from(r as Map)).toList();
+    sessions.sort((a, b) => _sessionIndex(a).compareTo(_sessionIndex(b)));
+    return sessions;
+  }
+
+  List<Map<String, dynamic>> _workerSessionsToday(Worker worker) {
+    final today = _df.format(DateTime.now());
+    final sessions = _records.where((r) {
+      if (r is! Map) return false;
+      final recordWorkerId = r['worker_id'] ?? r['employee_id'];
+      if (recordWorkerId == null) return false;
+      final recDate = (r['attendance_date'] ?? '').toString().split('T').first.trim();
+      return recordWorkerId.toString() == worker.id.toString() && recDate == today;
+    }).map((r) => Map<String, dynamic>.from(r as Map)).toList();
+    sessions.sort((a, b) => _sessionIndex(a).compareTo(_sessionIndex(b)));
+    return sessions;
+  }
+
+  double _hoursForSession(Map r) {
+    if (r['working_hours'] != null) return (r['working_hours'] as num).toDouble();
+    final cin = _parseServerTime(r['check_in_time']);
+    final cout = _parseServerTime(r['check_out_time']);
+    if (cin != null && cout != null) return cout.difference(cin).inSeconds / 3600.0;
+    if (cin != null && r['check_out_time'] == null) {
+      return DateTime.now().difference(cin).inSeconds / 3600.0;
+    }
+    return 0;
+  }
+
+  String _fmtClock(dynamic time) {
+    final parsed = _parseServerTime(time);
+    if (parsed == null) return '--:--';
+    return DateFormat.jm().format(parsed);
+  }
+
   double _calculateWorkerMonthlyHours(int workerId) {
     double totalHours = 0;
     final now = DateTime.now();
@@ -381,10 +438,15 @@ class _AttendancePageState extends State<AttendancePage>
       // no risk of reading a stale collapsed record from `_records`.
       if (_mySession == null) {
         await OfflineAttendanceService.checkIn(employeeId: _userId!);
-        _showSnack('✅ Checked In — saved offline and queued for sync', _present);
+        final sessions = await OfflineAttendanceService.todaySessions(employeeId: _userId!);
+        _showSnack('✅ Session ${sessions.length} started — checked in', _present);
       } else {
+        final sessionNo = _sessionIndex(_mySession!) + 1;
         await OfflineAttendanceService.checkOut(employeeId: _userId!);
-        _showSnack('👋 Checked Out — saved offline and queued for sync. Tap again anytime to check back in.', _primary);
+        _showSnack(
+          '👋 Session $sessionNo ended — checked out. Start another session anytime.',
+          _primary,
+        );
       }
 
       await _fetch();
@@ -407,30 +469,20 @@ class _AttendancePageState extends State<AttendancePage>
 
   @override
   Widget build(BuildContext context) {
-    final today = _df.format(DateTime.now());
-    // ✅ FIX: Normalize date and employee_id comparison (backend may return string ID)
-    final myRecord = _records.where((r) {
-      final recDate = (r['attendance_date'] ?? '').toString().split('T').first.trim();
-      final empId = r['employee_id'];
-      final empIdMatch = empId == _userId || empId.toString() == _userId.toString();
-      return empIdMatch && recDate == today;
-    }).firstOrNull;
-
-    // Whether there's an open session right now drives the button — NOT
-    // whether a session was ever checked out today. This is what allows
-    // multiple check-in/check-out pairs on the same day (e.g. lunch break):
-    // once a session is checked out, the button goes back to "Check In"
-    // instead of getting permanently disabled.
+    final mySessions = _ownerSessionsToday();
     final hasOpenSession = _mySession != null;
+    final nextSessionNo = mySessions.length + (hasOpenSession ? 0 : 1);
+    final currentSessionNo = hasOpenSession
+        ? _sessionIndex(_mySession!) + 1
+        : (mySessions.isEmpty ? 1 : _sessionIndex(mySessions.last) + 1);
 
-    String btnLabel = AppLocalizations.of(context).checkIn;
-    Color btnColor = _present;
-    IconData btnIcon = Icons.login;
-    if (hasOpenSession) {
-      btnLabel = AppLocalizations.of(context).checkOut;
-      btnColor = _primary;
-      btnIcon = Icons.logout;
-    }
+    final btnLabel = hasOpenSession
+        ? 'End Session $currentSessionNo'
+        : (mySessions.isEmpty
+            ? AppLocalizations.of(context).checkIn
+            : 'Start Session $nextSessionNo');
+    final btnColor = hasOpenSession ? _primary : _present;
+    final btnIcon = hasOpenSession ? Icons.logout : Icons.login;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -459,9 +511,7 @@ class _AttendancePageState extends State<AttendancePage>
       body: TabBarView(
         controller: _tab,
         children: [
-          // Prefer the live open session for display (accurate in-progress
-          // check-in time); fall back to whatever `_records` has for today.
-          _todayTab(_mySession ?? myRecord, hasOpenSession, !hasOpenSession && myRecord != null),
+          _todayTab(mySessions, hasOpenSession),
           _historyTab(),
           _payrollTab(),
         ],
@@ -469,10 +519,6 @@ class _AttendancePageState extends State<AttendancePage>
       floatingActionButton: ScaleTransition(
         scale: _pulseAnimation,
         child: FloatingActionButton.extended(
-          // Always tappable (aside from the in-flight spinner state) so a
-          // worker can check in again after checking out earlier the same
-          // day. This is the actual bug fix: the button used to be
-          // permanently disabled once `checkedOut` became true.
           onPressed: _marking ? null : _checkInOut,
           backgroundColor: btnColor,
           foregroundColor: Colors.white,
@@ -489,86 +535,285 @@ class _AttendancePageState extends State<AttendancePage>
     );
   }
 
-  Widget _todayTab(Map<String, dynamic>? rec, bool ci, bool co) {
+  Widget _todayTab(List<Map<String, dynamic>> mySessions, bool hasOpenSession) {
     final today = DateFormat('EEEE, dd MMMM yyyy').format(DateTime.now());
+    var inShop = 0;
+    var betweenSessions = 0;
+    var notMarked = 0;
+    for (final worker in _staff) {
+      final sessions = _workerSessionsToday(worker);
+      if (sessions.any(_isOpenSession)) {
+        inShop++;
+      } else if (sessions.isNotEmpty) {
+        betweenSessions++;
+      } else {
+        notMarked++;
+      }
+    }
+    final statusLabel = hasOpenSession
+        ? 'CHECKED IN'
+        : (mySessions.isEmpty ? 'NOT STARTED' : 'BETWEEN SESSIONS');
+    final statusColor = hasOpenSession
+        ? Colors.orange
+        : (mySessions.isEmpty ? Colors.grey : _present);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Date banner
         Container(
-          padding: const EdgeInsets.all(16),
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]),
               borderRadius: BorderRadius.circular(16)),
-          child: Row(children: [
-            Icon(Icons.calendar_today, color: Colors.white70, size: 20),
-            const SizedBox(width: 10),
-            Text(today, style: GoogleFonts.poppins(
-                color: Colors.white, fontWeight: FontWeight.w600)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              const Icon(Icons.calendar_today, color: Colors.white70, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(today, style: GoogleFonts.poppins(
+                    color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+              ),
+            ]),
+            const SizedBox(height: 12),
+            Row(children: [
+              _bannerStat('${mySessions.length}', 'My sessions'),
+              const SizedBox(width: 16),
+              _bannerStat('${_staff.length}', 'Workers'),
+              const SizedBox(width: 16),
+              _bannerStat(_liveHours, 'Hours today'),
+            ]),
           ]),
         ),
         const SizedBox(height: 20),
-        
-        // --- STAFF ATTENDANCE (Moved to top for visibility) ---
-        if (_staff.isNotEmpty) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Staff attendance', style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w800, fontSize: 18, color: const Color(0xFF1F2937))),
+            if (_staff.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: _primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+                child: Text('${_staff.length} on roster', style: GoogleFonts.poppins(
+                    fontSize: 11, color: _primary, fontWeight: FontWeight.bold)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_staff.isEmpty)
+          _noWorkersCard()
+        else ...[
+          Row(children: [
+            Expanded(child: _miniStat('In shop', '$inShop', _present)),
+            const SizedBox(width: 8),
+            Expanded(child: _miniStat('Between sessions', '$betweenSessions', _primary)),
+            const SizedBox(width: 8),
+            Expanded(child: _miniStat('Not marked', '$notMarked', Colors.grey)),
+          ]),
+          const SizedBox(height: 12),
+          ..._staff.map((worker) => _workerAttendanceTile(worker)),
+        ],
+        const SizedBox(height: 24),
+        const Divider(thickness: 1, height: 1),
+        const SizedBox(height: 24),
+
+        Text('My sessions today', style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700, fontSize: 16)),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.08),
+              border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+              borderRadius: BorderRadius.circular(16)),
+          child: Row(children: [
+            CircleAvatar(
+                backgroundColor: statusColor,
+                radius: 22,
+                child: Icon(
+                    hasOpenSession ? Icons.timelapse : Icons.check,
+                    color: Colors.white, size: 22)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(AppLocalizations.of(context).todayStatus,
+                    style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
+                Text(statusLabel, style: GoogleFonts.poppins(
+                    fontSize: 17, fontWeight: FontWeight.w700, color: statusColor)),
+                Text(
+                  hasOpenSession
+                      ? 'Session ${_sessionIndex(_mySession!) + 1} is open. End it when you step out.'
+                      : (mySessions.isEmpty
+                          ? 'Start session 1 with the button below.'
+                          : 'Last session closed. You can start session ${mySessions.length + 1} anytime.'),
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 12),
+        if (mySessions.isEmpty)
+          _emptyAttendance()
+        else ...[
+          ...mySessions.map((session) => _sessionDetailCard(session)),
+          const SizedBox(height: 8),
+          _hoursCard(_liveHours, isLive: hasOpenSession),
+        ],
+
+        const SizedBox(height: 32),
+        Text('Attendance Guide', style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700, fontSize: 16)),
+        const SizedBox(height: 12),
+        _guide('Each check-in and check-out is one session (lunch break = two sessions).', Icons.layers, _primary),
+        _guide('Start a worker session when they arrive; end that session when they leave.', Icons.login, _present),
+        _guide('If there are no workers, add them in Worker Management first.', Icons.group_off, Colors.grey),
+        _guide('History lists every session with in/out times.', Icons.history, Colors.orange),
+      ]),
+    );
+  }
+
+  Widget _bannerStat(String value, String label) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+            ),
+          ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _noWorkersCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.group_off, size: 32, color: Colors.grey.shade500),
+          const SizedBox(height: 8),
+          Text(
+            'No workers added',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          ),
+          Text(
+            'Add workers to manage their attendance here.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value, Color color) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 64),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            style: GoogleFonts.poppins(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+            ),
+          ),
+          Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 9, color: Colors.grey.shade700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sessionDetailCard(Map<String, dynamic> session) {
+    final isOpen = _isOpenSession(session);
+    final hours = _hoursForSession(session).toStringAsFixed(1);
+    final statusColor = isOpen ? _present : Colors.grey;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isOpen ? Icons.timelapse : Icons.check_circle_outline,
+            color: statusColor,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Staff Management', style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w800, fontSize: 18, color: const Color(0xFF1F2937))),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: _primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-                  child: Text('${_staff.length} Active', style: GoogleFonts.poppins(
-                      fontSize: 11, color: _primary, fontWeight: FontWeight.bold)),
+                Text(
+                  'Session ${_sessionIndex(session) + 1}',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  'In ${_fmtClock(session['check_in_time'])}  ·  Out ${_fmtClock(session['check_out_time'])}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: Colors.grey.shade600,
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          ..._staff.map((worker) => _workerAttendanceTile(worker)),
-          const SizedBox(height: 24),
-          const Divider(thickness: 1, height: 1),
-          const SizedBox(height: 24),
+          const SizedBox(width: 8),
+          Text(
+            '$hours hrs',
+            style: GoogleFonts.poppins(
+              color: statusColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
         ],
-
-        // --- SHOPKEEPER (OWN) STATUS ---
-        Text('My Daily Status', style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w700, fontSize: 16)),
-        const SizedBox(height: 12),
-        if (rec == null) ...[
-          _emptyAttendance(),
-        ] else ...[
-          // Status card
-          _statusCard(rec, ci, co),
-          const SizedBox(height: 16),
-          // Time cards
-          Row(children: [
-            Expanded(child: _timeCard('Check-In', rec['check_in_time'],
-                Icons.login, _present)),
-            const SizedBox(width: 12),
-            Expanded(child: _timeCard('Check-Out', rec['check_out_time'],
-                Icons.logout, _primary)),
-          ]),
-          if (ci) ...[
-            const SizedBox(height: 12),
-            _hoursCard(_liveHours, isLive: !co),
-          ],
-        ],
-
-        const SizedBox(height: 32),
-
-        // Guide
-        Text('Attendance Guide', style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w700, fontSize: 16)),
-        const SizedBox(height: 12),
-        _guide('Tap "CHECK IN" for workers when they arrive', Icons.login, _present),
-        _guide('Tap "CHECK OUT" when they leave for the day', Icons.logout, _primary),
-        _guide('View full track record in the History tab', Icons.history, Colors.orange),
-      ]),
+      ),
     );
   }
 

@@ -172,6 +172,32 @@ class SecureTokenStorage {
 
   static const String _kTime   = 'auth_time_enc';
 
+  static Future<String?> _readDecrypted(String baseKey) async {
+    final scopedKey = await _getScopedKey(baseKey);
+    var combined = await _storage.read(key: scopedKey);
+    if (combined == null && scopedKey != baseKey) {
+      combined = await _storage.read(key: baseKey);
+    } else if (combined == null && scopedKey == baseKey) {
+      final userId = await _getUserId();
+      if (userId != null && userId > 0) {
+        combined = await _storage.read(key: '${baseKey}_$userId');
+      }
+    }
+    if (combined == null) return null;
+
+    try {
+      final parts = combined.split(':');
+      if (parts.length < 2) return null;
+      final key = await _getOrCreateKey();
+      final iv = enc.IV.fromBase64(parts[0]);
+      final encrypter = enc.Encrypter(enc.AES(key));
+      return encrypter.decrypt(enc.Encrypted.fromBase64(parts[1]), iv: iv);
+    } catch (e) {
+      if (kDebugMode) debugPrint('SecureTokenStorage: decrypt failed for $baseKey ($e)');
+      return null;
+    }
+  }
+
   static Future<void> saveToken(String token) async {
     final key = await _getOrCreateKey();
     final iv = enc.IV.fromSecureRandom(16);
@@ -181,13 +207,20 @@ class SecureTokenStorage {
     final scopedTokenKey = await _getScopedKey(_kToken);
     final combined = '${iv.base64}:${encrypted.base64}';
     await _storage.write(key: scopedTokenKey, value: combined);
+    if (scopedTokenKey != _kToken) {
+      await _storage.write(key: _kToken, value: combined);
+    }
     
     // Save current timestamp for 7-day auto-login check (unique IV per field)
     final now = DateTime.now().millisecondsSinceEpoch.toString();
     final timeIv = enc.IV.fromSecureRandom(16);
     final timeEnc = encrypter.encrypt(now, iv: timeIv);
     final scopedTimeKey = await _getScopedKey(_kTime);
-    await _storage.write(key: scopedTimeKey, value: '${timeIv.base64}:${timeEnc.base64}');
+    final timeCombined = '${timeIv.base64}:${timeEnc.base64}';
+    await _storage.write(key: scopedTimeKey, value: timeCombined);
+    if (scopedTimeKey != _kTime) {
+      await _storage.write(key: _kTime, value: timeCombined);
+    }
   }
 
   static Future<void> saveCustomerToken(String token) async {
@@ -198,42 +231,17 @@ class SecureTokenStorage {
     final combined = '${iv.base64}:${encrypted.base64}';
     final scopedCustomerKey = await _getScopedKey(_kCustomerToken);
     await _storage.write(key: scopedCustomerKey, value: combined);
+    if (scopedCustomerKey != _kCustomerToken) {
+      await _storage.write(key: _kCustomerToken, value: combined);
+    }
   }
 
   static Future<String?> getCustomerToken() async {
-    final scopedCustomerKey = await _getScopedKey(_kCustomerToken);
-    final combined = await _storage.read(key: scopedCustomerKey);
-    if (combined == null) return null;
-
-    try {
-      final parts = combined.split(':');
-      if (parts.length < 2) return null;
-      final key = await _getOrCreateKey();
-      final iv = enc.IV.fromBase64(parts[0]);
-      final encrypter = enc.Encrypter(enc.AES(key));
-      return encrypter.decrypt(enc.Encrypted.fromBase64(parts[1]), iv: iv);
-    } catch (e) {
-      if (kDebugMode) debugPrint('SecureTokenStorage.getCustomerToken: decrypt failed ($e)');
-      return null;
-    }
+    return _readDecrypted(_kCustomerToken);
   }
 
   static Future<String?> getToken() async {
-    final scopedTokenKey = await _getScopedKey(_kToken);
-    final combined = await _storage.read(key: scopedTokenKey);
-    if (combined == null) return null;
-
-    try {
-      final parts = combined.split(':');
-      if (parts.length < 2) return null;
-      final key = await _getOrCreateKey();
-      final iv = enc.IV.fromBase64(parts[0]);
-      final encrypter = enc.Encrypter(enc.AES(key));
-      return encrypter.decrypt(enc.Encrypted.fromBase64(parts[1]), iv: iv);
-    } catch (e) {
-      if (kDebugMode) debugPrint('SecureTokenStorage.getToken: decrypt failed ($e)');
-      return null;
-    }
+    return _readDecrypted(_kToken);
   }
 
   static Future<void> saveRefreshToken(String token) async {
@@ -244,24 +252,13 @@ class SecureTokenStorage {
     final combined = '${iv.base64}:${encrypted.base64}';
     final scopedRefreshKey = await _getScopedKey(_kRefreshToken);
     await _storage.write(key: scopedRefreshKey, value: combined);
+    if (scopedRefreshKey != _kRefreshToken) {
+      await _storage.write(key: _kRefreshToken, value: combined);
+    }
   }
 
   static Future<String?> getRefreshToken() async {
-    final scopedRefreshKey = await _getScopedKey(_kRefreshToken);
-    final combined = await _storage.read(key: scopedRefreshKey);
-    if (combined == null) return null;
-    try {
-      final parts = combined.split(':');
-      // 🔒 SECURITY FIX: Safe array access - check array bounds before access
-      if (parts.length < 2) return null;
-      final key = await _getOrCreateKey();
-      final iv = enc.IV.fromBase64(parts[0]);
-      final encrypter = enc.Encrypter(enc.AES(key));
-      return encrypter.decrypt(enc.Encrypted.fromBase64(parts[1]), iv: iv);
-    } catch (e) {
-      if (kDebugMode) debugPrint('SecureTokenStorage.getRefreshToken: decrypt failed ($e)');
-      return null;
-    }
+    return _readDecrypted(_kRefreshToken);
   }
 
   static Future<bool> isSessionValid() async {

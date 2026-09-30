@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:io';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Error Boundary Widget
 /// Catches errors in the widget tree and prevents the entire app from crashing
@@ -22,7 +20,7 @@ class ErrorBoundary extends StatefulWidget {
   State<ErrorBoundary> createState() => _ErrorBoundaryState();
 }
 
-class _ErrorBoundaryState extends State<ErrorBoundary> {
+class _ErrorBoundaryState extends State<ErrorBoundary> { 
   dynamic _error;
   StackTrace? _stackTrace;
   Map<String, dynamic>? _errorContext;
@@ -205,14 +203,14 @@ mixin ErrorBoundaryMixin<T extends StatefulWidget> on State<T> {
     try {
       _lastErrorContext = {
         'widget': widget.runtimeType.toString(),
-        'state': this.runtimeType.toString(),
+        'state': runtimeType.toString(),
         'error': error?.toString(),
         'stackTraceSnippet': stackTrace?.toString().split('\n').take(3).join('\n'),
         'time': DateTime.now().toIso8601String(),
       };
       if (kDebugMode) {
         // ignore: avoid_print
-        print('[ErrorBoundary] Captured context: ${_lastErrorContext}\n');
+        print('[ErrorBoundary] Captured context: $_lastErrorContext\n');
       }
     } catch (e) {
       if (kDebugMode) {

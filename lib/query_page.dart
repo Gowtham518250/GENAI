@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
 import 'app_localizations.dart';
 import 'visual_widgets.dart';
@@ -46,7 +45,6 @@ class _QueryPageState extends State<QueryPage> {
       reply = '';
     });
 
-    final prefs = await SharedPreferences.getInstance();
     final token = await SecureTokenStorage.getToken() ?? '';
 
     try {
