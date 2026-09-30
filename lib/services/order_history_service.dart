@@ -1,12 +1,20 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../cache_consistency_service.dart';
 
 /// 🔧 FLIPKART-LEVEL: Order History Service
 /// Manages order history, tracking, and status updates
 class OrderHistoryService {
   static const String _ordersKey = 'order_history';
   static const String _ordersSyncKey = 'orders_sync_timestamp';
+
+  static Future<String> _scopedKey(String base) async {
+    final prefs = await SharedPreferences.getInstance();
+    final role = (prefs.getString('user_type') ?? prefs.getString('role') ?? 'CUSTOMER').trim().toUpperCase();
+    final userId = prefs.getString('user_id') ?? prefs.getString('userId') ?? prefs.getInt('user_id')?.toString() ?? prefs.getInt('userId')?.toString() ?? prefs.getString('user_email') ?? 'anonymous';
+    return base + '_' + role + '_' + userId;
+  }
 
   /// 🔧 FLIPKART-LEVEL: Order status enum
   static const List<String> orderStatuses = [
@@ -24,7 +32,7 @@ class OrderHistoryService {
   /// 🔧 FLIPKART-LEVEL: Get all orders
   static Future<List<Map<String, dynamic>>> getAllOrders() async {
     final prefs = await SharedPreferences.getInstance();
-    final ordersJson = prefs.getString(_ordersKey);
+    final ordersJson = prefs.getString(await _scopedKey(_ordersKey));
     
     if (ordersJson == null) return [];
     
@@ -41,8 +49,8 @@ class OrderHistoryService {
   static Future<void> saveOrders(List<Map<String, dynamic>> orders) async {
     final prefs = await SharedPreferences.getInstance();
     final ordersJson = json.encode(orders);
-    await prefs.setString(_ordersKey, ordersJson);
-    await prefs.setString(_ordersSyncKey, DateTime.now().toIso8601String());
+    await prefs.setString(await _scopedKey(_ordersKey), ordersJson);
+    await prefs.setString(await _scopedKey(_ordersSyncKey), DateTime.now().toIso8601String());
   }
 
   /// 🔧 FLIPKART-LEVEL: Add new order
@@ -81,6 +89,7 @@ class OrderHistoryService {
     }
     
     await saveOrders(orders);
+    await CacheConsistencyService.markLocalMutation('customer_orders', operationId: order['order_id']?.toString());
   }
 
   /// Reconcile a locally created order with its server acknowledgement.
@@ -106,6 +115,7 @@ class OrderHistoryService {
       break;
     }
     await saveOrders(orders);
+    await CacheConsistencyService.markRemoteRefresh('customer_orders', recordCount: orders.length);
   }
   /// 🔧 FLIPKART-LEVEL: Get order by ID
   static Future<Map<String, dynamic>?> getOrderById(String orderId) async {
@@ -273,7 +283,7 @@ class OrderHistoryService {
   /// 🔧 FLIPKART-LEVEL: Get sync timestamp
   static Future<DateTime?> getSyncTimestamp() async {
     final prefs = await SharedPreferences.getInstance();
-    final timestamp = prefs.getString(_ordersSyncKey);
+    final timestamp = prefs.getString(await _scopedKey(_ordersSyncKey));
     if (timestamp == null) return null;
     return DateTime.tryParse(timestamp);
   }
