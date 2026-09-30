@@ -160,7 +160,7 @@ class _AttendancePageState extends State<AttendancePage>
     setState(() => _loading = true);
     try {
       // Local-first: render persisted attendance immediately, even offline.
-      final localRecords = await OfflineAttendanceService.loadLocalRecords();
+      var localRecords = await OfflineAttendanceService.loadLocalRecords();
       if (mounted && localRecords.isNotEmpty) {
         setState(() => _records = localRecords);
       }
@@ -205,10 +205,16 @@ class _AttendancePageState extends State<AttendancePage>
 
       // Persist the complete remote history so payroll does not fall to zero
       // on cold start when the network/auth refresh is temporarily unavailable.
+      var remoteMergedSuccessfully = false;
       if (allRecords.isNotEmpty) {
         await OfflineAttendanceService.mergeRemoteRecords(
           allRecords.whereType<Map>().map((r) => Map<String, dynamic>.from(r)).toList(),
         );
+        // Re-read the cache because mergeRemoteRecords normalizes the backend's
+        // nested sessions into independent durable records. This is especially
+        // important immediately after the user clears app data.
+        localRecords = await OfflineAttendanceService.loadLocalRecords();
+        remoteMergedSuccessfully = true;
       }
       
       // IMPORTANT: never replace durable local attendance with a stale/empty
@@ -217,6 +223,13 @@ class _AttendancePageState extends State<AttendancePage>
       // behind it. Merge by employee/worker + business date and prefer the
       // local pending record until sync confirms it.
       final mergedByKey = <String, Map<String, dynamic>>{};
+      // Once the remote records have been normalized into the local cache,
+      // use that cache as the canonical display source. Mixing the raw
+      // one-row-per-day backend response back into the map can overwrite the
+      // session-specific records that were just reconstructed.
+      final displaySource = remoteMergedSuccessfully
+          ? localRecords
+          : [...localRecords, ...allRecords];
       String attendanceKey(Map<String, dynamic> r) {
         final employee = (r['worker_id'] ?? r['employee_id'] ?? '').toString();
         final date = (r['attendance_date'] ?? '').toString().split('T').first;
@@ -228,7 +241,7 @@ class _AttendancePageState extends State<AttendancePage>
         return '$employee:$date:$session';
       }
 
-      for (final raw in [...localRecords, ...allRecords]) {
+      for (final raw in displaySource) {
         if (raw is! Map) continue;
         final record = Map<String, dynamic>.from(raw);
         final key = attendanceKey(record);
@@ -379,10 +392,28 @@ class _AttendancePageState extends State<AttendancePage>
   }
 
   double _hoursForSession(Map r) {
-    if (r['working_hours'] != null) return (r['working_hours'] as num).toDouble();
+    final total = r['total_working_hours'];
+    if (total is num) return total.toDouble();
+
+    final sessionHours = r['working_hours'];
+    if (sessionHours is num) return sessionHours.toDouble();
+
+    final sessions = r['sessions'];
+    if (sessions is Map) {
+      var sum = 0.0;
+      for (final value in sessions.values) {
+        if (value is Map && value['working_hours'] is num) {
+          sum += (value['working_hours'] as num).toDouble();
+        }
+      }
+      if (sum > 0) return sum;
+    }
+
     final cin = _parseServerTime(r['check_in_time']);
     final cout = _parseServerTime(r['check_out_time']);
-    if (cin != null && cout != null) return cout.difference(cin).inSeconds / 3600.0;
+    if (cin != null && cout != null) {
+      return cout.difference(cin).inSeconds / 3600.0;
+    }
     if (cin != null && r['check_out_time'] == null) {
       return DateTime.now().difference(cin).inSeconds / 3600.0;
     }
@@ -398,29 +429,19 @@ class _AttendancePageState extends State<AttendancePage>
   double _calculateWorkerMonthlyHours(int workerId) {
     double totalHours = 0;
     final now = DateTime.now();
-    
-    // Filter records for this worker in current month using worker_id field
-    for (var r in _records) {
-      // Use worker_id if available, otherwise fall back to employee_id for backward compatibility
+
+    for (final r in _records) {
       final recordWorkerId = r['worker_id'] ?? r['employee_id'];
       if (recordWorkerId == null) continue;
       if (recordWorkerId.toString() != workerId.toString()) continue;
-      
-      final attDateStr = (r['attendance_date'] ?? '').toString().split('T').first.trim();
+
+      final attDateStr =
+          (r['attendance_date'] ?? '').toString().split('T').first.trim();
       final attDate = DateTime.tryParse(attDateStr);
       if (attDate == null) continue;
       if (attDate.year != now.year || attDate.month != now.month) continue;
-      
-      // Use working_hours from backend if available
-      if (r['working_hours'] != null) {
-        totalHours += (r['working_hours'] as num).toDouble();
-      } else if (r['check_in_time'] != null && r['check_out_time'] != null) {
-        final cin = _parseServerTime(r['check_in_time']);
-        final cout = _parseServerTime(r['check_out_time']);
-        if (cin != null && cout != null) {
-          totalHours += cout.difference(cin).inMinutes / 60.0;
-        }
-      }
+
+      totalHours += _hoursForSession(r);
     }
     return totalHours;
   }
