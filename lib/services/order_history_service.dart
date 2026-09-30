@@ -116,7 +116,7 @@ class OrderHistoryService {
       break;
     }
     await saveOrders(orders);
-    await CacheConsistencyService.markRemoteRefresh('customer_orders', recordCount: orders.length);
+    await CacheConsistencyService.markLocalMutationAcknowledged('customer_orders', operationId: serverOrderId);
   }
   /// 🔧 FLIPKART-LEVEL: Get order by ID
   static Future<Map<String, dynamic>?> getOrderById(String orderId) async {
