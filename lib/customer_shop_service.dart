@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
 import 'online_order_service.dart';
+import 'sync_queue_manager.dart';
+import 'sync_service.dart';
+import 'services/order_history_service.dart';
 
 /// Loads products for a customer's selected online shop.
 class CustomerShopService {
@@ -103,41 +108,53 @@ class CustomerShopService {
     required String paymentMethod,
     String paymentStatus = 'pending',
   }) async {
-    try {
-      final res = await ApiClient.postJson('/store/order', {
-        'shop_id': int.tryParse(shopId) ?? 0,
-        'items': items.map((i) => {
-          'product_id': int.tryParse(i['id'].toString()) ?? 0,
-          'quantity': int.tryParse(i['qty']?.toString() ?? '1') ?? 1
-        }).toList(),
-        'delivery_address': 'Store Pickup', // Default for now
-      });
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final body = json.decode(res.body);
-        return body['order_id']?.toString() ?? 'ORDER_OK';
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('CustomerShopService placeOrder API error: $e');
-    }
-    
-    // Fallback to firestore just in case
-    final doc = await FirebaseFirestore.instance.collection('orders').add({
+    final localOrderId = 'LOCAL_ORDER_${DateTime.now().microsecondsSinceEpoch}';
+    final now = DateTime.now().toIso8601String();
+    final localOrder = <String, dynamic>{
+      'order_id': localOrderId,
+      'local_order_id': localOrderId,
       'shop_id': shopId,
       'shop_name': shopName,
       'customer_email': customerEmail,
       'items': items.map((i) => {
-            'name': i['name'],
-            'qty': i['qty'],
-            'price': i['price'],
-            'id': i['id'],
-          }).toList(),
+        'name': i['name'],
+        'qty': i['qty'],
+        'price': i['price'],
+        'id': i['id'],
+      }).toList(),
       'total_amount': totalAmount,
-      'status': 'Pending',
       'payment_method': paymentMethod,
       'payment_status': paymentStatus,
-      'timestamp': FieldValue.serverTimestamp(),
+      'status': 'PENDING_SYNC',
+      'sync_status': 'pending',
+      'created_at': now,
+      'updated_at': now,
+    };
+
+    // Local order history is the immediate source of truth.
+    await OrderHistoryService.addOrder(localOrder);
+
+    final apiItems = items.map((i) => {
+      'product_id': int.tryParse(i['id'].toString()) ?? 0,
+      'quantity': int.tryParse(i['qty']?.toString() ?? '1') ?? 1,
+    }).toList();
+
+    final queued = await SyncQueueManager.enqueue('customer_place_order', {
+      'operation_id': localOrderId,
+      'local_order_id': localOrderId,
+      'shop_id': int.tryParse(shopId) ?? 0,
+      'items': apiItems,
+      'delivery_address': 'Store Pickup',
+      'customer_email': customerEmail,
     });
-    return doc.id;
+    if (!queued) {
+      throw StateError('Unable to save customer order to the offline outbox');
+    }
+
+    // Flush immediately when possible; the durable event remains pending
+    // while offline.
+    unawaited(SyncService.processQueueSafe());
+    return localOrderId;
   }
 
   /// Push owner inventory row to Firestore (stock + image for storefront).
