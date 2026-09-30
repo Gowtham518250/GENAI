@@ -169,7 +169,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
 
     if (!_otpVerified) {
       setState(() => _errorMessage =
-          'Verify the OTP and email confirmation before resetting your password.');
+          'Verify the OTP before resetting your password.');
       return;
     }
 
@@ -192,12 +192,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
     });
 
     try {
-      // The backend's existing /auth/reset-password endpoint accepts the
-      // short-lived one-time reset token issued by the hardened challenge.
-      final response = await ApiClient.postForm('/auth/reset-password', {
-        'token': _resetAuthorizationToken!,
-        'password': pass,
-      });
+      final response = await ApiClient.postJson(
+        '/auth/verify-reset-otp',
+        {
+          'email': _emailController.text.trim(),
+          'otp': _otpController.text.trim(),
+          'password': pass,
+        },
+      );
 
       if (!mounted) return;
 
