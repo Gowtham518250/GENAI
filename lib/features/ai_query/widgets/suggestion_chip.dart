@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../visual_widgets.dart';
+
 /// Data class representing a recommended business query template.
 class QuerySuggestion {
   final String title;
@@ -85,7 +87,7 @@ class SuggestedQuestionsBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: Row(
             children: [
               Container(
@@ -106,7 +108,7 @@ class SuggestedQuestionsBar extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.85),
+                  color: AppColors.textPrimary,
                   letterSpacing: 0.2,
                 ),
               ),
@@ -115,7 +117,7 @@ class SuggestedQuestionsBar extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         SizedBox(
-          height: 44,
+          height: 52,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -161,15 +163,15 @@ class _SuggestionChipItem extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B).withValues(alpha: 0.75),
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: suggestion.accentColor.withValues(alpha: 0.35),
-                width: 1.2,
+                color: suggestion.accentColor.withValues(alpha: 0.28),
+                width: 1.0,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: suggestion.accentColor.withValues(alpha: 0.08),
+                  color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -189,7 +191,7 @@ class _SuggestionChipItem extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.95),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
