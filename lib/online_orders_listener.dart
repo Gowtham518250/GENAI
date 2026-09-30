@@ -8,6 +8,7 @@ import 'online_order_service.dart';
 import 'payment_detection_service.dart';
 import 'payment_event.dart';
 import 'inventory_sync_service.dart';
+import 'inventory_management_service.dart';
 import 'secure_token_storage.dart';
 
 /// Background listeners: new orders (owner) + UPI payment matching.
@@ -197,6 +198,9 @@ class OnlineOrdersListener {
   Future<void> _refreshAfterRealtimeOrder(Map<String, dynamic> event) async {
     final inventoryResult = await InventorySyncService.refreshAllInventory();
     await InventorySyncService.updateLastSyncTimestamp();
+    if (inventoryResult['success'] == true) {
+      InventoryManagementService.onInventoryChanged?.call();
+    }
 
     final orderId = event['order_id']?.toString() ?? '';
     final eventType = event['type']?.toString() ?? '';
