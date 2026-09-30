@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../models/ai_query_response.dart';
+import '../../../visual_widgets.dart';
 
 /// Answer card displaying the AI-generated answer, query timestamp, copy utility,
 /// and an optional collapsible "Technical Details" section hiding raw SQL from shopkeepers.
@@ -55,15 +56,15 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B).withValues(alpha: 0.9),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+          color: const Color(0xFF6366F1).withValues(alpha: 0.24),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 6),
           ),
@@ -80,13 +81,13 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
               Container(
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: AppColors.brandLight,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.help_outline_rounded,
                   size: 15,
-                  color: Colors.white70,
+                  color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(width: 10),
@@ -99,7 +100,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -108,7 +109,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                       style: GoogleFonts.inter(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -119,14 +120,14 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                 timeStr,
                 style: GoogleFonts.inter(
                   fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: AppColors.textTertiary,
                 ),
               ),
             ],
           ),
 
           const SizedBox(height: 16),
-          Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
+          Divider(color: AppColors.divider, height: 1),
           const SizedBox(height: 16),
 
           // Primary AI Answer Section
@@ -168,7 +169,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                           icon: const Icon(
                             Icons.copy_rounded,
                             size: 16,
-                            color: Colors.white60,
+                            color: AppColors.textTertiary,
                           ),
                           onPressed: () => _copyToClipboard(context, answerText, 'Answer'),
                           tooltip: 'Copy Answer',
@@ -184,7 +185,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                       style: GoogleFonts.inter(
                         fontSize: 15.5,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white.withValues(alpha: 0.95),
+                        color: AppColors.textPrimary,
                         height: 1.5,
                       ),
                     ),
@@ -288,7 +289,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                               fontSize: 10.5,
                               letterSpacing: 0.8,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white70,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                           InkWell(
