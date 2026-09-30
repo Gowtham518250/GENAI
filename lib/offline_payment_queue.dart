@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' as foundation;
 import 'local_storage_service.dart';
 import 'payment_event.dart';
+import 'payment_idempotency_service.dart';
 
 /// Offline Payment Queue - Handles pending payments when offline
 class OfflinePaymentQueue {
@@ -36,6 +37,9 @@ class OfflinePaymentQueue {
         
         final paymentData = {
           'id': payment.id,
+          'fingerprint': payment.fingerprint,
+          'idempotencyKey': PaymentIdempotencyService.instance
+              .generatePaymentEventKey(payment.fingerprint),
           'amount': payment.amount,
           'app': payment.app.toString(),
           'payerName': payment.payerName,
