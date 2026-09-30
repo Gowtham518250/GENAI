@@ -1189,7 +1189,6 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
 
   void _showDeadlineModal(Map<String, dynamic> customer) {
     DateTime selectedDate = DateTime.now().add(const Duration(days: 7));
-    bool isSaving = false;
 
     showDatePicker(
       context: context,
@@ -1197,24 +1196,37 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     ).then((picked) async {
-      if (picked != null) {
-        final dateStr = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
-        try {
-          final resp = await ApiClient.postJson('/api/khata/update-deadline', {
-            'customer_phone': customer['customer_phone'],
-            'customer_id': customer['customer_id'],
-            'due_date': dateStr,
-          });
+      if (picked == null) return;
 
-          if (resp.statusCode == 200) {
-            _showToast('⏰ Payment deadline set to $dateStr');
-            _loadKhata();
-          } else {
-            _showToast('Failed to update deadline');
-          }
-        } catch (e) {
-          _showToast('Error setting deadline: $e');
-        }
+      final dateStr = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      final customerPhone = (customer['customer_phone'] ?? customer['phone'] ?? '').toString().trim();
+      final customerId = (customer['customer_id'] ?? '').toString().trim();
+      final scopeKey = customerId.isNotEmpty ? customerId : customerPhone;
+
+      if (scopeKey.isEmpty) {
+        _showToast('Could not identify this customer');
+        return;
+      }
+
+      try {
+        // Local-first: deadline is immediately visible to the merchant.
+        await LocalStorageService.saveKhataDeadline(
+          customerIdOrPhone: scopeKey,
+          dueDate: dateStr,
+        );
+
+        await SyncQueueManager.enqueue('update_khata_deadline', {
+          'operation_id': 'KHATA_DEADLINE_${scopeKey}_$dateStr',
+          'customer_phone': customerPhone,
+          'customer_id': int.tryParse(customerId),
+          'due_date': dateStr,
+        });
+
+        _showToast('⏰ Payment deadline set to $dateStr');
+        await _loadKhata();
+        unawaited(SyncService.processQueueSafe());
+      } catch (e) {
+        _showToast('Error setting deadline: $e');
       }
     });
   }
