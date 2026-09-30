@@ -15,7 +15,7 @@ class OfflineAttendanceService {
   static const String _prefix = 'attendance_local_v2_';
   static Future<int?> _userId() async { final p=await SharedPreferences.getInstance(); return p.getInt('user_id') ?? p.getInt('userId'); }
   static String _date(DateTime v) => '${v.year.toString().padLeft(4,'0')}-${v.month.toString().padLeft(2,'0')}-${v.day.toString().padLeft(2,'0')}';
-  static String _identity(Map<String,dynamic> r,int uid){final e=r['employee_id']?.toString().trim()??'';final w=r['worker_id']?.toString().trim()??'';if(e.isNotEmpty)return 'employee:$e';if(w.isNotEmpty)return 'worker:$w';return 'user:$uid';}
+  static String _identity(Map<String,dynamic> r,int uid){final w=r['worker_id']?.toString().trim()??'';final e=r['employee_id']?.toString().trim()??'';if(w.isNotEmpty)return 'worker:$w';if(e.isNotEmpty)return 'employee:$e';return 'user:$uid';}
   static int _sessionIndexOf(Map<String,dynamic> r){final raw=r['session_index'];if(raw is int)return raw;if(raw!=null)return int.tryParse(raw.toString())??0;return 0;}
   // NOTE: the key now includes a session index so multiple check-in/out
   // pairs on the same date are stored as separate records instead of
@@ -119,9 +119,17 @@ class OfflineAttendanceService {
   static Future<double> todayTotalHours({required int employeeId,int? workerId}) async {
     final date=_date(DateTime.now());
     final sessions=await _findTodaySessions(employeeId:employeeId,workerId:workerId,date:date);
+    if(sessions.length==1){
+      final backendTotal=sessions.first['total_working_hours'];
+      if(backendTotal is num)return backendTotal.toDouble();
+    }
     double total=0;
     for(final s in sessions){
-      if(s['working_hours']!=null){total+=(s['working_hours'] as num).toDouble();continue;}
+      final sessionHours=s['working_hours'];
+      if(sessionHours is num){
+        total+=sessionHours.toDouble();
+        continue;
+      }
       final cin=DateTime.tryParse((s['check_in_time']??'').toString());
       final cout=DateTime.tryParse((s['check_out_time']??'').toString());
       if(cin!=null&&cout!=null)total+=cout.toLocal().difference(cin.toLocal()).inSeconds/3600.0;
@@ -130,11 +138,64 @@ class OfflineAttendanceService {
     return total;
   }
 
-  /// Remote records are keyed by employee+date without a session concept on
-  /// legacy backends, so they're merged into session index 0 unless the
-  /// server itself starts sending a `session_index` field (forward
-  /// compatible if/when the backend adds multi-session support).
-  static Future<void> mergeRemoteRecords(List<Map<String,dynamic>> remoteRecords) async { if(remoteRecords.isEmpty)return;try{final uid=await _userId();if(uid==null||uid<=0)return;final local=await loadLocalRecords();final merged=<String,Map<String,dynamic>>{};for(final r in local){merged[_recordKey(r,uid)]=Map<String,dynamic>.from(r);}for(final serverRaw in remoteRecords){final server=Map<String,dynamic>.from(serverRaw);server['session_index']??=0;final k=_recordKey(server,uid);final previous=merged[k];merged[k]={...(previous??{}),...server,'local_pending':false,'synced_at':DateTime.now().toUtc().toIso8601String()};}await _saveRecords(merged.values.toList());}catch(e){if(kDebugMode)debugPrint('⚠️ Failed to cache remote attendance history: $e');} }
+  /// Expand a backend attendance row into durable local records, one per
+  /// server-provided session. This preserves history and payroll after the
+  /// user clears app data.
+  static List<Map<String,dynamic>> _expandRemoteRecord(Map<String,dynamic> server){
+    final rawSessions=server['sessions'];
+    if(rawSessions is Map && rawSessions.isNotEmpty){
+      final expanded=<Map<String,dynamic>>[];
+      for(final entry in rawSessions.entries){
+        final value=entry.value;
+        if(value is! Map)continue;
+        final session=Map<String,dynamic>.from(value);
+        final key=entry.key.toString().toLowerCase();
+        final index=key=='morning'
+            ? 0
+            : (key=='evening' ? 1 : expanded.length);
+        expanded.add({
+          ...server,
+          ...session,
+          'session_index':index,
+          'local_pending':false,
+        });
+      }
+      if(expanded.isNotEmpty)return expanded;
+    }
+    return [{
+      ...server,
+      'session_index':server['session_index']??0,
+      'local_pending':false,
+    }];
+  }
+
+  static Future<void> mergeRemoteRecords(List<Map<String,dynamic>> remoteRecords) async {
+    if(remoteRecords.isEmpty)return;
+    try{
+      final uid=await _userId();
+      if(uid==null||uid<=0)return;
+      final local=await loadLocalRecords();
+      final merged=<String,Map<String,dynamic>>{};
+      for(final r in local){
+        merged[_recordKey(r,uid)]=Map<String,dynamic>.from(r);
+      }
+      for(final serverRaw in remoteRecords){
+        for(final server in _expandRemoteRecord(serverRaw)){
+          final k=_recordKey(server,uid);
+          final previous=merged[k];
+          merged[k]={
+            ...(previous??{}),
+            ...server,
+            'local_pending':false,
+            'synced_at':DateTime.now().toUtc().toIso8601String(),
+          };
+        }
+      }
+      await _saveRecords(merged.values.toList());
+    }catch(e){
+      if(kDebugMode)debugPrint('⚠️ Failed to cache remote attendance history: $e');
+    }
+  }
 
   static Future<void> reconcileFromBackend() async { final uid=await _userId();if(uid==null||uid<=0)return;try{final date=_date(DateTime.now());final response=await ApiClient.getJson('${ApiClient.attendancePrefix}/date/$date');if(response.statusCode!=200)return;final decoded=jsonDecode(response.body);if(decoded is! Map||decoded['records'] is! List)return;final remote=(decoded['records'] as List).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();if(remote.isEmpty)return;await mergeRemoteRecords(remote);}catch(e){if(kDebugMode)debugPrint('OfflineAttendance reconcile skipped: $e');} }
 
