@@ -23,6 +23,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'phonetic_normalizer.dart';
 import 'voice_nlp_engine.dart';
+import 'voice_accuracy_gate.dart';
 import 'voice_feedback_learning_service.dart';
 import 'language_detection_visualizer.dart';
 import 'language_detector.dart';
@@ -1002,7 +1003,10 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
             qty: existing.qty + newItem.qty,
             unit: newItem.unit.isNotEmpty ? newItem.unit : existing.unit,
             price: newItem.price > 0 ? newItem.price : existing.price,
-            confidence: newItem.confidence,
+            confidence: newItem.confidence > existing.confidence
+                ? newItem.confidence
+                : existing.confidence,
+            isConfirmed: existing.isConfirmed || newItem.isConfirmed,
           );
         } else {
           _committedItems.add(newItem);
@@ -1051,23 +1055,26 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
       sttLocaleHint: _selectedLang.code,
     );
 
-    // Map to old ParsedItem structure
-    final items = v2Items.map((i) => ParsedItem(
-      name: i.name,
-      qty: i.qty,
-      unit: i.unit,
-      price: i.price,
-      confidence: i.confidenceScore,
-    )).toList();
+    // Gate NLP output before it becomes a billable item.
+    final items = v2Items.map((i) {
+      final gate = VoiceAccuracyGate.evaluate(
+        i,
+        catalog: catalogProducts,
+      );
+
+      return ParsedItem(
+        name: i.name,
+        qty: i.qty,
+        unit: i.unit,
+        price: i.price,
+        confidence: i.confidenceScore,
+        isConfirmed: gate.decision == VoiceGateDecision.autoAccept,
+      );
+    }).toList();
 
     if (commit) {
-      for (final item in items) {
-        _catalog.learnAlias(
-          spoken: clean,
-          canonicalName: item.name,
-          localeCode: _selectedLang.code,
-        );
-      }
+      // Do not learn aliases from unconfirmed fuzzy output. An incorrect
+      // alias can permanently degrade future voice matching.
       // Fix Bug #7: Merge by product name instead of blind addAll to prevent duplicates
       // on repeated commits of growing transcripts.
       for (final newItem in items) {
@@ -1129,12 +1136,21 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           );
         }
 
+        final editedItemName = editedName.isEmpty ? originalName : editedName;
+        final fieldErrors = VoiceAccuracyGate.validateManualFields(
+          name: editedItemName,
+          qty: newQty,
+          price: newPrice,
+          unit: ParsedItems[i].unit,
+        );
+
         ParsedItems[i] = ParsedItem(
-          name: editedName.isEmpty ? originalName : editedName,
+          name: editedItemName,
           qty: newQty,
           unit: ParsedItems[i].unit,
           price: newPrice,
           confidence: ParsedItems[i].confidence,
+          isConfirmed: fieldErrors.isEmpty,
         );
       }
     }
@@ -1166,7 +1182,30 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
       }
     }
 
+    final invalidItems = <ParsedItem>[];
+    for (final item in uniqueItems) {
+      final errors = VoiceAccuracyGate.validateManualFields(
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        unit: item.unit,
+      );
+      if (errors.isNotEmpty) {
+        item.isConfirmed = false;
+        invalidItems.add(item);
+      }
+    }
+
     final confirmed = uniqueItems.where((e) => e.isConfirmed).toList();
+    if (invalidItems.isNotEmpty) {
+      _showSnack(
+        'Please correct ' + invalidItems.length.toString() +
+            ' invalid billing item(s) before confirming.',
+        isError: true,
+      );
+      if (confirmed.isEmpty) return;
+    }
+
     if (confirmed.isEmpty) {
       _showSnack('No items selected', isError: true);
       return;
