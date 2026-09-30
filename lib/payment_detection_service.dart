@@ -150,6 +150,7 @@ class PaymentUiState {
     this.isUserConfirmed = false,
     this.isUserRejected  = false,
     this.saleId,
+    this.rawText         = '',
   });
 
   // FIX-J: human-readable time-ago helper
@@ -181,21 +182,21 @@ class PaymentUiState {
     }
   }
 
-  /// Build voice text via VoiceBuilder (FIX-G).
-  /// FIX-3: language passed explicitly (no global state).
+  /// Build precise voice text with explicit credit/debit direction.
   String voiceText(VoiceLanguage lang) {
     if (isFailed)  return VoiceBuilder.failed(amount, lang);
     if (isPartial) return VoiceBuilder.partial(amount, shortfall ?? 0, lang);
+
+    final direction = VoiceBuilder.detectDirection(rawText);
     switch (decision) {
       case PaymentDecision.confirmed:
-        return VoiceBuilder.received(amount, payerName, lang);
+        return VoiceBuilder.receivedDirectional(amount, payerName, lang, direction);
       case PaymentDecision.likely:
-        return VoiceBuilder.detected(amount, lang);
+        return VoiceBuilder.detectedDirectional(amount, lang, direction);
       case PaymentDecision.rejected:
         return '';
     }
   }
-
   PaymentUiState copyWith({
     PaymentDecision? decision,
     bool?            isUserConfirmed,
@@ -214,6 +215,7 @@ class PaymentUiState {
     detectedAt:      detectedAt,
     isUserConfirmed: isUserConfirmed ?? this.isUserConfirmed,
     isUserRejected:  isUserRejected  ?? this.isUserRejected,
+    rawText:         rawText         ?? this.rawText,
   );
 
   static String _fmt(double v) =>
@@ -225,6 +227,20 @@ class PaymentUiState {
 // =============================================================================
 
 abstract class VoiceBuilder {
+  enum PaymentDirection { credited, debited, unknown }
+
+  static PaymentDirection detectDirection(String text) {
+    final t = text.toLowerCase();
+    final credit = RegExp(
+      r'\b(credited|credit|received|payment received|money received|deposited|added to|cashback)\b',
+    ).hasMatch(t);
+    final debit = RegExp(
+      r'\b(debited|debit|sent|paid|payment to|deducted|withdrawn|spent|transferred to)\b',
+    ).hasMatch(t);
+    if (credit == debit) return PaymentDirection.unknown;
+    return credit ? PaymentDirection.credited : PaymentDirection.debited;
+  }
+
   // ── received ─────────────────────────────────────────────────────────────────
   static String received(double amount, String? name, VoiceLanguage lang) {
     final a = _amt(amount, lang);
@@ -243,7 +259,41 @@ abstract class VoiceBuilder {
     }
   }
 
+  static String receivedDirectional(
+    double amount,
+    String? name,
+    VoiceLanguage lang,
+    PaymentDirection direction,
+  ) {
+    final a = _amt(amount, lang);
+    final f = name != null ? _from(lang) + name : '';
+    switch (direction) {
+      case PaymentDirection.credited:
+        return 'Payment credited. ' + a + f;
+      case PaymentDirection.debited:
+        return 'Payment debited. ' + a + f;
+      case PaymentDirection.unknown:
+        return 'Payment detected. ' + a + f + ' Please verify.';
+    }
+  }
+
   // ── detected (LIKELY) ────────────────────────────────────────────────────────
+  static String detectedDirectional(
+    double amount,
+    VoiceLanguage lang,
+    PaymentDirection direction,
+  ) {
+    final a = _amt(amount, lang);
+    switch (direction) {
+      case PaymentDirection.credited:
+        return a + ' credited. Please verify.';
+      case PaymentDirection.debited:
+        return a + ' debited. Please verify.';
+      case PaymentDirection.unknown:
+        return a + ' detected. Please verify.';
+    }
+  }
+
   static String detected(double amount, VoiceLanguage lang) {
     final a = _amt(amount, lang);
     switch (lang) {
@@ -3456,6 +3506,7 @@ class PaymentDetectionService {
       shortfall:   event.isPartialPayment ? event.remainingAmount : null,
       isBillMatch: isBillSettlement,
       detectedAt:  event.timestamp,
+      rawText:      event.rawText,
     );
 
     PdsLogger.i('EMIT',
@@ -3503,10 +3554,8 @@ class PaymentDetectionService {
     // ANTI-03: queue LIKELY for merchant confirmation (FIX-D: fully wired)
     if (finalEvent.decision == PaymentDecision.likely) {
       _confirmMgr.add(finalEvent, finalUi);
-      // Re-announce if not confirmed in 12s — but only for non-partial payments
-      if (!finalEvent.isPartialPayment) {
-        _scheduleLikelyReannounce(finalEvent.id, finalEvent.amount, finalEvent.fingerprint);
-      }
+      // No automatic second voice alert; the first alert states
+      // credited/debited when the source text makes the direction clear.
     }
 
     // ANTI-07: async bank verification for CONFIRMED
@@ -3657,6 +3706,7 @@ class PaymentDetectionService {
       isFailed:        false,
       detectedAt:      event.timestamp,
       isUserConfirmed: true,
+      rawText:      event.rawText,
     );
     history.update(event.id, ui);
     _eventCtrl.add(event);
