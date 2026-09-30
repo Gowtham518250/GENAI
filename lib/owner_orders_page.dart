@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'api_client.dart';
+import 'online_orders_listener.dart';
+import 'dart:async';
 
 class OwnerOrdersPage extends StatefulWidget {
   const OwnerOrdersPage({super.key});
@@ -13,6 +15,7 @@ class OwnerOrdersPage extends StatefulWidget {
 class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
   bool _loading = true;
   List<dynamic> _orders = [];
+  StreamSubscription<Map<String, dynamic>>? _orderUpdatesSub;
 
   static const _bg = Color(0xFF0F0F1A);
   static const _card = Color(0xFF1A1A2E);
@@ -22,10 +25,25 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
   void initState() {
     super.initState();
     _fetchOrders();
+    _orderUpdatesSub = OnlineOrdersListener.instance.updates.listen((update) {
+      if (!mounted) return;
+      final type = update['type']?.toString();
+      if (type == 'NEW_ORDER' ||
+          type == 'ORDER_CHANGED' ||
+          type == 'ORDER_LIST_CHANGED') {
+        unawaited(_fetchOrders(showLoading: false));
+      }
+    });
   }
 
-  Future<void> _fetchOrders() async {
-    setState(() => _loading = true);
+  @override
+  void dispose() {
+    _orderUpdatesSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchOrders({bool showLoading = true}) async {
+    if (showLoading && mounted) setState(() => _loading = true);
     try {
       final res = await ApiClient.getJson('/store/owner/orders');
       if (res.statusCode == 200) {
@@ -35,7 +53,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
     } catch (e) {
       debugPrint('Owner orders fetch error: $e');
     } finally {
-      setState(() => _loading = false);
+      if (showLoading && mounted) setState(() => _loading = false);
     }
   }
 
