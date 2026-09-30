@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'cache_consistency_service.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1700,6 +1701,58 @@ static Future<bool> _saveCustomerItem(Map<String, dynamic> data) async {
     }
   }
 
+
+  /// Pull the authoritative sales snapshot for read-side freshness.
+  /// Local pending transactions are preserved; acknowledged/server-newer
+  /// records reconcile by updated_at rather than blindly replacing the cache.
+  static Future<bool> refreshSalesCacheFromBackend() async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return false;
+
+      final response = await ApiClient.getJson(
+        ApiClient.salesEndpoint,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 12));
+
+      if (response.statusCode != 200) return false;
+
+      final decoded = jsonDecode(response.body);
+      final rawRemote = decoded is List
+          ? decoded
+          : decoded is Map && decoded['sales'] is List
+              ? decoded['sales']
+              : decoded is Map && decoded['results'] is List
+                  ? decoded['results']
+                  : <dynamic>[];
+
+      final local = await LocalStorageService.loadSales();
+      final merged = CacheConsistencyService.mergeLists(
+        local,
+        rawRemote,
+        dataset: 'sales',
+      );
+      await LocalStorageService.replaceSalesCanonical(merged);
+      await CacheConsistencyService.markRemoteRefresh(
+        'sales',
+        recordCount: merged.length,
+      );
+      SyncService.triggerDashboardRefresh();
+
+      if (kDebugMode) {
+        debugPrint(
+          '✅ Sales read reconciliation complete: local=${local.length}, '
+          'remote=${rawRemote.length}, merged=${merged.length}',
+        );
+      }
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Sales read reconciliation skipped: $e');
+      }
+      return false;
+    }
+  }
 
 static Future<DateTime> getAuthoritativeTime() async {
     try {
