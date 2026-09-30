@@ -94,15 +94,65 @@ class OfflineAttendanceService {
     final date=_date(now);
     final open=await _findOpenSession(employeeId:employeeId,workerId:workerId,date:date);
     if(open==null)return true;
+
     final sessionIndex=_sessionIndexOf(open);
     DateTime? checkIn;
     final raw=open['check_in_time'];
     if(raw!=null)checkIn=DateTime.tryParse(raw.toString());
     final hours=checkIn==null?null:now.difference(checkIn.toLocal()).inSeconds/3600.0;
     final operationId='ATT_OUT_${workerId??employeeId}_${date}_s$sessionIndex';
-    await _upsertSession(employeeId:employeeId,workerId:workerId,date:date,sessionIndex:sessionIndex,checkOut:now,workingHours:hours,status:'PRESENT');
-    final queued=await SyncQueueManager.enqueue('attendance_check_out',{'operation_id':operationId,'idempotency_key':operationId,'employee_id':employeeId,'worker_id':workerId,'attendance_date':date,'session_index':sessionIndex});
+
+    await _upsertSession(
+      employeeId:employeeId,
+      workerId:workerId,
+      date:date,
+      sessionIndex:sessionIndex,
+      checkOut:now,
+      workingHours:hours,
+      status:'PRESENT',
+    );
+
+    final queued=await SyncQueueManager.enqueue(
+      'attendance_check_out',
+      {
+        'operation_id':operationId,
+        'idempotency_key':operationId,
+        'employee_id':employeeId,
+        'worker_id':workerId,
+        'attendance_date':date,
+        'session_index':sessionIndex,
+      },
+    );
     if(!queued)throw StateError('Unable to persist attendance check-out to durable outbox');
+
+    // Refresh from the backend immediately when possible. The local record
+    // remains authoritative while the queue is pending; once the server
+    // confirms the checkout, mergeRemoteRecords will clear local_pending.
+    try {
+      final response = await ApiClient.getJson(
+        '${ApiClient.attendancePrefix}/employee/$employeeId',
+      );
+      if(response.statusCode==200){
+        final decoded=jsonDecode(response.body);
+        if(decoded is Map && decoded['records'] is List){
+          final remote=(decoded['records'] as List)
+              .whereType<Map>()
+              .map((e)=>Map<String,dynamic>.from(e))
+              .toList();
+          if(remote.isNotEmpty) await mergeRemoteRecords(remote);
+        } else if(decoded is List){
+          final remote=decoded
+              .whereType<Map>()
+              .map((e)=>Map<String,dynamic>.from(e))
+              .toList();
+          if(remote.isNotEmpty) await mergeRemoteRecords(remote);
+        }
+      }
+    } catch (_) {
+      // Offline or temporarily unavailable: the durable local checkout and
+      // outbox entry remain intact and will be reconciled by SyncService.
+    }
+
     return true;
   }
 
