@@ -42,9 +42,17 @@ class InventoryStockHelper {
     List<Map<String, dynamic>> localList,
   ) {
     final localById = <String, Map<String, dynamic>>{};
-    for (final p in normalizeProducts(localList)) {
+    final deletedIds = <String>{};
+    for (final raw in localList) {
+      if (raw is! Map) continue;
+      final p = Map<String, dynamic>.from(raw);
       final id = (p['id'] ?? p['product_id'] ?? p['sku'] ?? p['barcode'] ?? '').toString();
-      if (id.isNotEmpty) localById[id] = p;
+      if (id.isEmpty) continue;
+      if (p['is_deleted'] == true && CacheConsistencyService.isPending(p)) {
+        deletedIds.add(id);
+        continue;
+      }
+      localById[id] = normalizeProduct(p);
     }
 
     final merged = <Map<String, dynamic>>[];
@@ -53,6 +61,11 @@ class InventoryStockHelper {
     for (final raw in apiList) {
       final apiP = normalizeProduct(Map<String, dynamic>.from(raw));
       final id = (apiP['id'] ?? apiP['product_id'] ?? apiP['sku'] ?? apiP['barcode'] ?? '').toString();
+      if (id.isNotEmpty && deletedIds.contains(id)) {
+        // Pending local delete acts as a tombstone until its outbox ACK.
+        seen.add(id);
+        continue;
+      }
       final local = id.isEmpty ? null : localById[id];
 
       if (local != null) {
