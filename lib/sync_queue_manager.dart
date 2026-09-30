@@ -217,28 +217,52 @@ class SyncQueueManager {
         final userId = await _currentUserId();
         if (userId == null || userId <= 0) return 0;
 
+        final prefs = await SharedPreferences.getInstance();
+        final role = (prefs.getString('user_type') ??
+                prefs.getString('role') ??
+                'OWNER')
+            .trim()
+            .toLowerCase();
+
         final key = await _getHiveKey();
-        final quarantine = await Hive.openBox(
+        final quarantineNames = <String>{
           '${_queueBoxName}_quarantine',
-          encryptionCipher: HiveAesCipher(key),
-        );
+          '${_queueBoxName}_quarantine_$role',
+        };
         final target = await _getBoxUnlocked();
-
         int moved = 0;
-        for (final keyValue in quarantine.keys.toList()) {
-          final raw = quarantine.get(keyValue);
-          if (raw is! Map) continue;
 
-          final ownerId =
-              int.tryParse(raw['owner_user_id']?.toString() ?? '');
-          if (ownerId != userId) continue;
+        for (final quarantineName in quarantineNames) {
+          Box? quarantine;
+          try {
+            quarantine = await Hive.openBox(
+              quarantineName,
+              encryptionCipher: HiveAesCipher(key),
+            );
 
-          await target.put(keyValue, Map<String, dynamic>.from(raw));
-          await quarantine.delete(keyValue);
-          moved++;
+            for (final keyValue in quarantine.keys.toList()) {
+              final raw = quarantine.get(keyValue);
+              if (raw is! Map) continue;
+
+              final ownerId =
+                  int.tryParse(raw['owner_user_id']?.toString() ?? '');
+              if (ownerId != userId) continue;
+
+              final ownerRole =
+                  raw['owner_role']?.toString().toLowerCase();
+              if (ownerRole != null && ownerRole.isNotEmpty && ownerRole != role) {
+                continue;
+              }
+
+              await target.put(keyValue, Map<String, dynamic>.from(raw));
+              await quarantine.delete(keyValue);
+              moved++;
+            }
+          } finally {
+            try { await quarantine?.close(); } catch (_) {}
+          }
         }
 
-        await quarantine.close();
         if (moved > 0 && kDebugMode) {
           debugPrint(
             '✅ [SyncQueue] Recovered $moved authenticated quarantine items',
