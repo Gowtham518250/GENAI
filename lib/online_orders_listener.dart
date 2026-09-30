@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'online_order_service.dart';
 import 'payment_detection_service.dart';
 import 'payment_event.dart';
+import 'api_client.dart';
+import 'notification_service.dart';
 import 'inventory_sync_service.dart';
 import 'inventory_management_service.dart';
 import 'secure_token_storage.dart';
