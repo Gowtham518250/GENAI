@@ -190,6 +190,21 @@ class SyncService {
       );
       
       if (res.statusCode == 200 || res.statusCode == 201) {
+        try {
+          final body = jsonDecode(res.body);
+          final date = DateTime.now().toIso8601String().split('T').first;
+          final sessionIndex =
+              int.tryParse(body['session_index']?.toString() ?? '') ?? 0;
+          await OfflineAttendanceService.markSynced(
+            employeeId: int.parse(workerId),
+            workerId: int.parse(workerId),
+            date: date,
+            sessionIndex: sessionIndex,
+          );
+        } catch (_) {
+          // The server accepted the checkout; local reconciliation will
+          // correct any cache mismatch on the next attendance refresh.
+        }
         if (kDebugMode) debugPrint('✅ Worker checked out: $workerId');
         return true;
       } else {
