@@ -65,7 +65,7 @@ class OrderHistoryService {
     
     orders.insert(0, order); // Add to beginning
     await saveOrders(orders);
-    await CacheConsistencyService.markLocalMutation('customer_orders', operationId: order['order_id']?.toString());
+    await CacheConsistencyService.markLocalMutation('customer_orders', operationId: orderId);
   }
 
   /// 🔧 FLIPKART-LEVEL: Update order status
