@@ -48,9 +48,8 @@ class CacheConsistencyService {
     current['last_remote_updated_at'] = (serverUpdatedAt ?? now).toUtc().toIso8601String();
     // A remote read does not ACK local mutations. Preserve dirty state until
     // durable mutations have been acknowledged explicitly.
-    if (current['pending_mutations'] == null) {
-      current['dirty'] = false;
-    }
+    final pending = (current['pending_mutations'] as num?)?.toInt() ?? 0;
+    current['dirty'] = pending > 0 ? true : false;
     if (recordCount != null) current['record_count'] = recordCount;
     await _write(dataset, current);
   }
