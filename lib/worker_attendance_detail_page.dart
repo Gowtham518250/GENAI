@@ -142,13 +142,30 @@ class _WorkerAttendanceDetailPageState
   }
 
   double _hoursOf(Map<String, dynamic> r) {
-    if (r['working_hours'] != null) {
-      return (r['working_hours'] as num).toDouble();
+    final total = r['total_working_hours'];
+    if (total is num) return total.toDouble();
+
+    final sessionHours = r['working_hours'];
+    if (sessionHours is num) return sessionHours.toDouble();
+
+    final sessions = r['sessions'];
+    if (sessions is Map) {
+      var sum = 0.0;
+      for (final value in sessions.values) {
+        if (value is Map && value['working_hours'] is num) {
+          sum += (value['working_hours'] as num).toDouble();
+        }
+      }
+      if (sum > 0) return sum;
     }
+
     final cin = _parseServerTime(r['check_in_time']);
     final cout = _parseServerTime(r['check_out_time']);
     if (cin != null && cout != null) {
       return cout.difference(cin).inMinutes / 60.0;
+    }
+    if (cin != null && r['check_out_time'] == null) {
+      return DateTime.now().difference(cin).inSeconds / 3600.0;
     }
     return 0.0;
   }
