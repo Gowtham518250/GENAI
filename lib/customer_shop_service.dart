@@ -141,6 +141,7 @@ class CustomerShopService {
 
     final queued = await SyncQueueManager.enqueue('customer_place_order', {
       'operation_id': localOrderId,
+      'idempotency_key': localOrderId,
       'local_order_id': localOrderId,
       'shop_id': int.tryParse(shopId) ?? 0,
       'items': apiItems,
