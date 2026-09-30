@@ -145,9 +145,24 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
         continue;
       }
 
-      InventoryStockHelper.writeStock(copy, newStock);
+      final remoteSnapshot = <String, dynamic>{
+        'id': productId,
+        'product_id': productId,
+        'stock': newStock,
+        'current_stock': newStock,
+        'quantity': newStock,
+        if (change['updated_at'] != null) 'updated_at': change['updated_at'],
+        if (change['server_updated_at'] != null) 'server_updated_at': change['server_updated_at'],
+      };
+      final reconciled = CacheConsistencyService.mergeRecord(
+        copy,
+        remoteSnapshot,
+        dataset: 'inventory',
+      );
       changedIds.add(productId);
-      updatedProducts.add(copy);
+      updatedProducts.add(
+        InventoryStockHelper.normalizeProduct(reconciled),
+      );
     }
 
     final missingProduct = changes.any((change) {
@@ -171,12 +186,27 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
         final newStock = _asStockNumber(change['new_stock']);
         if (productId == null || newStock == null) continue;
 
-        for (final product in backendProducts) {
-          if (product['id']?.toString() == productId) {
-            InventoryStockHelper.writeStock(product, newStock);
-            cacheChanged = true;
-            break;
-          }
+        for (var i = 0; i < backendProducts.length; i++) {
+          final product = backendProducts[i];
+          if (product['id']?.toString() != productId) continue;
+          final remoteSnapshot = <String, dynamic>{
+            'id': productId,
+            'product_id': productId,
+            'stock': newStock,
+            'current_stock': newStock,
+            'quantity': newStock,
+            if (change['updated_at'] != null) 'updated_at': change['updated_at'],
+            if (change['server_updated_at'] != null) 'server_updated_at': change['server_updated_at'],
+          };
+          backendProducts[i] = InventoryStockHelper.normalizeProduct(
+            CacheConsistencyService.mergeRecord(
+              Map<String, dynamic>.from(product),
+              remoteSnapshot,
+              dataset: 'inventory',
+            ),
+          );
+          cacheChanged = true;
+          break;
         }
       }
 
