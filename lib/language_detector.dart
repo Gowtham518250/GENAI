@@ -493,13 +493,87 @@ class LanguageDetector {
   }
 }
 
+bool _hasExplicitPriceMarker(String transcript) {
+  return RegExp(
+    r'(?:₹|\brs\.?\b|\binr\b|\brupees?\b|'
+    r'రూపాయలు|రూపాయి|రూపాయ|రూ|रुपये|रुपया|रुपए|रुपीस|'
+    r'रु\.?|ரூபாய்|ரூ|ರೂಪಾಯಿ|ರೂ|രൂപ|രൂ|'
+    r'টাকা|রুপি|રૂપિયા|રૂ|ਰੁਪਏ)',
+    caseSensitive: false,
+  ).hasMatch(transcript);
+}
+
+bool _hasItemSeparator(String transcript) {
+  return RegExp(
+    r'[,;|]|\band\b|\baur\b|\bthen\b|\bnext\b|'
+    r'\bplus\b|और|तथा|एवं|మరియు|మరియు|ಮತ್ತು|'
+    r'மற்றும்|এবং|અને|आणि',
+    caseSensitive: false,
+  ).hasMatch(transcript);
+}
+
+List<ParsedItemV2> _parseSinglePricedVoiceCommand(
+  String transcript, {
+  required String langCode,
+  List<Map<String, dynamic>>? catalog,
+}) {
+  final numberCount =
+      RegExp(r'\b\d+\.?\d*\b').allMatches(transcript).length;
+
+  if (numberCount != 1 ||
+      !_hasExplicitPriceMarker(transcript) ||
+      _hasItemSeparator(transcript)) {
+    return [];
+  }
+
+  final parsed = VoiceNlpEngineV2.parse(
+    transcript,
+    langCode,
+    catalog: catalog,
+  );
+
+  // Exactly one numeric value + an explicit currency marker means that
+  // number is the price. No spoken quantity was supplied, so quantity=1.
+  final priced = parsed
+      .where((item) => item.price > 0 && item.name.trim().length >= 2)
+      .toList()
+    ..sort((a, b) => b.confidenceScore.compareTo(a.confidenceScore));
+
+  if (priced.isEmpty) return [];
+
+  final best = priced.first;
+  return [
+    ParsedItemV2(
+      name: best.name,
+      qty: 1.0,
+      unit: best.unit,
+      price: best.price,
+      confidence: best.confidence,
+      catalogMatchName: best.catalogMatchName,
+      catalogPrice: best.catalogPrice,
+    ),
+  ];
+}
+
 List<ParsedItemV2> parseMultilingualVoiceInput(
   String transcript, {
   List<Map<String, dynamic>>? catalog,
   String? sttLocaleHint,
 }) {
-  final detection = LanguageDetector.detect(transcript, sttLocaleHint: sttLocaleHint);
+  final detection =
+      LanguageDetector.detect(transcript, sttLocaleHint: sttLocaleHint);
   if (detection.segments.isEmpty) return [];
+
+  // Deterministic fast-path for natural speech such as:
+  // "పప్పు 200 రూపాయలు" / "dal 200 rupees".
+  // It prevents the multilingual segmentation layer from turning one
+  // spoken product into several candidate products.
+  final singlePriced = _parseSinglePricedVoiceCommand(
+    transcript,
+    langCode: detection.dominant.code,
+    catalog: catalog,
+  );
+  if (singlePriced.isNotEmpty) return singlePriced;
 
   if (!detection.isCodeSwitched || detection.segments.length == 1) {
     return VoiceNlpEngineV2.parse(
@@ -512,7 +586,8 @@ List<ParsedItemV2> parseMultilingualVoiceInput(
   final merged = <ParsedItemV2>[];
   for (final segment in detection.segments) {
     if (segment.text.trim().isEmpty) continue;
-    final items = VoiceNlpEngineV2.parse(segment.text, segment.lang.code, catalog: catalog);
+    final items =
+        VoiceNlpEngineV2.parse(segment.text, segment.lang.code, catalog: catalog);
     for (final item in items) {
       final duplicateIndex = merged.indexWhere((entry) =>
           entry.name.toLowerCase() == item.name.toLowerCase() &&
