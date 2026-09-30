@@ -29,7 +29,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   @override
   void dispose() {
-    RealtimeClient.disconnect();
+    RealtimeClient.disconnect(subscriberId: 'customer_order_tracking');
     super.dispose();
   }
 
@@ -40,6 +40,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     await RealtimeClient.connect(
       userId: userId,
       shopId: 0,
+      subscriberId: 'customer_order_tracking',
       onMessage: _handleRealtimeMessage,
       onStatus: (connected, message) {
         if (mounted) setState(() => _realtimeConnected = connected);
