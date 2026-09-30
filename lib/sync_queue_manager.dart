@@ -169,12 +169,19 @@ class SyncQueueManager {
 
   static Future<Box> _getBoxUnlocked() async {
     final userId = await _currentUserId();
+    final prefs = await SharedPreferences.getInstance();
+    final role = (prefs.getString('user_type') ??
+            prefs.getString('role') ??
+            'OWNER')
+        .trim()
+        .toUpperCase();
 
-    // A missing user is isolated in a quarantine box. It is NEVER merged
-    // automatically into an arbitrary future account.
+    // Scope durable outbox records by both role and user ID so a customer
+    // account can never consume an owner's pending operations with the same
+    // numeric ID (and vice versa).
     final scopedName = userId == null || userId <= 0
-        ? '${_queueBoxName}_quarantine'
-        : '${_queueBoxName}_user_$userId';
+        ? '${_queueBoxName}_quarantine_${role.toLowerCase()}'
+        : '${_queueBoxName}_${role.toLowerCase()}_user_$userId';
 
     if (_box != null &&
         _box!.isOpen &&
