@@ -553,9 +553,9 @@ void main() async {
     await EnhancedLocalStorageService.initialize();
     debugPrint('✅ Enhanced Local Storage Service initialized');
 
-    // Start background sync worker (automatic synchronization)
-    await BackgroundSyncWorker.instance.start();
-    debugPrint('✅ Background Sync Worker started');
+    // The canonical SyncService owns the durable outbox. The background
+    // worker remains only as a compatibility adapter for legacy
+    // OperationQueueService operations.
   } catch (e) {
     debugPrint('⚠️ Production architecture initialization error: $e');
     // Continue startup even if new services fail - they have fallbacks
@@ -611,8 +611,19 @@ void main() async {
       // Initialize Email Service from secure storage
       await EmailSenderService.initialize();
 
-      // Initialize Offline-First Sync Service (Option B cleanup runs inside sync + login)
+      // Initialize the canonical Offline-First Sync Service before
+      // starting the legacy compatibility worker.
       await SyncService.init();
+      debugPrint('✅ Canonical Offline-First Sync Service initialized');
+
+      try {
+        await BackgroundSyncWorker.instance.start();
+        debugPrint('✅ Legacy compatibility Sync Worker started');
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Legacy compatibility worker failed: $e');
+        }
+      }
 
       // 🔧 FIX: Auto-refresh session on app startup - OFFLINE-FIRST MODE
       // Try to refresh session if online, but don't force logout if offline
