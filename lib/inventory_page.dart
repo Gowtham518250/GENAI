@@ -261,31 +261,17 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
 
       // Merge API data
       if (_userId != null && token.isNotEmpty) {
-        // 4. Background Sync Offline Products first
-        if (localMap.isNotEmpty) {
-          final keysToRemove = <String>[];
+        // 4. Promote legacy local-only products into the canonical outbox.
+        // They remain in local storage until the SyncEngine receives a server ACK.
+        if (localMap.isNotEmpty && _userId != null) {
           for (final entry in localMap.entries) {
-            try {
-              final res = await ApiClient.postJson(
-                '${ApiClient.inventoryPrefix}/products?user_id=$_userId',
-                entry.value,
-                headers: {'Authorization': 'Bearer $token'},
-              ).timeout(const Duration(seconds: 10));
-              if (res.statusCode == 200 || res.statusCode == 201) {
-                keysToRemove.add(entry.key);
-              }
-            } catch (e) {
-              if (kDebugMode) debugPrint('⚠️ Failed to sync offline product ${entry.key}: $e');
-            }
+            await SyncQueueManager.enqueue('create_local_product', {
+              'operation_id': 'PRODUCT_CREATE_${entry.key}',
+              'user_id': _userId,
+              'payload': Map<String, dynamic>.from(entry.value as Map),
+            });
           }
-          if (keysToRemove.isNotEmpty) {
-            for (final k in keysToRemove) {
-              localMap.remove(k);
-              localOfflineProducts.removeWhere((p) => p['id'] == k);
-            }
-            await LocalStorageService.saveLocalProducts(localMap);
-            if (kDebugMode) debugPrint('✅ Synced ${keysToRemove.length} offline products');
-          }
+          unawaited(SyncService.processQueueSafe());
         }
 
         try {
