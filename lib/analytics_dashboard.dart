@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'sync_service.dart';
+import 'cache_consistency_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -68,7 +70,19 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
   Future<void> _loadAnalytics({bool silent = false}) async {
     if (!silent) setState(() => _loading = true);
     try {
-      final rawSales = await LocalStorageService.loadSales();
+      // Render the durable local ledger immediately, then reconcile from the
+      // backend only when the read cache is stale. This prevents a 15-second
+      // timer from becoming a permanent network poll while still converging
+      // after changes made by another device.
+      var rawSales = await LocalStorageService.loadSales();
+      final salesCacheFresh = await CacheConsistencyService.isFresh(
+        'sales',
+        maxAge: const Duration(seconds: 30),
+      );
+      if (!salesCacheFresh) {
+        await SyncService.refreshSalesCacheFromBackend();
+        rawSales = await LocalStorageService.loadSales();
+      }
 
       // The engine canonicalizes local/cloud duplicates first. All secondary
       // analytics must consume the same canonical transaction set, otherwise
