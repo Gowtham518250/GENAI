@@ -216,7 +216,8 @@ class PaymentUiState {
     detectedAt:      detectedAt,
     isUserConfirmed: isUserConfirmed ?? this.isUserConfirmed,
     isUserRejected:  isUserRejected  ?? this.isUserRejected,
-    rawText:         rawText         ?? this.rawText,
+    saleId:           saleId,
+    rawText:          rawText         ?? this.rawText,
   );
 
   static String _fmt(double v) =>
@@ -232,12 +233,32 @@ enum PaymentDirection { credited, debited, unknown }
 abstract class VoiceBuilder {
   static PaymentDirection detectDirection(String text) {
     final t = text.toLowerCase();
+
+    // Support English + common Indian-language payment notification words.
     final credit = RegExp(
-      r'\b(credited|credit|received|payment received|money received|deposited|added to|cashback)\b',
+      r'(credited|credit|received|payment received|money received|deposited|added to|cashback'
+      r'|जमा|क्रेडिट|प्राप्त|पैसे मिले|आया|आ गई'
+      r'|క్రెడిట్|జమ|అందింది|వచ్చింది|జమైంది|చెల్లింపు వచ్చింది'
+      r'|கிரெடிட்|வரவு|வந்தது|பெறப்பட்டது|பணம் வந்தது'
+      r'|ಕ್ರೆಡಿಟ್|ಜಮಾ|ಬಂದಿದೆ|ಪಾವತಿ ಬಂದಿದೆ'
+      r'|ക്രെഡിറ്റ്|ലഭിച്ചു|പണം വന്നു'
+      r'|क्रेडिट|जमा|मिळाले|पैसे आले'
+      r'|ক্রেডিট|জমা|পাওয়া গেছে'
+      r'|ਕ੍ਰੈਡਿਟ|ਜਮ੍ਹਾਂ|ਪ੍ਰਾਪਤ)',
     ).hasMatch(t);
+
     final debit = RegExp(
-      r'\b(debited|debit|sent|paid|payment to|deducted|withdrawn|spent|transferred to)\b',
+      r'(debited|debit|sent|paid|payment to|deducted|withdrawn|spent|transferred to'
+      r'|डेबिट|कट गया|भुगतान किया|भेजा|निकाला|कटौती'
+      r'|డెబిట్|కట్ అయింది|చెల్లించారు|పంపారు|తీసుకున్నారు|డెబిట్ అయింది'
+      r'|டெபிட்|கழிக்கப்பட்டது|செலுத்தப்பட்டது|அனுப்பப்பட்டது|பணம் சென்றது'
+      r'|ಡೆಬಿಟ್|ಕಡಿತ|ಪಾವತಿಸಲಾಗಿದೆ|ಕಳುಹಿಸಲಾಗಿದೆ'
+      r'|ഡെബിറ്റ്|കുറച്ചു|അടച്ചു|അയച്ചു'
+      r'|डेबिट|कपात|पाठवले|भरले'
+      r'|ডেবিট|কাটা|পাঠানো হয়েছে|পরিশোধ করা হয়েছে'
+      r'|ਡੈਬਿਟ|ਕੱਟਿਆ|ਭੇਜਿਆ|ਭੁਗਤਾਨ ਕੀਤਾ)',
     ).hasMatch(t);
+
     if (credit == debit) return PaymentDirection.unknown;
     return credit ? PaymentDirection.credited : PaymentDirection.debited;
   }
@@ -268,13 +289,47 @@ abstract class VoiceBuilder {
   ) {
     final a = _amt(amount, lang);
     final f = name != null ? _from(lang) + name : '';
+
     switch (direction) {
       case PaymentDirection.credited:
-        return 'Payment credited. ' + a + f;
+        switch (lang) {
+          case VoiceLanguage.hindi:     return 'पेमेंट जमा हुआ। $a$f';
+          case VoiceLanguage.tamil:     return 'பணம் வரவு ஆனது. $a$f';
+          case VoiceLanguage.telugu:    return 'చెల్లింపు జమైంది. $a$f';
+          case VoiceLanguage.kannada:   return 'ಪಾವತಿ ಜಮೆಯಾಗಿದೆ. $a$f';
+          case VoiceLanguage.marathi:   return 'पेमेंट जमा झाले. $a$f';
+          case VoiceLanguage.gujarati:  return 'ચૂકવણી જમા થઈ. $a$f';
+          case VoiceLanguage.bengali:   return 'পেমেন্ট জমা হয়েছে। $a$f';
+          case VoiceLanguage.punjabi:   return 'ਭੁਗਤਾਨ ਜਮ੍ਹਾਂ ਹੋਇਆ। $a$f';
+          case VoiceLanguage.malayalam: return 'പേയ്മെന്റ് ക്രെഡിറ്റ് ആയി. $a$f';
+          default:                      return 'Payment credited. $a$f';
+        }
       case PaymentDirection.debited:
-        return 'Payment debited. ' + a + f;
+        switch (lang) {
+          case VoiceLanguage.hindi:     return 'पेमेंट कट गया। $a';
+          case VoiceLanguage.tamil:     return 'பணம் பற்று ஆனது. $a';
+          case VoiceLanguage.telugu:    return 'చెల్లింపు డెబిట్ అయింది. $a';
+          case VoiceLanguage.kannada:   return 'ಪಾವತಿ ಡೆಬಿಟ್ ಆಗಿದೆ. $a';
+          case VoiceLanguage.marathi:   return 'पेमेंट डೆbit झाले. $a';
+          case VoiceLanguage.gujarati:  return 'ચૂકવણી ડેબિટ થઈ. $a';
+          case VoiceLanguage.bengali:   return 'পেমেন্ট ডেবিট হয়েছে। $a';
+          case VoiceLanguage.punjabi:   return 'ਭੁਗਤਾਨ ਡੈਬਿਟ ਹੋਇਆ। $a';
+          case VoiceLanguage.malayalam: return 'പേയ്മെന്റ് ഡെബിറ്റ് ആയി. $a';
+          default:                      return 'Payment debited. $a';
+        }
       case PaymentDirection.unknown:
-        return 'Payment detected. ' + a + f + ' Please verify.';
+        switch (lang) {
+          case VoiceLanguage.hindi:     return '$a पेमेंट मिला, कृपया जांचें।';
+          case VoiceLanguage.tamil:     return '$a கட்டணமாக கண்டறியப்பட்டது. சரிபார்க்கவும்.';
+          case VoiceLanguage.telugu:    return '$a చెల్లింపు గుర్తించబడింది. దయచేసి చెక్ చేయండి.';
+          case VoiceLanguage.kannada:   return '$a ಪಾವತಿ ಪತ್ತೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ.';
+          case VoiceLanguage.marathi:   return '$a पेमेंट आढळले. कृपया तपासा.';
+          case VoiceLanguage.gujarati:  return '$a ચુકવણી મળી. કૃપા કરીને ચકાસો.';
+          case VoiceLanguage.bengali:   return '$a পেমেন্ট শনাক্ত হয়েছে। যাচাই করুন।';
+          case VoiceLanguage.punjabi:   return '$a ਭੁਗਤਾਨ ਮਿਲਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਜਾਂਚੋ।';
+          case VoiceLanguage.malayalam: return '$a പേയ്മെന്റ് കണ്ടെത്തി. പരിശോധിക്കുക.';
+          default:                      return 'Payment detected. $a. Please verify.';
+        }
     }
   }
 
@@ -287,11 +342,33 @@ abstract class VoiceBuilder {
     final a = _amt(amount, lang);
     switch (direction) {
       case PaymentDirection.credited:
-        return a + ' credited. Please verify.';
+        switch (lang) {
+          case VoiceLanguage.hindi:     return '$a जमा हुआ। कृपया जांचें।';
+          case VoiceLanguage.tamil:     return '$a வரவு ஆனது. சரிபார்க்கவும்.';
+          case VoiceLanguage.telugu:    return '$a జమైంది. దయచేసి చెక్ చేయండి.';
+          case VoiceLanguage.kannada:   return '$a ಜಮೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ.';
+          case VoiceLanguage.marathi:   return '$a जमा झाले. कृपया तपासा.';
+          case VoiceLanguage.gujarati:  return '$a જમા થયું. કૃપા કરીને ચકાસો.';
+          case VoiceLanguage.bengali:   return '$a জমা হয়েছে। যাচাই করুন।';
+          case VoiceLanguage.punjabi:   return '$a ਜਮ੍ਹਾਂ ਹੋਇਆ। ਕਿਰਪਾ ਕਰਕੇ ਜਾਂਚੋ।';
+          case VoiceLanguage.malayalam: return '$a ക്രെഡിറ്റ് ആയി. പരിശോധിക്കുക.';
+          default:                      return '$a credited. Please verify.';
+        }
       case PaymentDirection.debited:
-        return a + ' debited. Please verify.';
+        switch (lang) {
+          case VoiceLanguage.hindi:     return '$a डेबिट हुआ। कृपया जांचें।';
+          case VoiceLanguage.tamil:     return '$a பற்று ஆனது. சரிபார்க்கவும்.';
+          case VoiceLanguage.telugu:    return '$a డెబిట్ అయింది. దయచేసి చెక్ చేయండి.';
+          case VoiceLanguage.kannada:   return '$a ಡೆಬಿಟ್ ಆಗಿದೆ. ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ.';
+          case VoiceLanguage.marathi:   return '$a डेबिट झाले. कृपया तपासा.';
+          case VoiceLanguage.gujarati:  return '$a ડેબિટ થયું. કૃપા કરીને ચકાસો.';
+          case VoiceLanguage.bengali:   return '$a ডেবিট হয়েছে। যাচাই করুন।';
+          case VoiceLanguage.punjabi:   return '$a ਡੈਬਿਟ ਹੋਇਆ। ਕਿਰਪਾ ਕਰਕੇ ਜਾਂਚੋ।';
+          case VoiceLanguage.malayalam: return '$a ഡെബിറ്റ് ആയി. പരിശോധിക്കുക.';
+          default:                      return '$a debited. Please verify.';
+        }
       case PaymentDirection.unknown:
-        return a + ' detected. Please verify.';
+        return detected(amount, lang);
     }
   }
 
