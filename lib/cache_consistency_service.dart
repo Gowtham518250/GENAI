@@ -56,6 +56,14 @@ class CacheConsistencyService {
     await _write(dataset, current);
   }
 
+  static Future<void> markLocalMutationAcknowledged(String dataset, {String? operationId}) async {
+    final current = await metadata(dataset);
+    current['dirty'] = false;
+    current['last_ack_at'] = DateTime.now().toUtc().toIso8601String();
+    if (operationId != null && operationId.isNotEmpty) current['last_ack_operation_id'] = operationId;
+    await _write(dataset, current);
+  }
+
   static Future<void> markConflict(String dataset, {String? identity, String? reason}) async {
     final current = await metadata(dataset);
     current['conflict_count'] = ((current['conflict_count'] as num?)?.toInt() ?? 0) + 1;
