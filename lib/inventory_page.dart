@@ -195,7 +195,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     // A realtime event for an unloaded product usually means the current
     // filtered list is stale. Reconcile from the API once.
     if (missingProduct && mounted) {
-      await _fetch();
+      await _fetch(forceRemote: true);
     }
   }
 
@@ -232,7 +232,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     }
   }
 
-  Future<void> _fetch({bool preferLocalCache = false}) async {
+  Future<void> _fetch({bool preferLocalCache = false, bool forceRemote = false}) async {
     setState(() { _loading = true; });
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -261,6 +261,17 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       }
 
       if (preferLocalCache) return;
+
+      // Fresh read cache is sufficient for ordinary navigation. Explicit
+      // refresh/resume bypasses the TTL so another device's edits converge.
+      final cacheFresh = await CacheConsistencyService.isFresh(
+        'inventory',
+        maxAge: const Duration(seconds: 30),
+      );
+      if (cacheFresh && !forceRemote) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
 
       // Merge API data
       if (_userId != null && token.isNotEmpty) {
@@ -795,7 +806,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
           ),
           _buildLanguageSwitcher(),
           IconButton(icon: const Icon(Icons.refresh),
-              onPressed: _fetch),
+              onPressed: () => _fetch(forceRemote: true)),
         ],
       ),
       body: _loading
@@ -842,7 +853,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                     fontSize: 14, color: Colors.grey.shade600)),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => _fetch(),
+              onPressed: () => _fetch(forceRemote: true),
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
