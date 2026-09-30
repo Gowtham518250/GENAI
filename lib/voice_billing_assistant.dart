@@ -525,44 +525,52 @@ class MultiLangVoiceParser {
       final prodName = (product['name'] ?? product['product_name'] ?? '').toString().toLowerCase().trim();
       if (prodName.isEmpty) continue;
 
-      // Check exact substrings with original input
-      if (prodName.contains(voiceInput) || voiceInput.contains(prodName)) {
-        bestScore = 1.0;
-        bestMatch = product;
-        break;
+      final aliases = (product['aliases'] is List)
+          ? (product['aliases'] as List)
+              .map((e) => e.toString().toLowerCase().trim())
+              .where((e) => e.isNotEmpty)
+              .toList()
+          : <String>[];
+
+      // Learned/catalog aliases are checked before translation or fuzzy
+      // matching. This makes repeated shop-specific speech much more accurate.
+      for (final alias in aliases) {
+        if (alias == voiceInput || alias == translatedInput) {
+          bestScore = 1.0;
+          bestMatch = product;
+          break;
+        }
+        if (alias.contains(voiceInput) || voiceInput.contains(alias) ||
+            alias.contains(translatedInput) || translatedInput.contains(alias)) {
+          if (bestScore < 0.92) {
+            bestScore = 0.92;
+            bestMatch = product;
+          }
+        }
       }
-      
-      // Check exact substrings with translated input
-      if (prodName.contains(translatedInput) || translatedInput.contains(prodName)) {
+      if (bestScore >= 1.0) break;
+
+      // Check exact substrings with canonical product name.
+      if (prodName.contains(voiceInput) || voiceInput.contains(prodName) ||
+          prodName.contains(translatedInput) || translatedInput.contains(prodName)) {
         bestScore = 1.0;
         bestMatch = product;
         break;
       }
 
-      // Advanced Levenshtein Fuzzy matching (on translated input for English catalogs)
       final similarityTrans = _calculateLevenshteinSimilarity(translatedInput, prodName);
       final similarityOrig = _calculateLevenshteinSimilarity(voiceInput, prodName);
       final similarity = similarityTrans > similarityOrig ? similarityTrans : similarityOrig;
-      
+
       if (similarity > bestScore) {
         bestScore = similarity;
         bestMatch = product;
       }
     }
 
-    if (bestScore > 0.5 && bestMatch != null && langCode != 'en-IN') {
-      // Translate matched product back to the UI language so it appears native!
-      final matchedName = (bestMatch['name'] ?? bestMatch['product_name'] ?? '').toString();
-      try {
-         final codePart = langCode.split('-').first;
-         final localizedName = await FreeTranslatorService.translate(matchedName, from: 'en', to: codePart);
-         // Mutate a copy so we return the translated name
-         return {...bestMatch, 'name': localizedName, 'product_name': localizedName};
-      } catch (e) {
-         // Fallback
-      }
-    }
-
+    // Always return the canonical catalog name. The billing pipeline must match
+    // the database product identifier/name; translating it back into a local
+    // UI language here can break inventory/product matching.
     return bestScore > 0.5 ? bestMatch : null;
   }
   
@@ -1061,13 +1069,8 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
     )).toList();
 
     if (commit) {
-      for (final item in items) {
-        _catalog.learnAlias(
-          spoken: clean,
-          canonicalName: item.name,
-          localeCode: _selectedLang.code,
-        );
-      }
+      // Do not learn the entire multi-item transcript for every product.
+      // Aliases are learned only from explicit user corrections below.
       // Fix Bug #7: Merge by product name instead of blind addAll to prevent duplicates
       // on repeated commits of growing transcripts.
       for (final newItem in items) {
@@ -1126,6 +1129,11 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
             correctedItemName: editedName,
             languageCode: _selectedLang.code,
             originalConfidence: ParsedItems[i].confidence,
+          );
+          _catalog.learnAlias(
+            spoken: originalName,
+            canonicalName: editedName,
+            localeCode: _selectedLang.code,
           );
         }
 
