@@ -242,15 +242,21 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
   }
 
   Future<bool> _sendOrderAction(String orderId, String action) async {
+    // Same key across retries: the backend processes the transition once and
+    // safely replays the cached response for subsequent network retries.
+    final idempotencyKey =
+        'owner-order-' + orderId + '-' + action.toUpperCase();
+
     for (int attempt = 0; attempt < 3; attempt++) {
       try {
         final res = await ApiClient.postJson(
-          '/store/owner/orders/$orderId/action?action=$action',
+          '/store/owner/orders/' + orderId + '/action?action=' + action,
           {},
+          headers: {'Idempotency-Key': idempotencyKey},
         ).timeout(const Duration(seconds: 12));
         if (res.statusCode == 200) return true;
       } catch (e) {
-        debugPrint('Order action attempt ${attempt + 1} failed: $e');
+        debugPrint('Order action attempt ' + (attempt + 1).toString() + ' failed: ' + e.toString());
       }
       if (attempt < 2) {
         await Future.delayed(Duration(seconds: 2 * (attempt + 1)));
@@ -258,7 +264,6 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     }
     return false;
   }
-
   @override
   Widget build(BuildContext context) {
     if (_shopId.isEmpty || _shopId == '0') {
