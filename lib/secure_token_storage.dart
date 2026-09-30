@@ -166,6 +166,8 @@ class SecureTokenStorage {
     await _storage.write(key: 'user_id', value: userId.toString());
   }
 
+  static Future<int?> getUserId() async => _getUserId();
+
   static Future<void> clearUserId() async {
     await _storage.delete(key: 'user_id');
   }

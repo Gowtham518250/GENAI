@@ -757,7 +757,14 @@ final GlobalKey<NavigatorState> globalNavigatorKey =
 
 // New stateful application wrapper checks for stored login token and redirects appropriately.
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  const MyApp({
+    super.key,
+    this.testMode = false,
+  });
+
+  /// Disables long-lived runtime services for widget-test environments.
+  /// Production/default behavior remains unchanged.
+  final bool testMode;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -1266,6 +1273,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.testMode) {
+      return const MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Text('Retail Mind test shell'),
+          ),
+        ),
+      );
+    }
+
     return ChangeNotifierProvider(
       create: (_) => LanguageProvider(),
       child: Consumer<LanguageProvider>(

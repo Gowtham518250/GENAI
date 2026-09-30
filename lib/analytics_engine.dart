@@ -13,7 +13,7 @@ class AnalyticsEngine {
     };
     if (generic.contains(value)) return true;
     if (RegExp(r'^sale[_ -]?\d+', caseSensitive: false).hasMatch(value)) return true;
-    if (RegExp(r'^(invoice|order|transaction)[_-]\d+', caseSensitive: false).hasMatch(value)) return true;
+    if (RegExp(r'^(invoice|order|transaction)[_-].+', caseSensitive: false).hasMatch(value)) return true;
     return false;
   }
 

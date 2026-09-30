@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'api_client.dart';
+import 'realtime_client.dart';
+import 'secure_token_storage.dart';
 
 class OwnerOrdersPage extends StatefulWidget {
   const OwnerOrdersPage({super.key});
@@ -12,6 +14,7 @@ class OwnerOrdersPage extends StatefulWidget {
 
 class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
   bool _loading = true;
+  bool _realtimeConnected = false;
   List<dynamic> _orders = [];
 
   static const _bg = Color(0xFF0F0F1A);
@@ -22,20 +25,52 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
   void initState() {
     super.initState();
     _fetchOrders();
+    _connectRealtime();
   }
 
-  Future<void> _fetchOrders() async {
-    setState(() => _loading = true);
+  @override
+  void dispose() {
+    RealtimeClient.disconnect();
+    super.dispose();
+  }
+
+  Future<void> _connectRealtime() async {
+    final userId = await SecureTokenStorage.getUserId();
+    if (!mounted || userId == null || userId <= 0) return;
+
+    await RealtimeClient.connect(
+      userId: userId,
+      shopId: userId,
+      onMessage: _handleRealtimeMessage,
+      onStatus: (connected, message) {
+        if (mounted) setState(() => _realtimeConnected = connected);
+      },
+    );
+  }
+
+  Future<void> _handleRealtimeMessage(Map<String, dynamic> message) async {
+    final eventType = message['type']?.toString();
+    if (eventType != 'order.created' &&
+        eventType != 'order.status_changed') {
+      return;
+    }
+    await _fetchOrders(showLoading: false);
+  }
+
+  Future<void> _fetchOrders({bool showLoading = true}) async {
+    if (showLoading && mounted) setState(() => _loading = true);
     try {
       final res = await ApiClient.getJson('/store/owner/orders');
       if (res.statusCode == 200) {
         final d = jsonDecode(res.body);
-        setState(() => _orders = d is List ? d : (d['orders'] ?? []));
+        if (mounted) {
+          setState(() => _orders = d is List ? d : (d['orders'] ?? []));
+        }
       }
     } catch (e) {
       debugPrint('Owner orders fetch error: $e');
     } finally {
-      setState(() => _loading = false);
+      if (showLoading && mounted) setState(() => _loading = false);
     }
   }
 
@@ -248,6 +283,11 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          Icon(
+            _realtimeConnected ? Icons.wifi_rounded : Icons.wifi_off_rounded,
+            color: _realtimeConnected ? Colors.greenAccent : Colors.white38,
+            size: 20,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.orangeAccent),
             onPressed: _fetchOrders,

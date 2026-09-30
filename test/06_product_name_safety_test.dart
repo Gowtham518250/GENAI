@@ -13,17 +13,17 @@ void main() {
         'Tata Salt',
         'Coca Cola 750ml',
       ]) {
-        expect(engine.isPlaceholderProductName(name), isFalse);
+        expect(AnalyticsEngine.isPlaceholderProductName(name), isFalse);
       }
     });
 
     test('sale and invoice IDs are not used as product names by placeholder detector', () {
       final engine = AnalyticsEngine();
 
-      expect(engine.isPlaceholderProductName('sale-17'), isTrue);
-      expect(engine.isPlaceholderProductName('sale_17'), isTrue);
-      expect(engine.isPlaceholderProductName('invoice_17'), isTrue);
-      expect(engine.isPlaceholderProductName('transaction_17'), isTrue);
+      expect(AnalyticsEngine.isPlaceholderProductName('sale-17'), isTrue);
+      expect(AnalyticsEngine.isPlaceholderProductName('sale_17'), isTrue);
+      expect(AnalyticsEngine.isPlaceholderProductName('invoice_17'), isTrue);
+      expect(AnalyticsEngine.isPlaceholderProductName('transaction_17'), isTrue);
     });
 
     test('identical content fingerprints are deterministic', () {

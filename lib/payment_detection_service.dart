@@ -134,6 +134,7 @@ class PaymentUiState {
   final DateTime        detectedAt;
   final bool            isUserConfirmed;
   final bool            isUserRejected;
+  final String          rawText;
   final String?         saleId; // FIX 4: Mapping Payment -> Sale
 
   const PaymentUiState({

@@ -1108,6 +1108,60 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
     }
   }
 
+  /// Final billing safety gate.
+  ///
+  /// The NLP parser remains permissive for preview, but an item must pass
+  /// deterministic checks before it is allowed into the actual bill:
+  /// - positive quantity and price
+  /// - minimum confidence
+  /// - strong catalog match OR very high parser confidence
+  /// - canonicalize the product name when the catalog has a match
+  List<ParsedItem> _finalizeBillingItems(List<ParsedItem> candidates) {
+    final safe = <ParsedItem>[];
+    var rejectedCount = 0;
+
+    for (final item in candidates) {
+      if (item.name.trim().isEmpty || item.qty <= 0 || item.price <= 0) {
+        rejectedCount++;
+        continue;
+      }
+
+      final catalogMatch = _catalog.findBest(
+        item.name,
+        minScore: 0.72,
+      );
+
+      final catalogConfirmed = catalogMatch != null;
+      final confidenceConfirmed = item.confidence >= 0.72;
+
+      // A very high-confidence parse can still be a legitimate product that
+      // has not been loaded into the local catalog yet.
+      if (!item.isConfirmed || (!catalogConfirmed && !confidenceConfirmed)) {
+        rejectedCount++;
+        continue;
+      }
+
+      safe.add(
+        ParsedItem(
+          name: catalogMatch?.canonicalName ?? item.name.trim(),
+          qty: item.qty,
+          unit: item.unit,
+          price: item.price,
+          confidence: item.confidence,
+          isConfirmed: true,
+        ),
+      );
+    }
+
+    if (rejectedCount > 0 && kDebugMode) {
+      debugPrint(
+        '🎙️ [VOICE] Final billing gate rejected $rejectedCount low-confidence/invalid items',
+      );
+    }
+
+    return safe;
+  }
+
   void _confirmOrder() {
     // Apply any inline edits, and teach the feedback learning service about
     // any name corrections the user made (so common mis-hearings get
@@ -1135,6 +1189,8 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           unit: ParsedItems[i].unit,
           price: newPrice,
           confidence: ParsedItems[i].confidence,
+          // Manual edits are explicit merchant confirmation.
+          isConfirmed: editedName.isNotEmpty && newQty > 0 && newPrice > 0,
         );
       }
     }
@@ -1166,7 +1222,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
       }
     }
 
-    final confirmed = uniqueItems.where((e) => e.isConfirmed).toList();
+    final confirmed = _finalizeBillingItems(uniqueItems);
     if (confirmed.isEmpty) {
       _showSnack('No items selected', isError: true);
       return;

@@ -28,7 +28,7 @@ void main() {
         'Clinic Plus Shampoo',
         'Lifebuoy Soap',
       ]) {
-        expect(engine.isPlaceholderProductName(name), isFalse, reason: name);
+        expect(AnalyticsEngine.isPlaceholderProductName(name), isFalse, reason: name);
       }
     });
 
@@ -42,7 +42,7 @@ void main() {
         'INVOICE_999',
         'transaction-xyz',
       ]) {
-        expect(engine.isPlaceholderProductName(name), isTrue, reason: name);
+        expect(AnalyticsEngine.isPlaceholderProductName(name), isTrue, reason: name);
       }
     });
 
@@ -59,33 +59,33 @@ void main() {
         'Tea Powder',
         'Sugar',
       ]) {
-        expect(engine.isPlaceholderProductName(name), isFalse, reason: name);
+        expect(AnalyticsEngine.isPlaceholderProductName(name), isFalse, reason: name);
       }
     });
 
     test('detector is deterministic', () {
       for (var i = 0; i < 100; i++) {
-        expect(engine.isPlaceholderProductName('Aashirvaad Atta'), isFalse);
-        expect(engine.isPlaceholderProductName('sale-17'), isTrue);
+        expect(AnalyticsEngine.isPlaceholderProductName('Aashirvaad Atta'), isFalse);
+        expect(AnalyticsEngine.isPlaceholderProductName('sale-17'), isTrue);
       }
     });
 
     test('case variations remain consistent for known placeholders', () {
-      expect(engine.isPlaceholderProductName('sale-17'), isTrue);
-      expect(engine.isPlaceholderProductName('SALE-17'), isTrue);
-      expect(engine.isPlaceholderProductName('Sale-17'), isTrue);
+      expect(AnalyticsEngine.isPlaceholderProductName('sale-17'), isTrue);
+      expect(AnalyticsEngine.isPlaceholderProductName('SALE-17'), isTrue);
+      expect(AnalyticsEngine.isPlaceholderProductName('Sale-17'), isTrue);
     });
 
     test('empty value does not crash', () {
       expect(
-        () => engine.isPlaceholderProductName(''),
+        () => AnalyticsEngine.isPlaceholderProductName(''),
         returnsNormally,
       );
     });
 
     test('whitespace-only value does not crash', () {
       expect(
-        () => engine.isPlaceholderProductName('   '),
+        () => AnalyticsEngine.isPlaceholderProductName('   '),
         returnsNormally,
       );
     });
@@ -98,7 +98,7 @@ void main() {
         'Soap 125g',
         'Oil 1L',
       ]) {
-        expect(engine.isPlaceholderProductName(name), isFalse);
+        expect(AnalyticsEngine.isPlaceholderProductName(name), isFalse);
       }
     });
   });

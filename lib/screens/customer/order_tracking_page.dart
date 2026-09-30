@@ -1,10 +1,11 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
 import '../../pdf_invoice_service.dart';
+import '../../realtime_client.dart';
+import '../../secure_token_storage.dart';
 
 class OrderTrackingPage extends StatefulWidget {
   const OrderTrackingPage({super.key});
@@ -15,22 +16,67 @@ class OrderTrackingPage extends StatefulWidget {
 
 class _OrderTrackingPageState extends State<OrderTrackingPage> {
   String? _userName;
-  Timer? _pollingTimer;
   List<Map<String, dynamic>> _orders = [];
   bool _isLoading = true;
+  bool _realtimeConnected = false;
 
   @override
   void initState() {
     super.initState();
     _loadUser();
-    // Poll every 15 seconds
-    _pollingTimer = Timer.periodic(const Duration(seconds: 15), (_) => _fetchOrders(silent: true));
+    _connectRealtime();
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
+    RealtimeClient.disconnect();
     super.dispose();
+  }
+
+  Future<void> _connectRealtime() async {
+    final userId = await SecureTokenStorage.getUserId();
+    if (!mounted || userId == null || userId <= 0) return;
+
+    await RealtimeClient.connect(
+      userId: userId,
+      shopId: 0,
+      onMessage: _handleRealtimeMessage,
+      onStatus: (connected, message) {
+        if (mounted) setState(() => _realtimeConnected = connected);
+      },
+    );
+  }
+
+  Future<void> _handleRealtimeMessage(Map<String, dynamic> message) async {
+    final eventType = message['type']?.toString();
+    if (eventType == 'order.status_changed') {
+      final orderId = message['order_id']?.toString();
+      final status = message['status']?.toString();
+
+      if (orderId != null && status != null && mounted) {
+        var found = false;
+        setState(() {
+          _orders = _orders.map((order) {
+            final currentId =
+                order['order_id']?.toString() ?? order['id']?.toString();
+            if (currentId == orderId) {
+              found = true;
+              return {...order, 'status': status};
+            }
+            return order;
+          }).toList();
+        });
+        if (found) {
+          await _fetchOrders(silent: true);
+          return;
+        }
+      }
+    }
+
+    if (eventType == 'order.created' ||
+        eventType == 'order.status_changed') {
+      await _fetchOrders(silent: true);
+    }
   }
 
   Future<void> _loadUser() async {
@@ -161,6 +207,15 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 1,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Icon(
+              _realtimeConnected ? Icons.wifi_rounded : Icons.wifi_off_rounded,
+              color: _realtimeConnected ? Colors.teal : Colors.grey,
+            ),
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.teal))
