@@ -243,7 +243,24 @@ class SecureTokenStorage {
   }
 
   static Future<String?> getToken() async {
-    return _readDecrypted(_kToken);
+    final secureToken = await _readDecrypted(_kToken);
+    if (secureToken != null && secureToken.isNotEmpty) {
+      return secureToken;
+    }
+
+    // Customer storefront authentication historically stores its token in
+    // SharedPreferences under auth_token. Keep this as a compatibility
+    // fallback so the canonical SyncService can process customer outbox
+    // operations too.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final legacyToken = prefs.getString('auth_token');
+      if (legacyToken != null && legacyToken.isNotEmpty) {
+        return legacyToken;
+      }
+    } catch (_) {}
+
+    return null;
   }
 
   static Future<void> saveRefreshToken(String token) async {
