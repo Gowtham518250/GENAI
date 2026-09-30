@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
 import '../../visual_widgets.dart';
 import 'dart:async';
+import 'online_orders_listener.dart';
 
 class OnlineOrdersTab extends StatefulWidget {
   const OnlineOrdersTab({super.key});
@@ -34,16 +35,25 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
   // failing if the network drops mid-action.
   final Set<String> _pendingSync = {};
   late TabController _tabController;
+  StreamSubscription<Map<String, dynamic>>? _realtimeSub;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _realtimeSub = OnlineOrdersListener.instance.onRealtimeEvent.listen((event) {
+      if (!mounted) return;
+      final type = event['type']?.toString() ?? '';
+      if (type == 'online_order_created' || type == 'order_status_changed' || type == 'fallback_refresh') {
+        unawaited(_fetchAllOrders(showLoading: false));
+      }
+    });
     _loadShopIdAndOrders();
   }
 
   @override
   void dispose() {
+    _realtimeSub?.cancel();
     _tabController.dispose();
     super.dispose();
   }
