@@ -16,6 +16,8 @@ import 'inventory_management_service.dart';
 import 'local_storage_service.dart';
 import 'inventory_stock_helper.dart';
 import 'sync_queue_manager.dart';
+import 'online_orders_listener.dart';
+import 'dart:async';
 import 'secure_token_storage.dart';
 import 'ai_negotiation_service.dart';
 import 'simple_loader.dart';
@@ -41,6 +43,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   // reach the backend" (e.g. slow/flaky 5G) so we never show the scary
   // "No products yet" empty-state when the real problem is just network.
   bool _lastFetchFailed = false;
+  StreamSubscription<Map<String, dynamic>>? _onlineOrderUpdatesSub;
 
   // Add-product form controllers
   final _nameC = TextEditingController();
@@ -65,6 +68,17 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     InventoryManagementService.onInventoryChanged = () {
       if (mounted) _fetch(preferLocalCache: true);
     };
+
+    // Online orders are deducted by the backend immediately. Refresh the
+    // owner inventory when the canonical order listener sees a new order or
+    // status change, so clearing app data is never required to see stock.
+    _onlineOrderUpdatesSub = OnlineOrdersListener.instance.updates.listen((update) {
+      if (!mounted) return;
+      final type = update['type']?.toString();
+      if (type == 'NEW_ORDER' || type == 'ORDER_CHANGED' || type == 'ORDER_LIST_CHANGED') {
+        unawaited(_fetch());
+      }
+    });
   }
 
   @override
@@ -73,6 +87,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     _nameC.dispose(); _barcodeC.dispose(); _priceC.dispose(); _mrpC.dispose();
     _stockC.dispose(); _catC.dispose(); _minStockC.dispose(); _unitC.dispose();
     InventoryManagementService.onInventoryChanged = null;
+    _onlineOrderUpdatesSub?.cancel();
     super.dispose();
   }
 
