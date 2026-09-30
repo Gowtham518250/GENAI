@@ -218,7 +218,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted && _userId != null) {
       // Restore the cached inventory immediately, then refresh from cloud.
-      _fetch();
+      _fetch(forceRemote: true);
     }
   }
 
