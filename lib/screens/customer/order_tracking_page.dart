@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../cache_consistency_service.dart';
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -108,24 +109,12 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
             ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
             : <Map<String, dynamic>>[];
 
-        final merged = <String, Map<String, dynamic>>{};
-        for (final local in localOrders) {
-          final key = (local['server_order_id'] ?? local['order_id'] ?? '').toString();
-          if (key.isNotEmpty) merged[key] = local;
-        }
-        for (final remoteOrder in remote) {
-          final key = (remoteOrder['order_id'] ?? remoteOrder['id'] ?? '').toString();
-          if (key.isEmpty) continue;
-          final existing = merged[key];
-          if (existing != null && existing['sync_status'] == 'pending') {
-            merged[key] = {...remoteOrder, ...existing, 'sync_status': 'pending'};
-          } else {
-            merged[key] = {...?existing, ...remoteOrder, 'sync_status': 'synced'};
-          }
-        }
-
-        final mergedList = merged.values.toList();
-        await OrderHistoryService.saveOrders(mergedList);
+        final merged = CacheConsistencyService.mergeLists(
+          localOrders,
+          remote,
+          dataset: 'customer_orders',
+        );
+        final mergedList = merged;
         if (mounted) setState(() => _orders = mergedList);
       }
     } catch (e) {
