@@ -17,6 +17,7 @@ import 'local_storage_service.dart';
 import 'inventory_stock_helper.dart';
 import 'sync_queue_manager.dart';
 import 'secure_token_storage.dart';
+import 'realtime_client.dart';
 import 'ai_negotiation_service.dart';
 import 'simple_loader.dart';
 import 'package:share_plus/share_plus.dart';
@@ -41,6 +42,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   // reach the backend" (e.g. slow/flaky 5G) so we never show the scary
   // "No products yet" empty-state when the real problem is just network.
   bool _lastFetchFailed = false;
+  bool _realtimeConnected = false;
 
   // Add-product form controllers
   final _nameC = TextEditingController();
@@ -65,11 +67,138 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     InventoryManagementService.onInventoryChanged = () {
       if (mounted) _fetch(preferLocalCache: true);
     };
+    _connectRealtime();
+  }
+
+  Future<void> _connectRealtime() async {
+    final userId = await SecureTokenStorage.getUserId();
+    if (!mounted || userId == null || userId <= 0) return;
+
+    await RealtimeClient.connect(
+      userId: userId,
+      shopId: userId,
+      onMessage: _handleRealtimeMessage,
+      onStatus: (connected, message) {
+        if (mounted) setState(() => _realtimeConnected = connected);
+      },
+    );
+  }
+
+  Future<void> _handleRealtimeMessage(Map<String, dynamic> message) async {
+    if (message['type']?.toString() != 'inventory.changed') return;
+
+    final changes = <Map<String, dynamic>>[];
+    final rawChanges = message['changes'];
+
+    if (rawChanges is List) {
+      for (final item in rawChanges) {
+        if (item is Map) {
+          changes.add(Map<String, dynamic>.from(item));
+        }
+      }
+    } else if (message['product_id'] != null && message['new_stock'] != null) {
+      changes.add({
+        'product_id': message['product_id'],
+        'new_stock': message['new_stock'],
+      });
+    }
+
+    if (changes.isEmpty) return;
+
+    var missingProduct = false;
+    final updatedProducts = <dynamic>[];
+
+    for (final product in _products) {
+      if (product is! Map) {
+        updatedProducts.add(product);
+        continue;
+      }
+
+      final copy = Map<String, dynamic>.from(product);
+      final productId = copy['id']?.toString();
+      Map<String, dynamic>? change;
+
+      for (final candidate in changes) {
+        if (candidate['product_id']?.toString() == productId) {
+          change = candidate;
+          break;
+        }
+      }
+
+      if (change == null) {
+        updatedProducts.add(product);
+        continue;
+      }
+
+      final newStock = _asStockNumber(change['new_stock']);
+      if (newStock == null) {
+        updatedProducts.add(product);
+        continue;
+      }
+
+      InventoryStockHelper.writeStock(copy, newStock);
+      updatedProducts.add(copy);
+    }
+
+    for (final change in changes) {
+      final productId = change['product_id']?.toString();
+      if (productId == null) continue;
+
+      final found = updatedProducts.any(
+        (product) =>
+            product is Map && product['id']?.toString() == productId,
+      );
+      if (!found) {
+        missingProduct = true;
+        break;
+      }
+    }
+
+    if (mounted) {
+      setState(() => _products = updatedProducts);
+    }
+
+    try {
+      final backendProducts = await LocalStorageService.loadBackendProducts();
+      var cacheChanged = false;
+
+      for (final change in changes) {
+        final productId = change['product_id']?.toString();
+        final newStock = _asStockNumber(change['new_stock']);
+        if (productId == null || newStock == null) continue;
+
+        for (final product in backendProducts) {
+          if (product['id']?.toString() == productId) {
+            InventoryStockHelper.writeStock(product, newStock);
+            cacheChanged = true;
+            break;
+          }
+        }
+      }
+
+      if (cacheChanged) {
+        await LocalStorageService.saveBackendProducts(backendProducts);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Failed to persist realtime inventory cache: $e');
+      }
+    }
+
+    if (missingProduct && mounted) {
+      await _fetch();
+    }
+  }
+
+  double? _asStockNumber(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '');
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    RealtimeClient.disconnect();
     _nameC.dispose(); _barcodeC.dispose(); _priceC.dispose(); _mrpC.dispose();
     _stockC.dispose(); _catC.dispose(); _minStockC.dispose(); _unitC.dispose();
     InventoryManagementService.onInventoryChanged = null;
