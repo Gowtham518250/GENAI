@@ -1413,7 +1413,43 @@ static Future<bool> _createPurchaseOrderItem(Map<String, dynamic> data) async {
       final payload = {...data, 'supplier_name': (data['supplier_name'] ?? data['supplier'] ?? '').toString().trim(), 'items': normalizedItems};
       final res = await ApiClient.postJson('/purchase-orders/', payload, headers: {'Authorization': 'Bearer $token'}).timeout(const Duration(seconds: 20));
       final success = res.statusCode == 200 || res.statusCode == 201;
-      if (!success && kDebugMode) debugPrint('❌ Purchase order backend rejected sync: ${res.statusCode} ${res.body}');
+
+      if (success) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final raw = prefs.getString('purchase_orders_data');
+          if (raw != null && raw.isNotEmpty) {
+            final decoded = jsonDecode(raw);
+            if (decoded is List) {
+              final list = decoded.toList();
+              final localId = data['local_id']?.toString();
+              if (localId != null && localId.isNotEmpty) {
+                final decodedServer = jsonDecode(res.body);
+                final serverMap = decodedServer is Map
+                    ? Map<String, dynamic>.from(decodedServer)
+                    : <String, dynamic>{};
+                for (var i = 0; i < list.length; i++) {
+                  final value = list[i];
+                  if (value is! Map) continue;
+                  if (value['id']?.toString() == localId) {
+                    list[i] = {
+                      ...Map<String, dynamic>.from(value),
+                      ...serverMap,
+                      'sync_status': 'synced',
+                    };
+                    break;
+                  }
+                }
+                await prefs.setString('purchase_orders_data', jsonEncode(list));
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (!success && kDebugMode) {
+        debugPrint('❌ Purchase order backend rejected sync: ' + res.statusCode.toString() + ' ' + res.body);
+      }
       return success;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error creating purchase order: $e');
@@ -1436,7 +1472,34 @@ static Future<bool> _updatePurchaseOrderStatusItem(Map<String, dynamic> data) as
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 20));
 
-      return res.statusCode == 200 || res.statusCode == 201;
+      final success = res.statusCode == 200 || res.statusCode == 201;
+      if (success) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final raw = prefs.getString('purchase_orders_data');
+          if (raw != null && raw.isNotEmpty) {
+            final decoded = jsonDecode(raw);
+            if (decoded is List) {
+              final list = decoded.toList();
+              final targetStatus = action == 'mark-delivered' ? 'DELIVERED' : 'CANCELLED';
+              for (var i = 0; i < list.length; i++) {
+                final value = list[i];
+                if (value is! Map) continue;
+                if (value['id']?.toString() == poId.toString() ||
+                    value['server_id']?.toString() == poId.toString()) {
+                  list[i] = {
+                    ...Map<String, dynamic>.from(value),
+                    'status': targetStatus,
+                    'sync_status': 'synced',
+                  };
+                }
+              }
+              await prefs.setString('purchase_orders_data', jsonEncode(list));
+            }
+          }
+        } catch (_) {}
+      }
+      return success;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error updating purchase order status: $e');
       return false;
