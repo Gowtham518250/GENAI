@@ -453,6 +453,58 @@ class SyncQueueManager {
     });
   }
 
+  /// Remove a durable operation by its business identifier.
+  /// Used after an online-first operation has already been accepted by the
+  /// backend, so its offline fallback cannot be replayed later.
+  static Future<int> removeByBusinessOperation(
+    String action,
+    String identifier,
+  ) async {
+    if (action.trim().isEmpty || identifier.trim().isEmpty) return 0;
+
+    return _queueLock.synchronized(() async {
+      try {
+        final box = await _getBoxUnlocked();
+        final wanted = identifier.trim().toLowerCase();
+        final keysToRemove = <dynamic>[];
+
+        for (final entry in box.toMap().entries) {
+          final raw = entry.value;
+          if (raw is! Map) continue;
+          if (raw['action']?.toString() != action) continue;
+
+          final data = raw['data'];
+          if (data is! Map) continue;
+
+          if (_businessIdentifier(data) == wanted) {
+            keysToRemove.add(entry.key);
+          }
+        }
+
+        for (final key in keysToRemove) {
+          await box.delete(key);
+        }
+
+        if (keysToRemove.isNotEmpty && kDebugMode) {
+          debugPrint(
+            '✅ [SyncQueue] Removed ' +
+            keysToRemove.length.toString() +
+            ' completed fallback operation(s): ' +
+            action + '/' + wanted,
+          );
+        }
+
+        return keysToRemove.length;
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '⚠️ [SyncQueue] removeByBusinessOperation failed: ' + e.toString(),
+          );
+        }
+        return 0;
+      }
+    });
+  }
   static Future<bool> containsBusinessOperation(
     String action,
     String identifier,
