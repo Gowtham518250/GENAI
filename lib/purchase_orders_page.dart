@@ -74,34 +74,84 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
 
   Future<void> _markDelivered(dynamic poId) async {
     try {
-      final res = await ApiClient.postJson('/purchase-orders/$poId/mark-delivered', {}).timeout(const Duration(seconds: 15));
-      if (res.statusCode != 200 && res.statusCode != 201) throw Exception('status ${res.statusCode}');
-    } catch (e) {
-      debugPrint('⚠️ Failed to mark PO as delivered live, queuing for retry: $e');
-      // 🔧 FIX: previously a failure here was just logged and dropped —
-      // the PO would silently stay PENDING forever with no retry.
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('purchase_orders_data');
+      final list = <dynamic>[];
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) list.addAll(decoded);
+      }
+
+      var changed = false;
+      for (var i = 0; i < list.length; i++) {
+        final value = list[i];
+        if (value is! Map) continue;
+        if (value['id'].toString() == poId.toString()) {
+          list[i] = {...Map<String, dynamic>.from(value), 'status': 'DELIVERED', 'sync_status': 'pending'};
+          changed = true;
+          break;
+        }
+      }
+
+      if (!changed) throw StateError('Purchase order not found locally: $poId');
+      await prefs.setString('purchase_orders_data', jsonEncode(list));
+      if (mounted) setState(() => _orders = list);
+
       await SyncQueueManager.enqueue('update_purchase_order_status', {
+        'operation_id': 'PO_STATUS_${poId}_delivered',
         'po_id': poId,
         'po_action': 'mark-delivered',
       });
       unawaited(SyncService.processQueueSafe());
+    } catch (e) {
+      debugPrint('❌ Failed to update local PO status: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update purchase order: $e')),
+        );
+      }
     }
-    await _fetchOrders();
   }
 
   Future<void> _cancelPO(dynamic poId) async {
     try {
-      final res = await ApiClient.postJson('/purchase-orders/$poId/cancel', {}).timeout(const Duration(seconds: 15));
-      if (res.statusCode != 200 && res.statusCode != 201) throw Exception('status ${res.statusCode}');
-    } catch (e) {
-      debugPrint('⚠️ Failed to cancel PO live, queuing for retry: $e');
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('purchase_orders_data');
+      final list = <dynamic>[];
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) list.addAll(decoded);
+      }
+
+      var changed = false;
+      for (var i = 0; i < list.length; i++) {
+        final value = list[i];
+        if (value is! Map) continue;
+        if (value['id'].toString() == poId.toString()) {
+          list[i] = {...Map<String, dynamic>.from(value), 'status': 'CANCELLED', 'sync_status': 'pending'};
+          changed = true;
+          break;
+        }
+      }
+
+      if (!changed) throw StateError('Purchase order not found locally: $poId');
+      await prefs.setString('purchase_orders_data', jsonEncode(list));
+      if (mounted) setState(() => _orders = list);
+
       await SyncQueueManager.enqueue('update_purchase_order_status', {
+        'operation_id': 'PO_STATUS_${poId}_cancelled',
         'po_id': poId,
         'po_action': 'cancel',
       });
       unawaited(SyncService.processQueueSafe());
+    } catch (e) {
+      debugPrint('❌ Failed to cancel PO locally: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not cancel purchase order: $e')),
+        );
+      }
     }
-    _fetchOrders();
   }
 
   /// 🔧 FIX: previously this always sent `'items': []` — the backend's
