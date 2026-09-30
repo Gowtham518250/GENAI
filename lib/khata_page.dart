@@ -679,7 +679,13 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
               (c['total_balance'] as num?)?.toDouble() ??
               (c['balance'] as num?)?.toDouble() ?? 0.0;
       if (bal > 0.01) {
-        final dueDateRaw = c['due_date']?.toString();
+        final deadlineKey =
+            (c['customer_id'] ?? c['phone'] ?? '').toString().trim();
+        final storedDueDate = deadlineKey.isNotEmpty
+            ? await LocalStorageService.loadKhataDeadline(deadlineKey)
+            : null;
+        final dueDateRaw =
+            (storedDueDate ?? c['due_date']?.toString())?.trim();
         DateTime? dueDate;
         if (dueDateRaw != null && dueDateRaw.isNotEmpty) {
           dueDate = DateTime.tryParse(dueDateRaw);
