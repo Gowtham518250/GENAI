@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'api_client.dart';
+import 'sync_queue_manager.dart';
+import 'sync_service.dart';
 import 'offline_payment_queue.dart';
 import 'error_logger.dart';
 import 'payment_detection_service.dart';
@@ -52,21 +54,10 @@ class PaymentProcessingManager {
     try {
       if (kDebugMode) print('$_tag Detected: ₹${payment.amount} from ${payment.detectionSource}');
       
-      if (_isOnline) {
-        // Online: Process immediately
-        await _processPaymentOnline(payment);
-      } else {
-        // Unmatched payments cannot be safely replayed later without an
-        // invoice association, so only queue payments already bound to one.
-        if ((payment.saleId?.trim() ?? '').isNotEmpty) {
-          await _offlineQueue.queuePaymentOffline(payment);
-          _showOfflineNotification(payment);
-        } else {
-          print(
-            '$_tag 🔴 OFFLINE: Payment detected but no invoice matched; waiting for merchant review',
-          );
-        }
-      }
+      // Connectivity no longer decides persistence. The payment
+      // operation is always written to the canonical outbox first; the
+      // SyncEngine flushes immediately when a network is available.
+      await _processPaymentOnline(payment);
       
       onPaymentDetected?.call(payment);
     } catch (e) {
@@ -96,44 +87,40 @@ class PaymentProcessingManager {
       return;
     }
 
-    try {
-      // The backend endpoint is strict: every automatic payment write must
-      // identify the exact invoice and carry a stable idempotency key.
-      final response = await ApiClient.postJson(
-        ApiClient.invoicesPayments,
-        {
-          'invoice_number': invoiceNumber,
-          'amount': payment.amount,
-          'reference_id': payment.referenceId,
-          'payer_name': payment.payerName,
-          'source': payment.detectionSource,
-          'timestamp': payment.timestamp.toIso8601String(),
-          'payment_method': 'ONLINE',
-          'idempotency_key': payment.fingerprint,
-        },
-      );
+    final payload = {
+      'operation_id': 'PAYMENT_${payment.fingerprint}',
+      'idempotency_key': payment.fingerprint,
+      'invoice_number': invoiceNumber,
+      'amount': payment.amount,
+      'reference_id': payment.referenceId,
+      'payer_name': payment.payerName,
+      'source': payment.detectionSource,
+      'timestamp': payment.timestamp.toIso8601String(),
+      'payment_method': 'ONLINE',
+      'vpa': payment.vpa,
+      'bank_name': payment.bankName,
+    };
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Server failed to record payment: ${response.statusCode}');
-      }
-      
+    try {
+      // Canonical local-first: persist the operation before attempting the
+      // network. The sync engine is responsible for delivery/retry.
+      await SyncQueueManager.enqueue('record_payment', payload);
+      unawaited(SyncService.processQueueSafe());
+
       await _errorLogger.logError(
-        message: 'Payment processed successfully: ₹${payment.amount}',
+        message: 'Payment queued for sync: ₹${payment.amount}',
         source: 'PaymentProcessing',
         severity: 'INFO',
       );
     } catch (e) {
-      // Fall back to offline queue
-      await _offlineQueue.queuePaymentOffline(payment);
-      
       await _errorLogger.logPaymentError(
         detectionSource: payment.detectionSource,
-        errorReason: 'Failed to process online, queued for retry',
+        errorReason: 'Failed to persist automatic payment into canonical outbox',
         paymentDetails: {'amount': payment.amount, 'error': e.toString()},
       );
     }
   }
-  
+
   /// Sync queued payments when connection restored
   Future<void> _syncQueuedPayments() async {
     try {
