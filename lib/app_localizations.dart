@@ -1,6 +1,67 @@
 import 'package:flutter/material.dart';
 
 class AppLocalizations {
+  // Core translations for the additional locales. Existing keys not yet
+  // translated in a regional map safely fall back to English rather than
+  // rendering empty labels.
+  static const Map<String, Map<String, String>> _regionalCore = {
+    'kn': {
+      'dashboard': 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್', 'sales': 'ಮಾರಾಟ', 'inventory': 'ಸಂಗ್ರಹ',
+      'bills': 'ಬಿಲ್‌ಗಳು', 'settings': 'ಸೆಟ್ಟಿಂಗ್‌ಗಳು', 'logout': 'ಲಾಗ್‌ಔಟ್',
+      'language': 'ಭಾಷೆ', 'products': 'ಉತ್ಪನ್ನಗಳು', 'customers': 'ಗ್ರಾಹಕರು',
+      'invoices': 'ಇನ್‌ವಾಯ್ಸ್‌ಗಳು', 'paymentMethod': 'ಪಾವತಿ ವಿಧಾನ',
+      'confirmPayment': 'ಪಾವತಿ ಸ್ವೀಕರಿಸಿರುವುದನ್ನು ದೃಢೀಕರಿಸಿ',
+      'paymentConfirmed': 'ಪಾವತಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ', 'orders': 'ಆರ್ಡರ್‌ಗಳು',
+      'backup': 'ಬ್ಯಾಕಪ್ ಮತ್ತು ಮರುಸ್ಥಾಪನೆ',
+    },
+    'ml': {
+      'dashboard': 'ഡാഷ്ബോർഡ്', 'sales': 'വിൽപ്പന', 'inventory': 'ഇൻവെന്ററി',
+      'bills': 'ബില്ലുകൾ', 'settings': 'ക്രമീകരണങ്ങൾ', 'logout': 'ലോഗ് ഔട്ട്',
+      'language': 'ഭാഷ', 'products': 'ഉൽപ്പന്നങ്ങൾ', 'customers': 'ഉപഭോക്താക്കൾ',
+      'invoices': 'ഇൻവോയ്സുകൾ', 'paymentMethod': 'പേയ്മെന്റ് രീതി',
+      'confirmPayment': 'പേയ്മെന്റ് ലഭിച്ചതായി സ്ഥിരീകരിക്കുക',
+      'paymentConfirmed': 'പേയ്മെന്റ് സ്ഥിരീകരിച്ചു', 'backup': 'ബാക്കപ്പ് & പുനഃസ്ഥാപനം',
+    },
+    'mr': {
+      'dashboard': 'डॅशबोर्ड', 'sales': 'विक्री', 'inventory': 'साठा',
+      'bills': 'बिले', 'settings': 'सेटिंग्ज', 'logout': 'लॉग आउट',
+      'language': 'भाषा', 'products': 'उत्पादने', 'customers': 'ग्राहक',
+      'invoices': 'पावत्या', 'paymentMethod': 'पेमेंट पद्धत',
+      'confirmPayment': 'पेमेंट मिळाल्याची पुष्टी करा',
+      'paymentConfirmed': 'पेमेंट पुष्टी झाली', 'backup': 'बॅकअप आणि पुनर्संचयित',
+    },
+    'gu': {
+      'dashboard': 'ડેશબોર્ડ', 'sales': 'વેચાણ', 'inventory': 'ઇન્વેન્ટરી',
+      'bills': 'બિલ્સ', 'settings': 'સેટિંગ્સ', 'logout': 'લૉગઆઉટ',
+      'language': 'ભાષા', 'products': 'ઉત્પાદનો', 'customers': 'ગ્રાહકો',
+      'invoices': 'ઇન્વૉઇસ', 'paymentMethod': 'ચુકવણી પદ્ધતિ',
+      'confirmPayment': 'ચુકવણી પ્રાપ્ત થયાની પુષ્ટિ કરો',
+      'paymentConfirmed': 'ચુકવણીની પુષ્ટિ થઈ', 'backup': 'બેકઅપ અને પુનઃસ્થાપન',
+    },
+    'bn': {
+      'dashboard': 'ড্যাশবোর্ড', 'sales': 'বিক্রয়', 'inventory': 'ইনভেন্টরি',
+      'bills': 'বিল', 'settings': 'সেটিংস', 'logout': 'লগ আউট',
+      'language': 'ভাষা', 'products': 'পণ্য', 'customers': 'গ্রাহক',
+      'invoices': 'ইনভয়েস', 'paymentMethod': 'পেমেন্ট পদ্ধতি',
+      'confirmPayment': 'পেমেন্ট পাওয়া নিশ্চিত করুন',
+      'paymentConfirmed': 'পেমেন্ট নিশ্চিত হয়েছে', 'backup': 'ব্যাকআপ ও পুনরুদ্ধার',
+    },
+    'pa': {
+      'dashboard': 'ਡੈਸ਼ਬੋਰਡ', 'sales': 'ਵਿਕਰੀ', 'inventory': 'ਇਨਵੈਂਟਰੀ',
+      'bills': 'ਬਿੱਲ', 'settings': 'ਸੈਟਿੰਗਾਂ', 'logout': 'ਲੌਗ ਆਉਟ',
+      'language': 'ਭਾਸ਼ਾ', 'products': 'ਉਤਪਾਦ', 'customers': 'ਗਾਹਕ',
+      'invoices': 'ਇਨਵੌਇਸ', 'paymentMethod': 'ਭੁਗਤਾਨ ਵਿਧੀ',
+      'confirmPayment': 'ਭੁਗਤਾਨ ਪ੍ਰਾਪਤ ਹੋਣ ਦੀ ਪੁਸ਼ਟੀ ਕਰੋ',
+      'paymentConfirmed': 'ਭੁਗਤਾਨ ਦੀ ਪੁਸ਼ਟੀ ਹੋ ਗਈ', 'backup': 'ਬੈਕਅੱਪ ਅਤੇ ਰੀਸਟੋਰ',
+    },
+  };
+
+  Map<String, String> get _activeTranslations {
+    final base = translations['en'] ?? const <String, String>{};
+    final regional = _regionalCore[locale.languageCode] ?? const <String, String>{};
+    return {...base, ...regional, ...(translations[locale.languageCode] ?? const <String, String>{})};
+  }
+
   final Locale locale;
 
   AppLocalizations(this.locale);
@@ -1088,6 +1149,12 @@ class AppLocalizations {
     Locale('te'),
     Locale('hi'),
     Locale('ta'),
+    Locale('kn'),
+    Locale('ml'),
+    Locale('mr'),
+    Locale('gu'),
+    Locale('bn'),
+    Locale('pa'),
   ];
 
   static const LocalizationsDelegate<AppLocalizations> delegate =
@@ -1100,7 +1167,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) {
-    return ['en', 'te', 'hi', 'ta'].contains(locale.languageCode);
+    return ['en', 'te', 'hi', 'ta', 'kn', 'ml', 'mr', 'gu', 'bn', 'pa'].contains(locale.languageCode);
   }
 
   @override
