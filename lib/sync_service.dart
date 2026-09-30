@@ -847,6 +847,10 @@ class SyncService {
               success = await _syncInvoiceBatchItem(data);
               break;
 
+            case 'record_payment':
+              success = await _recordPaymentItem(data);
+              break;
+
             case 'update_payment':
             case 'update_invoice_payment':
               success = await _updatePaymentItem(data);
@@ -936,7 +940,8 @@ class SyncService {
                   action == 'update_payment' ||
                   action == 'update_invoice_payment' ||
                   action == 'update_invoice_paid' ||
-                  action == 'update_invoice_unpaid') {
+                  action == 'update_invoice_unpaid' ||
+                  action == 'record_payment') {
                 SyncService.triggerDashboardRefresh();
               }
             }
@@ -957,6 +962,7 @@ class SyncService {
               'update_invoice_paid',
               'update_invoice_unpaid',
               'record_khata_payment',
+              'record_payment',
               'decrease_stock',
               'create_purchase_order',
               'update_purchase_order_status',
@@ -1024,6 +1030,7 @@ class SyncService {
             'update_invoice_paid',
             'update_invoice_unpaid',
             'record_khata_payment',
+            'record_payment',
             'decrease_stock',
             'create_purchase_order',
             'update_purchase_order_status',
@@ -1180,6 +1187,28 @@ static Future<bool> _syncSaleItem(Map<String, dynamic> data) async {
   }
 
 
+static Future<bool> _recordPaymentItem(Map<String, dynamic> data) async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return false;
+
+      final payload = Map<String, dynamic>.from(data);
+      final invoiceNumber = payload['invoice_number']?.toString().trim() ?? '';
+      if (invoiceNumber.isEmpty) return false;
+
+      final res = await ApiClient.postJson(
+        ApiClient.invoicesPayments,
+        payload,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 15));
+
+      // 200/201 = recorded; 409 is acceptable for idempotent replay.
+      return res.statusCode == 200 || res.statusCode == 201 || res.statusCode == 409;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Error recording payment: $e');
+      return false;
+    }
+  }
 static Future<bool> _updatePaymentItem(Map<String, dynamic> data) async {
     try {
       final token = await SecureTokenStorage.getToken() ?? '';
