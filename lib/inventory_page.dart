@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -1256,7 +1257,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                     }
 
                     await SyncQueueManager.enqueue('update_local_product', {
-                      'operation_id': 'PRODUCT_UPDATE_${_userId ?? 0}_$productId_${DateTime.now().microsecondsSinceEpoch}',
+                      'operation_id': 'PRODUCT_UPDATE_${_userId ?? 0}_${productId}_${DateTime.now().microsecondsSinceEpoch}',
                       'id': productId,
                       'user_id': _userId,
                       'payload': apiUpdate,
