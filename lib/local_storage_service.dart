@@ -887,6 +887,26 @@ class LocalStorageService {
 
   // =========== KHATA (CREDIT TRACKING) ===========
 
+  static String _khataDeadlineKey(String customerIdOrPhone) {
+    final normalized = customerIdOrPhone.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    return 'khata_deadline_$normalized';
+  }
+
+  static Future<void> saveKhataDeadline({
+    required String customerIdOrPhone,
+    required String dueDate,
+  }) async {
+    if (!await _hasValidUserId()) return;
+    final box = await _getBox(_khataBoxBase, encrypted: true);
+    await box.put(_khataDeadlineKey(customerIdOrPhone), dueDate);
+  }
+
+  static Future<String?> loadKhataDeadline(String customerIdOrPhone) async {
+    if (!await _hasValidUserId()) return null;
+    final box = await _getBox(_khataBoxBase, encrypted: true);
+    final value = box.get(_khataDeadlineKey(customerIdOrPhone));
+    return value?.toString();
+  }
   static Future<void> saveKhataBalances(Map<String, double> balances) async {
     if (!await _hasValidUserId()) return;
     final box = await _getBox(_khataBoxBase, encrypted: true);
