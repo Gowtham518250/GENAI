@@ -1414,6 +1414,7 @@ static Future<bool> _customerPlaceOrderItem(Map<String, dynamic> data) async {
         'shop_id': data['shop_id'],
         'items': data['items'],
         'delivery_address': data['delivery_address'] ?? 'Store Pickup',
+        'idempotency_key': data['idempotency_key'] ?? data['operation_id'],
       };
 
       final res = await ApiClient.postJson(
