@@ -12,7 +12,12 @@ class OrderHistoryService {
   static Future<String> _scopedKey(String base) async {
     final prefs = await SharedPreferences.getInstance();
     final role = (prefs.getString('user_type') ?? prefs.getString('role') ?? 'CUSTOMER').trim().toUpperCase();
-    final userId = prefs.getString('user_id') ?? prefs.getString('userId') ?? prefs.getInt('user_id')?.toString() ?? prefs.getInt('userId')?.toString() ?? prefs.getString('user_email') ?? 'anonymous';
+    final intUserId = prefs.getInt('user_id') ?? prefs.getInt('userId');
+    final userId = intUserId?.toString() ??
+        prefs.getString('user_id') ??
+        prefs.getString('userId') ??
+        prefs.getString('user_email') ??
+        'anonymous';
     return base + '_' + role + '_' + userId;
   }
 
@@ -50,7 +55,8 @@ class OrderHistoryService {
     final prefs = await SharedPreferences.getInstance();
     final ordersJson = json.encode(orders);
     await prefs.setString(await _scopedKey(_ordersKey), ordersJson);
-    await prefs.setString(await _scopedKey(_ordersSyncKey), DateTime.now().toIso8601String());
+    // Saving local state is not evidence of a successful backend read/sync.
+    // The explicit remote reconciliation path owns this timestamp.
   }
 
   /// 🔧 FLIPKART-LEVEL: Add new order
