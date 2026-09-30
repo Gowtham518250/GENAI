@@ -391,6 +391,32 @@ class _AttendancePageState extends State<AttendancePage>
     return sessions;
   }
 
+  /// Derive a worker's current state from the latest attendance event.
+  /// This intentionally does not use "any open row", because the backend
+  /// stores a daily attendance row plus session metadata and stale records
+  /// can otherwise make a completed checkout look open.
+  bool _isWorkerCurrentlyIn(List<Map<String, dynamic>> sessions) {
+    DateTime? latestCheckIn;
+    DateTime? latestCheckOut;
+
+    for (final session in sessions) {
+      final checkIn = _parseServerTime(session['check_in_time']);
+      final checkOut = _parseServerTime(session['check_out_time']);
+
+      if (checkIn != null &&
+          (latestCheckIn == null || checkIn.isAfter(latestCheckIn!))) {
+        latestCheckIn = checkIn;
+      }
+      if (checkOut != null &&
+          (latestCheckOut == null || checkOut.isAfter(latestCheckOut!))) {
+        latestCheckOut = checkOut;
+      }
+    }
+
+    return latestCheckIn != null &&
+        (latestCheckOut == null || latestCheckIn.isAfter(latestCheckOut));
+  }
+
   double _hoursForSession(Map r) {
     final total = r['total_working_hours'];
     if (total is num) return total.toDouble();
@@ -563,7 +589,7 @@ class _AttendancePageState extends State<AttendancePage>
     var notMarked = 0;
     for (final worker in _staff) {
       final sessions = _workerSessionsToday(worker);
-      if (sessions.any(_isOpenSession)) {
+      if (_isWorkerCurrentlyIn(sessions)) {
         inShop++;
       } else if (sessions.isNotEmpty) {
         betweenSessions++;
