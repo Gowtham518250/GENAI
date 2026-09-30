@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'api_client.dart';
 import 'operation_queue_service.dart';
+import 'sync_service.dart';
 import 'sync_queue_manager.dart';
 import 'session_management.dart';
 import 'uuid_service.dart';
@@ -136,12 +137,20 @@ class BackgroundSyncWorker {
       
       if (!hasNetwork) return;
       
+      try {
+        await SyncService.processQueueSafe();
+      } catch (e) {
+        if (kDebugMode) debugPrint('❌ Durable high-priority sync failed: $e');
+      }
+
       final stats = await OperationQueueService.instance.getQueueStats();
       if (stats.highPriorityPending == 0) return;
       
       if (kDebugMode) {
-        debugPrint('🔥 Syncing high-priority operations: ${stats.highPriorityPending}');
+        debugPrint('🔥 Syncing legacy high-priority operations: ${stats.highPriorityPending}');
       }
+      
+      await _processOperations(priorityOnly: OperationPriority.high);  }
       
       await _processOperations(priorityOnly: OperationPriority.high);
       
@@ -203,59 +212,23 @@ class BackgroundSyncWorker {
   }
 
   /// Process the canonical encrypted user-scoped SyncQueueManager outbox.
+  ///
+  /// SyncService is the single dispatcher for SyncQueueManager actions. Keeping
+  /// dispatch in one place is critical for attendance, where the queued
+  /// checkout must call /api/attendance/check-out instead of being ignored
+  /// by this background worker.
   Future<void> _processDurableOutbox() async {
-    final items = await SyncQueueManager.getAll();
-    if (items.isEmpty) return;
-
-    for (final raw in items) {
-      final actionId = raw['action_id']?.toString();
-      final action = raw['action']?.toString() ?? '';
-      final status = raw['status']?.toString() ?? 'PENDING';
-      final data = raw['data'];
-
-      if (actionId == null || data is! Map<String, dynamic>) continue;
-      if (status != 'PENDING' && status != 'FAILED') continue;
-
-      final nextAttempt = DateTime.tryParse(
-        raw['next_attempt_at']?.toString() ?? '',
-      );
-      if (nextAttempt != null &&
-          nextAttempt.isAfter(DateTime.now().toUtc())) {
-        continue;
+    try {
+      await SyncService.processQueueSafe();
+      if (kDebugMode) {
+        debugPrint('✅ Canonical SyncQueueManager dispatch completed');
       }
-
-      final endpoint = switch (action) {
-        'create_sale' || 'save_sale' || 'sync_sale' || 'update_sale' =>
-          '/api/invoices/sync',
-        'create_customer' || 'save_customer' || 'update_customer' =>
-          '/api/customers',
-        _ => null,
-      };
-      if (endpoint == null) continue;
-
-      try {
-        final response = await ApiClient.postJson(
-          endpoint,
-          Map<String, dynamic>.from(data),
-        ).timeout(const Duration(seconds: 15));
-
-        if (response.statusCode == 200 ||
-            response.statusCode == 201 ||
-            response.statusCode == 204) {
-          await SyncQueueManager.remove(actionId);
-          if (kDebugMode) {
-            debugPrint('✅ Durable outbox synced: ' + action + '/' + actionId);
-          }
-          continue;
-        }
-
-        await _recordDurableRetry(raw, 'HTTP ' + response.statusCode.toString());
-      } catch (e) {
-        await _recordDurableRetry(raw, e.toString());
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Canonical outbox dispatch failed: $e');
       }
     }
   }
-
   Future<void> _recordDurableRetry(
     Map<String, dynamic> raw,
     String error,
