@@ -6,6 +6,12 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NotificationService {
+  static int _notificationId = 1000;
+
+  static int _nextNotificationId() {
+    _notificationId = (_notificationId + 1) & 0x7fffffff;
+    return _notificationId;
+  }
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
@@ -116,7 +122,7 @@ class NotificationService {
         if (kDebugMode) debugPrint('⚠️ Error getting SharedPreferences: $e');
       }
 
-      final whatsappOnly = prefs?.getBool('whatsapp_only_notifications') ?? true;
+      final whatsappOnly = prefs?.getBool('whatsapp_only_notifications') ?? false;
 
       // Try WhatsApp-only notification if enabled
       if (whatsappOnly && prefs != null) {
@@ -163,7 +169,7 @@ class NotificationService {
         );
 
         await NotificationService()._notificationsPlugin.show(
-          DateTime.now().millisecond, // unique ID
+          _nextNotificationId(), // collision-safe in-process ID
           title,
           body,
           platformChannelSpecifics,
