@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../visual_widgets.dart';
+
 /// Reusable dynamic Result Card / Table widget for database query results.
 ///
 /// Converts raw SQL / database rows into clean shopkeeper-friendly KPI cards
