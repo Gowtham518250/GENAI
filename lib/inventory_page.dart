@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'cache_consistency_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -181,6 +182,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
 
       if (cacheChanged) {
         await LocalStorageService.saveBackendProducts(backendProducts);
+        await CacheConsistencyService.markRemoteRefresh('inventory', recordCount: backendProducts.length);
       }
     } catch (e) {
       if (kDebugMode) {
@@ -319,9 +321,10 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
               cachedBackend,
             );
 
-            if (merged.isNotEmpty) {
+            if (merged.isNotEmpty || apiProducts.isEmpty) {
               await LocalStorageService.saveBackendProducts(merged);
             }
+            await CacheConsistencyService.markRemoteRefresh('inventory', recordCount: merged.length);
 
             if (!mounted) return;
             setState(() {
@@ -397,8 +400,11 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   Future<void> _saveLocal(String id, Map<String, dynamic> data) async {
     try {
       final local = await LocalStorageService.loadLocalProducts();
+      data['sync_status'] = 'pending';
+      data['local_updated_at'] = DateTime.now().toUtc().toIso8601String();
       local[id] = data;
       await LocalStorageService.saveLocalProducts(local);
+      await CacheConsistencyService.markLocalMutation('inventory', operationId: id);
     } catch (e) {
       if (kDebugMode) debugPrint('Error saving locally: $e');
     }
@@ -427,7 +433,10 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       final local = await LocalStorageService.loadLocalProducts();
       final sku = productData['sku'].toString();
       local[sku] = productData;
+      productData['sync_status'] = 'pending';
+      productData['local_updated_at'] = DateTime.now().toUtc().toIso8601String();
       await LocalStorageService.saveLocalProducts(local);
+      await CacheConsistencyService.markLocalMutation('inventory', operationId: 'PRODUCT_CREATE_$sku');
 
       if (_userId != null) {
         await SyncQueueManager.enqueue('create_local_product', {
