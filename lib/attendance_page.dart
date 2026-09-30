@@ -919,7 +919,7 @@ class _AttendancePageState extends State<AttendancePage>
     // Currently in only when the newest check-in is newer than the newest
     // checkout. A completed latest session therefore renders CHECK IN.
     final isIn = latestCheckIn != null &&
-        (latestCheckOut == null || latestCheckIn.isAfter(latestCheckOut));
+        (latestCheckOut == null || latestCheckIn!.isAfter(latestCheckOut));
     final workerRecord = latestRecord;
         // Calculate monthly hours from backend records
     final workerId = int.tryParse(worker.id) ?? 0;
