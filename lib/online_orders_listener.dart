@@ -64,8 +64,8 @@ class OnlineOrdersListener {
     _started = true;
 
     final prefs = await SharedPreferences.getInstance();
-    final role = prefs.getString('role');
-    if (role == 'customer') return;
+    final role = prefs.getString('role')?.trim().toLowerCase();
+    if (role == 'customer' || role == 'staff' || role == 'worker') return;
 
     _shopId = (prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0).toString();
     if (_shopId.isEmpty || _shopId == '0') {
