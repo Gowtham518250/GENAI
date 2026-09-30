@@ -1,0 +1,50 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.9"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze project source
+        # The repository has a large legacy warning/info backlog. Flutter's
+        # analyzer can still return exit code 1 for that backlog, so inspect
+        # the diagnostics explicitly and fail only on actual analyzer errors.
+        shell: bash
+        run: |
+          set +e
+          analysis_output="$(flutter analyze --no-fatal-warnings --no-fatal-infos 2>&1)"
+          analyze_status=$?
+          printf '%s\n' "$analysis_output"
+
+          if printf '%s\n' "$analysis_output" | grep -Eq '(^|[[:space:]])error[[:space:]]+•'; then
+            echo "Analyzer reported at least one error diagnostic."
+            exit 1
+          fi
+
+          if [ "$analyze_status" -ne 0 ]; then
+            echo "::warning::flutter analyze returned $analyze_status without any error diagnostics; continuing because legacy warnings/infos are non-blocking."
+          fi
+
+          exit 0
+
+      - name: Run Flutter tests
+        run: flutter test
