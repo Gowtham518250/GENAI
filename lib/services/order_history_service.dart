@@ -83,6 +83,30 @@ class OrderHistoryService {
     await saveOrders(orders);
   }
 
+  /// Reconcile a locally created order with its server acknowledgement.
+  static Future<void> markOrderSynced({
+    required String localOrderId,
+    required String serverOrderId,
+    String status = 'PENDING',
+  }) async {
+    final orders = await getAllOrders();
+    for (var i = 0; i < orders.length; i++) {
+      final order = orders[i];
+      final localId = (order['local_order_id'] ?? order['order_id']).toString();
+      if (localId != localOrderId) continue;
+
+      orders[i] = {
+        ...order,
+        'order_id': serverOrderId,
+        'server_order_id': serverOrderId,
+        'sync_status': 'synced',
+        'status': order['status'] == 'PENDING_SYNC' ? status : order['status'],
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      break;
+    }
+    await saveOrders(orders);
+  }
   /// 🔧 FLIPKART-LEVEL: Get order by ID
   static Future<Map<String, dynamic>?> getOrderById(String orderId) async {
     final orders = await getAllOrders();
