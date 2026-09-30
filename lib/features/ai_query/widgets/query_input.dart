@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../visual_widgets.dart';
+
 /// Production-ready Question Input Widget for AI Business Queries.
 ///
 /// Features:
@@ -86,25 +88,25 @@ class _QueryInputCardState extends State<QueryInputCard> {
   Widget build(BuildContext context) {
     const brandPrimary = Color(0xFF6366F1);
     const brandIndigo = Color(0xFF4F46E5);
-    const darkSurface = Color(0xFF1E293B);
+    const lightSurface = AppColors.surface;
 
     final canSubmit = _hasText && !widget.isLoading;
 
     return Container(
       decoration: BoxDecoration(
-        color: darkSurface.withValues(alpha: 0.85),
+        color: lightSurface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: _isFocused
               ? brandPrimary.withValues(alpha: 0.8)
-              : Colors.white.withValues(alpha: 0.12),
+              : AppColors.border,
           width: _isFocused ? 1.8 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
             color: _isFocused
-                ? brandPrimary.withValues(alpha: 0.2)
-                : Colors.black.withValues(alpha: 0.25),
+                ? brandPrimary.withValues(alpha: 0.14)
+                : Colors.black.withValues(alpha: 0.06),
             blurRadius: _isFocused ? 16 : 10,
             offset: const Offset(0, 4),
           ),
@@ -129,15 +131,15 @@ class _QueryInputCardState extends State<QueryInputCard> {
                   onSubmitted: (_) => _handleSubmit(),
                   style: GoogleFonts.inter(
                     fontSize: 15,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w400,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
                     height: 1.4,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Ask about sales, revenue, customers, stock...',
                     hintStyle: GoogleFonts.inter(
                       fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: AppColors.textTertiary,
                     ),
                     border: InputBorder.none,
                     isDense: true,
@@ -151,7 +153,7 @@ class _QueryInputCardState extends State<QueryInputCard> {
                   icon: const Icon(
                     Icons.close_rounded,
                     size: 18,
-                    color: Colors.white60,
+                    color: AppColors.textTertiary,
                   ),
                   tooltip: 'Clear text',
                   splashRadius: 18,
@@ -170,7 +172,7 @@ class _QueryInputCardState extends State<QueryInputCard> {
                 'e.g. "What were my sales yesterday?"',
                 style: GoogleFonts.inter(
                   fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: AppColors.textTertiary,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -180,7 +182,7 @@ class _QueryInputCardState extends State<QueryInputCard> {
                   backgroundColor: brandPrimary,
                   disabledBackgroundColor: brandIndigo.withValues(alpha: 0.3),
                   foregroundColor: Colors.white,
-                  disabledForegroundColor: Colors.white.withValues(alpha: 0.4),
+                  disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
                   elevation: canSubmit ? 4 : 0,
                   shadowColor: brandPrimary.withValues(alpha: 0.5),
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
