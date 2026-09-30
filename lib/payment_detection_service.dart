@@ -226,9 +226,9 @@ class PaymentUiState {
 // FIX-G + FIX-1 + FIX-2: MULTI-LANGUAGE VOICE BUILDER (10 languages, complete)
 // =============================================================================
 
-abstract class VoiceBuilder {
-  enum PaymentDirection { credited, debited, unknown }
+enum PaymentDirection { credited, debited, unknown }
 
+abstract class VoiceBuilder {
   static PaymentDirection detectDirection(String text) {
     final t = text.toLowerCase();
     final credit = RegExp(
