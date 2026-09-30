@@ -168,10 +168,15 @@ class PaymentProcessingManager {
         }
         
         try {
-          final idempotencyKey = (item['idempotencyKey'] ?? '').toString();
-          final headers = idempotencyKey.isEmpty
-              ? null
-              : {'Idempotency-Key': idempotencyKey};
+          // Backward-compatible sync for queue entries created before the
+          // stable key field was introduced. The persisted payment id is a
+          // stable fallback for retries of that legacy queue record.
+          final idempotencyKey = (item['idempotencyKey'] ?? '').toString().isNotEmpty
+              ? item['idempotencyKey'].toString()
+              : PaymentIdempotencyService.instance.generatePaymentEventKey(
+                  (item['fingerprint'] ?? item['id'] ?? '').toString(),
+                );
+          final headers = {'Idempotency-Key': idempotencyKey};
 
           final response = await ApiClient.postJson(
             ApiClient.invoicesPayments,
