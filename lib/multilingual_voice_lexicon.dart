@@ -63,6 +63,28 @@ class MultilingualVoiceLexicon {
     return out.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
+  static const Map<String, List<String>> _commonProductAliases = {
+    'milk': ['doodh', 'dudh', 'paal', 'pal', 'పాలు', 'பால்', 'ಹಾಲು'],
+    'sugar': ['cheeni', 'shakkar', 'biyyam', 'చక్కెర', 'சர்க்கரை'],
+    'rice': ['chawal', 'chaval', 'biyyam', 'vari', 'బియ్యం', 'அரிசி', 'ಅಕ್ಕಿ'],
+    'oil': ['tel', 'tail', 'enne', 'noone', 'నూనె', 'எண்ணெய்', 'ಎಣ್ಣೆ'],
+    'bread': ['roti', 'pav', 'பிரெட்', 'బ్రెడ్'],
+    'soap': ['sabun', 'saabun', 'సబ్బు', 'சோப்பு', 'ಸಾಬೂನು'],
+    'tea': ['chai', 'chaha', 'te', 'టీ', 'தேநீர்', 'ಚಹಾ'],
+    'coffee': ['kapi', 'kaapi', 'కాఫీ', 'காபி', 'ಕಾಫಿ'],
+    'salt': ['namak', 'uppu', 'ఉప్పు', 'உப்பு', 'ಉಪ್ಪು'],
+    'water': ['paani', 'neeru', 'నీరు', 'தண்ணீர்', 'ನೀರು'],
+    'biscuit': ['biskut', 'biskit', 'బిస్కెట్', 'பிஸ்கட்'],
+    'egg': ['anda', 'guddu', 'గుడ్డు', 'முட்டை', 'ಮೊಟ್ಟೆ'],
+    'butter': ['makhan', 'venna', 'వెన్న', 'வெண்ணெய்'],
+    'curd': ['dahi', 'perugu', 'పెరుగు', 'தயிர்'],
+    'tomato': ['tamatar', 'ramapala', 'టమాటా', 'தக்காளி'],
+    'onion': ['pyaaz', 'ulli', 'ఉల్లిపాయ', 'வெங்காயம்'],
+    'potato': ['aloo', 'aalu', 'bangaladumpa', 'బంగాళాదుంప', 'உருளைக்கிழங்கு'],
+    'banana': ['kela', 'arati', 'అరటి', 'வாழைப்பழம்'],
+    'apple': ['seb', 'sebu', 'ఆపిల్', 'ஆப்பிள்'],
+  };
+
   static List<String> productAliases(Map<String, dynamic> product) {
     final values = <String>[];
     for (final key in const ['aliases', 'voice_aliases', 'synonyms', 'voiceAliases']) {
@@ -73,9 +95,21 @@ class MultilingualVoiceLexicon {
         values.addAll(raw.split(RegExp(r'[,|;]')));
       }
     }
+    final name = (product['product_name'] ?? product['name'] ?? '')
+        .toString()
+        .trim()
+        .toLowerCase();
+
+    for (final entry in _commonProductAliases.entries) {
+      if (name == entry.key || name.startsWith('${entry.key} ') || name.contains(' ${entry.key} ')) {
+        values.addAll(entry.value);
+      }
+    }
+
     return values
         .map((e) => e.trim().toLowerCase())
         .where((e) => e.isNotEmpty)
+        .toSet()
         .toList();
   }
 }
