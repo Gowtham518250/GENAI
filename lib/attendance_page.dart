@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'worker_local_storage.dart';
 import 'worker_attendance_detail_page.dart';
 import 'attendance_offline_service.dart';
+import 'sync_service.dart';
 
 class AttendancePage extends StatefulWidget {
   const AttendancePage({super.key});
@@ -1280,6 +1281,18 @@ class _AttendancePageState extends State<AttendancePage>
           employeeId: workerId,
           workerId: workerId,
         );
+
+        // The checkout is written to the durable local outbox first. Trigger
+        // the canonical sync immediately so an online device does not wait
+        // for the background timer to reach /api/attendance/check-out.
+        try {
+          await SyncService.processQueueSafe();
+        } catch (syncError) {
+          if (kDebugMode) {
+            debugPrint('⚠️ Immediate attendance checkout sync deferred: $syncError');
+          }
+        }
+
         _showSnack(
           '✅ ${worker.name} checked out',
           _primary,
