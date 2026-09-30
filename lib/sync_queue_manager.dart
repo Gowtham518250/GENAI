@@ -158,7 +158,13 @@ class SyncQueueManager {
 
   static Future<int?> _currentUserId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('user_id') ?? prefs.getInt('userId');
+
+    final intId = prefs.getInt('user_id') ?? prefs.getInt('userId');
+    if (intId != null && intId > 0) return intId;
+
+    final stringId =
+        prefs.getString('user_id') ?? prefs.getString('userId');
+    return int.tryParse(stringId ?? '');
   }
 
   static Future<Box> _getBoxUnlocked() async {
