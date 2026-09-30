@@ -1232,7 +1232,10 @@ class _AttendancePageState extends State<AttendancePage>
           employeeId: workerId,
           workerId: workerId,
         );
-        _showSnack('✅ ${worker.name} checked out — saved offline and queued', _primary);
+        _showSnack(
+          '✅ ${worker.name} checked out',
+          _primary,
+        );
       } else {
         final workerId = int.tryParse(worker.id.toString());
         if (workerId == null || workerId <= 0) {
