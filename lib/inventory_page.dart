@@ -244,8 +244,9 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
         final Map<String, dynamic> data = Map<String, dynamic>.from(e.value as Map);
         data['id'] = e.key; // Assign dummy ID for UI keying
         data['is_offline'] = true; // Flag for UI if needed
+        if (data['is_deleted'] == true) return null;
         return data;
-      }).toList();
+      }).whereType<Map<String, dynamic>>().toList();
 
       // 2. Load Cached Backend Products
       final cachedBackend = await LocalStorageService.loadBackendProducts();
@@ -1166,9 +1167,20 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       final cached = await LocalStorageService.loadBackendProducts();
       cached.removeWhere((item) => item['id'].toString() == productId);
       await LocalStorageService.saveBackendProducts(cached);
-      await LocalStorageService.saveLocalProducts(
-        (await LocalStorageService.loadLocalProducts())
-          ..removeWhere((key, value) => value is Map && value['id']?.toString() == productId),
+      final localProducts = await LocalStorageService.loadLocalProducts();
+      final operationId = 'PRODUCT_DELETE_${_userId ?? 0}_${productId}';
+      localProducts['__deleted_${productId}'] = {
+        'id': productId,
+        'product_id': productId,
+        'is_deleted': true,
+        'sync_status': 'pending',
+        'local_updated_at': DateTime.now().toUtc().toIso8601String(),
+        'operation_id': operationId,
+      };
+      await LocalStorageService.saveLocalProducts(localProducts);
+      await CacheConsistencyService.markLocalMutation(
+        'inventory',
+        operationId: operationId,
       );
 
       if (_userId != null) {
@@ -1271,13 +1283,20 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                     // Local-first cache update.
                     final cached = await LocalStorageService.loadBackendProducts();
                     final idx = cached.indexWhere((item) => item['id'].toString() == productId.toString());
+                    final operationId = 'PRODUCT_UPDATE_${_userId ?? 0}_${productId}_${DateTime.now().microsecondsSinceEpoch}';
+                    updated['sync_status'] = 'pending';
+                    updated['local_updated_at'] = DateTime.now().toUtc().toIso8601String();
                     if (idx >= 0) {
                       cached[idx] = updated;
                       await LocalStorageService.saveBackendProducts(cached);
                     }
+                    await CacheConsistencyService.markLocalMutation(
+                      'inventory',
+                      operationId: operationId,
+                    );
 
                     await SyncQueueManager.enqueue('update_local_product', {
-                      'operation_id': 'PRODUCT_UPDATE_${_userId ?? 0}_${productId}_${DateTime.now().microsecondsSinceEpoch}',
+                      'operation_id': operationId,
                       'id': productId,
                       'user_id': _userId,
                       'payload': apiUpdate,
