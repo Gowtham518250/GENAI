@@ -15,6 +15,7 @@ import 'sales_dedup_helper.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'agent_debug_log.dart';
 import 'attendance_offline_service.dart';
+import 'services/order_history_service.dart';
 
 class SyncService {
   static DateTime? _lastServerTime;
@@ -897,6 +898,10 @@ class SyncService {
               success = await _createPurchaseOrderItem(data);
               break;
 
+            case 'customer_place_order':
+              success = await _customerPlaceOrderItem(data);
+              break;
+
             case 'update_purchase_order_status':
               success = await _updatePurchaseOrderStatusItem(data);
               break;
@@ -971,6 +976,7 @@ class SyncService {
               'decrease_stock',
               'create_purchase_order',
               'update_purchase_order_status',
+              'customer_place_order',
               'attendance_check_in',
               'attendance_check_out',
             };
@@ -1040,6 +1046,7 @@ class SyncService {
             'decrease_stock',
             'create_purchase_order',
             'update_purchase_order_status',
+            'customer_place_order',
             'attendance_check_in',
             'attendance_check_out',
           };
@@ -1398,6 +1405,40 @@ static Future<bool> _deleteProductItem(Map<String, dynamic> data) async {
     }
   }
 
+static Future<bool> _customerPlaceOrderItem(Map<String, dynamic> data) async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return false;
+
+      final payload = {
+        'shop_id': data['shop_id'],
+        'items': data['items'],
+        'delivery_address': data['delivery_address'] ?? 'Store Pickup',
+      };
+
+      final res = await ApiClient.postJson(
+        '/store/order',
+        payload,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 20));
+
+      if (res.statusCode != 200 && res.statusCode != 201) return false;
+
+      final body = jsonDecode(res.body);
+      final serverOrderId =
+          body is Map ? body['order_id']?.toString() : null;
+      if (serverOrderId == null || serverOrderId.isEmpty) return false;
+
+      await OrderHistoryService.markOrderSynced(
+        localOrderId: data['local_order_id']?.toString() ?? '',
+        serverOrderId: serverOrderId,
+      );
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Customer order sync failed: $e');
+      return false;
+    }
+  }
 static Future<bool> _createPurchaseOrderItem(Map<String, dynamic> data) async {
     try {
       final token = await SecureTokenStorage.getToken() ?? '';
