@@ -202,6 +202,7 @@ class PaymentUiState {
     bool?            isUserConfirmed,
     bool?            isUserRejected,
     bool?            isBillMatch,
+    String?          rawText,
   }) => PaymentUiState(
     id:              id,
     decision:        decision        ?? this.decision,
