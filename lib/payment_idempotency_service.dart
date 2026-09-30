@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crypto/crypto.dart';
 
 /// Payment Idempotency Service
 /// Prevents duplicate payment processing through idempotency keys
@@ -33,6 +34,13 @@ class PaymentIdempotencyService {
   }
   
   /// Generate a unique idempotency key for a payment
+  /// Generate one stable key for one payment event.
+  /// The same detected event therefore keeps the same key across network
+  /// retries and offline queue syncs, while different UTRs remain distinct.
+  String generatePaymentEventKey(String fingerprint) {
+    final digest = sha256.convert(utf8.encode(fingerprint)).toString();
+    return 'payment_event_' + digest;
+  }
   String generateIdempotencyKey() {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = Random().nextInt(1000000);

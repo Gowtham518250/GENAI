@@ -9,6 +9,7 @@ import 'offline_payment_queue.dart';
 import 'error_logger.dart';
 import 'payment_detection_service.dart';
 import 'payment_event.dart';
+import 'payment_idempotency_service.dart';
 
 /// Payment Processing Manager - Orchestrates the complete payment flow with error handling,
 /// offline support, and fallback options
@@ -50,6 +51,22 @@ class PaymentProcessingManager {
   /// Main payment detection handler - runs with full error handling
   Future<void> handlePaymentDetected(PaymentEvent payment) async {
     try {
+      // Never write an unconfirmed or reference-less detection as a financial transaction.
+      if (payment.decision != PaymentDecision.confirmed ||
+          payment.referenceId == null ||
+          payment.referenceId!.trim().isEmpty) {
+        await _errorLogger.logPaymentError(
+          detectionSource: payment.detectionSource,
+          errorReason: 'Payment held for review: missing confirmed decision or reference ID',
+          paymentDetails: {
+            'amount': payment.amount,
+            'decision': payment.decision.name,
+            'reference_id': payment.referenceId,
+          },
+        );
+        onPaymentDetected?.call(payment);
+        return;
+      }
       if (kDebugMode) print('$_tag Detected: ₹${payment.amount} from ${payment.detectionSource}');
       
       if (_isOnline) {
@@ -76,8 +93,9 @@ class PaymentProcessingManager {
   
   /// Process payment with automatic retry
   Future<void> _processPaymentOnline(PaymentEvent payment) async {
+    final idempotencyKey = PaymentIdempotencyService.instance
+        .generatePaymentEventKey(payment.fingerprint);
     try {
-      // Real API call via ApiClient with automatic retry and token injection
       final response = await ApiClient.postJson(
         ApiClient.invoicesPayments,
         {
@@ -86,11 +104,27 @@ class PaymentProcessingManager {
           'payer_name': payment.payerName,
           'source': payment.detectionSource,
           'timestamp': payment.timestamp.toIso8601String(),
+          if (int.tryParse(payment.saleId ?? '') != null)
+            'invoice_id': int.parse(payment.saleId!),
+          'idempotency_key': idempotencyKey,
         },
+        headers: {'Idempotency-Key': idempotencyKey},
       );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Server failed to record payment: ${response.statusCode}');
+        if (response.statusCode >= 400 && response.statusCode < 500) {
+          await _errorLogger.logPaymentError(
+            detectionSource: payment.detectionSource,
+            errorReason: 'Payment rejected by backend: HTTP ' + response.statusCode.toString(),
+            paymentDetails: {
+              'amount': payment.amount,
+              'reference_id': payment.referenceId,
+              'idempotency_key': idempotencyKey,
+            },
+          );
+          return;
+        }
+        throw Exception('Server failed to record payment: ' + response.statusCode.toString());
       }
       
       await _errorLogger.logError(
@@ -134,14 +168,29 @@ class PaymentProcessingManager {
         }
         
         try {
-          // Real sync call to backend
+          // Backward-compatible sync for queue entries created before the
+          // stable key field was introduced. The persisted payment id is a
+          // stable fallback for retries of that legacy queue record.
+          final idempotencyKey = (item['idempotencyKey'] ?? '').toString().isNotEmpty
+              ? item['idempotencyKey'].toString()
+              : PaymentIdempotencyService.instance.generatePaymentEventKey(
+                  (item['fingerprint'] ?? item['id'] ?? '').toString(),
+                );
+          final headers = {'Idempotency-Key': idempotencyKey};
+
           final response = await ApiClient.postJson(
             ApiClient.invoicesPayments,
             item,
+            headers: headers,
           );
 
           if (response.statusCode != 200 && response.statusCode != 201) {
-            throw Exception('Sync failed');
+            if (response.statusCode >= 400 && response.statusCode < 500) {
+              await _offlineQueue.markAsFailed(item['id'].toString());
+              failed++;
+              continue;
+            }
+            throw Exception('Sync failed: ' + response.statusCode.toString());
           }
           
           await _offlineQueue.markAsSynced(item['id']);
