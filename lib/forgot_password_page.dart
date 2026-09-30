@@ -27,7 +27,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
   int _currentStep = 1; // 1: Email, 2: OTP, 3: New Password
   String _errorMessage = '';
   bool _otpVerified = false;
-  String? _resetAuthorizationToken;
 
   late AnimationController _bgController;
   late AnimationController _glowController;
@@ -89,16 +88,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
       _isLoading = true;
       _errorMessage = '';
       _otpVerified = false;
-      _resetAuthorizationToken = null;
     });
 
     try {
-      final result = await OTPService.sendOTPToEmail(
-        email,
-        title: '🔐 Retail Mind Password Reset',
-        bodyText:
-            'Use the 6-digit OTP below. Also open the secure confirmation link in this email before the password can be changed.',
-      );
+      final result = await OTPService.sendPasswordResetOTP(email);
 
       if (!mounted) return;
 
@@ -109,9 +102,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'OTP sent to $email. Open the email and confirm your mailbox first.',
-            ),
+            content: Text('OTP sent to $email. Check your inbox and spam folder.'),
           ),
         );
       } else {
@@ -142,19 +133,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
     });
 
     try {
-      final result = await OTPService.verifyOTP(email, otp);
+      final result = await OTPService.verifyPasswordResetOTP(email, otp);
 
       if (!mounted) return;
 
       if (result['success'] == true) {
-        _resetAuthorizationToken = result['token']?.toString();
         setState(() {
-          _otpVerified = _resetAuthorizationToken != null &&
-              _resetAuthorizationToken!.isNotEmpty;
+          _otpVerified = result['success'] == true;
           _currentStep = _otpVerified ? 3 : 2;
-          _errorMessage = _otpVerified
-              ? ''
-              : 'Secure reset authorization was not issued.';
+          _errorMessage = _otpVerified ? '' : (result['message']?.toString() ?? 'OTP verification failed.');
         });
       } else {
         setState(() {
@@ -176,9 +163,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
     final pass = _passwordController.text.trim();
     final confirm = _confirmPasswordController.text.trim();
 
-    if (!_otpVerified || _resetAuthorizationToken == null) {
+    if (!_otpVerified) {
       setState(() => _errorMessage =
-          'Verify the OTP and email confirmation before resetting your password.');
+          'Verify the OTP before resetting your password.');
       return;
     }
 
@@ -201,12 +188,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
     });
 
     try {
-      // The backend's existing /auth/reset-password endpoint accepts the
-      // short-lived one-time reset token issued by the hardened challenge.
-      final response = await ApiClient.postForm('/auth/reset-password', {
-        'token': _resetAuthorizationToken!,
-        'password': pass,
-      });
+      final response = await ApiClient.postJson(
+        '/auth/verify-reset-otp',
+        {
+          'email': _emailController.text.trim(),
+          'otp': _otpController.text.trim(),
+          'password': pass,
+        },
+      );
 
       if (!mounted) return;
 

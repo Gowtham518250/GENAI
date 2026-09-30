@@ -52,13 +52,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     });
 
     try {
-      final result = await OTPService.sendOTPToEmail(
-        email,
-        title: '🔐 Retail Mind Password Reset',
-        bodyText:
-            'Use the 6-digit OTP below to reset your Retail Mind owner password. '
-            'Also confirm the secure email link before resetting the password.',
-      );
+      final result = await OTPService.sendPasswordResetOTP(email);
 
       if (!mounted) return;
 
@@ -86,8 +80,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     }
   }
 
-  /// Step 2: Verify the password-reset OTP, obtain the one-time reset
-  /// authorization token, and then use that token to change the password.
+  /// Step 2: Verify the password-reset OTP, then use it to change the password.
   Future<void> resetPassword() async {
     final email = emailController.text.trim();
     final otp = otpController.text.trim();
@@ -121,7 +114,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     try {
       // Local OTP verification + hardened backend authorization.
-      final verifyResult = await OTPService.verifyOTP(email, otp);
+      final verifyResult = await OTPService.verifyPasswordResetOTP(email, otp);
 
       if (!mounted) return;
 

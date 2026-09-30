@@ -136,66 +136,101 @@ class ShopProfilePersistenceService {
   }
   
   /// Sync shop profile to backend with retry logic
-  static Future<Map<String, dynamic>> syncProfileToBackend(Map<String, dynamic> profile) async {
+  static Future<Map<String, dynamic>> syncProfileToBackend(
+    Map<String, dynamic> profile,
+  ) async {
     const maxRetries = 3;
     const retryDelay = Duration(seconds: 2);
-    
+
+    // Normalize both supported local shapes:
+    // {profile: {...}, version: ...} and flat {shop_name: ...}.
+    final raw = profile['profile'] is Map
+        ? Map<String, dynamic>.from(profile['profile'] as Map)
+        : Map<String, dynamic>.from(profile);
+
+    final payload = <String, dynamic>{};
+
+    void put(String key, dynamic value) {
+      if (value == null) return;
+      if (value is String && value.trim().isEmpty) return;
+      payload[key] = value;
+    }
+
+    put('shop_name', raw['shop_name']);
+    put('shop_tagline', raw['shop_tagline'] ?? raw['tagline']);
+    put('shop_type', raw['shop_type']);
+    put('address', raw['address'] ?? raw['location']);
+    put('location', raw['location'] ?? raw['address']);
+    put('phone', raw['phone'] ?? raw['shop_phone'] ?? raw['phone_number']);
+    put('email', raw['email'] ?? raw['shop_email']);
+    put('website', raw['website']);
+    put('upi_id', raw['upi_id'] ?? raw['primary_upi_id']);
+    put('gst_number', raw['gst_number'] ?? raw['shop_gst']);
+    put('shop_categories', raw['shop_categories']);
+    put('contact_person_name', raw['contact_person_name'] ?? raw['contact_person']);
+    put('contact_person_phone', raw['contact_person_phone']);
+    put('contact_person_email', raw['contact_person_email']);
+    put('city', raw['city']);
+    put('state', raw['state'] ?? raw['shop_state']);
+    put('postal_code', raw['postal_code']);
+
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         final token = await SecureTokenStorage.getToken();
         if (token == null || token.isEmpty) {
           return {'success': false, 'error': 'NOT_AUTHENTICATED'};
         }
-        
-        if (kDebugMode) debugPrint('🔄 Backend sync attempt $attempt/$maxRetries');
-        
-        final userId = profile['user_id'] ?? profile['id'] ?? '';
+
         final response = await ApiClient.putJson(
-          '/api/shop/profile${userId.toString().isNotEmpty ? "?user_id=$userId" : ""}',
-          profile,
+          '/api/shop/profile',
+          payload,
           headers: {'Authorization': 'Bearer $token'},
         ).timeout(const Duration(seconds: 15));
-        
-          if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          
-          // Update local cache
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body) as Map<String, dynamic>;
           await saveProfileLocally(data);
-          
-          if (kDebugMode) debugPrint('✅ Shop profile synced to backend (attempt $attempt)');
           return {'success': true, 'profile': data};
-        } else {
-          final error = _extractErrorMessage(response.body);
-          if (kDebugMode) debugPrint('⚠️ Backend sync failed (attempt $attempt): $error');
-          
-          // If shop does not exist, try to create it
-          if (response.statusCode == 400 || response.statusCode == 404) {
-            final createRes = await ApiClient.postJson('/api/shop/create', profile, headers: {'Authorization': 'Bearer $token'});
-            if (createRes.statusCode == 200 || createRes.statusCode == 201) {
-                final data = json.decode(createRes.body);
-                await saveProfileLocally(data);
-                return {'success': true, 'profile': data};
-            }
+        }
+
+        // A missing profile is the only condition that should fall back to POST.
+        if (response.statusCode == 404) {
+          final createRes = await ApiClient.postJson(
+            '/api/shop/profile',
+            payload,
+            headers: {'Authorization': 'Bearer $token'},
+          ).timeout(const Duration(seconds: 15));
+
+          if (createRes.statusCode == 200 || createRes.statusCode == 201) {
+            final data = json.decode(createRes.body) as Map<String, dynamic>;
+            await saveProfileLocally(data);
+            return {'success': true, 'profile': data};
           }
-          
-          // Don't retry on authentication errors
-          if (response.statusCode == 401 || response.statusCode == 403) {
-            return {'success': false, 'error': error};
-          }
+
+          final error = _extractErrorMessage(createRes.body);
+          return {'success': false, 'error': error};
+        }
+
+        final error = _extractErrorMessage(response.body);
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          return {'success': false, 'error': error};
+        }
+
+        if (kDebugMode) {
+          debugPrint('⚠️ Backend profile sync failed (attempt $attempt): $error');
         }
       } catch (e) {
         if (kDebugMode) debugPrint('⚠️ Profile sync error (attempt $attempt): $e');
       }
-      
-      // Wait before retry
+
       if (attempt < maxRetries) {
         await Future.delayed(retryDelay);
       }
     }
-    
+
     return {'success': false, 'error': 'MAX_RETRIES_EXCEEDED'};
   }
-  
+
   /// Get shop profile with automatic fallback
   /// Tries local cache first, then backend
   static Future<Map<String, dynamic>?> getProfile() async {
@@ -417,6 +452,24 @@ class ShopProfilePersistenceService {
         if (shopData['gst_number'] != null || shopData['shop_gst'] != null || shopData['gstin'] != null) {
           await prefs.setString('gst_number', (shopData['gst_number'] ?? shopData['shop_gst'] ?? shopData['gstin']).toString());
           await prefs.setString('shop_gst', (shopData['gst_number'] ?? shopData['shop_gst'] ?? shopData['gstin']).toString());
+        }
+        if (shopData['email'] != null) {
+          await prefs.setString('shop_email', shopData['email'].toString());
+          await prefs.setString('email', shopData['email'].toString());
+        }
+        if (shopData['shop_categories'] != null) {
+          final categories = shopData['shop_categories'];
+          if (categories is List) {
+            await prefs.setString('shop_categories', categories.map((e) => e.toString()).join(','));
+          } else {
+            await prefs.setString('shop_categories', categories.toString());
+          }
+        }
+        if (shopData['contact_person_name'] != null || shopData['contact_person'] != null) {
+          await prefs.setString(
+            'contact_person',
+            (shopData['contact_person_name'] ?? shopData['contact_person']).toString(),
+          );
         }
         if (shopData['logo_url'] != null) {
           await prefs.setString('logo_url', shopData['logo_url'].toString());
