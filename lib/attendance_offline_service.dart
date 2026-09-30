@@ -145,14 +145,18 @@ class OfflineAttendanceService {
     final rawSessions=server['sessions'];
     if(rawSessions is Map && rawSessions.isNotEmpty){
       final expanded=<Map<String,dynamic>>[];
-      var sessionIndex=0;
-      for(final value in rawSessions.values){
+      for(final entry in rawSessions.entries){
+        final value=entry.value;
         if(value is! Map)continue;
         final session=Map<String,dynamic>.from(value);
+        final key=entry.key.toString().toLowerCase();
+        final index=key=='morning'
+            ? 0
+            : (key=='evening' ? 1 : expanded.length);
         expanded.add({
           ...server,
           ...session,
-          'session_index':sessionIndex++,
+          'session_index':index,
           'local_pending':false,
         });
       }
