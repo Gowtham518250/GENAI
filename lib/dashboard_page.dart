@@ -709,6 +709,7 @@ class _DashboardPageState extends State<DashboardPage>
       });
       await SyncService.updateSalePayment(invoiceNumber, newStatus, newPaid);
       await SyncService.processQueueSafe();
+      await _refreshExistingInvoiceStateFromBackend();
       SyncService.triggerDashboardRefresh();
       if (mounted) {
         _addToActivityFeed(
