@@ -229,12 +229,43 @@ class OfflineAttendanceService {
       for(final r in local){
         merged[_recordKey(r,uid)]=Map<String,dynamic>.from(r);
       }
+
       for(final serverRaw in remoteRecords){
         for(final server in _expandRemoteRecord(serverRaw)){
           final k=_recordKey(server,uid);
           final previous=merged[k];
+
+          if(previous == null){
+            merged[k]={
+              ...server,
+              'local_pending':false,
+              'synced_at':DateTime.now().toUtc().toIso8601String(),
+            };
+            continue;
+          }
+
+          final localHasCheckout = previous['check_out_time'] != null;
+          final remoteHasCheckout = server['check_out_time'] != null;
+
+          // The app is local-first. Immediately after a worker checks out,
+          // the local record contains the new checkout timestamp while the
+          // backend may still return the older open daily row for a short
+          // period. Never let that stale remote open row erase a confirmed
+          // local checkout.
+          if(localHasCheckout && !remoteHasCheckout){
+            merged[k]={
+              ...server,
+              ...previous,
+              'local_pending': previous['local_pending'] == true,
+              'synced_at': previous['synced_at'],
+            };
+            continue;
+          }
+
+          // Once the backend contains the checkout, the server record is the
+          // authoritative state and can clear the local pending flag.
           merged[k]={
-            ...(previous??{}),
+            ...previous,
             ...server,
             'local_pending':false,
             'synced_at':DateTime.now().toUtc().toIso8601String(),
