@@ -112,4 +112,52 @@ void main() {
       expect(result.rate, greaterThan(0.0));
     });
   });
+
+  group('Payment voice direction', () {
+    test('detects credited payment from bank/UPI text', () {
+      expect(
+        VoiceBuilder.detectDirection('Your A/c is credited with INR 1000 by UPI'),
+        equals(PaymentDirection.credited),
+      );
+      expect(
+        VoiceBuilder.detectedDirectional(
+          1000,
+          VoiceLanguage.english,
+          PaymentDirection.credited,
+        ),
+        contains('credited'),
+      );
+    });
+
+    test('detects debited payment from bank text', () {
+      expect(
+        VoiceBuilder.detectDirection('INR 1000 debited from your account'),
+        equals(PaymentDirection.debited),
+      );
+      expect(
+        VoiceBuilder.detectedDirectional(
+          1000,
+          VoiceLanguage.english,
+          PaymentDirection.debited,
+        ),
+        contains('debited'),
+      );
+    });
+
+    test('ambiguous text is never mislabeled as credit or debit', () {
+      expect(
+        VoiceBuilder.detectDirection('Payment of INR 1000'),
+        equals(PaymentDirection.unknown),
+      );
+      expect(
+        VoiceBuilder.detectedDirectional(
+          1000,
+          VoiceLanguage.english,
+          PaymentDirection.unknown,
+        ),
+        contains('detected'),
+      );
+    });
+  });
+
 }
