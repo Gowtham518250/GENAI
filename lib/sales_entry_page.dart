@@ -31,6 +31,7 @@ import 'payment_detection_service.dart';
 import 'payment_event.dart';
 import 'voice_billing_assistant.dart';
 import 'roman_indian_voice_normalizer.dart';
+import 'multilingual_voice_lexicon.dart';
 import 'bill_generator_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:path/path.dart' as p;
@@ -645,18 +646,29 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     }
     
     if (result.finalResult) {
-      if (result.confidence > 0.5) {
-        _splitAndParseMultipleItems(result.recognizedWords);
-      } else {
-        // Low confidence, let user retry!
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Low confidence, please try again!'),
-              backgroundColor: Colors.orange.shade600,
-            ),
-          );
-        }
+      final recognized = result.recognizedWords.trim();
+      final regional = const [
+        'te-IN', 'hi-IN', 'ta-IN', 'kn-IN', 'ml-IN', 'mr-IN', 'bn-IN', 'gu-IN', 'pa-IN',
+      ].contains(_speechInputLang);
+
+      // Platform STT confidence can be 0/low on some Android speech engines
+      // even when the transcript itself is usable. Let the catalog matcher
+      // validate the content rather than dropping good regional transcripts.
+      final confidenceFloor = regional ? 0.30 : 0.45;
+      final usableTranscript = recognized.length >= 2 &&
+          recognized.split(RegExp(r'\\s+')).where((w) => w.isNotEmpty).isNotEmpty;
+
+      if (usableTranscript && result.confidence >= confidenceFloor) {
+        _splitAndParseMultipleItems(recognized);
+      } else if (usableTranscript && regional) {
+        _splitAndParseMultipleItems(recognized);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Could not hear a reliable product phrase. Please try again.'),
+            backgroundColor: Colors.orange.shade600,
+          ),
+        );
       }
       _stopListening();
     }
@@ -870,6 +882,10 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     // Normalize Romanized Indian speech, regional number words, and unit variants
     // before the existing sales parser interprets quantity/price/product.
     command = RomanIndianVoiceNormalizer.normalize(command, locale: _speechInputLang);
+    command = MultilingualVoiceLexicon.normalizeNumbers(
+      command,
+      locale: _speechInputLang,
+    );
 
     // Check for special voice commands first
     if (_handleSpecialVoiceCommands(command)) {
@@ -887,7 +903,12 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     final Map<String, double> numberMap = {
       'half': 0.5, 'pau': 0.25, 'aadha': 0.5, 'pauna': 0.75,
       'ek': 1, 'do': 2, 'theen': 3, 'char': 4, 'panch': 5, 'che': 6, 'saat': 7, 'aath': 8, 'nau': 9, 'das': 10,
-      'gyara': 11, 'bara': 12, 'bees': 20, 'pachis': 25, 'pachas': 50, 'sau': 100, 'hazar': 1000
+      'gyara': 11, 'bara': 12, 'bees': 20, 'pachis': 25, 'pachas': 50, 'sau': 100, 'hazar': 1000,
+      // Frequently returned Telugu/Hindi script variants.
+      'ఒకటి': 1, 'ఒక్కటి': 1, 'రెండు': 2, 'మూడు': 3, 'నాలుగు': 4, 'ఐదు': 5,
+      'ఆరు': 6, 'ఏడు': 7, 'ఎనిమిది': 8, 'తొమ్మిది': 9, 'పది': 10,
+      'ఒక': 1, 'शून्य': 0, 'एक': 1, 'दो': 2, 'तीन': 3, 'चार': 4, 'पाँच': 5,
+      'छह': 6, 'सात': 7, 'आठ': 8, 'नौ': 9, 'दस': 10,
     };
 
     // â”€â”€ 2. UNIT EXTRACTION (Find number closest to the unit) â”€â”€
@@ -971,7 +992,16 @@ class _SalesEntryPageState extends State<SalesEntryPage>
 
     for (var product in allCatalog) {
       final pName = product['product_name']?.toString().toLowerCase() ?? '';
-      final score = _calculateSimilarity(itemName.toLowerCase(), pName);
+      final aliases = MultilingualVoiceLexicon.productAliases(product);
+
+      double score = _calculateSimilarity(itemName.toLowerCase(), pName);
+      for (final alias in aliases) {
+        score = math.max(
+          score,
+          _calculateSimilarity(itemName.toLowerCase(), alias),
+        );
+      }
+
       if (score > bestScore) {
         bestScore = score;
         bestMatch = product;
