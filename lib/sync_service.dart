@@ -941,6 +941,10 @@ class SyncService {
               }
             }
 
+            if (success && (action == 'create_local_product' || action == 'update_local_product' || action == 'delete_product')) {
+              await _ackInventoryCacheMutation(action, data);
+            }
+
             if (success) {
               await SyncQueueManager.remove(actionId);
               successCount++;
@@ -1701,6 +1705,54 @@ static Future<bool> _saveCustomerItem(Map<String, dynamic> data) async {
     }
   }
 
+
+  static Future<void> _ackInventoryCacheMutation(
+    String action,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final local = await LocalStorageService.loadLocalProducts();
+      if (action == 'create_local_product') {
+        final payload = data['payload'];
+        final sku = payload is Map ? payload['sku']?.toString() : null;
+        if (sku != null && sku.isNotEmpty) {
+          local.remove(sku);
+          await LocalStorageService.saveLocalProducts(local);
+        }
+      } else if (action == 'update_local_product') {
+        final id = data['id']?.toString() ?? '';
+        final payload = data['payload'];
+        final key = local.keys.firstWhere(
+          (k) => k.toString() == id ||
+              (local[k] is Map && local[k]['id']?.toString() == id),
+          orElse: () => '',
+        );
+        if (key.isNotEmpty && local[key] is Map) {
+          final record = Map<String, dynamic>.from(local[key] as Map);
+          record['sync_status'] = 'synced';
+          record['last_ack_at'] = DateTime.now().toUtc().toIso8601String();
+          if (payload is Map) {
+            record['local_updated_at'] =
+                payload['local_updated_at'] ?? record['local_updated_at'];
+          }
+          local[key] = record;
+          await LocalStorageService.saveLocalProducts(local);
+        }
+      } else if (action == 'delete_product') {
+        final id = data['id']?.toString() ?? '';
+        local.removeWhere((key, value) =>
+            key.toString() == id ||
+            (value is Map && value['id']?.toString() == id));
+        await LocalStorageService.saveLocalProducts(local);
+      }
+      await CacheConsistencyService.markLocalMutationAcknowledged(
+        'inventory',
+        operationId: data['operation_id']?.toString(),
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Inventory local ACK reconciliation failed: $e');
+    }
+  }
 
   /// Pull the authoritative sales snapshot for read-side freshness.
   /// Local pending transactions are preserved; acknowledged/server-newer
