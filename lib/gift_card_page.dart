@@ -206,20 +206,20 @@ class _GiftCardPageState extends State<GiftCardPage>
     _locationController = TextEditingController(text: _locationValue);
     _phoneController = TextEditingController(text: _phoneValue ?? '');
     _taglineController = TextEditingController(text: _taglineValue ?? '');
-    _userNameValue = _userNameValue;
-    _shopNameValue = _shopNameValue;
-    _locationValue = _locationValue;
-    _shopTypeValue = _shopTypeValue;
-    _contactPersonValue = _contactPersonValue;
-    _phoneValue = _phoneValue;
-    _emailValue = _emailValue;
-    _gstNumberValue = _gstNumberValue;
-    _categoriesValue = _categoriesValue;
-    _openingHourValue = _openingHourValue;
-    _closingHourValue = _closingHourValue;
-    _websiteValue = _websiteValue;
-    _taglineValue = _taglineValue;
-    _logoBytesValue = _logoBytesValue;
+    _userNameValue = widget.userName;
+    _shopNameValue = widget.shopName;
+    _locationValue = widget.location;
+    _shopTypeValue = widget.shopType;
+    _contactPersonValue = widget.contactPerson;
+    _phoneValue = widget.phone;
+    _emailValue = widget.email;
+    _gstNumberValue = widget.gstNumber;
+    _categoriesValue = widget.categories;
+    _openingHourValue = widget.openingHour;
+    _closingHourValue = widget.closingHour;
+    _websiteValue = widget.website;
+    _taglineValue = widget.tagline;
+    _logoBytesValue = widget.logoBytes;
 
     _hydratePersistedProfile();
 
