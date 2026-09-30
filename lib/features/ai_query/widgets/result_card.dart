@@ -58,7 +58,7 @@ class ResultCard extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white70,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -122,7 +122,7 @@ class ResultCard extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B).withValues(alpha: 0.8),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
@@ -152,7 +152,7 @@ class ResultCard extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white70,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -160,7 +160,7 @@ class ResultCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                  color: AppColors.brandLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -168,7 +168,7 @@ class ResultCard extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF818CF8),
+                    color: AppColors.brand,
                   ),
                 ),
               ),
@@ -177,7 +177,7 @@ class ResultCard extends StatelessWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B).withValues(alpha: 0.85),
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
             boxShadow: [
@@ -213,7 +213,7 @@ class ResultCard extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF818CF8),
+                        color: AppColors.brand,
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -239,7 +239,7 @@ class ResultCard extends StatelessWidget {
                           _formatCellValue(colKey, cellVal),
                           style: GoogleFonts.inter(
                             fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: AppColors.textPrimary,
                             fontWeight: _isNumericOrAmount(colKey)
                                 ? FontWeight.w600
                                 : FontWeight.w400,
@@ -345,22 +345,15 @@ class _KpiMetricCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF1E293B),
-            Color(0xFF151E2E),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+          color: const Color(0xFF6366F1).withValues(alpha: 0.22),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -378,13 +371,13 @@ class _KpiMetricCard extends StatelessWidget {
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.1,
-                  color: const Color(0xFF818CF8),
+                  color: AppColors.brand,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                  color: AppColors.brandLight,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -401,7 +394,7 @@ class _KpiMetricCard extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 28,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: AppColors.textPrimary,
               letterSpacing: -0.5,
             ),
           ),
@@ -411,7 +404,7 @@ class _KpiMetricCard extends StatelessWidget {
               queryContext!,
               style: GoogleFonts.inter(
                 fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.5),
+                color: AppColors.textSecondary,
               ),
             ),
           ],
