@@ -3526,15 +3526,17 @@ class PaymentDetectionService {
     if (event.decision == PaymentDecision.confirmed) _lastConfirmed = event;
 
     // Await auto-settlement check
-    final settled = await _tryAutoSettleInvoice(event);
-    final isSettled = isBillSettlement || settled;
+    final matchedSaleId = await _tryAutoSettleInvoice(event);
+    final isSettled = isBillSettlement || matchedSaleId != null;
 
-    PaymentEvent finalEvent = event;
+    PaymentEvent finalEvent = matchedSaleId != null
+        ? event.copyWith(
+            decision: PaymentDecision.confirmed,
+            saleId: matchedSaleId,
+          )
+        : event;
     PaymentUiState finalUi = ui;
-    if (settled) {
-      finalEvent = event.copyWith(
-        decision: PaymentDecision.confirmed,
-      );
+    if (matchedSaleId != null) {
       finalUi = ui.copyWith(
         decision: PaymentDecision.confirmed,
         isBillMatch: true,
@@ -3570,9 +3572,13 @@ class PaymentDetectionService {
 
   // Re-announce LIKELY payment after 12s only if not yet confirmed/rejected.
   // Partial payments excluded — shopkeeper already knows money is pending.
-  Future<bool> _tryAutoSettleInvoice(PaymentEvent event) async {
+  Future<String?> _tryAutoSettleInvoice(PaymentEvent event) async {
     try {
-      if ((event.decision != PaymentDecision.confirmed && event.decision != PaymentDecision.likely) || event.amount <= 0) return false;
+      if ((event.decision != PaymentDecision.confirmed &&
+              event.decision != PaymentDecision.likely) ||
+          event.amount <= 0) {
+        return null;
+      }
       final amount = event.amount;
       final payer = event.payerName?.toLowerCase() ?? '';
       final saleId = event.saleId?.toString() ?? '';
@@ -3580,8 +3586,11 @@ class PaymentDetectionService {
       // ✅ FIX: Add concurrency lock to prevent race condition
       // Two burst payments cannot both settle the same invoice
       if (saleId.isNotEmpty && _settlingInvoiceIds.contains(saleId)) {
-        PdsLogger.w('AUTOSETTL', 'Already settling $saleId, skipping concurrent attempt');
-        return false;
+        PdsLogger.w(
+          'AUTOSETTL',
+          'Already settling $saleId, skipping concurrent attempt',
+        );
+        return null;
       }
       if (saleId.isNotEmpty) _settlingInvoiceIds.add(saleId);
 
@@ -3614,11 +3623,24 @@ class PaymentDetectionService {
           sales[i] = sale;
           await LocalStorageService.saveSales(sales);
 
-          final invoiceNum = sale['sale_id']?.toString() ?? sale['invoice_number']?.toString() ?? sale['invoiceId']?.toString() ?? '';
+          final invoiceNum = sale['invoice_number']?.toString() ??
+              sale['sale_id']?.toString() ??
+              sale['invoiceId']?.toString() ??
+              '';
           if (invoiceNum.isNotEmpty) {
-            unawaited(SyncService.updateSalePayment(invoiceNum, 'PAID', total));
+            unawaited(
+              SyncService.updateSalePayment(
+                invoiceNum,
+                'PAID',
+                total,
+                idempotencyKey: event.fingerprint,
+                referenceId: event.referenceId,
+                payerName: event.payerName,
+              ),
+            );
+            return invoiceNum;
           }
-          return true;
+          return null;
         }
 
         final invoices = await LocalStorageService.loadLocalInvoices();
@@ -3642,7 +3664,26 @@ class PaymentDetectionService {
           invoice['paid_amount'] = total;
           invoices[i] = invoice;
           await LocalStorageService.saveLocalInvoices(invoices);
-          return true;
+
+          final invoiceNum = invoice['invoice_number']?.toString() ??
+              invoice['sale_id']?.toString() ??
+              invoice['invoiceId']?.toString() ??
+              invoice['id']?.toString() ??
+              '';
+          if (invoiceNum.isNotEmpty) {
+            unawaited(
+              SyncService.updateSalePayment(
+                invoiceNum,
+                'PAID',
+                total,
+                idempotencyKey: event.fingerprint,
+                referenceId: event.referenceId,
+                payerName: event.payerName,
+              ),
+            );
+            return invoiceNum;
+          }
+          return null;
         }
       } finally {
         // ✅ FIX: Always remove lock, even if exception occurred
@@ -3651,7 +3692,7 @@ class PaymentDetectionService {
     } catch (e) {
       if (kDebugMode) debugPrint('Auto-settle invoice failed: $e');
     }
-    return false;
+    return null;
   }
 
   double _toAmount(dynamic value) {

@@ -56,9 +56,16 @@ class PaymentProcessingManager {
         // Online: Process immediately
         await _processPaymentOnline(payment);
       } else {
-        // Offline: Queue for later
-        await _offlineQueue.queuePaymentOffline(payment);
-        _showOfflineNotification(payment);
+        // Unmatched payments cannot be safely replayed later without an
+        // invoice association, so only queue payments already bound to one.
+        if ((payment.saleId?.trim() ?? '').isNotEmpty) {
+          await _offlineQueue.queuePaymentOffline(payment);
+          _showOfflineNotification(payment);
+        } else {
+          print(
+            '$_tag 🔴 OFFLINE: Payment detected but no invoice matched; waiting for merchant review',
+          );
+        }
       }
       
       onPaymentDetected?.call(payment);
@@ -76,16 +83,33 @@ class PaymentProcessingManager {
   
   /// Process payment with automatic retry
   Future<void> _processPaymentOnline(PaymentEvent payment) async {
+    final invoiceNumber = payment.saleId?.trim() ?? '';
+    if (invoiceNumber.isEmpty) {
+      await _errorLogger.logPaymentError(
+        detectionSource: payment.detectionSource,
+        errorReason: 'Payment detected without a matched invoice; automatic recording skipped safely',
+        paymentDetails: {
+          'amount': payment.amount,
+          'reference_id': payment.referenceId,
+        },
+      );
+      return;
+    }
+
     try {
-      // Real API call via ApiClient with automatic retry and token injection
+      // The backend endpoint is strict: every automatic payment write must
+      // identify the exact invoice and carry a stable idempotency key.
       final response = await ApiClient.postJson(
         ApiClient.invoicesPayments,
         {
+          'invoice_number': invoiceNumber,
           'amount': payment.amount,
           'reference_id': payment.referenceId,
           'payer_name': payment.payerName,
           'source': payment.detectionSource,
           'timestamp': payment.timestamp.toIso8601String(),
+          'payment_method': 'ONLINE',
+          'idempotency_key': payment.fingerprint,
         },
       );
 
@@ -134,7 +158,15 @@ class PaymentProcessingManager {
         }
         
         try {
-          // Real sync call to backend
+          final invoiceNumber = item['invoice_number']?.toString().trim() ?? '';
+          if (invoiceNumber.isEmpty) {
+            await _offlineQueue.incrementRetryCount(item['id']);
+            failed++;
+            continue;
+          }
+
+          // Real sync call to backend. The same idempotency key survives
+          // retries, so reconnects cannot create duplicate payment rows.
           final response = await ApiClient.postJson(
             ApiClient.invoicesPayments,
             item,

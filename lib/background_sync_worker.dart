@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'api_client.dart';
 import 'operation_queue_service.dart';
+import 'sync_queue_manager.dart';
 import 'session_management.dart';
 import 'uuid_service.dart';
 import 'data_validation_service.dart';
@@ -95,7 +96,11 @@ class BackgroundSyncWorker {
         return;
       }
       
-      // Get queue stats
+      // Canonical durable outbox is processed first. Legacy OperationQueueService
+      // remains available for operation types that have not yet migrated.
+      await _processDurableOutbox();
+
+      // Get legacy queue stats
       final stats = await OperationQueueService.instance.getQueueStats();
       
       if (stats.pendingOperations == 0) {
@@ -197,6 +202,86 @@ class BackgroundSyncWorker {
     }
   }
 
+  /// Process the canonical encrypted user-scoped SyncQueueManager outbox.
+  Future<void> _processDurableOutbox() async {
+    final items = await SyncQueueManager.getAll();
+    if (items.isEmpty) return;
+
+    for (final raw in items) {
+      final actionId = raw['action_id']?.toString();
+      final action = raw['action']?.toString() ?? '';
+      final status = raw['status']?.toString() ?? 'PENDING';
+      final data = raw['data'];
+
+      if (actionId == null || data is! Map<String, dynamic>) continue;
+      if (status != 'PENDING' && status != 'FAILED') continue;
+
+      final nextAttempt = DateTime.tryParse(
+        raw['next_attempt_at']?.toString() ?? '',
+      );
+      if (nextAttempt != null &&
+          nextAttempt.isAfter(DateTime.now().toUtc())) {
+        continue;
+      }
+
+      final endpoint = switch (action) {
+        'create_sale' || 'save_sale' || 'sync_sale' || 'update_sale' =>
+          '/api/invoices/sync',
+        'create_customer' || 'save_customer' || 'update_customer' =>
+          '/api/customers',
+        _ => null,
+      };
+      if (endpoint == null) continue;
+
+      try {
+        final response = await ApiClient.postJson(
+          endpoint,
+          Map<String, dynamic>.from(data),
+        ).timeout(const Duration(seconds: 15));
+
+        if (response.statusCode == 200 ||
+            response.statusCode == 201 ||
+            response.statusCode == 204) {
+          await SyncQueueManager.remove(actionId);
+          if (kDebugMode) {
+            debugPrint('✅ Durable outbox synced: ' + action + '/' + actionId);
+          }
+          continue;
+        }
+
+        await _recordDurableRetry(raw, 'HTTP ' + response.statusCode.toString());
+      } catch (e) {
+        await _recordDurableRetry(raw, e.toString());
+      }
+    }
+  }
+
+  Future<void> _recordDurableRetry(
+    Map<String, dynamic> raw,
+    String error,
+  ) async {
+    final actionId = raw['action_id']?.toString();
+    if (actionId == null) return;
+
+    final retries = int.tryParse(raw['retries']?.toString() ?? '') ?? 0;
+    final nextRetries = retries + 1;
+    final backoffSeconds =
+        (1 << nextRetries.clamp(0, 6)).clamp(2, 120);
+
+    final updated = Map<String, dynamic>.from(raw)
+      ..['status'] = nextRetries >= 10 ? 'FAILED' : 'PENDING'
+      ..['retries'] = nextRetries
+      ..['last_attempt'] = DateTime.now().toUtc().toIso8601String()
+      ..['updated_at'] = DateTime.now().toUtc().toIso8601String()
+      ..['last_error'] = error
+      ..['needs_attention'] = nextRetries >= 10
+      ..['next_attempt_at'] = DateTime.now()
+          .toUtc()
+          .add(Duration(seconds: backoffSeconds.toInt()))
+          .toIso8601String();
+
+    await SyncQueueManager.update(actionId, updated);
+  }
   /// Process operations from the queue
   Future<void> _processOperations({OperationPriority? priorityOnly}) async {
     int processedCount = 0;

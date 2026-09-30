@@ -680,12 +680,27 @@ class SyncService {
   }
 
   /// Update payment status - queued for offline safety
-  static Future<void> updateSalePayment(String saleId, String status, double amount) async {
+  static Future<void> updateSalePayment(
+    String saleId,
+    String status,
+    double amount, {
+    String? idempotencyKey,
+    String? referenceId,
+    String? payerName,
+  }) async {
     try {
       await SyncQueueManager.enqueue('update_payment', {
         'invoice_number': saleId,
         'payment_status': status,
         'paid_amount': amount,
+        'payment_method': 'ONLINE',
+        'source': 'PAYMENT_DETECTION',
+        if (idempotencyKey != null && idempotencyKey.isNotEmpty)
+          'idempotency_key': idempotencyKey,
+        if (referenceId != null && referenceId.isNotEmpty)
+          'reference_id': referenceId,
+        if (payerName != null && payerName.isNotEmpty)
+          'payer_name': payerName,
       });
       _syncStatusController.add(await SyncQueueManager.getQueueSize());
       await processQueueSafe();

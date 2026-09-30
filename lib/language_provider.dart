@@ -24,10 +24,19 @@ class LanguageProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Locale registry shared by the UI and voice stack.
+  /// The UI can safely load any of these locales; untranslated keys fall back
+  /// to the English getter defaults in AppLocalizations.
   static const List<Map<String, String>> languages = [
     {'code': 'en', 'name': 'English', 'nativeName': 'English'},
     {'code': 'te', 'name': 'Telugu', 'nativeName': 'తెలుగు'},
     {'code': 'hi', 'name': 'Hindi', 'nativeName': 'हिन्दी'},
     {'code': 'ta', 'name': 'Tamil', 'nativeName': 'தமிழ்'},
+    {'code': 'kn', 'name': 'Kannada', 'nativeName': 'ಕನ್ನಡ'},
+    {'code': 'ml', 'name': 'Malayalam', 'nativeName': 'മലയാളം'},
+    {'code': 'mr', 'name': 'Marathi', 'nativeName': 'मराठी'},
+    {'code': 'gu', 'name': 'Gujarati', 'nativeName': 'ગુજરાતી'},
+    {'code': 'pa', 'name': 'Punjabi', 'nativeName': 'ਪੰਜਾਬੀ'},
+    {'code': 'bn', 'name': 'Bengali', 'nativeName': 'বাংলা'},
   ];
 }

@@ -10,6 +10,8 @@ import 'dart:convert';
 import 'local_storage_service.dart';
 import 'whatsapp_message_service.dart';
 import 'api_client.dart';
+import 'realtime_client.dart';
+import 'secure_token_storage.dart';
 import 'sync_queue_manager.dart';
 import 'sync_service.dart';
 import 'visual_widgets.dart';
@@ -81,6 +83,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
     // Load local data immediately
     _loadKhata();
     _loadInvoiceAnalytics();
+    _connectRealtime();
     
     // Sync with backend after a short delay
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -91,11 +94,38 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
     });
   }
 
+  Future<void> _connectRealtime() async {
+    final userId = await SecureTokenStorage.getUserId();
+    if (!mounted || userId == null || userId <= 0) return;
+
+    await RealtimeClient.connect(
+      userId: userId,
+      shopId: userId,
+      subscriberId: 'khata',
+      onMessage: _handleRealtimeMessage,
+      onStatus: (connected, message) {},
+    );
+  }
+
+  Future<void> _handleRealtimeMessage(Map<String, dynamic> message) async {
+    switch (message['type']?.toString()) {
+      case 'payment.updated':
+      case 'invoice.updated':
+      case 'invoice.created':
+        await _loadKhata();
+        await _loadInvoiceAnalytics();
+        break;
+      default:
+        break;
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
     _invoiceSearchController.dispose();
     _tabController.dispose();
+    RealtimeClient.disconnect(subscriberId: 'khata');
     if (KhataPage._state == this) {
       KhataPage._state = null;
     }

@@ -36,10 +36,16 @@ class OfflinePaymentQueue {
         
         final paymentData = {
           'id': payment.id,
+          'invoice_number': payment.saleId,
           'amount': payment.amount,
           'app': payment.app.toString(),
           'payerName': payment.payerName,
           'referenceId': payment.referenceId,
+          'reference_id': payment.referenceId,
+          'idempotency_key': payment.fingerprint,
+          'payment_method': 'ONLINE',
+          'source': payment.detectionSource,
+          'payer_name': payment.payerName,
           'vpa': payment.vpa,
           'bankName': payment.bankName,
           'isFailed': payment.isFailed,

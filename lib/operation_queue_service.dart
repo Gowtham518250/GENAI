@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:synchronized/synchronized.dart';
 import 'uuid_service.dart';
 import 'session_management.dart';
+import 'sync_queue_manager.dart';
 
 /// Persistent Operation Queue Service
 /// Stores sync operations in persistent storage to survive app restarts
@@ -39,7 +40,41 @@ class OperationQueueService {
     OperationPriority? priority,
   }) async {
     return await _lock.synchronized(() async {
-      final operationId = UuidService.generateWithPrefix(type.toOperationString());
+      final operationType = type.toOperationString();
+      final canonicalActions = <String>{
+        'create_sale',
+        'update_sale',
+        'save_sale',
+        'sync_sale',
+        'create_customer',
+        'update_customer',
+        'save_customer',
+      };
+
+      if (canonicalActions.contains(operationType)) {
+        final queued = await SyncQueueManager.enqueue(
+          operationType,
+          <String, dynamic>{
+            ...payload,
+            if (entityId != null) 'entity_id': entityId,
+          },
+        );
+        if (!queued) {
+          throw StateError(
+            'Durable sync outbox rejected $operationType',
+          );
+        }
+        final operationId =
+            UuidService.generateWithPrefix(operationType);
+        if (kDebugMode) {
+          debugPrint(
+            '📦 Canonical SyncQueueManager enqueue: $operationId ($operationType)',
+          );
+        }
+        return operationId;
+      }
+
+      final operationId = UuidService.generateWithPrefix(operationType);
       
       final operation = Operation(
         operationId: operationId,

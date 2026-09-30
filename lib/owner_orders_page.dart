@@ -30,7 +30,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
 
   @override
   void dispose() {
-    RealtimeClient.disconnect();
+    RealtimeClient.disconnect(subscriberId: 'owner_orders');
     super.dispose();
   }
 
@@ -41,6 +41,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
     await RealtimeClient.connect(
       userId: userId,
       shopId: userId,
+      subscriberId: 'owner_orders',
       onMessage: _handleRealtimeMessage,
       onStatus: (connected, message) {
         if (mounted) setState(() => _realtimeConnected = connected);
