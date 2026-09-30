@@ -24,8 +24,15 @@ class SecureTokenStorage {
 
     try {
       final prefs = await SharedPreferences.getInstance();
+
       final scopedUserId = prefs.getInt('current_scoped_user_id');
       if (scopedUserId != null && scopedUserId > 0) return scopedUserId;
+
+      // Customer login historically stores user_id as a string in prefs.
+      final legacyUserId =
+          prefs.getString('user_id') ?? prefs.getString('userId');
+      final parsedLegacy = int.tryParse(legacyUserId ?? '');
+      if (parsedLegacy != null && parsedLegacy > 0) return parsedLegacy;
     } catch (_) {
       // ignore
     }
