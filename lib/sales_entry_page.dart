@@ -656,7 +656,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       // validate the content rather than dropping good regional transcripts.
       final confidenceFloor = regional ? 0.30 : 0.45;
       final usableTranscript = recognized.length >= 2 &&
-          recognized.split(RegExp(r'\\s+')).where((w) => w.isNotEmpty).isNotEmpty;
+          recognized.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).isNotEmpty;
 
       if (usableTranscript && result.confidence >= confidenceFloor) {
         _splitAndParseMultipleItems(recognized);
