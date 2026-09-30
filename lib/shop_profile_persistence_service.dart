@@ -453,6 +453,24 @@ class ShopProfilePersistenceService {
           await prefs.setString('gst_number', (shopData['gst_number'] ?? shopData['shop_gst'] ?? shopData['gstin']).toString());
           await prefs.setString('shop_gst', (shopData['gst_number'] ?? shopData['shop_gst'] ?? shopData['gstin']).toString());
         }
+        if (shopData['email'] != null) {
+          await prefs.setString('shop_email', shopData['email'].toString());
+          await prefs.setString('email', shopData['email'].toString());
+        }
+        if (shopData['shop_categories'] != null) {
+          final categories = shopData['shop_categories'];
+          if (categories is List) {
+            await prefs.setString('shop_categories', categories.map((e) => e.toString()).join(','));
+          } else {
+            await prefs.setString('shop_categories', categories.toString());
+          }
+        }
+        if (shopData['contact_person_name'] != null || shopData['contact_person'] != null) {
+          await prefs.setString(
+            'contact_person',
+            (shopData['contact_person_name'] ?? shopData['contact_person']).toString(),
+          );
+        }
         if (shopData['logo_url'] != null) {
           await prefs.setString('logo_url', shopData['logo_url'].toString());
         }
