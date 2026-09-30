@@ -76,17 +76,50 @@ class OfflineAttendanceService {
   static Future<bool> checkIn({required int employeeId,int? workerId}) async {
     final now=DateTime.now();
     final date=_date(now);
-    final open=await _findOpenSession(employeeId:employeeId,workerId:workerId,date:date);
+    final open=await _findOpenSession(
+      employeeId:employeeId,
+      workerId:workerId,
+      date:date,
+    );
     if(open!=null)return checkOut(employeeId:employeeId,workerId:workerId);
-    final sessions=await _findTodaySessions(employeeId:employeeId,workerId:workerId,date:date);
-    final nextIndex=sessions.isEmpty?0:(sessions.map(_sessionIndexOf).reduce((a,b)=>a>b?a:b)+1);
+
+    final sessions=await _findTodaySessions(
+      employeeId:employeeId,
+      workerId:workerId,
+      date:date,
+    );
+    final nextIndex=sessions.isEmpty
+        ? 0
+        : (sessions.map(_sessionIndexOf).reduce((a,b)=>a>b?a:b)+1);
     final operationId='ATT_IN_${workerId??employeeId}_${date}_s$nextIndex';
-    await _upsertSession(employeeId:employeeId,workerId:workerId,date:date,sessionIndex:nextIndex,checkIn:now,status:'PRESENT');
-    final queued=await SyncQueueManager.enqueue('attendance_check_in',{'operation_id':operationId,'idempotency_key':operationId,'employee_id':employeeId,'worker_id':workerId,'attendance_date':date,'session_index':nextIndex});
-    if(!queued)throw StateError('Unable to persist attendance check-in to durable outbox');
+
+    await _upsertSession(
+      employeeId:employeeId,
+      workerId:workerId,
+      date:date,
+      sessionIndex:nextIndex,
+      checkIn:now,
+      status:'PRESENT',
+    );
+
+    final queued=await SyncQueueManager.enqueue(
+      'attendance_check_in',
+      {
+        'operation_id':operationId,
+        'idempotency_key':operationId,
+        'employee_id':employeeId,
+        'worker_id':workerId,
+        'attendance_date':date,
+        'session_index':nextIndex,
+      },
+    );
+    if(!queued){
+      throw StateError(
+        'Unable to persist attendance check-in to durable outbox',
+      );
+    }
     return true;
   }
-
   /// Closes the currently open session for today. No-op (returns true) if
   /// everything is already checked out, so repeated taps stay safe.
   static Future<bool> checkOut({required int employeeId,int? workerId}) async {
@@ -108,7 +141,8 @@ class OfflineAttendanceService {
         : now.difference(checkIn.toLocal()).inSeconds/3600.0;
     final operationId='ATT_OUT_${workerId??employeeId}_${date}_s$sessionIndex';
 
-    // Persist locally first so the UI closes the session immediately.
+    // Local state is committed first. The durable outbox is the source of
+    // truth for delivery to the backend.
     await _upsertSession(
       employeeId:employeeId,
       workerId:workerId,
@@ -118,51 +152,6 @@ class OfflineAttendanceService {
       workingHours:hours,
       status:'PRESENT',
     );
-
-    // Online-first: call the backend directly. Queue only when the
-    // request is unavailable/unsuccessful.
-    try {
-      final response = await ApiClient.postJson(
-        '${ApiClient.attendancePrefix}/check-out?employee_id=$employeeId',
-        {},
-      ).timeout(const Duration(seconds:15));
-
-      if(response.statusCode==200 || response.statusCode==201){
-        await markSynced(
-          employeeId:employeeId,
-          workerId:workerId,
-          date:date,
-          sessionIndex:sessionIndex,
-        );
-        await SyncQueueManager.removeByBusinessOperation(
-          'attendance_check_out',
-          operationId,
-        );
-        if(kDebugMode){
-          debugPrint(
-            '✅ [Attendance] Online worker checkout accepted: worker=' +
-            employeeId.toString() +
-            ' session=' + sessionIndex.toString(),
-          );
-        }
-        return true;
-      }
-
-      if(kDebugMode){
-        debugPrint(
-          '⚠️ [Attendance] Online worker checkout returned ' +
-          response.statusCode.toString() +
-          '; keeping durable fallback',
-        );
-      }
-    } catch(e){
-      if(kDebugMode){
-        debugPrint(
-          '⚠️ [Attendance] Online worker checkout unavailable; queueing fallback: ' +
-          e.toString(),
-        );
-      }
-    }
 
     final queued=await SyncQueueManager.enqueue(
       'attendance_check_out',
