@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -41,6 +42,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   // reach the backend" (e.g. slow/flaky 5G) so we never show the scary
   // "No products yet" empty-state when the real problem is just network.
   bool _lastFetchFailed = false;
+  Timer? _inventoryRefreshTimer;
 
   // Add-product form controllers
   final _nameC = TextEditingController();
@@ -63,8 +65,9 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     _speech = stt.SpeechToText();
     _init();
     InventoryManagementService.onInventoryChanged = () {
-      if (mounted) _fetch(preferLocalCache: true);
+      if (mounted) _fetch(preferLocalCache: true, showLoading: false);
     };
+    _startRealtimeInventoryRefresh();
   }
 
   @override
@@ -73,6 +76,8 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     _nameC.dispose(); _barcodeC.dispose(); _priceC.dispose(); _mrpC.dispose();
     _stockC.dispose(); _catC.dispose(); _minStockC.dispose(); _unitC.dispose();
     InventoryManagementService.onInventoryChanged = null;
+    _inventoryRefreshTimer?.cancel();
+    _inventoryRefreshTimer = null;
     super.dispose();
   }
 
@@ -82,6 +87,18 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       // Restore the cached inventory immediately, then refresh from cloud.
       _fetch();
     }
+  }
+
+  void _startRealtimeInventoryRefresh() {
+    _inventoryRefreshTimer?.cancel();
+    // The backend is the inventory source of truth. Refresh periodically while
+    // this screen is open so an online customer order is reflected without
+    // forcing the owner to clear app data or leave/re-enter the screen.
+    _inventoryRefreshTimer = Timer.periodic(const Duration(seconds: 7), (_) {
+      if (mounted && _userId != null) {
+        _fetch(showLoading: false);
+      }
+    });
   }
 
   Future<void> _init() async {
@@ -94,8 +111,10 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     }
   }
 
-  Future<void> _fetch({bool preferLocalCache = false}) async {
-    setState(() { _loading = true; });
+  Future<void> _fetch({bool preferLocalCache = false, bool showLoading = true}) async {
+    if (showLoading && mounted) {
+      setState(() { _loading = true; });
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = await SecureTokenStorage.getToken() ?? '';
