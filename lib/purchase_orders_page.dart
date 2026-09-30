@@ -28,39 +28,63 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   }
 
   Future<void> _fetchOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<Map<String, dynamic>> localOrders = [];
+
     try {
-      // Load from local storage first for immediate response (offline-first)
-      final prefs = await SharedPreferences.getInstance();
       final localPOData = prefs.getString('purchase_orders_data');
-      
       if (localPOData != null && localPOData.isNotEmpty) {
-        try {
-          final d = jsonDecode(localPOData);
-          setState(() => _orders = d is List ? d : (d['orders'] ?? []));
-          debugPrint('✅ Purchase orders loaded from local storage');
-        } catch (e) {
-          debugPrint('⚠️ Error parsing local PO data: $e');
-        }
-      }
-      
-      // Then sync with backend for latest data
-      try {
-        final res = await ApiClient.getJson('/purchase-orders/');
-        if (res.statusCode == 200) {
-          final d = jsonDecode(res.body);
-          setState(() => _orders = d is List ? d : (d['orders'] ?? []));
-          // Save to local storage for offline use
-          await prefs.setString('purchase_orders_data', json.encode(d));
-          debugPrint('✅ Purchase orders synced from backend');
-        }
-      } catch (e) {
-        debugPrint('⚠️ Backend PO sync failed, using local data: $e');
-        // Keep using local data if backend sync fails
+        final d = jsonDecode(localPOData);
+        final raw = d is List ? d : (d is Map && d['orders'] is List ? d['orders'] : const []);
+        localOrders = raw
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
       }
     } catch (e) {
-      debugPrint('❌ PO fetch error: $e');
+      debugPrint('⚠️ Error parsing local PO data: $e');
+    }
+
+    // Local source renders immediately, including pending offline orders.
+    if (mounted) setState(() => _orders = localOrders);
+
+    try {
+      final res = await ApiClient.getJson('/purchase-orders/');
+      if (res.statusCode == 200) {
+        final d = jsonDecode(res.body);
+        final raw = d is List ? d : (d is Map && d['orders'] is List ? d['orders'] : const []);
+        final remoteOrders = raw
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+
+        // Merge by server id while preserving local records that are still
+        // pending in the canonical outbox. A remote refresh must not erase an
+        // offline order before the server has acknowledged it.
+        final merged = <String, Map<String, dynamic>>{};
+        for (final local in localOrders) {
+          final key = (local['server_id'] ?? local['id'] ?? local['operation_id'] ?? '').toString();
+          if (key.isNotEmpty) merged[key] = local;
+        }
+        for (final remote in remoteOrders) {
+          final key = (remote['id'] ?? remote['server_id'] ?? remote['order_id'] ?? '').toString();
+          if (key.isEmpty) continue;
+          final existing = merged[key];
+          if (existing != null && existing['sync_status'] == 'pending') {
+            merged[key] = {...remote, ...existing, 'sync_status': 'pending'};
+          } else {
+            merged[key] = {...?existing, ...remote, 'sync_status': existing?['sync_status'] ?? 'synced'};
+          }
+        }
+
+        final mergedList = merged.values.toList();
+        await prefs.setString('purchase_orders_data', jsonEncode(mergedList));
+        if (mounted) setState(() => _orders = mergedList);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Backend PO sync failed, using local data: $e');
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
