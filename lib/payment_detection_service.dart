@@ -216,7 +216,7 @@ class PaymentUiState {
     detectedAt:      detectedAt,
     isUserConfirmed: isUserConfirmed ?? this.isUserConfirmed,
     isUserRejected:  isUserRejected  ?? this.isUserRejected,
-    saleId:           saleId,
+    saleId:           this.saleId,
     rawText:          rawText         ?? this.rawText,
   );
 
@@ -310,7 +310,7 @@ abstract class VoiceBuilder {
           case VoiceLanguage.tamil:     return 'பணம் பற்று ஆனது. $a';
           case VoiceLanguage.telugu:    return 'చెల్లింపు డెబిట్ అయింది. $a';
           case VoiceLanguage.kannada:   return 'ಪಾವತಿ ಡೆಬಿಟ್ ಆಗಿದೆ. $a';
-          case VoiceLanguage.marathi:   return 'पेमेंट डೆbit झाले. $a';
+          case VoiceLanguage.marathi:   return 'पेमेंट डेबिट झाले. $a';
           case VoiceLanguage.gujarati:  return 'ચૂકવણી ડેબિટ થઈ. $a';
           case VoiceLanguage.bengali:   return 'পেমেন্ট ডেবিট হয়েছে। $a';
           case VoiceLanguage.punjabi:   return 'ਭੁਗਤਾਨ ਡੈਬਿਟ ਹੋਇਆ। $a';
