@@ -1089,7 +1089,10 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
             qty: existing.qty + newItem.qty,
             unit: newItem.unit.isNotEmpty ? newItem.unit : existing.unit,
             price: newItem.price > 0 ? newItem.price : existing.price,
-            confidence: newItem.confidence,
+            confidence: newItem.confidence > existing.confidence
+                ? newItem.confidence
+                : existing.confidence,
+            isConfirmed: existing.isConfirmed || newItem.isConfirmed,
           );
         } else {
           _committedItems.add(newItem);
@@ -1150,7 +1153,11 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           unit: ParsedItems[i].unit,
           price: newPrice,
           confidence: ParsedItems[i].confidence,
-          isConfirmed: fieldErrors.isEmpty,
+          // Any manual change to the detected product/quantity/price requires
+          // the user to explicitly confirm it again.
+          isConfirmed: fieldErrors.isEmpty &&
+              editedItemName.toLowerCase() == originalName.toLowerCase() &&
+              ParsedItems[i].isConfirmed,
         );
       }
     }
