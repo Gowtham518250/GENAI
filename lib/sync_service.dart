@@ -193,8 +193,13 @@ class SyncService {
         try {
           final body = jsonDecode(res.body);
           final date = DateTime.now().toIso8601String().split('T').first;
-          final sessionIndex =
-              int.tryParse(body['session_index']?.toString() ?? '') ?? 0;
+          final rawSession = body is Map ? body['session']?.toString().toLowerCase() : null;
+          final sessionIndex = rawSession == 'morning'
+              ? 0
+              : (rawSession == 'evening'
+                  ? 1
+                  : (int.tryParse(body is Map ? body['session_index']?.toString() ?? '' : '') ?? 0));
+
           await OfflineAttendanceService.markSynced(
             employeeId: int.parse(workerId),
             workerId: int.parse(workerId),
