@@ -10,7 +10,11 @@ class CacheConsistencyService {
   static Future<String> _scope() async {
     final prefs = await SharedPreferences.getInstance();
     final role = (prefs.getString('user_type') ?? prefs.getString('role') ?? 'OWNER').trim().toUpperCase();
-    final userId = prefs.getString('user_id') ?? prefs.getString('userId') ?? prefs.getInt('user_id')?.toString() ?? prefs.getInt('userId')?.toString() ?? 'anonymous';
+    final intUserId = prefs.getInt('user_id') ?? prefs.getInt('userId');
+    final userId = intUserId?.toString() ??
+        prefs.getString('user_id') ??
+        prefs.getString('userId') ??
+        'anonymous';
     return role + '_' + userId;
   }
 
@@ -42,7 +46,11 @@ class CacheConsistencyService {
     final current = await metadata(dataset);
     current['last_remote_refresh_at'] = now.toIso8601String();
     current['last_remote_updated_at'] = (serverUpdatedAt ?? now).toUtc().toIso8601String();
-    current['dirty'] = false;
+    // A remote read does not ACK local mutations. Preserve dirty state until
+    // durable mutations have been acknowledged explicitly.
+    if (current['pending_mutations'] == null) {
+      current['dirty'] = false;
+    }
     if (recordCount != null) current['record_count'] = recordCount;
     await _write(dataset, current);
   }
@@ -50,6 +58,8 @@ class CacheConsistencyService {
   static Future<void> markLocalMutation(String dataset, {String? operationId}) async {
     final current = await metadata(dataset);
     current['dirty'] = true;
+    current['pending_mutations'] =
+        ((current['pending_mutations'] as num?)?.toInt() ?? 0) + 1;
     current['local_revision'] = ((current['local_revision'] as num?)?.toInt() ?? 0) + 1;
     current['last_local_mutation_at'] = DateTime.now().toUtc().toIso8601String();
     if (operationId != null && operationId.isNotEmpty) current['last_operation_id'] = operationId;
@@ -58,7 +68,10 @@ class CacheConsistencyService {
 
   static Future<void> markLocalMutationAcknowledged(String dataset, {String? operationId}) async {
     final current = await metadata(dataset);
-    current['dirty'] = false;
+    final remaining =
+        ((current['pending_mutations'] as num?)?.toInt() ?? 0) - 1;
+    current['pending_mutations'] = remaining < 0 ? 0 : remaining;
+    current['dirty'] = (current['pending_mutations'] as int) > 0;
     current['last_ack_at'] = DateTime.now().toUtc().toIso8601String();
     if (operationId != null && operationId.isNotEmpty) current['last_ack_operation_id'] = operationId;
     await _write(dataset, current);
@@ -127,7 +140,9 @@ class CacheConsistencyService {
 
     final localTime = localUpdated ?? DateTime.fromMillisecondsSinceEpoch(0);
     final remoteTime = remoteUpdated ?? DateTime.fromMillisecondsSinceEpoch(0);
-    final remoteWins = remoteUpdated != null && !remoteTime.isBefore(localTime);
+    final remoteWins = remoteUpdated == null
+        ? true
+        : !remoteTime.isBefore(localTime);
     return remoteWins ? <String, dynamic>{...local, ...remote, 'conflict_state': 'remote_wins'} : <String, dynamic>{...remote, ...local, 'conflict_state': 'local_newer'};
   }
 
