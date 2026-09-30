@@ -135,13 +135,34 @@ class SyncService {
         if (existing.statusCode == 200) {
           final decoded = jsonDecode(existing.body);
           final records = decoded is List ? decoded : (decoded is Map && decoded['records'] is List ? decoded['records'] as List : const []);
-          final alreadyRecorded = records.any((raw) {
+          bool hasOpenSession(dynamic raw) {
             if (raw is! Map) return false;
+
             final employee = raw['employee_id'] ?? raw['worker_id'];
-            return employee?.toString() == workerId.toString();
-          });
-          if (alreadyRecorded) {
-            if (kDebugMode) debugPrint('✅ Attendance already exists for $workerId today; duplicate check-in suppressed');
+            if (employee?.toString() != workerId.toString()) return false;
+
+            final sessions = raw['sessions'];
+            if (sessions is Map && sessions.isNotEmpty) {
+              for (final value in sessions.values) {
+                if (value is Map &&
+                    value['check_in_time'] != null &&
+                    value['check_out_time'] == null) {
+                  return true;
+                }
+              }
+            }
+
+            return raw['check_in_time'] != null &&
+                raw['check_out_time'] == null;
+          }
+
+          final alreadyOpen = records.any(hasOpenSession);
+          if (alreadyOpen) {
+            if (kDebugMode) {
+              debugPrint(
+                '✅ Active attendance session already exists for $workerId; duplicate check-in suppressed',
+              );
+            }
             return true;
           }
         }
@@ -254,7 +275,22 @@ class SyncService {
         return false;
       }
 
-      return await checkInWorker(employeeId);
+      final success = await checkInWorker(employeeId);
+      if (!success) return false;
+
+      final date = data['attendance_date']?.toString().split('T').first ??
+          DateTime.now().toIso8601String().split('T').first;
+      final sessionIndex =
+          int.tryParse(data['session_index']?.toString() ?? '') ?? 0;
+
+      await OfflineAttendanceService.markSynced(
+        employeeId: int.tryParse(employeeId) ?? 0,
+        workerId: int.tryParse(employeeId),
+        date: date,
+        sessionIndex: sessionIndex,
+      );
+
+      return true;
     } catch (e, stackTrace) {
       await ErrorLogHelper.logException(
         e,
@@ -924,6 +960,8 @@ class SyncService {
               'decrease_stock',
               'create_purchase_order',
               'update_purchase_order_status',
+              'attendance_check_in',
+              'attendance_check_out',
             };
 
             final isCritical = criticalActions.contains(action);
