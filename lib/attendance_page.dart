@@ -981,10 +981,10 @@ class _AttendancePageState extends State<AttendancePage>
     );
   }
 
-  Widget _workerAttendanceTile(Worker worker) {
+  Widget _workerAttendanceTile(Worker worker, {String? sessionKey}) {
     // Check today's attendance from backend records using worker_id
     final today = _df.format(DateTime.now());
-    final workerRecords = _records.where((r) {
+    var workerRecords = _records.where((r) {
       // Use worker_id if available, otherwise fall back to employee_id for backward compatibility.
       // Compare as strings: worker.id is a String, but the API returns
       // worker_id/employee_id as a raw JSON int, so a bare `==` here always
@@ -997,6 +997,18 @@ class _AttendancePageState extends State<AttendancePage>
       final recDate = (r['attendance_date'] ?? '').toString().split('T').first.trim();
       return recordWorkerId.toString() == worker.id.toString() && recDate == today;
     }).toList();
+
+    if (sessionKey != null) {
+      workerRecords = workerRecords
+          .where((r) => r is Map && _sessionKeyForRecord(Map<String, dynamic>.from(r as Map)) == sessionKey)
+          .toList();
+    }
+
+    final allWorkerSessions = _workerSessionsToday(worker);
+    final workerIsCurrentlyIn = _isWorkerCurrentlyIn(allWorkerSessions);
+    final currentSessionKey = _currentSessionKey();
+    final sessionHasOpen = sessionKey != null && workerRecords.any((r) => r is Map && _isOpenSession(Map<String, dynamic>.from(r as Map)));
+    final sessionCompleted = sessionKey != null && workerRecords.any((r) => r is Map && !_isOpenSession(Map<String, dynamic>.from(r as Map)) && r['check_in_time'] != null);
 
     // A worker can have several sessions on the same day. Use both the
     // collapsed daily row and the backend's nested per-session map.
@@ -1034,14 +1046,15 @@ class _AttendancePageState extends State<AttendancePage>
 
     // Currently in only when the newest check-in is newer than the newest
     // checkout. A completed latest session therefore renders CHECK IN.
-    final isIn = latestCheckIn != null &&
-        (latestCheckOut == null || latestCheckIn!.isAfter(latestCheckOut!));
+    final isIn = workerIsCurrentlyIn;
     final workerRecord = latestRecord;
         // Calculate monthly hours from backend records
     final workerId = int.tryParse(worker.id) ?? 0;
     final monthlyHours = _calculateWorkerMonthlyHours(workerId);
     final predictedSalary = worker.salary > 0 ? (monthlyHours / 200.0) * worker.salary : 0.0;
     final isLateToday = workerRecord != null && _isLateCheckIn(workerRecord);
+    final isCurrentSession = sessionKey == null || sessionKey == currentSessionKey;
+    final canChange = sessionKey == null || isCurrentSession && (workerIsCurrentlyIn || !sessionCompleted);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -1079,23 +1092,27 @@ class _AttendancePageState extends State<AttendancePage>
             trailing: SizedBox(
               width: 100,
               child: ElevatedButton(
-                onPressed: () async {
-                  final verified = await _showVerifyPinDialog(worker);
-                  if (verified) {
-                    await _markWorkerAttendance(worker, isIn);
-                  }
-                },
+                onPressed: canChange
+                    ? () async {
+                        final verified = await _showVerifyPinDialog(worker);
+                        if (verified) {
+                          await _markWorkerAttendance(worker, isIn);
+                        }
+                      }
+                    : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isIn ? _absent : _present,
-                  foregroundColor: Colors.white,
+                  backgroundColor: isIn ? _absent : (sessionCompleted ? Colors.grey.shade300 : _present),
+                  foregroundColor: isIn || !sessionCompleted ? Colors.white : Colors.grey.shade700,
+                  disabledBackgroundColor: Colors.grey.shade100,
+                  disabledForegroundColor: Colors.grey.shade500,
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   minimumSize: const Size(80, 32),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   elevation: 0,
                 ),
                 child: Text(
-                  isIn ? 'CHECK OUT' : 'CHECK IN',
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  isIn ? 'CHECK OUT' : (sessionCompleted ? 'DONE' : 'CHECK IN'),
+                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
