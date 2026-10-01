@@ -157,6 +157,42 @@ class PaymentEvent {
       default:                     return 'upi';
     }
   }
+  /// Voice-only deduplication key.
+  ///
+  /// Accounting/idempotency fingerprints intentionally normalize aggressively
+  /// so notifications, accessibility events and bank SMS can refer to the
+  /// same payment. Voice dedup needs a second, stricter identity because the
+  /// same Android notification may be delivered more than once with slightly
+  /// different metadata. The actual notification text is therefore included.
+  String get voiceFingerprint {
+    final direction = _transactionDirection(rawText);
+
+    if (referenceId != null && referenceId!.isNotEmpty) {
+      return 'voice_utr_${amount.toStringAsFixed(2)}_$referenceId';
+    }
+
+    var normalized = rawText
+        .toLowerCase()
+        .replaceAll(RegExp(r'\d{1,2}:\d{2}(?::\d{2})?'), '')
+        .replaceAll(RegExp(r'\b(?:today|yesterday|just\s+now)\b'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    // Keep the key bounded. If a very large notification contains unrelated
+    // footer/legal text, that text should not create a unique voice event.
+    if (normalized.length > 260) {
+      normalized = normalized.substring(0, 260);
+    }
+
+    final payload =
+        '${amount.toStringAsFixed(2)}_'
+        '$direction_'
+        '${_appFamily(app)}_'
+        '$normalized';
+
+    return 'voice_${md5.convert(utf8.encode(payload))}';
+  }
+
   ConfidenceTier get confidenceTier {
     if (confidenceScore >= 0.75) return ConfidenceTier.high;
     if (confidenceScore >= 0.50) return ConfidenceTier.medium;
