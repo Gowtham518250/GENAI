@@ -13628,77 +13628,28 @@ class _DashboardPageState extends State<DashboardPage>
   Future<void> _showDailyClosingSheet() async {
     if (!mounted) return;
 
-    // Calculate today's revenue & expenses
     final today = DateTime.now();
-    final startOfDay = DateTime(today.year, today.month, today.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
+    _recalculateAnalytics();
 
-    double revenue = 0.0, expense = 0.0;
-    String topProduct = 'N/A';
-    double topProductQty = 0;
+    final revenue = _todayRevenue;
+    final bills = _todayTransactions;
+    final topProduct = _todayTopProduct.trim().isEmpty ? 'No sales yet' : _todayTopProduct;
+    double expense = 0.0;
 
     try {
-      // Sum today's sales
-      for (var sale in sales) {
-        try {
-          // Use 'sale_date' from flattened sales (consistent with dashboard data structure)
-          final saleDate = DateTime.parse(
-            sale['sale_date'] ?? sale['date'] ?? '',
-          );
-          if (saleDate.isAfter(startOfDay) && saleDate.isBefore(endOfDay)) {
-            final rawAmount =
-                sale['total_amount'] ??
-                sale['total'] ??
-                sale['grand_total'] ??
-                sale['final_amount'] ??
-                sale['totalAmount'] ??
-                '0';
-            revenue += double.tryParse(rawAmount.toString()) ?? 0;
-          }
-        } catch (_) {}
-      }
-
-      // Sum today's expenses
       final expenses = await LocalStorageService.loadExpenses();
-      for (var exp in expenses) {
-        try {
-          final expDate = DateTime.parse(exp['date'] ?? '');
-          if (expDate.isAfter(startOfDay) && expDate.isBefore(endOfDay)) {
-            expense += double.tryParse(exp['amount']?.toString() ?? '0') ?? 0;
-          }
-        } catch (_) {}
-      }
-
-      // Find top product
-      Map<String, double> productQty = {};
-      for (var sale in sales) {
-        try {
-          final saleDate = DateTime.parse(sale['date'] ?? '');
-          if (saleDate.isAfter(startOfDay) && saleDate.isBefore(endOfDay)) {
-            final items = sale['items'] as List? ?? [];
-            for (var item in items) {
-              final name = item['product_name']?.toString() ?? 'Unknown';
-              final qty = double.tryParse(item['qty']?.toString() ?? '1') ?? 1;
-              productQty[name] = (productQty[name] ?? 0) + qty;
-            }
-          }
-        } catch (_) {}
-      }
-
-      if (productQty.isNotEmpty) {
-        final entry = productQty.entries.reduce(
-          (a, b) => a.value > b.value ? a : b,
-        );
-        topProduct = '${entry.key} (${entry.value.toStringAsFixed(0)} units)';
-        topProductQty = entry.value;
+      for (final exp in expenses) {
+        final parsed = DateTime.tryParse(exp['date']?.toString() ?? '');
+        if (parsed == null) continue;
+        if (DateUtils.isSameDay(parsed.toLocal(), today)) {
+          expense += double.tryParse(exp['amount']?.toString() ?? '0') ?? 0;
+        }
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('Error in closing calc: $e');
+      if (kDebugMode) debugPrint('Error loading closing expenses: $e');
     }
 
     final profit = revenue - expense;
-    _lastClosingDate = today;
-    _closedToday = true;
 
     if (!mounted) return;
 
@@ -13706,230 +13657,279 @@ class _DashboardPageState extends State<DashboardPage>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Text(
-                'Daily Closing - ${today.day}/${today.month}/${today.year}',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 24),
+      useSafeArea: true,
+      builder: (ctx) {
+        final width = MediaQuery.sizeOf(ctx).width;
+        final compact = width < 700;
 
-              // KPI Cards
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          const Icon(
-                            Icons.trending_up,
-                            semanticLabel: 'Trending Up',
-                            color: Color(0xFF10B981),
-                            size: 24,
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Revenue',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
-                          Text(
-                            '₹${revenue.toStringAsFixed(0)}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+        Widget metric({
+          required String label,
+          required String value,
+          required IconData icon,
+          required Color color,
+          String? helper,
+        }) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.075),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: color.withValues(alpha: 0.18)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          const Icon(
-                            Icons.trending_down,
-                            semanticLabel: 'Trending Down',
-                            color: Color(0xFFF59E0B),
-                            size: 24,
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Expense',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
-                          Text(
-                            '₹${expense.toStringAsFixed(0)}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: profit > 0
-                            ? const Color(0xFF6366F1).withValues(alpha: 0.1)
-                            : const Color(0xFFEF4444).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: profit > 0
-                              ? const Color(0xFF6366F1).withValues(alpha: 0.3)
-                              : const Color(0xFFEF4444).withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            profit > 0 ? Icons.check_circle : Icons.warning,
-                            color: profit > 0
-                                ? const Color(0xFF6366F1)
-                                : const Color(0xFFEF4444),
-                            size: 24,
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Profit',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
-                          Text(
-                            '₹${profit.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: profit > 0
-                                  ? const Color(0xFF6366F1)
-                                  : const Color(0xFFEF4444),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Top Product
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: glass,
-                  borderRadius: BorderRadius.circular(12),
+                  child: Icon(icon, color: color, size: 19),
                 ),
-                child: Column(
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade600,
+                      )),
+                      const SizedBox(height: 2),
+                      Text(value, style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF111827),
+                      )),
+                      if (helper != null) ...[
+                        const SizedBox(height: 2),
+                        Text(helper, style: GoogleFonts.poppins(
+                          fontSize: 9.5,
+                          color: Colors.grey.shade500,
+                        )),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 920),
+          decoration: const BoxDecoration(
+            color: Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              compact ? 16 : 28,
+              12,
+              compact ? 16 : 28,
+              24,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 46,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.black12,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
                   children: [
-                    const Text(
-                      'Top Product',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      topProduct,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+                        ),
+                        borderRadius: BorderRadius.circular(15),
                       ),
-                      textAlign: TextAlign.center,
+                      child: const Icon(Icons.nightlight_round, color: Colors.white, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Daily Closing',
+                            style: GoogleFonts.poppins(
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF111827),
+                            ),
+                          ),
+                          Text(
+                            '${DateFormat('EEEE, dd MMMM yyyy').format(today)} • ${bills} bills',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 20),
-
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        final msg =
-                            'Daily Closing ${today.day}/${today.month}/${today.year}\n\n'
-                            '💰 Revenue: ₹${revenue.toStringAsFixed(0)}\n'
-                            '💸 Expense: ₹${expense.toStringAsFixed(0)}\n'
-                            '✅ Profit: ₹${profit.toStringAsFixed(0)}\n'
-                            '🔥 Top: $topProduct';
-                        // Copy to clipboard
-                        Clipboard.setData(ClipboardData(text: msg)).then((_) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Copied! Share via WhatsApp'),
+                const SizedBox(height: 20),
+                GridView.count(
+                  crossAxisCount: compact ? 1 : 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: compact ? 2.9 : 2.2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    metric(
+                      label: 'Revenue',
+                      value: '₹${revenue.toStringAsFixed(2)}',
+                      icon: Icons.trending_up_rounded,
+                      color: const Color(0xFF059669),
+                      helper: '${bills} completed transactions',
+                    ),
+                    metric(
+                      label: 'Expense',
+                      value: '₹${expense.toStringAsFixed(2)}',
+                      icon: Icons.trending_down_rounded,
+                      color: const Color(0xFFD97706),
+                      helper: 'Recorded business expenses',
+                    ),
+                    metric(
+                      label: 'Profit',
+                      value: '₹${profit.toStringAsFixed(2)}',
+                      icon: profit >= 0 ? Icons.insights_rounded : Icons.warning_amber_rounded,
+                      color: profit >= 0 ? const Color(0xFF4F46E5) : const Color(0xFFDC2626),
+                      helper: 'Revenue minus expense',
+                    ),
+                    metric(
+                      label: 'Orders / Bills',
+                      value: '${bills}',
+                      icon: Icons.receipt_long_rounded,
+                      color: const Color(0xFF0284C7),
+                      helper: 'Today',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F3FF),
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: const Icon(Icons.local_fire_department_rounded, color: Color(0xFF7C3AED)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Top product',
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey.shade500,
+                                letterSpacing: .5,
                               ),
-                            );
-                          }
-                        });
-                      },
-                      icon: const Icon(Icons.copy, semanticLabel: 'Copy'),
-                      label: const Text('Copy'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6366F1),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              topProduct,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF111827),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          final message =
+                              'Daily Closing ${today.day}/${today.month}/${today.year}\n\n'
+                              'Revenue: ₹${revenue.toStringAsFixed(2)}\n'
+                              'Expense: ₹${expense.toStringAsFixed(2)}\n'
+                              'Profit: ₹${profit.toStringAsFixed(2)}\n'
+                              'Bills: ${bills}\n'
+                              'Top Product: ${topProduct}';
+                          Clipboard.setData(ClipboardData(text: message)).then((_) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Closing summary copied.')),
+                              );
+                            }
+                          });
+                        },
+                        icon: const Icon(Icons.copy_rounded),
+                        label: const Text('Copy summary'),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => Navigator.pop(ctx),
-                      icon: const Icon(Icons.close, semanticLabel: 'Close'),
-                      label: const Text('Close'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6B7280),
-                        foregroundColor: Colors.white,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          Navigator.pop(ctx);
+                          await _closeDayAndSendEmail();
+                        },
+                        icon: const Icon(Icons.lock_clock_rounded),
+                        label: const Text('Close day'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF111827),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Closing uses the same canonical daily analytics shown on the dashboard, so the values stay consistent.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 10.5,
+                    color: Colors.grey.shade500,
+                    height: 1.4,
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
