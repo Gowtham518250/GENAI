@@ -52,12 +52,6 @@ class _AttendancePageState extends State<AttendancePage>
   // of being derived from the collapsed `_records` display list.
   Map<String, dynamic>? _mySession;
 
-  @override
-  void dispose() {
-    _workerSearchController.dispose();
-    super.dispose();
-  }
-
   List<Worker> get _filteredStaff {
     final query = _workerSearchQuery.trim().toLowerCase();
     if (query.isEmpty) return _staff;
@@ -83,6 +77,7 @@ class _AttendancePageState extends State<AttendancePage>
 
   @override
   void dispose() {
+    _workerSearchController.dispose();
     _tab.dispose();
     _timer?.cancel();
     _refreshTimer?.cancel();
