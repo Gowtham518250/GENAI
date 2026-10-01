@@ -85,6 +85,7 @@ import 'user_data_clear_service.dart';
 import 'payment_event.dart';
 import 'notification_service.dart';
 import 'inventory_management_service.dart';
+import 'inventory_sync_service.dart';
 import 'retail_intelligence_page.dart';
 import 'retail_growth_kit.dart';
 import 'daily_health_score_service.dart';
@@ -148,6 +149,7 @@ class _DashboardPageState extends State<DashboardPage>
   late final AnimationController _onlineStorePulseController;
   late final Animation<double> _onlineStorePulse;
   Timer? _refreshTimer;
+  Timer? _onlineBusinessRefreshTimer;
 
   // sales + insight state
   static const List<String> _chartLabels = [
@@ -502,6 +504,15 @@ class _DashboardPageState extends State<DashboardPage>
     _refreshTimer = Timer.periodic(
       const Duration(minutes: 10),
       (_) => _loadSales(),
+    );
+
+    // Online orders are external writes (customer web -> backend), so they
+    // cannot depend on the cashier's local sync stream. Refresh business
+    // state every 30 seconds while the owner dashboard is open.
+    _onlineBusinessRefreshTimer?.cancel();
+    _onlineBusinessRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _refreshOnlineBusinessData(),
     );
     // FIX BUG 6 — listen for inventory changes and reload analytics
     InventoryManagementService.onInventoryChanged = () {
@@ -1200,6 +1211,9 @@ class _DashboardPageState extends State<DashboardPage>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshOnlineBusinessData());
+    }
     if (state == AppLifecycleState.resumed) {
       _loadSales();
       (() async {
@@ -2224,6 +2238,8 @@ class _DashboardPageState extends State<DashboardPage>
     // FIX BUG 11 — always cancel timer and null it to prevent ghost calls
     _refreshTimer?.cancel();
     _refreshTimer = null;
+    _onlineBusinessRefreshTimer?.cancel();
+    _onlineBusinessRefreshTimer = null;
     _connectivityCheckTimer?.cancel();
     _connectivityCheckTimer = null;
     // FIX BUG 6 cleanup — detach inventory observer
