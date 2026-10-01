@@ -79,10 +79,6 @@ class DailySummaryNotificationService {
         }
       });
     } catch (e) {
-          if (kDebugMode) debugPrint('Daily summary notify error: $e');
-        }
-      });
-    } catch (e) {
       if (kDebugMode) debugPrint('DailySummaryNotificationService error: $e');
     }
   }
