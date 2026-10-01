@@ -322,6 +322,86 @@ class OnlineStoreService {
     }
   }
 
+  /// Global marketplace search — only online-enabled shops are returned.
+  static Future<Map<String, dynamic>> marketplaceSearch({
+    required String query,
+    String mode = 'all',
+    int limit = 24,
+  }) async {
+    try {
+      final encoded = Uri.encodeQueryComponent(query.trim());
+      final response = await ApiClient.getJson(
+        '/store/marketplace/search?q=$encoded&mode=$mode&limit=$limit',
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data is Map<String, dynamic>
+            ? data
+            : <String, dynamic>{'shops': [], 'products': []};
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Marketplace search error: $e');
+    }
+    return <String, dynamic>{'shops': [], 'products': []};
+  }
+
+  /// Customer shopping assistant. The backend ranks matches across all
+  /// online-enabled shops by the detected shopping intent.
+  static Future<Map<String, dynamic>> aiRecommend({
+    required String query,
+    int limit = 10,
+  }) async {
+    try {
+      final encoded = Uri.encodeQueryComponent(query.trim());
+      final response = await ApiClient.getJson(
+        '/store/ai/recommend?q=$encoded&limit=$limit',
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data is Map<String, dynamic>
+            ? data
+            : <String, dynamic>{'recommendations': []};
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ AI shopping recommendation error: $e');
+    }
+    return <String, dynamic>{'recommendations': []};
+  }
+
+  /// Submit a verified post-delivery shop rating.
+  static Future<Map<String, dynamic>> rateOrder({
+    required int orderId,
+    required int rating,
+    String? comment,
+  }) async {
+    try {
+      final response = await ApiClient.postJson(
+        '/store/order/$orderId/rating',
+        {
+          'rating': rating,
+          if (comment != null && comment.trim().isNotEmpty)
+            'comment': comment.trim(),
+        },
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = json.decode(response.body);
+        return {
+          'success': true,
+          if (data is Map) ...Map<String, dynamic>.from(data),
+        };
+      }
+      final data = json.decode(response.body);
+      return {
+        'success': false,
+        'message': data is Map
+            ? (data['detail'] ?? data['message'] ?? 'Unable to save rating')
+            : 'Unable to save rating',
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Unable to save rating right now.'};
+    }
+  }
+
   /// Place order
   static Future<OnlineOrder?> placeOrder({
     required int shopId,
