@@ -14,7 +14,7 @@ import '../models/ai_query_response.dart';
 class AiQueryService {
   static const String _historyKey = 'retail_mind_ai_query_history_v1';
   static const int _maxHistoryItems = 20;
-  static const Duration _requestTimeout = Duration(seconds: 45);
+  static const Duration _requestTimeout = Duration(seconds: 30);
 
   /// Executes a natural-language business query against the backend.
   ///
@@ -41,40 +41,41 @@ class AiQueryService {
       // A pre-check would bypass that flow and give a false "session expired" error
       // even when the refresh token is perfectly valid.
 
-      // Step 1: Attempt POST with JSON body (standard API spec)
+      // The backend /askquery endpoint accepts form data. Send the
+      // correct payload first instead of intentionally triggering a 422 and
+      // then retrying, which made simple queries feel unnecessarily slow.
       http.Response response;
       try {
-        response = await ApiClient.postJson(ApiClient.askQueryEndpoint, {
-          'query': trimmedQuery,
-        }).timeout(_requestTimeout);
-      } catch (jsonErr) {
-        // If ApiClient throws, check if it's network related
-        if (jsonErr is SocketException ||
-            jsonErr.toString().contains('No network connectivity')) {
+        response = await ApiClient.postForm(
+          ApiClient.askQueryEndpoint,
+          {'query': trimmedQuery},
+        ).timeout(_requestTimeout);
+      } catch (formErr) {
+        if (formErr is SocketException ||
+            formErr.toString().contains('No network connectivity') ||
+            formErr is TimeoutException) {
           rethrow;
         }
-        if (jsonErr is TimeoutException) {
-          rethrow;
-        }
-        // Fallback to postForm in case of client-side formatting differences
-        response = await ApiClient.postForm(ApiClient.askQueryEndpoint, {
-          'query': trimmedQuery,
-        }).timeout(_requestTimeout);
+        // Compatibility fallback for a backend build that expects JSON.
+        response = await ApiClient.postJson(
+          ApiClient.askQueryEndpoint,
+          {'query': trimmedQuery},
+        ).timeout(_requestTimeout);
       }
 
-      // Step 2: Handle 422 Unprocessable Entity by gracefully retrying with Form data
-      // (FastAPI endpoints configured with `query: str = Form(...)` expect form-encoded body)
+      // Compatibility retry for older deployments that still advertise the
+      // opposite content type.
       if (response.statusCode == 422) {
         try {
-          final formResp = await ApiClient.postForm(
+          final jsonResp = await ApiClient.postJson(
             ApiClient.askQueryEndpoint,
             {'query': trimmedQuery},
           ).timeout(_requestTimeout);
-          if (formResp.statusCode != 422) {
-            response = formResp;
+          if (jsonResp.statusCode != 422) {
+            response = jsonResp;
           }
         } catch (_) {
-          // Keep original response if retry fails
+          // Keep the original response.
         }
       }
 
@@ -247,6 +248,47 @@ class AiQueryService {
         debugPrint('Error: $error');
       }
       debugPrint('====================================');
+    }
+  }
+
+  /// Fetch persistent question + answer history for the authenticated owner.
+  static Future<List<AIQueryHistoryItem>> fetchQueryHistory({
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    final response = await ApiClient.getJson(
+      '/askquery/history?limit=$limit&offset=$offset',
+    ).timeout(const Duration(seconds: 15));
+
+    if (response.statusCode != 200) {
+      throw Exception('Unable to load query history.');
+    }
+
+    final decoded = json.decode(response.body);
+    final raw = decoded is Map ? decoded['history'] : null;
+    if (raw is! List) return <AIQueryHistoryItem>[];
+
+    return raw
+        .whereType<Map>()
+        .map((row) => AIQueryHistoryItem.fromJson(Map<String, dynamic>.from(row)))
+        .toList();
+  }
+
+  static Future<void> deleteQueryHistory(int historyId) async {
+    final response = await ApiClient.deleteJson(
+      '/askquery/history/$historyId',
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception('Unable to delete this query history entry.');
+    }
+  }
+
+  static Future<void> clearRemoteQueryHistory() async {
+    final response = await ApiClient.deleteJson(
+      '/askquery/history',
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception('Unable to clear query history.');
     }
   }
 
