@@ -254,6 +254,9 @@ class _DashboardPageState extends State<DashboardPage>
   int _onlineTodayOrders = 0;
   double _onlineTodayRevenue = 0.0;
   int _onlinePaidCount = 0;
+  int _onlineTotalOrders = 0;
+  double _onlineTotalRevenue = 0.0;
+  int _onlineTotalPaidCount = 0;
   int _unsyncedBillsCount =
       0; // Surfaced as a persistent dashboard warning, not just used for the health score
 
@@ -1512,9 +1515,11 @@ class _DashboardPageState extends State<DashboardPage>
         _onlineTodayRevenue =
             (metrics['todayRevenue'] as num?)?.toDouble() ?? 0.0;
         _onlinePaidCount = (metrics['paidCount'] as num?)?.toInt() ?? 0;
+        _onlineTotalOrders = (metrics['totalCount'] as num?)?.toInt() ?? 0;
+        _onlineTotalRevenue = (metrics['totalRevenue'] as num?)?.toDouble() ?? 0.0;
+        _onlineTotalPaidCount = (metrics['totalPaidCount'] as num?)?.toInt() ?? 0;
         _cachedTodayOnlineOrders = _onlineTodayOrders;
-        _cachedTotalOnlineOrders =
-            (metrics['totalCount'] as num?)?.toInt() ?? 0;
+        _cachedTotalOnlineOrders = _onlineTotalOrders;
       });
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Failed to load online stats: $e');
@@ -1551,6 +1556,9 @@ class _DashboardPageState extends State<DashboardPage>
             _onlineTodayOrders = 0;
             _onlineTodayRevenue = 0.0;
             _onlinePaidCount = 0;
+            _onlineTotalOrders = 0;
+            _onlineTotalRevenue = 0.0;
+            _onlineTotalPaidCount = 0;
           });
         }
 
@@ -1607,8 +1615,8 @@ class _DashboardPageState extends State<DashboardPage>
                 children: [
                   const Icon(
                     Icons.storefront_rounded,
-                    color: Colors.green,
-                    size: 20,
+                    color: Color(0xFF16A34A),
+                    size: 22,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -1642,9 +1650,12 @@ class _DashboardPageState extends State<DashboardPage>
           const SizedBox(height: 8),
           OnlineAnalyticsCard(
             pendingOrders: _onlinePendingOrders,
+            totalOrders: _onlineTotalOrders,
+            totalRevenue: _onlineTotalRevenue,
+            totalPaidCount: _onlineTotalPaidCount,
             todayOrderCount: _onlineTodayOrders,
             todayRevenue: _onlineTodayRevenue,
-            paidCount: _onlinePaidCount,
+            todayPaidCount: _onlinePaidCount,
             onTap: () {
               Navigator.push(
                 context,
