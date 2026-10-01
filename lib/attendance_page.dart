@@ -45,10 +45,31 @@ class _AttendancePageState extends State<AttendancePage>
   bool _refreshInFlight = false;
   String _liveHours = '0.0';
   List<Worker> _staff = [];
+  final TextEditingController _workerSearchController = TextEditingController();
+  String _workerSearchQuery = '';
   // Source of truth for "am I currently checked in?" — read straight from
   // OfflineAttendanceService (which supports multiple sessions/day) instead
   // of being derived from the collapsed `_records` display list.
   Map<String, dynamic>? _mySession;
+
+  @override
+  void dispose() {
+    _workerSearchController.dispose();
+    super.dispose();
+  }
+
+  List<Worker> get _filteredStaff {
+    final query = _workerSearchQuery.trim().toLowerCase();
+    if (query.isEmpty) return _staff;
+
+    return _staff.where((worker) {
+      return worker.name.toLowerCase().contains(query) ||
+          worker.id.toLowerCase().contains(query) ||
+          worker.phone.toLowerCase().contains(query) ||
+          worker.position.toLowerCase().contains(query) ||
+          worker.assignedWork.toLowerCase().contains(query);
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -687,6 +708,8 @@ class _AttendancePageState extends State<AttendancePage>
         if (_staff.isEmpty)
           _noWorkersCard()
         else ...[
+          _workerSearchBar(),
+          const SizedBox(height: 14),
           Row(children: [
             Expanded(child: _miniStat('In shop', '$inShop', _present)),
             const SizedBox(width: 8),
@@ -701,7 +724,8 @@ class _AttendancePageState extends State<AttendancePage>
             return Column(
               children: [
                 _sessionHeader('morning', morningPresent, morningActive, _staff.length),
-                ..._staff.map((worker) => _workerAttendanceTile(worker, sessionKey: 'morning')),
+                ..._filteredStaff.map((worker) => _workerAttendanceTile(worker, sessionKey: 'morning')),
+                if (_filteredStaff.isEmpty) _noWorkerSearchResults(),
               ],
             );
           }),
@@ -712,7 +736,8 @@ class _AttendancePageState extends State<AttendancePage>
             return Column(
               children: [
                 _sessionHeader('afternoon', afternoonPresent, afternoonActive, _staff.length),
-                ..._staff.map((worker) => _workerAttendanceTile(worker, sessionKey: 'afternoon')),
+                ..._filteredStaff.map((worker) => _workerAttendanceTile(worker, sessionKey: 'afternoon')),
+                if (_filteredStaff.isEmpty) _noWorkerSearchResults(),
               ],
             );
           }),
@@ -797,6 +822,113 @@ class _AttendancePageState extends State<AttendancePage>
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _workerSearchBar() {
+    final filteredCount = _filteredStaff.length;
+    final hasQuery = _workerSearchQuery.trim().isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 5, 8, 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _primary.withValues(alpha: 0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search_rounded, color: _primary, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _workerSearchController,
+              onChanged: (value) {
+                setState(() => _workerSearchQuery = value);
+              },
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Search worker by name, ID, phone or role',
+                hintStyle: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 12,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+              ),
+            ),
+          ),
+          if (hasQuery)
+            IconButton(
+              tooltip: 'Clear search',
+              onPressed: () {
+                _workerSearchController.clear();
+                setState(() => _workerSearchQuery = '');
+              },
+              icon: const Icon(Icons.close_rounded, size: 19),
+              color: Colors.grey.shade600,
+            ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+            decoration: BoxDecoration(
+              color: _primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              hasQuery
+                  ? filteredCount.toString() + '/' + _staff.length.toString()
+                  : _staff.length.toString(),
+              style: GoogleFonts.poppins(
+                color: _primary,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _noWorkerSearchResults() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.person_search_rounded, size: 32, color: Colors.grey.shade400),
+          const SizedBox(height: 7),
+          Text(
+            'No workers found',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            'Try the worker name, ID, phone number or position.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              color: Colors.grey.shade500,
+            ),
           ),
         ],
       ),
