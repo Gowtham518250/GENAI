@@ -197,6 +197,48 @@ class SyncService {
     }
   }
 
+  /// Attempt an immediate online checkout for a worker.
+  /// If the backend accepts it, acknowledge/remove the durable outbox item.
+  /// Returns false without destroying the queued operation when offline or
+  /// when the server rejects the request.
+  static Future<bool> syncAttendanceCheckoutNow({
+    required String workerId,
+    required String operationId,
+  }) async {
+    try {
+      final connection = await Connectivity().checkConnectivity();
+      final offline = connection is List
+          ? (connection.isEmpty ||
+              (connection.length == 1 &&
+                  connection.first == ConnectivityResult.none))
+          : connection == ConnectivityResult.none;
+      if (offline) return false;
+
+      final success = await checkOutWorker(workerId);
+      if (!success) return false;
+
+      await SyncQueueManager.removeByBusinessIdentifier(
+        'attendance_check_out',
+        {
+          'operation_id': operationId,
+          'idempotency_key': operationId,
+        },
+      );
+      return true;
+    } catch (e, stackTrace) {
+      await ErrorLogHelper.logException(
+        e,
+        stackTrace,
+        context: 'SyncService.syncAttendanceCheckoutNow',
+        attributes: {
+          'workerId': workerId,
+          'operationId': operationId,
+        },
+      );
+      return false;
+    }
+  }
+
   /// Syncs an individual check-out event to the backend
   static Future<bool> checkOutWorker(String workerId) async {
     try {
