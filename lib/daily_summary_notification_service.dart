@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'analytics_engine.dart';
+import 'local_storage_service.dart';
 
 /// Schedules a daily 9 PM income summary notification in Telugu + English.
 /// Uses flutter_local_notifications (already in pubspec: ^17.1.2).
@@ -40,25 +42,43 @@ class DailySummaryNotificationService {
           : ninepm;
       final delay = target.difference(today);
 
-      final amountStr = _formatAmount(todayRevenue);
-
-      // Telugu + English notification content
-      final teluguBody =
-          '\u0c28ేడు సంపాదన: \u20b9$amountStr | $todayBills బిల్లులు'
-          '${topProduct.isNotEmpty ? " | Best: $topProduct" : ""}';
-
       if (kDebugMode) {
-        debugPrint('\u2705 Daily summary notification scheduled in ${delay.inMinutes} min');
+        debugPrint('\u2705 Daily summary notification scheduled in \${delay.inMinutes} min');
       }
 
-      // Fire after calculated delay using a one-shot timer
+      // Do not capture dashboard values at scheduling time. The shop can
+      // create more bills after the dashboard opens, so the 9 PM report is
+      // recalculated from the latest canonical local sales when it fires.
       Timer(delay, () async {
         try {
+          final latestSales = await LocalStorageService.loadSales();
+          final engine = AnalyticsEngine();
+          engine.recalculateAnalytics(latestSales, 0);
+
+          final revenue = engine.todaySalesValue;
+          final bills = engine.todayTransactionsValue;
+          final bestProduct = engine.todayTopProduct;
+
+          final amountStr = _formatAmount(revenue);
+          final teluguBody =
+              '\u0c28\u0c47\u0c21\u0c41 \u0c38\u0c02\u0c2a\u0c3e\u0c26\u0c28: \u20b9$amountStr | $bills \u0c2c\u0c3f\u0c32\u0c4d\u0c32\u0c41'
+              '\${bestProduct.isNotEmpty ? " | Best: $bestProduct" : ""}';
+
           await _showNow(
-            title: '\u0c2a్రతిరోజూ రిపోర్ట్ 📊 | Daily Report',
+            title: '\u0c2a\u0c4d\u0c30\u0c24\u0c3f\u0c30\u0c4b\u0c1c\u0c42 \u0c30\u0c3f\u0c2a\u0c4b\u0c30\u0c4d\u0c1f\u0c4d \ud83d\udcca | Daily Report',
             body: teluguBody,
           );
+
+          if (kDebugMode) {
+            debugPrint(
+              '\u2705 Daily report sent from canonical local sales: \u20b9$revenue | $bills bills',
+            );
+          }
         } catch (e) {
+          if (kDebugMode) debugPrint('Daily summary notify error: $e');
+        }
+      });
+    } catch (e) {
           if (kDebugMode) debugPrint('Daily summary notify error: $e');
         }
       });
