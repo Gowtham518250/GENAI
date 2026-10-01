@@ -157,6 +157,48 @@ void main() {
     });
   });
 
+  group('Duplicate notification voice protection', () {
+    test('identical notification delivered twice has the same voice fingerprint', () {
+      final now = DateTime(2026, 10, 1, 14, 30);
+
+      final first = PaymentEvent(
+        amount: 750,
+        timestamp: now,
+        app: PaymentApp.phonePe,
+        rawText: 'Payment of ₹750 received from Rahul via PhonePe',
+      );
+
+      final duplicate = PaymentEvent(
+        amount: 750,
+        timestamp: now.add(const Duration(seconds: 2)),
+        app: PaymentApp.phonePe,
+        rawText: 'Payment of ₹750 received from Rahul via PhonePe',
+      );
+
+      expect(first.voiceFingerprint, equals(duplicate.voiceFingerprint));
+    });
+
+    test('different credit text is not collapsed into a duplicate notification', () {
+      final now = DateTime(2026, 10, 1, 14, 30);
+
+      final first = PaymentEvent(
+        amount: 750,
+        timestamp: now,
+        app: PaymentApp.phonePe,
+        rawText: 'Payment of ₹750 received from Rahul via PhonePe',
+      );
+
+      final other = PaymentEvent(
+        amount: 750,
+        timestamp: now.add(const Duration(seconds: 4)),
+        app: PaymentApp.phonePe,
+        rawText: '₹750 credited to your account from Rahul',
+      );
+
+      expect(first.voiceFingerprint, isNot(equals(other.voiceFingerprint)));
+    });
+  });
+
   group('Payment voice direction', () {
     test('detects credited payment from bank/UPI text', () {
       expect(
