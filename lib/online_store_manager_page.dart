@@ -125,7 +125,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
           SnackBar(
             content: Text(
               _isStoreActive 
-                ? '✅ Online Store enabled! Customers can find you nearby.'
+                ? '✅ Online Shopping enabled! Customers can find your shop in the marketplace.'
                 : '✅ Online Store disabled.',
             ),
             backgroundColor: Colors.green,
@@ -188,7 +188,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
               color: _isStoreActive ? Colors.green[50] : Colors.white,
               child: SwitchListTile(
                 title: Text('Enable Online Store', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-                subtitle: Text('Allow customers to order directly from you via WhatsApp or Web.'),
+                subtitle: Text('Make this shop discoverable in the customer marketplace on app and web.'),
                 value: _isStoreActive,
                 activeColor: Colors.green,
                 onChanged: (val) {
