@@ -161,6 +161,85 @@ class OTPService {
     }
   }
 
+  static Future<Map<String, dynamic>> sendCustomerDeliveryOTP({
+    required int orderId,
+  }) async {
+    try {
+      final response = await ApiClient.postJson(
+        '/store/owner/orders/$orderId/delivery-otp',
+        {},
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        return {
+          'success': true,
+          'message': decoded is Map
+              ? (decoded['message']?.toString() ??
+                  'Delivery OTP sent to the customer.')
+              : 'Delivery OTP sent to the customer.',
+          'email': decoded is Map ? decoded['email']?.toString() : null,
+          'expires_in':
+              decoded is Map ? decoded['expires_in'] : null,
+        };
+      }
+
+      return _errorFromResponse(
+        response,
+        'Unable to send customer delivery OTP.',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Customer delivery OTP request failed: $e');
+      }
+      return {
+        'success': false,
+        'message': 'Unable to send customer delivery OTP. Please try again.',
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyCustomerDeliveryOTP({
+    required int orderId,
+    required String otp,
+  }) async {
+    final code = otp.trim();
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+      return {'success': false, 'message': 'OTP must be 6 digits'};
+    }
+
+    try {
+      final response = await ApiClient.postJson(
+        '/store/owner/orders/$orderId/action?action=DELIVER',
+        {'customer_otp': code},
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        return {
+          'success': true,
+          'message': decoded is Map
+              ? (decoded['message']?.toString() ??
+                  'Order marked as delivered.')
+              : 'Order marked as delivered.',
+        };
+      }
+
+      return _errorFromResponse(
+        response,
+        'Unable to verify customer delivery OTP.',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Customer delivery OTP verification failed: $e');
+      }
+      return {
+        'success': false,
+        'message': 'Unable to verify customer delivery OTP. Please try again.',
+      };
+    }
+  }
+
   static Future<Map<String, dynamic>> resetWorkerPin({
     required String email,
     required String otp,
