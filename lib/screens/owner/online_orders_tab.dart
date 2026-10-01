@@ -353,8 +353,10 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
       setState(() => _pendingSync.remove(orderId));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(otpResult['message']?.toString() ??
-              'Unable to send customer delivery OTP.'),
+          content: Text(
+            otpResult['message']?.toString() ??
+                'Unable to send customer delivery OTP.',
+          ),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -362,7 +364,8 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     }
 
     final controller = TextEditingController();
-    final maskedEmail = otpResult['email']?.toString() ?? 'the customer account';
+    final maskedEmail =
+        otpResult['email']?.toString() ?? 'the customer account';
     final expires = otpResult['expires_in'] is num
         ? (otpResult['expires_in'] as num).toInt()
         : 600;
@@ -380,8 +383,11 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
             children: [
               Text(
                 'A 6-digit delivery OTP was sent to $maskedEmail. '
-                'It expires in ${(expires / 60).ceil()} minutes.',
-                style: const TextStyle(color: Colors.black54, height: 1.4),
+                'It expires in $(expires / 60).ceil() minutes.',
+                style: const TextStyle(
+                  color: Colors.black54,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 18),
               TextField(
@@ -407,275 +413,8 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
           FilledButton(
             onPressed: () {
               final value = controller.text.trim();
-              if (!RegExp(r'^\d{6}  @override
-  Widget build(BuildContext context) {
-    if (_shopId.isEmpty || _shopId == '0') {
-      return const Scaffold(body: Center(child: Text('Invalid Shop Profile')));
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Online Orders', style: TextStyle(color: Colors.black87)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.black54,
-          indicatorColor: AppColors.primary,
-          isScrollable: true,
-          tabs: [
-            Tab(text: 'Pending (${_pendingOrders.length})'),
-            Tab(text: 'Accepted (${_acceptedOrders.length})'),
-            Tab(text: 'Dispatched (${_dispatchedOrders.length})'),
-            Tab(text: 'Delivered (${_deliveredOrders.length})'),
-          ],
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildOrderList(
-                  orders: _pendingOrders,
-                  emptyText: 'No incoming orders',
-                  nextAction: 'ACCEPT',
-                ),
-                _buildOrderList(
-                  orders: _acceptedOrders,
-                  emptyText: 'No accepted orders yet',
-                  nextAction: 'DISPATCH',
-                ),
-                _buildOrderList(
-                  orders: _dispatchedOrders,
-                  emptyText: 'No dispatched orders yet',
-                  nextAction: 'DELIVER',
-                ),
-                _buildOrderList(
-                  orders: _deliveredOrders,
-                  emptyText: 'No delivered orders yet',
-                  nextAction: null,
-                ),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildCustomerActions(Map<String, dynamic> order) {
-    final phone = (order['customer_phone'] ?? '').toString().replaceAll(RegExp(r'[^0-9+]'), '');
-    final address = (order['delivery_address'] ?? order['address'] ?? '').toString().trim();
-
-    Future<void> openMaps() async {
-      if (address.isEmpty) return;
-      final url = 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}';
-      await launchUrlString(url, mode: LaunchMode.externalApplication);
-    }
-
-    Future<void> callCustomer() async {
-      if (phone.isEmpty) return;
-      await launchUrlString('tel:$phone');
-    }
-
-    Future<void> whatsappCustomer() async {
-      if (phone.isEmpty) return;
-      final digits = phone.replaceFirst(RegExp(r'^\+'), '');
-      final url = 'https://wa.me/$digits';
-      await launchUrlString(url, mode: LaunchMode.externalApplication);
-    }
-
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: address.isEmpty ? null : openMaps,
-            icon: const Icon(Icons.location_on_outlined, size: 18),
-            label: const Text('Location'),
-          ),
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          tooltip: 'Call customer',
-          onPressed: phone.isEmpty ? null : callCustomer,
-          icon: const Icon(Icons.phone_outlined, color: Colors.blue),
-        ),
-        Tooltip(
-          message: 'WhatsApp',
-          child: IconButton(
-            onPressed: phone.isEmpty ? null : whatsappCustomer,
-            icon: Image.network(
-              'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/64px-WhatsApp.svg.png',
-              width: 24,
-              height: 24,
-              errorBuilder: (_, __, ___) =>
-                  const Icon(Icons.chat_outlined, color: Colors.green),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOrderList({
-    required List<Map<String, dynamic>> orders,
-    required String emptyText,
-    required String? nextAction, // 'ACCEPT' | 'DISPATCH' | 'DELIVER' | null (no next stage from here)
-  }) {
-    return RefreshIndicator(
-      onRefresh: _fetchAllOrders,
-      child: orders.isEmpty
-          ? ListView(
-              children: [
-                const SizedBox(height: 100),
-                Center(child: Text(emptyText, style: const TextStyle(color: Colors.black54))),
-              ],
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: orders.length,
-              itemBuilder: (context, index) {
-                final order = orders[index];
-                final orderId = order['order_id']?.toString() ?? '0';
-                final items = order['items'] as List<dynamic>? ?? [];
-                final syncing = _pendingSync.contains(orderId);
-
-                return GlassContainer(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Order #$orderId',
-                              style: const TextStyle(
-                                  color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
-                          if (syncing)
-                            const Badge(label: Text('SYNCING'), backgroundColor: Colors.orange)
-                          else if (nextAction == 'ACCEPT')
-                            const Badge(label: Text('NEW'), backgroundColor: Colors.redAccent)
-                          else if (nextAction == 'DISPATCH')
-                            const Badge(label: Text('ACCEPTED'), backgroundColor: Colors.green)
-                          else
-                            const Badge(label: Text('DISPATCHED'), backgroundColor: Colors.blue),
-                        ],
-                      ),
-                      const Divider(color: Colors.black12, height: 24),
-                      // FIX: backend never sends 'customer_email' -- it sends
-                      // customer_name + customer_phone. This previously
-                      // always rendered "Customer: null".
-                      Text('Customer: ${order['customer_name'] ?? 'Guest'}',
-                          style: const TextStyle(color: Colors.black87, fontSize: 16)),
-                      if ((order['customer_phone'] ?? '').toString().isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(order['customer_phone'].toString(),
-                              style: const TextStyle(color: Colors.black54, fontSize: 13)),
-                        ),
-                      if ((order['delivery_address'] ?? '').toString().isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text('Deliver to: ${order['delivery_address']}',
-                              style: const TextStyle(color: Colors.black54, fontSize: 13)),
-                        ),
-                      const SizedBox(height: 10),
-                      _buildCustomerActions(order),
-                      const SizedBox(height: 16),
-                      const Text('Items Requested:', style: TextStyle(color: Colors.black54, fontSize: 14)),
-                      const SizedBox(height: 8),
-                      ...items.map((item) {
-                        // FIX: backend field is 'unit_price', not 'price' -- previously always 0/blank.
-                        final qty = item['quantity'] ?? 1;
-                        final unitPrice = (item['unit_price'] is num) ? (item['unit_price'] as num) : 0;
-                        final qtyNum = (qty is num) ? qty : (num.tryParse(qty.toString()) ?? 1);
-                        final lineTotal = unitPrice * qtyNum;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 4.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('${qty}x ${item['product_name'] ?? 'Item'}',
-                                  style: const TextStyle(color: Colors.black87)),
-                              Text('Rs ${lineTotal.toStringAsFixed(2)}',
-                                  style: const TextStyle(color: Colors.black87)),
-                            ],
-                          ),
-                        );
-                      }),
-                      const Divider(color: Colors.black12, height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Total Value', style: TextStyle(color: Colors.black54, fontSize: 16)),
-                          Text('Rs ${order['total_amount']}',
-                              style: const TextStyle(
-                                  color: Colors.green, fontSize: 20, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      if (nextAction == 'ACCEPT') ...[
-                        const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: syncing ? null : () => _updateOrderStatus(order, 'REJECT'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.redAccent,
-                                  side: const BorderSide(color: Colors.redAccent),
-                                ),
-                                child: const Text('Reject'),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: syncing ? null : () => _updateOrderStatus(order, 'ACCEPT'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: Colors.white,
-                                ),
-                                child: const Text('Accept Order'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ] else if (nextAction == 'DISPATCH') ...[
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: syncing ? null : () => _updateOrderStatus(order, 'DISPATCH'),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
-                            icon: const Icon(Icons.local_shipping_outlined, size: 18),
-                            label: const Text('Mark as Dispatched'),
-                          ),
-                        ),
-                      ] else if (nextAction == 'DELIVER') ...[
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: syncing ? null : () => _updateOrderStatus(order, 'DELIVER'),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                            icon: const Icon(Icons.check_circle_outline, size: 18),
-                            label: const Text('Verify OTP & deliver'),
-                          ),
-                        ),
-                      ] else if (syncing) ...[
-                        const SizedBox(height: 12),
-                        const Text('Confirming with server…', style: TextStyle(color: Colors.orange, fontSize: 12)),
-                      ],
-                    ],
-                  ),
-                );
-              },
-            ),
-    );
-  }
-}).hasMatch(value)) {
-                ScaffoldMessenger.of(context).showSnackBar(
+              if (!RegExp(r'^\d{6}$').hasMatch(value)) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
                   const SnackBar(
                     content: Text('Enter the 6-digit customer OTP.'),
                   ),
@@ -705,6 +444,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
 
     if (verifyResult['success'] == true) {
       await _fetchAllOrders();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Customer OTP verified. Order marked as delivered.'),
