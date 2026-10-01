@@ -15,6 +15,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   String _shopId = '';
   String _shopName = 'Storefront';
   bool _loading = true;
+  double _onlineSetupFee = 0;
   String? _error;
 
   @override
@@ -47,10 +48,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
     try {
       _shopName = await CustomerShopService.fetchShopName(_shopId);
+      final fee = await CustomerShopService.fetchOnlineSetupFee(_shopId);
       final products = await CustomerShopService.fetchProducts(_shopId);
       if (!mounted) return;
       setState(() {
         _products = products.where((p) => (p['price'] as num) > 0).toList();
+        _onlineSetupFee = fee;
         _loading = false;
         if (_products.isEmpty) {
           _error = 'This shop has no online products yet. Ask the owner to enable Online Store.';
@@ -111,6 +114,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       'cart': _cart,
                       'shopId': _shopId,
                       'shopName': _shopName,
+                      'onlineSetupFee': _onlineSetupFee,
                     });
                   },
           ),

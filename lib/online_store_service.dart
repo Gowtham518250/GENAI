@@ -59,6 +59,55 @@ class OnlineStoreService {
     }
   }
   
+  /// Read online-only store settings from the backend.
+  static Future<Map<String, dynamic>> getOnlineSettings() async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return {'online_setup_fee': 0.0, 'is_online_store_enabled': false};
+
+      final response = await ApiClient.getJson(
+        '/api/shop/online-settings',
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 200) {
+        return Map<String, dynamic>.from(json.decode(response.body));
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Failed to load online settings: $e');
+    }
+    return {'online_setup_fee': 0.0, 'is_online_store_enabled': false};
+  }
+
+  /// Save an online-only setup/service fee. This does not alter POS pricing.
+  static Future<Map<String, dynamic>> setOnlineSetupFee(double fee) async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return {'success': false, 'error': 'NOT_AUTHENTICATED'};
+
+      final response = await ApiClient.putJson(
+        '/api/shop/online-settings',
+        {'online_setup_fee': fee},
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 10));
+
+      Map<String, dynamic> data = {};
+      try {
+        data = Map<String, dynamic>.from(json.decode(response.body));
+      } catch (_) {}
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'success': true, ...data};
+      }
+      return {
+        'success': false,
+        'error': data['detail'] ?? data['message'] ?? 'Unable to save online fee.',
+      };
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   /// PHASE 6 FIX: Get shop online status
   static Future<bool> getShopOnlineStatus() async {
     try {

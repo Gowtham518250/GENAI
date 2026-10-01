@@ -10,12 +10,14 @@ class CustomerCartPage extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
   final String shopId;
   final String shopName;
+  final double widget.onlineSetupFee;
 
   const CustomerCartPage({
     super.key,
     required this.cartItems,
     this.shopId = '',
     this.shopName = 'Shop',
+    this.widget.onlineSetupFee = 0,
   });
 
   @override
@@ -46,9 +48,11 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
     });
   }
 
-  double get _totalAmount {
+  double get _itemsSubtotal {
     return _items.fold(0.0, (sum, item) => sum + (item['price'] as num) * (item['qty'] as num));
   }
+
+  double get _totalAmount => _itemsSubtotal + widget.onlineSetupFee;
 
   String get _upiPayUri {
     final upi = _shopUpi ?? '';
@@ -172,6 +176,22 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
                         );
                       }),
                       const SizedBox(height: 8),
+                      if (widget.onlineSetupFee > 0) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Online setup / service', style: TextStyle(color: Colors.white70)),
+                            Text('₹${widget.onlineSetupFee.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Charged once for this online order. Store prices are unchanged.',
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
                       const Text('Payment method', style: TextStyle(color: Colors.white70, fontSize: 14)),
                       const SizedBox(height: 8),
                       Row(

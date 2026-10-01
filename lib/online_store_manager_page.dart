@@ -21,6 +21,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
   final TextEditingController _storeNameController = TextEditingController();
   final TextEditingController _minOrderController = TextEditingController();
   final TextEditingController _deliveryFeeController = TextEditingController();
+  final TextEditingController _onlineSetupFeeController = TextEditingController();
   
   bool _offerDelivery = true;
   bool _offerPickup = true;
@@ -40,12 +41,19 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
       _storeNameController.text = prefs.getString('shop_name') ?? 'My Kirana Store';
       _minOrderController.text = (prefs.getInt('online_min_order') ?? 100).toString();
       _deliveryFeeController.text = (prefs.getInt('online_delivery_fee') ?? 20).toString();
+      _onlineSetupFeeController.text = '0';
       _offerDelivery = prefs.getBool('online_offer_delivery') ?? true;
       _offerPickup = prefs.getBool('online_offer_pickup') ?? true;
       _acceptCOD = prefs.getBool('online_accept_cod') ?? true;
       _acceptOnline = prefs.getBool('online_accept_online') ?? true;
       _isLoading = false;
     });
+    try {
+      final online = await OnlineStoreService.getOnlineSettings();
+      _onlineSetupFeeController.text =
+          (double.tryParse(online['online_setup_fee']?.toString() ?? '0') ?? 0)
+              .toStringAsFixed(2);
+    } catch (_) {}
   }
 
   Future<void> _saveSettings() async {
@@ -93,6 +101,15 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
         if (kDebugMode) debugPrint('✅ Online store disabled via backend');
       }
       
+      final onlineFee = double.tryParse(_onlineSetupFeeController.text.trim()) ?? 0;
+      if (onlineFee < 0 || onlineFee > 100000) {
+        throw StateError('Online setup fee must be between ₹0 and ₹100000.');
+      }
+      final feeResult = await OnlineStoreService.setOnlineSetupFee(onlineFee);
+      if (feeResult['success'] != true) {
+        throw StateError(feeResult['error']?.toString() ?? 'Unable to save online setup fee.');
+      }
+
       // Save local settings
       await prefs.setBool('online_store_active', _isStoreActive);
       await prefs.setInt('online_min_order', int.tryParse(_minOrderController.text) ?? 100);
@@ -108,7 +125,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
           SnackBar(
             content: Text(
               _isStoreActive 
-                ? '✅ Online Store enabled! Customers can find you nearby.'
+                ? '✅ Online Shopping enabled! Customers can find your shop in the marketplace.'
                 : '✅ Online Store disabled.',
             ),
             backgroundColor: Colors.green,
@@ -171,7 +188,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
               color: _isStoreActive ? Colors.green[50] : Colors.white,
               child: SwitchListTile(
                 title: Text('Enable Online Store', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-                subtitle: Text('Allow customers to order directly from you via WhatsApp or Web.'),
+                subtitle: Text('Make this shop discoverable in the customer marketplace on app and web.'),
                 value: _isStoreActive,
                 activeColor: Colors.green,
                 onChanged: (val) {
@@ -287,6 +304,84 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 24),
+
+              // Online-only fee
+              Text(
+                'Online Order Fee',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.indigo.shade100),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.indigo.withValues(alpha: 0.06),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.tune_rounded, color: Color(0xFF4F46E5)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Online setup / service fee',
+                            style: GoogleFonts.poppins(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEEF2FF),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'ONLINE ONLY',
+                            style: GoogleFonts.poppins(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF4338CA),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Charged once per online order. It does not change your in-store/POS product prices.',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: Colors.black54,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 13),
+                    TextField(
+                      controller: _onlineSetupFeeController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Fee per online order (₹)',
+                        prefixText: '₹ ',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
 
