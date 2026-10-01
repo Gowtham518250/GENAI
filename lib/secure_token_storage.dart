@@ -327,6 +327,12 @@ class SecureTokenStorage {
     await _storage.write(key: scopedKey, value: '${iv.base64}:${encrypted.base64}');
   }
 
+  static Future<String?> getUserEmail() async {
+    final user = await getUser();
+    final email = user?['email']?.toString().trim();
+    return email == null || email.isEmpty ? null : email;
+  }
+
   static Future<Map<String, dynamic>?> getUser() async {
     final scopedKey = await _getScopedKey(_kUser);
     final combined = await _storage.read(key: scopedKey);
