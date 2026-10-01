@@ -330,7 +330,11 @@ class _AttendancePageState extends State<AttendancePage>
     if (parsed == null) return null;
 
     // No suffix means the attendance API's legacy IST-naive timestamp.
-    if (!str.contains('Z') && !RegExp(r'[+-]d{2}:d{2}
+    if (!str.contains('Z') && !RegExp(r'[+-]\\d{2}:\\d{2}$').hasMatch(str)) {
+      return parsed;
+    }
+    return parsed.toLocal();
+  }
 
   bool _isLateCheckIn(Map r) {
     final cin = _parseServerTime(r['check_in_time']);
