@@ -164,7 +164,7 @@ class _EnterpriseControlPanelState extends State<EnterpriseControlPanel>
             style: _bodyStyle,
           ),
           const SizedBox(height: 12),
-          _buildGSTRatesTable(),
+          ..._buildGSTRatesTable(),
           const SizedBox(height: 24),
           Text('Compliance features', style: _sectionStyle),
           const SizedBox(height: 12),
