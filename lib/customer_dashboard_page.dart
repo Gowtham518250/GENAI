@@ -272,56 +272,61 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)]),
-                              child: Row(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(12)),
-                                    child: const Icon(Icons.receipt_long, color: Colors.indigo),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text('Order #${tx['id'] ?? tx['order_id'] ?? '??'}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
-                                        Text(tx['created_at']?.toString() ?? 'Online Order', style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12)),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                  Row(
                                     children: [
-                                      Text(
-                                        'Rs ${tx['total_amount'] ?? tx['amount'] ?? 0}',
-                                        style: GoogleFonts.poppins(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                          color: Colors.indigo,
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(12)),
+                                        child: const Icon(Icons.receipt_long, color: Colors.indigo),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('Order #${tx['id'] ?? tx['order_id'] ?? '??'}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
+                                            Text(tx['created_at']?.toString() ?? 'Online Order', style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12)),
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        (tx['status'] ?? tx['order_status'] ?? '').toString(),
-                                        style: GoogleFonts.poppins(
-                                          color: Colors.grey.shade600,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            'Rs ${tx['total_amount'] ?? tx['amount'] ?? 0}',
+                                            style: GoogleFonts.poppins(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                              color: Colors.indigo,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            (tx['status'] ?? tx['order_status'] ?? '').toString(),
+                                            style: GoogleFonts.poppins(
+                                              color: Colors.grey.shade600,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
+                                  if ((tx['status'] ?? tx['order_status'] ?? '').toString().toUpperCase() == 'DELIVERED')
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: TextButton.icon(
+                                        onPressed: () => _rateOrder(Map<String, dynamic>.from(tx)),
+                                        icon: const Icon(Icons.star_outline_rounded, size: 17),
+                                        label: const Text('Rate shop'),
+                                      ),
+                                    ),
                                 ],
                               ),
-                              if ((tx['status'] ?? tx['order_status'] ?? '').toString().toUpperCase() == 'DELIVERED')
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton.icon(
-                                    onPressed: () => _rateOrder(Map<String, dynamic>.from(tx)),
-                                    icon: const Icon(Icons.star_outline_rounded, size: 17),
-                                    label: const Text('Rate shop'),
-                                  ),
-                                ),
                             );
                           }).toList(),
                         ),
