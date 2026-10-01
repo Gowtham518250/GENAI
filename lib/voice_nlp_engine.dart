@@ -1226,6 +1226,7 @@ class VoiceNlpEngineV2 {
     String transcript,
     String langCode, {
     List<Map<String, dynamic>>? catalog,
+    bool deduplicate = true,
   }) {
     if (transcript.trim().isEmpty) return [];
 
@@ -1245,7 +1246,7 @@ class VoiceNlpEngineV2 {
     }
 
     if (items.isNotEmpty) {
-      return _deduplicate(items);
+      return deduplicate ? _deduplicate(items) : items;
     }
 
     // Step 3: NLP-3 sliding-window fallback (no separators needed)
@@ -1257,7 +1258,7 @@ class VoiceNlpEngineV2 {
     );
 
     if (windowItems.isNotEmpty) {
-      return _deduplicate(windowItems);
+      return deduplicate ? _deduplicate(windowItems) : windowItems;
     }
 
     // Step 4: Last resort — whole transcript as single item
