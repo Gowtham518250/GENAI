@@ -239,8 +239,17 @@ class SyncService {
         await ErrorLogHelper.logMessage(
           'Worker check-out failed: ${res.statusCode}',
           level: 'ERROR',
-          attributes: {'workerId': workerId, 'status': res.statusCode.toString()},
+          attributes: {
+            'workerId': workerId,
+            'status': res.statusCode.toString(),
+            'response': res.body,
+          },
         );
+        if (kDebugMode) {
+          debugPrint(
+            '❌ Worker check-out failed: HTTP ${res.statusCode} body=${res.body}',
+          );
+        }
         return false;
       }
     } catch (e) {
@@ -767,12 +776,37 @@ class SyncService {
     }
   }
 
-  /// Process sync queue - Thread-safe with Lock
-  static Future<void> processQueueSafe() async {
+  /// Process sync queue - Thread-safe with Lock.
+  ///
+  /// UI-critical attendance actions may request a short wait for an already
+  /// running background sync so a tap is not silently ignored.
+  static Future<void> processQueueSafe({
+    bool waitForActiveSync = false,
+  }) async {
     if (SyncQueueManager.isSyncing) {
-      if (kDebugMode) debugPrint('⚠️ Sync already in progress, skipping overlap');
-      return;
+      if (!waitForActiveSync) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Sync already in progress, skipping overlap');
+        }
+        return;
+      }
+
+      final deadline = DateTime.now().add(const Duration(seconds: 8));
+      while (SyncQueueManager.isSyncing &&
+          DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 120));
+      }
+
+      if (SyncQueueManager.isSyncing) {
+        if (kDebugMode) {
+          debugPrint(
+            '⚠️ Attendance sync wait timed out; background sync remains active',
+          );
+        }
+        return;
+      }
     }
+
     SyncQueueManager.isSyncing = true;
     try {
       await _syncLock.synchronized(() async {
