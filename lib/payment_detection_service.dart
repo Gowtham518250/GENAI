@@ -1469,12 +1469,17 @@ class PriorityVoiceQueue {
 
   void enqueue(PaymentEvent e, PaymentUiState ui) {
     if (!PdsConfig.isVoiceEnabled) return;
-    final fp = e.fingerprint;
-    if (_isAlreadySpoken(fp)) {
-      PdsLogger.d('VOICE', 'DUPLICATE BLOCKED: $fp');
+
+    // Voice uses a stricter semantic identity than accounting/idempotency.
+    // This blocks the same Android notification being delivered repeatedly
+    // with slightly different event metadata, while still allowing separate
+    // payments to share the same amount.
+    final voiceFp = e.voiceFingerprint;
+    if (_isAlreadySpoken(voiceFp)) {
+      PdsLogger.d('VOICE', 'DUPLICATE NOTIFICATION BLOCKED: $voiceFp');
       return;
     }
-    _markSpoken(fp);
+    _markSpoken(voiceFp);
 
     final text = ui.voiceText(_lang);
     if (text.isEmpty) return;
