@@ -11200,7 +11200,10 @@ class _DashboardPageState extends State<DashboardPage>
     // Using calculate total functions
     final totalSales = _calculateTotalSales();
     final totalOrders = _calculateTotalOrders();
-    final totalOnlineOrders = _calculateTotalOnlineOrders();
+    // Prefer the canonical backend count; keep the local invoice calculation
+    // only as a fallback when the online analytics request is unavailable.
+    final totalOnlineOrders =
+        _cachedTotalOnlineOrders ?? _calculateTotalOnlineOrders();
     final lowStockCount = _lowStockProducts.length;
 
     return Container(
