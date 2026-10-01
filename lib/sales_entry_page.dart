@@ -1145,121 +1145,272 @@ class _SalesEntryPageState extends State<SalesEntryPage>
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('New Customer', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: const Color(0xFF4F46E5))),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameC,
-                decoration: InputDecoration(
-                  labelText: 'Name *',
-                  prefixIcon: const Icon(Icons.person, color: Color(0xFF4F46E5)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneC,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: 'Phone *',
-                  prefixIcon: const Icon(Icons.phone, color: Color(0xFF4F46E5)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: addressC,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: 'Address',
-                  prefixIcon: const Icon(Icons.location_on, color: Color(0xFF4F46E5)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4F46E5), foregroundColor: Colors.white),
-            onPressed: () async {
-              final rawPhone = phoneC.text.trim();
-              final digits = rawPhone.replaceAll(RegExp(r'[^0-9]'), '');
-              final normalizedPhone =
-                  digits.startsWith('91') && digits.length == 12
-                      ? digits.substring(2)
-                      : digits;
+      barrierDismissible: false,
+      builder: (ctx) {
+        bool isSaving = false;
 
-              if (normalizedPhone.length != 10 ||
-                  !RegExp(r'^[6-9][0-9]{9}$').hasMatch(normalizedPhone)) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('⚠️ Enter a valid 10-digit Indian mobile number'),
-                    backgroundColor: Color(0xFFEF4444),
-                  ),
-                );
-                return;
-              }
+        Future<void> saveCustomer(void Function(void Function()) setDialogState) async {
+          if (isSaving) return;
 
-              final List<dynamic> customers = await LocalStorageService.loadLocalCustomers();
-              
-              // If name is empty, use 'Customer'
-              final finalName = nameC.text.trim().isEmpty ? 'Customer' : nameC.text.trim();
-              customers.add({
+          final rawPhone = phoneC.text.trim();
+          final digits = rawPhone.replaceAll(RegExp(r'[^0-9]'), '');
+          final normalizedPhone =
+              digits.startsWith('91') && digits.length == 12
+                  ? digits.substring(2)
+                  : digits;
+
+          if (normalizedPhone.length != 10 ||
+              !RegExp(r'^[6-9][0-9]{9}$').hasMatch(normalizedPhone)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('⚠️ Enter a valid 10-digit Indian mobile number'),
+                backgroundColor: Color(0xFFEF4444),
+              ),
+            );
+            return;
+          }
+
+          setDialogState(() => isSaving = true);
+
+          try {
+            final List<dynamic> customers =
+                await LocalStorageService.loadLocalCustomers();
+
+            // If name is empty, use 'Customer'.
+            final finalName =
+                nameC.text.trim().isEmpty ? 'Customer' : nameC.text.trim();
+
+            customers.add({
+              'name': finalName,
+              'phone': normalizedPhone,
+              'address': addressC.text.trim(),
+              'joining_date':
+                  DateFormat('yyyy-MM-dd').format(DateTime.now()),
+            });
+            await LocalStorageService.saveLocalCustomers(customers);
+
+            // Sync to backend, with offline fallback and retry queue.
+            try {
+              await _saveCustomerToBackend(
+                nameC.text.trim(),
+                normalizedPhone,
+                addressC.text.trim(),
+              );
+            } catch (e) {
+              await _queueOfflineAction('save_customer', {
                 'name': finalName,
                 'phone': normalizedPhone,
                 'address': addressC.text.trim(),
-                'joining_date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
               });
-              await LocalStorageService.saveLocalCustomers(customers);
-              
-              // 🔵 SYNC TO BACKEND (with offline fallback and retry queue)
-              try {
-                await _saveCustomerToBackend(
-                  nameC.text.trim(),
-                  phoneC.text.trim(),
-                  addressC.text.trim(),
+              if (kDebugMode) {
+                debugPrint(
+                  '⚠️ Customer backend sync failed, queued for retry: $e',
                 );
-              } catch (e) {
-                // Queue for retry if backend sync fails
-                await _queueOfflineAction('save_customer', {
-                  'name': nameC.text.trim(),
-                  'phone': normalizedPhone,
-                  'address': addressC.text.trim(),
-                });
-                if (kDebugMode) debugPrint('⚠️ Customer backend sync failed, queued for retry');
               }
-              
-              if (!mounted) return;
-              final wasBorrowRequest = _borrowWaitingForCustomer;
-              setState(() {
-                customerPhoneController.text = normalizedPhone;
-                _loadLocalCustomers(); // Refresh dropdown
-                _borrowWaitingForCustomer = false;
-              });
-              Navigator.pop(ctx);
+            }
+
+            if (!mounted || !ctx.mounted) return;
+
+            final wasBorrowRequest = _borrowWaitingForCustomer;
+            setState(() {
+              customerPhoneController.text = normalizedPhone;
+              _loadLocalCustomers();
+              _borrowWaitingForCustomer = false;
+            });
+
+            Navigator.pop(ctx);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  wasBorrowRequest
+                      ? '✅ Customer added. Borrow NOT recorded yet — tap “Record Borrow” to continue.'
+                      : '✅ Customer added!',
+                ),
+                backgroundColor: const Color(0xFF10B981),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          } catch (e) {
+            if (ctx.mounted) {
+              setDialogState(() => isSaving = false);
+            }
+            if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    wasBorrowRequest
-                        ? '✅ Customer added. Borrow NOT recorded yet — tap “Record Borrow” to continue.'
-                        : '✅ Customer added!',
-                  ),
-                  backgroundColor: const Color(0xFF10B981),
-                  duration: const Duration(seconds: 4),
+                  content: Text('❌ Could not add customer: $e'),
+                  backgroundColor: const Color(0xFFEF4444),
+                  behavior: SnackBarBehavior.floating,
                 ),
               );
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+            }
+          }
+        }
+
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            final fieldEnabled = !isSaving;
+
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'New Customer',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF4F46E5),
+                      ),
+                    ),
+                  ),
+                  if (isSaving)
+                    const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2.4),
+                    ),
+                ],
+              ),
+              content: Stack(
+                children: [
+                  AbsorbPointer(
+                    absorbing: isSaving,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: nameC,
+                            enabled: fieldEnabled,
+                            decoration: InputDecoration(
+                              labelText: 'Name *',
+                              prefixIcon: const Icon(
+                                Icons.person,
+                                color: Color(0xFF4F46E5),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: phoneC,
+                            enabled: fieldEnabled,
+                            keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                              labelText: 'Phone *',
+                              prefixIcon: const Icon(
+                                Icons.phone,
+                                color: Color(0xFF4F46E5),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: addressC,
+                            enabled: fieldEnabled,
+                            maxLines: 2,
+                            decoration: InputDecoration(
+                              labelText: 'Address',
+                              prefixIcon: const Icon(
+                                Icons.location_on,
+                                color: Color(0xFF4F46E5),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (isSaving)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.72),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF4F46E5)
+                                      .withValues(alpha: 0.10),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(14),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    color: Color(0xFF4F46E5),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Adding customer…',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF374151),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSaving ? null : () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4F46E5),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(108, 46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: isSaving
+                      ? null
+                      : () => saveCustomer(setDialogState),
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 21,
+                          height: 21,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Add',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
