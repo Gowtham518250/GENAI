@@ -107,10 +107,10 @@ class ProductionVoiceBillingService {
     ).trim();
 
     final parserCatalog = catalogService.toParserFormat();
-    final parsed = parseMultilingualVoiceInput(
+    final parsed = VoiceNlpEngineV2.parse(
       normalized,
+      localeCode,
       catalog: parserCatalog,
-      sttLocaleHint: localeCode,
     );
 
     if (parsed.isEmpty) {
