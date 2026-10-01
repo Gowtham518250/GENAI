@@ -419,10 +419,16 @@ class _AttendancePageState extends State<AttendancePage>
   }
 
   double _hoursForSession(Map r) {
+    // Expanded morning/afternoon rows represent one session. Prefer the
+    // session's own hours before falling back to the daily aggregate.
+    final sessionHours = r['working_hours'];
+    if ((r['session_index'] != null || r['session_key'] != null) && sessionHours is num) {
+      return sessionHours.toDouble();
+    }
+
     final total = r['total_working_hours'];
     if (total is num) return total.toDouble();
 
-    final sessionHours = r['working_hours'];
     if (sessionHours is num) return sessionHours.toDouble();
 
     final sessions = r['sessions'];
