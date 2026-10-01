@@ -989,14 +989,14 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
 
     if (!_hasInitializedStt) {
       final available = await _speech.initialize(
-        onStatus: (status) async {
+        onStatus: (status) {
           if (status == 'done' || status == 'notListening') {
             if (!mounted) return;
 
             if (!_finalResultHandled && _transcript.trim().isNotEmpty && !_isProcessing) {
               final textToProcess = _transcript.trim();
               _finalResultHandled = true;
-              await _doProcess(textToProcess, commit: true);
+              _doProcess(textToProcess, commit: true);
             }
 
             if (mounted) {
@@ -1092,6 +1092,16 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
 
     if (mounted) {
       setState(() => _isProcessing = true);
+    }
+
+    await (_catalogLoadFuture ?? Future<void>.value());
+
+    if (!_catalogReady) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+      _showSnack('Product catalog could not be loaded. Please retry.', isError: true);
+      return;
     }
 
     try {
@@ -1220,12 +1230,13 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
 
   /// Final billing safety gate.
   ///
-  /// The NLP parser remains permissive for preview, but an item must pass
-  /// deterministic checks before it is allowed into the actual bill:
-  /// - positive quantity and price
-  /// - minimum confidence
-  /// - strong catalog match OR very high parser confidence
-  /// - canonicalize the product name when the catalog has a match
+  /// The NLP parser remains permissive for preview. Before anything reaches
+  /// the actual bill we require:
+  /// - positive quantity
+  /// - either explicit cashier confirmation, a catalog match, or solid confidence
+  /// - canonicalization through the store catalog whenever available
+  /// Price may remain blank when the catalog has no price so the normal bill
+  /// editor can request it explicitly before the sale is saved.
   List<ParsedItem> _finalizeBillingItems(List<ParsedItem> candidates) {
     final safe = <ParsedItem>[];
     var rejectedCount = 0;
