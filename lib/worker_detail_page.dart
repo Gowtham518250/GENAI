@@ -8,6 +8,7 @@ import 'secure_token_storage.dart';
 import 'models.dart';
 import 'payment_history_storage.dart';
 import 'worker_attendance_detail_page.dart';
+import 'worker_pin_reset_page.dart';
 
 /// Full profile page for a single worker: editable details, salary &
 /// payment history, and a shortcut into their attendance record.
@@ -240,18 +241,50 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
               ]),
             ),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => WorkerAttendanceDetailPage(worker: _asWorkerModel())),
-              ),
-              icon: const Icon(Icons.calendar_month),
-              label: const Text('View Attendance & Payroll'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primary, foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => WorkerAttendanceDetailPage(worker: _asWorkerModel()),
+                      ),
+                    ),
+                    icon: const Icon(Icons.calendar_month),
+                    label: const Text('Attendance & Payroll'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primary,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => WorkerPinResetPage(worker: _asWorkerModel()),
+                      ),
+                    ),
+                    icon: const Icon(Icons.lock_reset_rounded),
+                    label: const Text('Reset PIN'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _primary,
+                      minimumSize: const Size(double.infinity, 48),
+                      side: BorderSide(color: _primary.withValues(alpha: 0.35)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [

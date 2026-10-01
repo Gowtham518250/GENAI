@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
-import 'nearby_shops_page.dart';
+import 'customer_marketplace_page.dart';
 
 class CustomerLoginPage extends StatefulWidget {
   const CustomerLoginPage({super.key});
@@ -56,13 +56,14 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           }
           await prefs.setString('user_id', data['customer_id'].toString());
           await prefs.setString('user_type', 'CUSTOMER');
+          await prefs.setString('user_role', 'CUSTOMER');
           await prefs.setString('user_name', data['name'] ?? data['user_name'] ?? '');
           await prefs.setString('user_email', _emailController.text.trim());
           
           if (mounted) {
             Navigator.pushReplacement(
               context, 
-              MaterialPageRoute(builder: (_) => const NearbyShopsPage())
+              MaterialPageRoute(builder: (_) => const CustomerMarketplacePage())
             );
           }
         } else {

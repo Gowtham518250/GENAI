@@ -11,56 +11,34 @@ import 'services/order_history_service.dart';
 
 /// Loads products for a customer's selected online shop.
 class CustomerShopService {
-  /// Fetch in-stock products with price > 0.
+  /// Fetch products through the canonical marketplace API.
+  /// This keeps customer visibility aligned with the backend's
+  /// is_online_store_enabled guard and avoids exposing disabled shops through
+  /// the legacy Firestore fallback.
   static Future<List<Map<String, dynamic>>> fetchProducts(String shopId) async {
     if (shopId.isEmpty) return [];
 
-    List<Map<String, dynamic>> products = [];
-
     try {
       final res = await ApiClient.getJson(
-        '/api/inventory/products?shop_id=$shopId',
+        '/store/shops/$shopId/products?limit=200',
       ).timeout(const Duration(seconds: 12));
 
-      if (res.statusCode == 200) {
-        final body = json.decode(res.body);
-        final List raw = body is List ? body : (body['products'] as List? ?? []);
-        if (raw.isNotEmpty) {
-          products = raw.map((p) => _normalizeProduct(p as Map)).toList();
-        }
+      if (res.statusCode != 200) {
+        return [];
       }
+
+      final body = json.decode(res.body);
+      final raw = body is Map && body['products'] is List ? body['products'] as List : <dynamic>[];
+      final products = raw
+          .whereType<Map>()
+          .map((p) => _normalizeProduct(Map<String, dynamic>.from(p)))
+          .toList();
+
+      return _filterInStock(products);
     } catch (e) {
-      if (kDebugMode) debugPrint('CustomerShopService API: $e');
+      if (kDebugMode) debugPrint('CustomerShopService marketplace API: $e');
+      return [];
     }
-
-    if (products.isEmpty) {
-      try {
-        final snap = await FirebaseFirestore.instance
-            .collection('shops')
-            .doc(shopId)
-            .collection('products')
-            .where('available', isEqualTo: true)
-            .get();
-
-        if (snap.docs.isNotEmpty) {
-          products = snap.docs.map((d) {
-            final data = d.data();
-            return _normalizeProduct({
-              'id': d.id,
-              'product_name': data['name'] ?? data['product_name'],
-              'price': data['price'],
-              'stock': data['stock'] ?? data['quantity'],
-              'image_url': data['image_url'],
-              'category': data['category'],
-            });
-          }).toList();
-        }
-      } catch (e) {
-        if (kDebugMode) debugPrint('CustomerShopService Firestore: $e');
-      }
-    }
-
-    return _filterInStock(products);
   }
 
   static List<Map<String, dynamic>> _filterInStock(List<Map<String, dynamic>> list) {
@@ -74,11 +52,19 @@ class CustomerShopService {
   static Future<String> fetchShopName(String shopId) async {
     if (shopId.isEmpty) return 'Shop';
     try {
-      final doc = await FirebaseFirestore.instance.collection('shops').doc(shopId).get();
-      if (doc.exists) {
-        return doc.data()?['shop_name']?.toString() ?? 'Shop';
+      final res = await ApiClient.getJson(
+        '/store/shops/$shopId/products?limit=1',
+      ).timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        final body = json.decode(res.body);
+        if (body is Map) {
+          final name = body['shop_name']?.toString().trim();
+          if (name != null && name.isNotEmpty) return name;
+        }
       }
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('CustomerShopService shop profile: $e');
+    }
     return 'Shop';
   }
 
