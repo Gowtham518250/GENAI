@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'models.dart';
 import 'otp_service.dart';
 import 'secure_token_storage.dart';
@@ -29,6 +30,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
   Timer? _timer;
   String? _error;
   String? _ownerEmail;
+  bool _ownerEmailLoading = true;
 
   @override
   void initState() {
@@ -37,9 +39,34 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
   }
 
   Future<void> _loadOwnerEmail() async {
-    final email = await SecureTokenStorage.getUserEmail();
+    String? email;
+    try {
+      email = await SecureTokenStorage.getUserEmail();
+
+      // Some existing sessions have a valid token but no encrypted profile
+      // snapshot. Fall back to the authenticated session/profile preferences
+      // before asking the owner to sign in again.
+      if (email == null || email.trim().isEmpty) {
+        final user = await SecureTokenStorage.getUser();
+        email = user?['email']?.toString().trim();
+      }
+
+      if (email == null || email.trim().isEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        email = (prefs.getString('user_email') ??
+                prefs.getString('email') ??
+                prefs.getString('owner_email'))
+            ?.trim();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Worker PIN reset: owner email lookup failed: $e');
+    }
+
     if (!mounted) return;
-    setState(() => _ownerEmail = email);
+    setState(() {
+      _ownerEmail = (email == null || email.isEmpty) ? null : email;
+      _ownerEmailLoading = false;
+    });
   }
 
   @override
@@ -200,7 +227,11 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        _ownerEmail == null ? 'Loading owner account…' : 'Owner account: $_ownerEmail',
+                        _ownerEmailLoading
+                            ? 'Loading owner account…'
+                            : (_ownerEmail == null
+                                ? 'Owner account email is unavailable'
+                                : 'Owner account: $_ownerEmail'),
                         style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -212,7 +243,9 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton.icon(
-                  onPressed: _loading || _otpSent ? null : _sendOtp,
+                  onPressed: _loading || _otpSent || _ownerEmailLoading || _ownerEmail == null
+                      ? null
+                      : _sendOtp,
                   icon: const Icon(Icons.mark_email_read_outlined, size: 19),
                   label: Text(
                     _loading && !_otpSent ? 'Sending OTP…' : 'Send verification OTP',
@@ -358,7 +391,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
               children: [
                 Text(worker.name, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700)),
                 Text(
-                  '\${worker.position} • Attendance access',
+                  '${worker.position} • Attendance access',
                   style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
                 ),
               ],
