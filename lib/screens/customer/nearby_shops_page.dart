@@ -133,53 +133,16 @@ class _NearbyShopsPageState extends State<NearbyShopsPage> {
       // Log the actual error for debugging
       debugPrint('Nearby shops error: $e');
       
-      // Fallback: Load demo shops if API fails, to avoid always showing error
+      // Marketplace visibility is backend-controlled. Never show synthetic
+      // shops after a network error because that could make a non-enabled shop
+      // appear orderable.
       if (mounted) {
-        await Future.delayed(const Duration(seconds: 1));
-        if (_realShops.isEmpty) {
-          _loadDemoShops();
-        }
+        setState(() {
+          _realShops = [];
+          _isLoading = false;
+        });
       }
     }
-  }
-
-  void _loadDemoShops() {
-    setState(() {
-      _errorMessage = ''; // Clear error when showing demo shops
-      _realShops = [
-        {
-          'id': '1',
-          'name': 'Fresh Mart',
-          'distance': '0.5 km',
-          'rating': '4.5',
-          'tags': ['Groceries', 'Online'],
-          'address': '123 Main Street',
-          'phone': '+91-9876543210',
-          'is_online': true,
-        },
-        {
-          'id': '2', 
-          'name': 'Super Store',
-          'distance': '1.2 km',
-          'rating': '4.2',
-          'tags': ['Electronics', 'Household'],
-          'address': '456 Market Road',
-          'phone': '+91-9876543211',
-          'is_online': true,
-        },
-        {
-          'id': '3',
-          'name': 'Local Kirana',
-          'distance': '0.8 km',
-          'rating': '4.8',
-          'tags': ['Groceries', 'Vegetables'],
-          'address': '789 Colony Lane',
-          'phone': '+91-9876543212',
-          'is_online': true,
-        },
-      ];
-      _isLoading = false;
-    });
   }
 
   @override
