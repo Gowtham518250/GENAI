@@ -10,14 +10,14 @@ class CustomerCartPage extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
   final String shopId;
   final String shopName;
-  final double onlineSetupFee;
+  final double widget.onlineSetupFee;
 
   const CustomerCartPage({
     super.key,
     required this.cartItems,
     this.shopId = '',
     this.shopName = 'Shop',
-    this.onlineSetupFee = 0,
+    this.widget.onlineSetupFee = 0,
   });
 
   @override
@@ -52,7 +52,7 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
     return _items.fold(0.0, (sum, item) => sum + (item['price'] as num) * (item['qty'] as num));
   }
 
-  double get _totalAmount => _itemsSubtotal + onlineSetupFee;
+  double get _totalAmount => _itemsSubtotal + widget.onlineSetupFee;
 
   String get _upiPayUri {
     final upi = _shopUpi ?? '';
@@ -176,13 +176,13 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
                         );
                       }),
                       const SizedBox(height: 8),
-                      if (onlineSetupFee > 0) ...[
+                      if (widget.onlineSetupFee > 0) ...[
                         const SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text('Online setup / service', style: TextStyle(color: Colors.white70)),
-                            Text('₹${onlineSetupFee.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            Text('₹${widget.onlineSetupFee.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         const SizedBox(height: 4),
