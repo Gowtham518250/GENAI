@@ -222,8 +222,13 @@ class OfflineAttendanceService {
         expanded.add({
           ...server,
           ...session,
-          'session_index':index,
-          'local_pending':false,
+          'session_index': index,
+          'session_key': key == 'evening' ? 'afternoon' : key,
+          'local_pending': false,
+          // The UI/payroll should treat each expanded session as its own row,
+          // not repeat the whole-day aggregate on every session card.
+          if (session['working_hours'] is num)
+            'total_working_hours': (session['working_hours'] as num).toDouble(),
         });
       }
       if(expanded.isNotEmpty)return expanded;
