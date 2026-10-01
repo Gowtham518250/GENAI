@@ -49,6 +49,24 @@ class CustomerShopService {
     }).toList();
   }
 
+  static Future<double> fetchOnlineSetupFee(String shopId) async {
+    if (shopId.isEmpty) return 0.0;
+    try {
+      final res = await ApiClient.getJson(
+        '/store/shops/$shopId/products?limit=1',
+      ).timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        final body = json.decode(res.body);
+        if (body is Map) {
+          return double.tryParse(body['online_setup_fee']?.toString() ?? '0') ?? 0.0;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('CustomerShopService setup fee: $e');
+    }
+    return 0.0;
+  }
+
   static Future<String> fetchShopName(String shopId) async {
     if (shopId.isEmpty) return 'Shop';
     try {
