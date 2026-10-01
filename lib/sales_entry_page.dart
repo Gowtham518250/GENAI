@@ -252,7 +252,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             ListTile(
               leading: const Icon(Icons.graphic_eq_rounded, color: Color(0xFF10B981)),
               title: Text('Speak full bill', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-              subtitle: Text('Multiple items in one go (uses mic overlay)', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+              subtitle: Text('Speak the full bill, review items, then confirm', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
               onTap: () {
                 Navigator.pop(ctx);
                 _startListening();
@@ -601,41 +601,13 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     setState(() => _isListening = false);
   }
 
-  void _startListening() async {
-    bool available = await _speechToText.initialize(
-      onStatus: (status) {
-        if (status == 'done' || status == 'notListening') {
-          setState(() => _isListening = false);
-        }
-      },
-      onError: (error) {
-        setState(() => _isListening = false);
-        if (kDebugMode) debugPrint('Voice Error: $error');
-      },
-    );
-
-    if (available) {
-      // Clear previous voice text when starting a new listening session
-      setState(() {
-        _lastWords = '';
-        _voiceConfidence = 1.0;
-        _isListening = true;
-      });
-      _speechToText.listen(
-        onResult: _onSpeechResult,
-        listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 3),
-        cancelOnError: true,
-        partialResults: true,
-        localeId: _speechInputLang,
-      );
-    } else {
-       ScaffoldMessenger.of(context).showSnackBar(
-         const SnackBar(content: Text('⚠️ Voice Recognition Unavailable')),
-       );
-    }
+  /// Full-bill voice input uses the same production assistant as the guided mic flow.
+  /// Keeping one parser prevents quantity/price behavior from diverging between
+  /// the two voice-entry paths.
+  void _startListening() {
+    if (!mounted) return;
+    setState(() => _isVoiceAssistantOpen = true);
   }
-
   void _onSpeechResult(SpeechRecognitionResult result) {
     if (mounted) {
       setState(() {
@@ -4293,6 +4265,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               VoiceBillingAssistant(
                 onOrderParsed: _onVoiceOrderParsed,
                 knownProducts: _knownProducts,
+                initialLocale: _speechInputLang == 'en-US' ? 'en-IN' : _speechInputLang,
                 autoStart: true,
               ),
             ],
