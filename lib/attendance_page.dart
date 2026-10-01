@@ -35,13 +35,10 @@ class _AttendancePageState extends State<AttendancePage>
 
   final DateFormat _df = DateFormat('yyyy-MM-dd');
   bool _loading = true;
-  bool _marking = false;
   List<dynamic> _records = [];
   Map<String, dynamic>? _todaySummary;
   int? _userId;
   late TabController _tab;
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
   Timer? _timer;
   Timer? _refreshTimer;
   bool _refreshInFlight = false;
@@ -57,13 +54,6 @@ class _AttendancePageState extends State<AttendancePage>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _tab = TabController(length: 3, vsync: this);
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
     _init();
     _startTimer();
     _startRefreshTimer();
@@ -72,7 +62,6 @@ class _AttendancePageState extends State<AttendancePage>
   @override
   void dispose() {
     _tab.dispose();
-    _pulseController.dispose();
     _timer?.cancel();
     _refreshTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
@@ -479,52 +468,6 @@ class _AttendancePageState extends State<AttendancePage>
     return totalHours;
   }
 
-  Future<void> _checkInOut() async {
-    if (_userId == null) {
-      _showSnack('⚠️ User ID not found. Please login again.', _absent);
-      return;
-    }
-    setState(() => _marking = true);
-
-    try {
-      // _mySession is refreshed straight from OfflineAttendanceService after
-      // every fetch/check-in/check-out, so it's always the current truth —
-      // no risk of reading a stale collapsed record from `_records`.
-      if (_mySession == null) {
-        await OfflineAttendanceService.checkIn(employeeId: _userId!);
-        try {
-          await SyncService.processQueueSafe();
-        } catch (syncError) {
-          if (kDebugMode) {
-            debugPrint('⚠️ Immediate self attendance check-in sync deferred: $syncError');
-          }
-        }
-        final sessions = await OfflineAttendanceService.todaySessions(employeeId: _userId!);
-        _showSnack('✅ Session ${sessions.length} started — checked in', _present);
-      } else {
-        final sessionNo = _sessionIndex(_mySession!) + 1;
-        await OfflineAttendanceService.checkOut(employeeId: _userId!);
-        try {
-          await SyncService.processQueueSafe();
-        } catch (syncError) {
-          if (kDebugMode) {
-            debugPrint('⚠️ Immediate self attendance check-out sync deferred: $syncError');
-          }
-        }
-        _showSnack(
-          '👋 Session $sessionNo ended — checked out. Start another session anytime.',
-          _primary,
-        );
-      }
-
-      await _fetch();
-    } catch (e) {
-      _showSnack('❌ Attendance could not be saved safely: $e', _absent);
-    } finally {
-      if (mounted) setState(() => _marking = false);
-    }
-  }
-
   void _showSnack(String msg, Color color) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -583,22 +526,6 @@ class _AttendancePageState extends State<AttendancePage>
           _historyTab(),
           _payrollTab(),
         ],
-      ),
-      floatingActionButton: ScaleTransition(
-        scale: _pulseAnimation,
-        child: FloatingActionButton.extended(
-          onPressed: _marking ? null : _checkInOut,
-          backgroundColor: btnColor,
-          foregroundColor: Colors.white,
-          elevation: 4,
-          icon: _marking
-              ? const SizedBox(width: 20, height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white))
-              : Icon(btnIcon),
-          label: Text(btnLabel,
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        ),
       ),
     );
   }
