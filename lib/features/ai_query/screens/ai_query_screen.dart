@@ -34,7 +34,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   bool _isLoading = false;
   AIQueryResponse? _currentResponse;
   String? _errorMessage;
-  List<String> _queryHistory = [];
+  List<AIQueryHistoryItem> _queryHistory = [];
 
   @override
   void initState() {
@@ -57,10 +57,31 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   }
 
   Future<void> _loadHistory() async {
-    final history = await AiQueryService.getQueryHistory();
-    if (mounted) {
+    try {
+      final history = await AiQueryService.fetchQueryHistory(limit: 200);
+      if (mounted) {
+        setState(() {
+          _queryHistory = history;
+        });
+      }
+    } catch (_) {
+      // Keep a local fallback for an offline session.
+      final local = await AiQueryService.getQueryHistory();
+      if (!mounted) return;
       setState(() {
-        _queryHistory = history;
+        _queryHistory = local
+            .asMap()
+            .entries
+            .map(
+              (entry) => AIQueryHistoryItem(
+                id: -(entry.key + 1),
+                question: entry.value,
+                answer: 'Saved locally. Reconnect to load the complete answer history.',
+                resultCount: 0,
+                createdAt: DateTime.now(),
+              ),
+            )
+            .toList();
       });
     }
   }
@@ -121,19 +142,29 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     _executeQuery(query);
   }
 
-  void _handleHistoryTap(String query) {
-    _queryController.text = query;
-    _executeQuery(query);
+  void _handleHistoryTap(AIQueryHistoryItem item) {
+    _queryController.text = item.question;
+    _executeQuery(item.question);
   }
 
-  Future<void> _handleRemoveHistoryItem(String query) async {
-    await AiQueryService.removeHistoryItem(query);
-    _loadHistory();
+  Future<void> _handleRemoveHistoryItem(int historyId) async {
+    if (historyId > 0) {
+      try {
+        await AiQueryService.deleteQueryHistory(historyId);
+      } catch (_) {
+        return;
+      }
+    }
+    await _loadHistory();
   }
 
   Future<void> _handleClearHistory() async {
-    await AiQueryService.clearQueryHistory();
-    _loadHistory();
+    try {
+      await AiQueryService.clearRemoteQueryHistory();
+    } catch (_) {
+      await AiQueryService.clearQueryHistory();
+    }
+    await _loadHistory();
   }
 
   @override
@@ -241,7 +272,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                           ],
                         ],
 
-                        // 7. LOCAL QUERY HISTORY
+                        // 7. PERSISTENT QUERY HISTORY
                         if (_queryHistory.isNotEmpty && !_isLoading) ...[
                           const SizedBox(height: 8),
                           QueryHistoryView(
