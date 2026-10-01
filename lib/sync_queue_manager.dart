@@ -325,10 +325,36 @@ class SyncQueueManager {
             if (rawData is! Map) continue;
 
             if (_businessIdentifier(rawData) == identifier) {
-              // Existing record is already durable. Treat a repeated enqueue
-              // as an idempotent success so UI retries do not report a
-              // persistence failure for an operation that is already safely
-              // stored in the outbox.
+              // Existing attendance operations can be left in RETRY_WAIT after a
+              // transient failure. A new user tap must wake that same durable
+              // operation immediately instead of falsely succeeding locally
+              // while waiting for the old retry timer.
+              if (action == 'attendance_check_in' ||
+                  action == 'attendance_check_out') {
+                final existing = Map<String, dynamic>.from(raw);
+                final existingStatus = existing['status']?.toString() ?? '';
+                if (existingStatus != 'SYNCING') {
+                  final retryNow = DateTime.now().toUtc().toIso8601String();
+                  existing['status'] = 'PENDING';
+                  existing['next_attempt_at'] = retryNow;
+                  existing['last_error'] = null;
+                  existing['needs_attention'] = false;
+                  existing['updated_at'] = retryNow;
+                  await box.put(
+                    existing['action_id'],
+                    existing,
+                  );
+                  if (kDebugMode) {
+                    debugPrint(
+                      '🔁 [SyncQueue] Reactivated attendance operation: '
+                      '$action/$identifier',
+                    );
+                  }
+                }
+                return true;
+              }
+
+              // Other operations retain their original idempotent behaviour.
               if (kDebugMode) {
                 debugPrint(
                   '✅ [SyncQueue] Existing durable operation reused: $action/$identifier',
