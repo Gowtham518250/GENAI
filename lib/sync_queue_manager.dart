@@ -454,6 +454,41 @@ class SyncQueueManager {
     });
   }
 
+  /// Remove queued operations matching an action + business identifier.
+  /// Used after an online write succeeds so the durable outbox cannot replay
+  /// the same attendance operation.
+  static Future<int> removeByBusinessIdentifier(
+    String action,
+    Map<String, dynamic> data,
+  ) async {
+    return _queueLock.synchronized(() async {
+      try {
+        final box = await _getBoxUnlocked();
+        final identifier = _businessIdentifier(data);
+        if (identifier.isEmpty) return 0;
+
+        var removed = 0;
+        for (final key in box.keys.toList()) {
+          final raw = box.get(key);
+          if (raw is! Map) continue;
+          final rawMap = Map<String, dynamic>.from(raw);
+          if ((rawMap['action']?.toString() ?? '') != action) continue;
+          final rawData = rawMap['data'];
+          if (rawData is! Map) continue;
+          if (_businessIdentifier(rawData) != identifier) continue;
+          await box.delete(key);
+          removed++;
+        }
+        return removed;
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ [SyncQueue] Could not remove $action/$data: $e');
+        }
+        return 0;
+      }
+    });
+  }
+
   static Future<bool> containsAction(String actionId) async {
     return _queueLock.synchronized(() async {
       try {
