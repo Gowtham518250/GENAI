@@ -28,6 +28,7 @@ import 'google_drive_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'invoices_page.dart' hide Expanded;
 import 'gift_card_page.dart';
@@ -1773,12 +1774,13 @@ class _DashboardPageState extends State<DashboardPage>
                       fontSize: 14,
                     ),
                   ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4F46E5),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4F46E5),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
