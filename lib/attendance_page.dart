@@ -486,11 +486,25 @@ class _AttendancePageState extends State<AttendancePage>
       // no risk of reading a stale collapsed record from `_records`.
       if (_mySession == null) {
         await OfflineAttendanceService.checkIn(employeeId: _userId!);
+        try {
+          await SyncService.processQueueSafe();
+        } catch (syncError) {
+          if (kDebugMode) {
+            debugPrint('⚠️ Immediate self attendance check-in sync deferred: $syncError');
+          }
+        }
         final sessions = await OfflineAttendanceService.todaySessions(employeeId: _userId!);
         _showSnack('✅ Session ${sessions.length} started — checked in', _present);
       } else {
         final sessionNo = _sessionIndex(_mySession!) + 1;
         await OfflineAttendanceService.checkOut(employeeId: _userId!);
+        try {
+          await SyncService.processQueueSafe();
+        } catch (syncError) {
+          if (kDebugMode) {
+            debugPrint('⚠️ Immediate self attendance check-out sync deferred: $syncError');
+          }
+        }
         _showSnack(
           '👋 Session $sessionNo ended — checked out. Start another session anytime.',
           _primary,
@@ -1312,7 +1326,19 @@ class _AttendancePageState extends State<AttendancePage>
           employeeId: workerId,
           workerId: workerId,
         );
-        _showSnack('✅ ${worker.name} checked in — saved offline and queued', _present);
+
+        // Flush the durable attendance outbox immediately after check-in too.
+        // Previously only worker checkout triggered an immediate flush, so an
+        // online check-in could remain local until the background sync ran.
+        try {
+          await SyncService.processQueueSafe();
+        } catch (syncError) {
+          if (kDebugMode) {
+            debugPrint('⚠️ Immediate attendance check-in sync deferred: $syncError');
+          }
+        }
+
+        _showSnack('✅ ${worker.name} checked in — saved locally and queued for sync', _present);
       }
       await _fetch();
     } catch (e) {
