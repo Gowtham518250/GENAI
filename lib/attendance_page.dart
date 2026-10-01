@@ -1467,12 +1467,6 @@ class _AttendancePageState extends State<AttendancePage>
     );
     return result ?? false;
   }
-}).hasMatch(str)) {
-      return parsed;
-    }
-    return parsed.toLocal();
-  }
-
   bool _isLateCheckIn(Map r) {
     final cin = _parseServerTime(r['check_in_time']);
     if (cin == null) return false;
