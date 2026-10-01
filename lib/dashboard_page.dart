@@ -85,6 +85,7 @@ import 'user_data_clear_service.dart';
 import 'payment_event.dart';
 import 'notification_service.dart';
 import 'inventory_management_service.dart';
+import 'inventory_sync_service.dart';
 import 'retail_intelligence_page.dart';
 import 'retail_growth_kit.dart';
 import 'daily_health_score_service.dart';
@@ -148,6 +149,7 @@ class _DashboardPageState extends State<DashboardPage>
   late final AnimationController _onlineStorePulseController;
   late final Animation<double> _onlineStorePulse;
   Timer? _refreshTimer;
+  Timer? _onlineBusinessRefreshTimer;
 
   // sales + insight state
   static const List<String> _chartLabels = [
@@ -502,6 +504,15 @@ class _DashboardPageState extends State<DashboardPage>
     _refreshTimer = Timer.periodic(
       const Duration(minutes: 10),
       (_) => _loadSales(),
+    );
+
+    // Online orders are external writes (customer web -> backend), so they
+    // cannot depend on the cashier's local sync stream. Refresh business
+    // state every 30 seconds while the owner dashboard is open.
+    _onlineBusinessRefreshTimer?.cancel();
+    _onlineBusinessRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _refreshOnlineBusinessData(),
     );
     // FIX BUG 6 — listen for inventory changes and reload analytics
     InventoryManagementService.onInventoryChanged = () {
@@ -1201,6 +1212,9 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshOnlineBusinessData());
+    }
+    if (state == AppLifecycleState.resumed) {
       _loadSales();
       (() async {
         final prefs = await SharedPreferences.getInstance();
@@ -1451,6 +1465,60 @@ class _DashboardPageState extends State<DashboardPage>
     await Future<void>.delayed(const Duration(milliseconds: 200));
     if (!mounted) return;
     await _checkPermissions(showReminderIfMissing: false);
+  }
+
+  Future<void> _refreshOnlineBusinessData() async {
+    if (!mounted || !_isOnlineStoreActive) return;
+
+    try {
+      // External customer orders are written directly to the backend, so
+      // local invoice/sync events cannot be the only refresh trigger.
+      await _loadOnlineStoreStats();
+
+      // Customer checkout reserves stock on the backend. Refresh the local
+      // inventory cache so owner low-stock/product views reflect it.
+      final inventoryResult =
+          await InventorySyncService.refreshAllInventory();
+
+      // Accepted online orders create backend Sales + Invoice records.
+      // Merge those invoices into the dashboard's canonical local sales
+      // dataset so revenue/order charts update without reopening the page.
+      final invoicesChanged = await _fetchInvoicesFromBackend();
+
+      if (!mounted) return;
+
+      if (invoicesChanged) {
+        final refreshed = await LocalStorageService.loadSales();
+        if (!mounted) return;
+        setState(() {
+          sales = _flattenLocalSales(refreshed);
+          _cachedTodaySales = null;
+          _cachedTodayOrders = null;
+          _cachedTodayOnlineOrders = null;
+          _lastMetricsCacheDate = null;
+          _recalculateAnalytics();
+        });
+      }
+
+      if (inventoryResult['success'] == true) {
+        _dailyHealthScoreLoading = true;
+        _checkLowStock();
+        unawaited(_recomputeDailyHealthScore());
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '🔄 Online dashboard refresh: totalOnline=' +
+          _onlineTotalOrders.toString() +
+          ', invoicesChanged=' +
+          invoicesChanged.toString(),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Online dashboard refresh failed: $e');
+      }
+    }
   }
 
   Future<void> _loadOnlineStoreStatus() async {
@@ -2224,6 +2292,8 @@ class _DashboardPageState extends State<DashboardPage>
     // FIX BUG 11 — always cancel timer and null it to prevent ghost calls
     _refreshTimer?.cancel();
     _refreshTimer = null;
+    _onlineBusinessRefreshTimer?.cancel();
+    _onlineBusinessRefreshTimer = null;
     _connectivityCheckTimer?.cancel();
     _connectivityCheckTimer = null;
     // FIX BUG 6 cleanup — detach inventory observer
