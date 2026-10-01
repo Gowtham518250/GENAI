@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'api_client.dart';
 import 'role_selection_page.dart';
 import 'shop_browser_page.dart';
+import 'online_store_service.dart';
 
 class CustomerDashboardPage extends StatefulWidget {
   final String phone;
@@ -55,6 +56,103 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
       if (mounted) {
         setState(() => _loading = false);
       }
+    }
+  }
+
+  Future<void> _rateOrder(Map<String, dynamic> order) async {
+    final rawId = order['id'] ?? order['order_id'];
+    final orderId = int.tryParse(rawId.toString());
+    if (orderId == null) return;
+
+    int selected = 5;
+    final commentController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            title: const Text('Rate this shop'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Your rating helps other customers compare shops.',
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    final star = index + 1;
+                    return IconButton(
+                      onPressed: () => setDialogState(() => selected = star),
+                      icon: Icon(
+                        star <= selected
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
+                        color: Colors.amber,
+                        size: 32,
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: commentController,
+                  maxLength: 500,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Comment (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final apiResult = await OnlineStoreService.rateOrder(
+                    orderId: orderId,
+                    rating: selected,
+                    comment: commentController.text,
+                  );
+                  if (!mounted) return;
+                  if (apiResult['success'] == true) {
+                    Navigator.pop(dialogContext, true);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Thanks — your rating was recorded.'),
+                        backgroundColor: Color(0xFF059669),
+                      ),
+                    );
+                    _fetchOrders();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          apiResult['message']?.toString() ??
+                              'Unable to save the rating.',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Submit rating'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result == null) {
+      commentController.dispose();
+    } else {
+      commentController.dispose();
     }
   }
 
@@ -191,9 +289,39 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
                                       ],
                                     ),
                                   ),
-                                  Text('Rs ${tx['total_amount'] ?? tx['amount'] ?? 0}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.indigo)),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'Rs ${tx['total_amount'] ?? tx['amount'] ?? 0}',
+                                        style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                          color: Colors.indigo,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        (tx['status'] ?? tx['order_status'] ?? '').toString(),
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
+                              if ((tx['status'] ?? tx['order_status'] ?? '').toString().toUpperCase() == 'DELIVERED')
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton.icon(
+                                    onPressed: () => _rateOrder(Map<String, dynamic>.from(tx)),
+                                    icon: const Icon(Icons.star_outline_rounded, size: 17),
+                                    label: const Text('Rate shop'),
+                                  ),
+                                ),
                             );
                           }).toList(),
                         ),
