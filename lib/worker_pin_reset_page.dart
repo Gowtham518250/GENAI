@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models.dart';
+import 'api_client.dart';
 import 'otp_service.dart';
 import 'secure_token_storage.dart';
 
@@ -57,6 +59,26 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
                 prefs.getString('email') ??
                 prefs.getString('owner_email'))
             ?.trim();
+      }
+
+      // Last-resort authenticated profile lookup. This repairs older sessions
+      // where the profile email was never persisted locally.
+      if (email == null || email.trim().isEmpty) {
+        try {
+          final response = await ApiClient.getJson('/api/settings/profile')
+              .timeout(const Duration(seconds: 8));
+          if (response.statusCode == 200) {
+            final decoded = jsonDecode(response.body);
+            if (decoded is Map) {
+              final profile = decoded['profile'] is Map
+                  ? Map<String, dynamic>.from(decoded['profile'])
+                  : Map<String, dynamic>.from(decoded);
+              email = profile['email']?.toString().trim();
+            }
+          }
+        } catch (profileError) {
+          debugPrint('⚠️ Worker PIN reset: profile email lookup failed: $profileError');
+        }
       }
     } catch (e) {
       debugPrint('⚠️ Worker PIN reset: owner email lookup failed: $e');
