@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'models.dart';
 import 'otp_service.dart';
+import 'secure_token_storage.dart';
 
 class WorkerPinResetPage extends StatefulWidget {
   final Worker worker;
@@ -17,8 +18,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
   static const _primary = Color(0xFF6366F1);
   static const _bg = Color(0xFFF7F8FC);
 
-  final _emailController = TextEditingController();
-  final _otpController = TextEditingController();
+    final _otpController = TextEditingController();
   final _pinController = TextEditingController();
   final _confirmPinController = TextEditingController();
 
@@ -28,11 +28,23 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
   int _remaining = 0;
   Timer? _timer;
   String? _error;
+  String? _ownerEmail;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwnerEmail();
+  }
+
+  Future<void> _loadOwnerEmail() async {
+    final email = await SecureTokenStorage.getUserEmail();
+    if (!mounted) return;
+    setState(() => _ownerEmail = email);
+  }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _emailController.dispose();
     _otpController.dispose();
     _pinController.dispose();
     _confirmPinController.dispose();
@@ -54,9 +66,9 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
   }
 
   Future<void> _sendOtp() async {
-    final email = _emailController.text.trim();
-    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
-      setState(() => _error = 'Enter the owner email registered with this shop.');
+    final email = _ownerEmail;
+    if (email == null || email.isEmpty) {
+      setState(() => _error = 'Owner account email is unavailable. Please sign in again.');
       return;
     }
 
@@ -118,7 +130,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
     });
 
     final result = await OTPService.resetWorkerPin(
-      email: _emailController.text.trim(),
+      email: _ownerEmail ?? '',
       otp: otp,
       workerId: workerId,
       newPin: pin,
@@ -174,14 +186,25 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
                 style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600, height: 1.45),
               ),
               const SizedBox(height: 14),
-              TextField(
-                controller: _emailController,
-                enabled: !_loading && !_otpSent,
-                keyboardType: TextInputType.emailAddress,
-                decoration: _inputDecoration(
-                  'Owner email',
-                  Icons.email_outlined,
-                  'Enter registered owner email',
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(color: const Color(0xFFE1E4EC)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.verified_user_outlined, color: _primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _ownerEmail == null ? 'Loading owner account…' : 'Owner account: $_ownerEmail',
+                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
