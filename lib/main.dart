@@ -33,10 +33,8 @@ import 'features/ai_query/screens/ai_query_screen.dart';
 import 'visual_widgets.dart';
 import 'forgot_password_page.dart';
 import 'decent_login_page.dart';
-import 'screens/customer/customer_login_page.dart';
+import 'customer_login_page.dart';
 import 'screens/customer/nearby_shops_page.dart';
-import 'screens/customer/customer_marketplace_page.dart';
-import 'screens/customer/customer_ai_shopping_page.dart';
 import 'screens/customer/customer_home_page.dart';
 import 'screens/customer/cart_checkout_page.dart';
 import 'screens/customer/order_tracking_page.dart';
@@ -1534,10 +1532,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                         '/login': (context) => const DecentLoginPage(),
                         '/customer-login': (context) =>
                             const CustomerLoginPage(),
-                        '/customer-marketplace': (context) =>
-                            const CustomerMarketplacePage(),
-                        '/customer-ai-shopping': (context) =>
-                            const CustomerAiShoppingPage(),
                         '/nearby-shops': (context) => const NearbyShopsPage(),
                         '/customer-home': (context) => const CustomerHomePage(),
                         '/customer-cart': (context) {
