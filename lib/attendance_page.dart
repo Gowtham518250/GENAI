@@ -13,6 +13,7 @@ import 'models.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'worker_local_storage.dart';
 import 'worker_attendance_detail_page.dart';
+import 'worker_pin_reset_page.dart';
 import 'attendance_offline_service.dart';
 import 'sync_service.dart';
 
@@ -1016,32 +1017,57 @@ class _AttendancePageState extends State<AttendancePage>
                 ),
               ],
             ]),
-            trailing: SizedBox(
-              width: 100,
-              child: ElevatedButton(
-                onPressed: canChange
-                    ? () async {
-                        final verified = await _showVerifyPinDialog(worker);
-                        if (verified) {
-                          await _markWorkerAttendance(worker, isIn);
-                        }
-                      }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isIn ? _absent : (sessionCompleted ? Colors.grey.shade300 : _present),
-                  foregroundColor: isIn || !sessionCompleted ? Colors.white : Colors.grey.shade700,
-                  disabledBackgroundColor: Colors.grey.shade100,
-                  disabledForegroundColor: Colors.grey.shade500,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: const Size(80, 32),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  elevation: 0,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 92,
+                  child: ElevatedButton(
+                    onPressed: canChange
+                        ? () async {
+                            final verified = await _showVerifyPinDialog(worker);
+                            if (verified) {
+                              await _markWorkerAttendance(worker, isIn);
+                            }
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isIn ? _absent : (sessionCompleted ? Colors.grey.shade300 : _present),
+                      foregroundColor: isIn || !sessionCompleted ? Colors.white : Colors.grey.shade700,
+                      disabledBackgroundColor: Colors.grey.shade100,
+                      disabledForegroundColor: Colors.grey.shade500,
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      minimumSize: const Size(82, 32),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      isIn ? 'CHECK OUT' : (sessionCompleted ? 'DONE' : 'CHECK IN'),
+                      style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-                child: Text(
-                  isIn ? 'CHECK OUT' : (sessionCompleted ? 'DONE' : 'CHECK IN'),
-                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
+                const SizedBox(width: 2),
+                IconButton(
+                  tooltip: 'Reset attendance PIN',
+                  onPressed: () async {
+                    final changed = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => WorkerPinResetPage(worker: worker),
+                      ),
+                    );
+                    if (changed == true && mounted) {
+                      await _loadStaff();
+                      await _fetch();
+                    }
+                  },
+                  icon: const Icon(Icons.key_rounded, size: 20),
+                  color: _primary,
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
                 ),
-              ),
+              ],
             ),
           ),
           if (worker.salary > 0)
