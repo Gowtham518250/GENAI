@@ -50,11 +50,9 @@ class SyncService {
     try {
       // Listen for connectivity changes
       _connectivitySub?.cancel();
-      _connectivitySub = Connectivity().onConnectivityChanged.listen((dynamic result) {
-        final bool isOffline = result is List 
-            ? (result.isEmpty || (result.length == 1 && result.first == ConnectivityResult.none))
-            : result == ConnectivityResult.none;
-            
+      _connectivitySub = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+        final bool isOffline = result == ConnectivityResult.none;
+        
         if (!isOffline) {
           processQueueSafe();
           downloadUserDataSafe();
@@ -207,11 +205,7 @@ class SyncService {
   }) async {
     try {
       final connection = await Connectivity().checkConnectivity();
-      final offline = connection is List
-          ? (connection.isEmpty ||
-              (connection.length == 1 &&
-                  connection.first == ConnectivityResult.none))
-          : connection == ConnectivityResult.none;
+      final offline = connection == ConnectivityResult.none;
       if (offline) return false;
 
       final success = await checkOutWorker(workerId);
