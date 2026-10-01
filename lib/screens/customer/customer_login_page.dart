@@ -56,6 +56,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           }
           await prefs.setString('user_id', data['customer_id'].toString());
           await prefs.setString('user_type', 'CUSTOMER');
+          await prefs.setString('user_role', 'CUSTOMER');
           await prefs.setString('user_name', data['name'] ?? data['user_name'] ?? '');
           await prefs.setString('user_email', _emailController.text.trim());
           
