@@ -239,6 +239,58 @@ class SyncService {
     }
   }
 
+  /// Verify from the backend that a worker no longer has an open session.
+  /// Used after an immediate checkout attempt so the UI only reports server
+  /// success when the remote session is actually closed.
+  static Future<bool> verifyWorkerCheckedOut(String workerId) async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return false;
+
+      final today = DateTime.now().toIso8601String().split('T').first;
+      final response = await ApiClient.getJson(
+        '${ApiClient.attendancePrefix}/date/$today?employee_id=$workerId',
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode != 200) return false;
+      final decoded = jsonDecode(response.body);
+      final records = decoded is List
+          ? decoded
+          : (decoded is Map && decoded['records'] is List
+              ? decoded['records'] as List
+              : const []);
+
+      for (final raw in records) {
+        if (raw is! Map) continue;
+        final employee = raw['employee_id'] ?? raw['worker_id'];
+        if (employee?.toString() != workerId.toString()) continue;
+
+        final sessions = raw['sessions'];
+        if (sessions is Map && sessions.isNotEmpty) {
+          for (final value in sessions.values) {
+            if (value is Map &&
+                value['check_in_time'] != null &&
+                value['check_out_time'] == null) {
+              return false;
+            }
+          }
+        }
+
+        if (raw['check_in_time'] != null &&
+            raw['check_out_time'] == null) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ verifyWorkerCheckedOut failed: $e');
+      }
+      return false;
+    }
+  }
   /// Syncs an individual check-out event to the backend
   static Future<bool> checkOutWorker(String workerId) async {
     try {
