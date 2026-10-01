@@ -132,18 +132,6 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
     }
   }
 
-  String get _storeLink {
-    final slug = _storeNameController.text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '-');
-    return 'https://shop.retailmind.com/$slug';
-  }
-
-  void _copyLink() {
-    Clipboard.setData(ClipboardData(text: _storeLink));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Store link copied to clipboard!')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -195,28 +183,49 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
             const SizedBox(height: 24),
             
             if (_isStoreActive) ...[
-              // Store Link Share
-              Text('Your Store Link', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 8),
+              // Marketplace discovery replaces link-first ordering.
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFEEF2FF), Color(0xFFE0F2FE)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFC7D2FE)),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: Text(_storeLink, style: GoogleFonts.poppins(color: Colors.blue[900], fontWeight: FontWeight.w500))),
-                    IconButton(
-                      icon: const Icon(Icons.copy, color: Colors.blue),
-                      onPressed: _copyLink,
+                    Container(
+                      padding: const EdgeInsets.all(11),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.travel_explore_rounded, color: Color(0xFF4F46E5)),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.share, color: Colors.blue),
-                      onPressed: () {
-                        // TODO: Implement actual share
-                      },
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Marketplace discovery',
+                            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            'Customers no longer need a shared shop link. When Online Shopping is enabled, they can find your shop by name or find your products across the marketplace.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.black54,
+                              height: 1.45,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
