@@ -161,6 +161,45 @@ class OTPService {
     }
   }
 
+  static Future<Map<String, dynamic>> resetWorkerPin({
+    required String email,
+    required String otp,
+    required int workerId,
+    required String newPin,
+  }) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    try {
+      final response = await ApiClient.postJson(
+        '/auth/reset-worker-pin',
+        {
+          'email': normalizedEmail,
+          'otp': otp.trim(),
+          'worker_id': workerId,
+          'new_pin': newPin.trim(),
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        await clearResetState();
+        return {
+          'success': true,
+          'message': 'Worker attendance PIN reset successfully.',
+        };
+      }
+
+      return _errorFromResponse(
+        response,
+        'Unable to reset worker PIN.',
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Worker PIN reset failed: $e');
+      return {
+        'success': false,
+        'message': 'Unable to reset worker PIN. Please try again.',
+      };
+    }
+  }
+
   static Future<Map<String, dynamic>> sendOTPToEmail(
     String email, {
     String? title,
