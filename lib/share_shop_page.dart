@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'screens/owner/online_store_hub_page.dart';
 
-/// Kept for backwards compatibility with older navigation references.
+/// Backwards-compatible fallback for older navigation references.
 /// The product no longer uses link-first "Share Shop" ordering.
 class ShareShopPage extends StatelessWidget {
   const ShareShopPage({super.key});
@@ -125,10 +125,7 @@ class _ActionCard extends StatelessWidget {
                   color: const Color(0xFF4F46E5).withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(
-                  Icons.storefront_rounded,
-                  color: Color(0xFF4F46E5),
-                ),
+                child: Icon(icon, color: const Color(0xFF4F46E5)),
               ),
               const SizedBox(width: 14),
               Expanded(
