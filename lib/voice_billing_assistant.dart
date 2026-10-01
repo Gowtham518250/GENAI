@@ -27,6 +27,7 @@ import 'voice_feedback_learning_service.dart';
 import 'language_detection_visualizer.dart';
 import 'language_detector.dart';
 import 'product_catalog_service.dart';
+import 'production_voice_billing_service.dart';
 import 'stt_accuracy_config.dart';
 
 // ─── Language Config ──────────────────────────────────────────────────────────
@@ -218,7 +219,12 @@ class ParsedItem {
   final double qty;
   final String unit;
   final double price;
-  final double confidence; // 0.0 – 1.0
+  final double confidence;
+  final bool catalogMatched;
+  final String priceSource;
+  final String? barcode;
+  final double? gst;
+  final String? priceWarning;
   bool isConfirmed;
 
   ParsedItem({
@@ -227,8 +233,13 @@ class ParsedItem {
     required this.unit,
     required this.price,
     required this.confidence,
+    this.catalogMatched = false,
+    this.priceSource = 'missing',
+    this.barcode,
+    this.gst,
+    this.priceWarning,
     bool? isConfirmed,
-  }) : isConfirmed = isConfirmed ?? (confidence >= 0.6);
+  }) : isConfirmed = isConfirmed ?? (confidence >= 0.6 || catalogMatched);
 
   Map<String, dynamic> toMap() => {
     'name': name,
@@ -238,6 +249,14 @@ class ParsedItem {
     'unit': unit,
     'price': price,
     'total': qty * price,
+    'confidence': confidence,
+    'catalog_matched': catalogMatched,
+    'price_source': priceSource,
+    'price_missing': price <= 0,
+    if (barcode != null && barcode!.isNotEmpty) 'barcode': barcode,
+    if (gst != null) 'gst': gst,
+    if (priceWarning != null && priceWarning!.isNotEmpty)
+      'price_warning': priceWarning,
   };
 }
 
@@ -799,6 +818,7 @@ class VoiceBillingAssistant extends StatefulWidget {
   final List<Map<String, dynamic>>? knownProducts;
   final bool autoStart;
   final String? initialText;
+  final String? initialLocale;
 
   const VoiceBillingAssistant({
     super.key, 
@@ -806,6 +826,7 @@ class VoiceBillingAssistant extends StatefulWidget {
     this.knownProducts,
     this.autoStart = false,
     this.initialText,
+    this.initialLocale,
   });
 
   @override
@@ -840,30 +861,73 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
   final _editControllers = <int, Map<String, TextEditingController>>{};
   void _clearEditControllers() { for (final m in _editControllers.values) { m.values.forEach((c) => c.dispose()); } _editControllers.clear(); }
 
-  @override
   bool _hasInitializedStt = false;
+  bool _catalogReady = false;
+  bool _finalResultHandled = false;
+  Future<void>? _catalogLoadFuture;
+  List<String> _parseWarnings = [];
 
+  _LangConfig _languageForCode(String? code) {
+    if (code == null || code.trim().isEmpty) return _languages.first;
+    for (final lang in _languages) {
+      if (lang.code == code) return lang;
+    }
+    final prefix = code.split('-').first.toLowerCase();
+    for (final lang in _languages) {
+      if (lang.code.startsWith('${prefix}-')) return lang;
+    }
+    return _languages.first;
+  }
+
+  Future<void> _initializeCatalog() async {
+    try {
+      await _catalog.load(widget.knownProducts ?? const []);
+      _catalogReady = true;
+    } catch (e) {
+      _catalogReady = false;
+      if (kDebugMode) debugPrint('🎙️ [VoiceBilling] Catalog initialization failed: $e');
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
-    _catalog.load(widget.knownProducts ?? []);
-    if (widget.autoStart) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _toggleListening();
-      });
-    }
     _speech = stt.SpeechToText();
     _transcriptCtrl = TextEditingController();
+    _selectedLang = _languageForCode(widget.initialLocale);
 
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))
-      ..repeat(reverse: true);
-    _waveCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))
-      ..repeat();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+
+    _waveCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
 
     _pulseAnim = Tween<double>(begin: 1.0, end: 1.25).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
 
+    _catalogLoadFuture = _initializeCatalog();
+
+    if (widget.initialText != null && widget.initialText!.trim().isNotEmpty) {
+      _transcript = widget.initialText!.trim();
+      _transcriptCtrl.text = _transcript;
+    }
+
     _updateHint();
+
+    if (widget.autoStart) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await _catalogLoadFuture;
+        if (mounted) {
+          await _toggleListening();
+        }
+      });
+    }
   }
 
   @override
@@ -896,247 +960,301 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
   }
 
   Future<void> _toggleListening() async {
-    if (_isProcessing) return; // BUG-V1 lock
+    if (_isProcessing) return;
+
     if (_isListening) {
       _shouldRestartListening = false;
-      _speech.stop();
-      // When user manually stops: commit whatever we have parsed so far
-      _commitPendingItems();
-      setState(() => _isListening = false);
+      await _speech.stop();
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+
+      if (mounted && !_finalResultHandled && _transcript.trim().isNotEmpty) {
+        final textToProcess = _transcript.trim();
+        _finalResultHandled = true;
+        await _doProcess(textToProcess, commit: true);
+      }
+
+      if (mounted) {
+        setState(() => _isListening = false);
+      }
       return;
     }
-    _shouldRestartListening = true;
+
+    _shouldRestartListening = false;
+    await (_catalogLoadFuture ?? Future<void>.value());
+
+    if (!_catalogReady && mounted) {
+      _showSnack('Product catalog is still loading. Please try again.', isError: true);
+      return;
+    }
 
     if (!_hasInitializedStt) {
       final available = await _speech.initialize(
-        onStatus: (s) {
-          if (s == 'done' || s == 'notListening') {
-            // Delay commit slightly to let the final onResult arrive first
-            Future.delayed(const Duration(milliseconds: 300), () {
-              _commitPendingItems();
-              if (_shouldRestartListening && mounted) {
-                Future.delayed(const Duration(milliseconds: 100), () {
-                  // Bug #17: Guard auto-restart against _isProcessing race
-                  if (_shouldRestartListening && mounted && !_isProcessing) _toggleListening();
-                });
-              } else {
-                if (mounted) setState(() => _isListening = false);
-              }
-            });
+        onStatus: (status) {
+          if (status == 'done' || status == 'notListening') {
+            if (!mounted) return;
+
+            if (!_finalResultHandled && _transcript.trim().isNotEmpty && !_isProcessing) {
+              final textToProcess = _transcript.trim();
+              _finalResultHandled = true;
+              _doProcess(textToProcess, commit: true);
+            }
+
+            if (mounted) {
+              setState(() => _isListening = false);
+            }
           }
         },
-        onError: (e) {
-          if (mounted) {
-            setState(() { _isListening = false; });
-            _showSnack('STT Error: ', isError: true);
+        onError: (error) {
+          if (!mounted) return;
+          setState(() => _isListening = false);
+          _showSnack(
+            'Voice recognition error. Please try again.',
+            isError: true,
+          );
+          if (kDebugMode) {
+            debugPrint('🎙️ [VoiceBilling] STT error: $error');
           }
         },
       );
 
       if (!available) {
-        _showSnack('Microphone not available', isError: true);
+        _showSnack(
+          'Microphone or speech recognition is unavailable on this device.',
+          isError: true,
+        );
         return;
       }
+
       _hasInitializedStt = true;
     }
 
     setState(() {
       _isListening = true;
+      _finalResultHandled = false;
       _transcript = '';
       _lastFinalTranscript = '';
       _lastCommittedText = '';
-      _transcriptCtrl.text = '';
+      _transcriptCtrl.clear();
+      _parseWarnings = [];
       ParsedItems = List.from(_committedItems);
     });
 
     final cfg = getConfig(_selectedLang.code);
 
-    await _speech.listen(
-      localeId: cfg.localeId,
-      onResult: (r) {
-        final raw = r.recognizedWords;
-        final normalized = PhoneticNormalizer.normalize(raw, _selectedLang.code);
-        setState(() {
-          _transcript = normalized;
-          _transcriptCtrl.text = normalized;
-        });
-        // Save the last non-empty transcript for commit fallback
-        if (normalized.trim().isNotEmpty) {
-          _lastFinalTranscript = normalized;
-        }
-        // Debounce continuous parsing (preview only)
-        _doProcess(normalized, commit: false);
-      },
-      listenFor: cfg.listenFor,
-      pauseFor: cfg.pauseFor,
-      partialResults: true,
-      cancelOnError: false,
-      listenMode: cfg.listenMode,
-    );
-  }
+    try {
+      await _speech.listen(
+        localeId: cfg.localeId,
+        onResult: (result) {
+          if (!mounted) return;
 
-  /// Commit any pending parsed items — called on stop or STT 'done'
-  void _commitPendingItems() {
-    // Use whatever transcript we have: current or last saved
-    final textToCommit = _transcript.isNotEmpty ? _transcript : _lastFinalTranscript;
+          final raw = result.recognizedWords.trim();
+          final normalized = raw.isEmpty
+              ? ''
+              : PhoneticNormalizer.normalize(
+                  raw,
+                  _selectedLang.code,
+                );
 
-    if (textToCommit.isNotEmpty) {
-      if (_lastCommittedText == textToCommit.trim()) {
-        if (kDebugMode) debugPrint('📦 [STT] Already committed "$textToCommit" — skipping duplicate');
-        return;
-      }
-      _lastCommittedText = textToCommit.trim();
-      _doProcess(textToCommit, commit: true);
-      if (mounted) setState(() { _transcript = ''; _lastFinalTranscript = ''; _transcriptCtrl.text = ''; });
-    } else if (_lastPreviewItems.isNotEmpty) {
-      // Even if transcript is empty, we had preview items from partial results
-      // Commit them directly instead of losing them
-      for (final newItem in _lastPreviewItems) {
-        final existingIdx = _committedItems.indexWhere(
-          (c) => c.name.trim().toLowerCase() == newItem.name.trim().toLowerCase(),
-        );
-        if (existingIdx >= 0) {
-          final existing = _committedItems[existingIdx];
-          _committedItems[existingIdx] = ParsedItem(
-            name: existing.name,
-            qty: existing.qty + newItem.qty,
-            unit: newItem.unit.isNotEmpty ? newItem.unit : existing.unit,
-            price: newItem.price > 0 ? newItem.price : existing.price,
-            confidence: newItem.confidence,
-          );
-        } else {
-          _committedItems.add(newItem);
-        }
-      }
-      _clearEditControllers();
+          setState(() {
+            _transcript = normalized;
+            _transcriptCtrl.text = normalized;
+          });
+
+          if (normalized.isNotEmpty) {
+            _lastFinalTranscript = normalized;
+          }
+
+          if (result.finalResult && normalized.isNotEmpty && !_finalResultHandled) {
+            _finalResultHandled = true;
+            _doProcess(normalized, commit: true);
+          }
+        },
+        listenFor: cfg.listenFor,
+        pauseFor: cfg.pauseFor,
+        partialResults: true,
+        cancelOnError: true,
+        listenMode: cfg.listenMode,
+      );
+    } catch (e) {
       if (mounted) {
-        setState(() {
-          ParsedItems = List.from(_committedItems);
-          _lastPreviewItems = [];
-        });
-        if (_committedItems.isNotEmpty) {
-          _showSnack('Detected ${_committedItems.length} items so far!');
-        }
+        setState(() => _isListening = false);
+        _showSnack('Could not start the microphone. Please try again.', isError: true);
+      }
+      if (kDebugMode) {
+        debugPrint('🎙️ [VoiceBilling] listen failed: $e');
       }
     }
   }
 
   Future<void> _doProcess(String text, {bool commit = false}) async {
     if (text.trim().isEmpty) return;
-    // Allow commit calls even if processing (prevents lost items)
     if (_isProcessing && !commit) return;
-    setState(() => _isProcessing = true);
 
-    String clean = PhoneticNormalizer.normalize(text, _selectedLang.code);
+    if (mounted) {
+      setState(() => _isProcessing = true);
+    }
 
-    // Apply corrections the user has taught us before (only on commit —
-    // this reads from SharedPreferences, and commit-only preview calls fire
-    // on every partial STT result, so doing it there would add a disk read
-    // per keystroke-equivalent update).
-    if (commit) {
-      clean = await VoiceFeedbackLearningService.applyLearnedCorrections(
+    await (_catalogLoadFuture ?? Future<void>.value());
+
+    if (!_catalogReady) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+      _showSnack('Product catalog could not be loaded. Please retry.', isError: true);
+      return;
+    }
+
+    try {
+      var clean = PhoneticNormalizer.normalize(
+        text.trim(),
+        _selectedLang.code,
+      );
+
+      if (commit) {
+        clean = await VoiceFeedbackLearningService.applyLearnedCorrections(
+          transcript: clean,
+          languageCode: _selectedLang.code,
+        );
+      }
+
+      final result = await ProductionVoiceBillingService.parse(
         transcript: clean,
-        languageCode: _selectedLang.code,
+        localeCode: _selectedLang.code,
+        catalogService: _catalog,
+        knownProducts: widget.knownProducts ?? const [],
+      );
+
+      final items = result.lines
+          .map(
+            (line) => ParsedItem(
+              name: line.name,
+              qty: line.quantity,
+              unit: line.unit,
+              price: line.price,
+              confidence: line.confidence,
+              catalogMatched: line.catalogMatched,
+              priceSource: line.priceSource,
+              barcode: line.barcode,
+              gst: line.gst,
+              priceWarning: line.priceWarning,
+              isConfirmed: line.confidence >= 0.6 || line.catalogMatched,
+            ),
+          )
+          .toList();
+
+      _parseWarnings = result.warnings;
+      _lastPreviewItems = List<ParsedItem>.from(items);
+      _clearEditControllers();
+
+      if (commit) {
+        _committedItems = _mergeParsedItems(_committedItems, items);
+        ParsedItems = List<ParsedItem>.from(_committedItems);
+        _lastFinalTranscript = clean;
+        _transcript = '';
+        _transcriptCtrl.clear();
+
+        if (_committedItems.isEmpty) {
+          _showSnack(
+            result.warnings.isNotEmpty
+                ? result.warnings.first
+                : 'I could not understand that bill.',
+            isError: true,
+          );
+        } else {
+          _showSnack(
+            'Detected ${_committedItems.length} item${_committedItems.length == 1 ? '' : 's'}. Review before adding to the bill.',
+          );
+        }
+      } else {
+        ParsedItems = List<ParsedItem>.from(items);
+      }
+
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    } catch (e, stackTrace) {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _parseWarnings = ['Voice processing failed. Please retry.'];
+        });
+        _showSnack('Voice processing failed. Please retry.', isError: true);
+      }
+      if (kDebugMode) {
+        debugPrint('🎙️ [VoiceBilling] processing failed: $e');
+        debugPrint(stackTrace.toString());
+      }
+    }
+  }
+
+  List<ParsedItem> _mergeParsedItems(
+    List<ParsedItem> existingItems,
+    List<ParsedItem> incomingItems,
+  ) {
+    final merged = <ParsedItem>[...existingItems];
+
+    for (final item in incomingItems) {
+      final idx = merged.indexWhere(
+        (current) =>
+            current.name.trim().toLowerCase() == item.name.trim().toLowerCase() &&
+            current.unit.trim().toLowerCase() == item.unit.trim().toLowerCase() &&
+            ((current.price <= 0 || item.price <= 0) ||
+                (current.price - item.price).abs() < 0.01),
+      );
+
+      if (idx < 0) {
+        merged.add(item);
+        continue;
+      }
+
+      final current = merged[idx];
+      merged[idx] = ParsedItem(
+        name: current.name,
+        qty: current.qty + item.qty,
+        unit: current.unit.isNotEmpty ? current.unit : item.unit,
+        price: item.price > 0 ? item.price : current.price,
+        confidence: current.confidence > item.confidence
+            ? current.confidence
+            : item.confidence,
+        catalogMatched: current.catalogMatched || item.catalogMatched,
+        priceSource: item.price > 0 ? item.priceSource : current.priceSource,
+        barcode: current.barcode ?? item.barcode,
+        gst: current.gst ?? item.gst,
+        priceWarning: current.priceWarning ?? item.priceWarning,
+        isConfirmed: current.isConfirmed || item.isConfirmed,
       );
     }
 
-    final catalogProducts = _catalog.toParserFormat();
-
-    // Use the multilingual detector so mixed-language / Hinglish transcripts
-    // are parsed with the best matching language segment instead of forcing
-    // the entire utterance through one locale.
-    final v2Items = parseMultilingualVoiceInput(
-      clean,
-      catalog: catalogProducts,
-      sttLocaleHint: _selectedLang.code,
-    );
-
-    // Map to old ParsedItem structure
-    final items = v2Items.map((i) => ParsedItem(
-      name: i.name,
-      qty: i.qty,
-      unit: i.unit,
-      price: i.price,
-      confidence: i.confidenceScore,
-    )).toList();
-
-    if (commit) {
-      for (final item in items) {
-        _catalog.learnAlias(
-          spoken: clean,
-          canonicalName: item.name,
-          localeCode: _selectedLang.code,
-        );
-      }
-      // Fix Bug #7: Merge by product name instead of blind addAll to prevent duplicates
-      // on repeated commits of growing transcripts.
-      for (final newItem in items) {
-        final existingIdx = _committedItems.indexWhere(
-          (c) => c.name.trim().toLowerCase() == newItem.name.trim().toLowerCase(),
-        );
-        if (existingIdx >= 0) {
-          // Update quantity of existing entry instead of duplicating
-          final existing = _committedItems[existingIdx];
-          _committedItems[existingIdx] = ParsedItem(
-            name: existing.name,
-            qty: existing.qty + newItem.qty,
-            unit: newItem.unit.isNotEmpty ? newItem.unit : existing.unit,
-            price: newItem.price > 0 ? newItem.price : existing.price,
-            confidence: newItem.confidence,
-          );
-        } else {
-          _committedItems.add(newItem);
-        }
-      }
-      _lastPreviewItems = [];
-      _clearEditControllers();
-      setState(() {
-        ParsedItems = List.from(_committedItems);
-        _isProcessing = false;
-      });
-      if (_committedItems.isEmpty) {
-        _showSnack('Listening...', isError: false);
-      } else {
-        _showSnack('Detected ${_committedItems.length} items so far!');
-      }
-    } else {
-      _lastPreviewItems = items;
-      setState(() {
-        ParsedItems = [..._committedItems, ...items];
-        _isProcessing = false;
-      });
-    }
+    return merged;
   }
 
   /// Final billing safety gate.
   ///
-  /// The NLP parser remains permissive for preview, but an item must pass
-  /// deterministic checks before it is allowed into the actual bill:
-  /// - positive quantity and price
-  /// - minimum confidence
-  /// - strong catalog match OR very high parser confidence
-  /// - canonicalize the product name when the catalog has a match
+  /// The NLP parser remains permissive for preview. Before anything reaches
+  /// the actual bill we require:
+  /// - positive quantity
+  /// - either explicit cashier confirmation, a catalog match, or solid confidence
+  /// - canonicalization through the store catalog whenever available
+  /// Price may remain blank when the catalog has no price so the normal bill
+  /// editor can request it explicitly before the sale is saved.
   List<ParsedItem> _finalizeBillingItems(List<ParsedItem> candidates) {
     final safe = <ParsedItem>[];
     var rejectedCount = 0;
 
     for (final item in candidates) {
-      if (item.name.trim().isEmpty || item.qty <= 0 || item.price <= 0) {
+      if (item.name.trim().isEmpty || item.qty <= 0) {
         rejectedCount++;
         continue;
       }
 
       final catalogMatch = _catalog.findBest(
         item.name,
-        minScore: 0.72,
+        minScore: 0.62,
       );
+      final catalogConfirmed = catalogMatch != null || item.catalogMatched;
+      final confidenceConfirmed = item.confidence >= 0.55;
 
-      final catalogConfirmed = catalogMatch != null;
-      final confidenceConfirmed = item.confidence >= 0.72;
-
-      // A very high-confidence parse can still be a legitimate product that
-      // has not been loaded into the local catalog yet.
-      if (!item.isConfirmed || (!catalogConfirmed && !confidenceConfirmed)) {
+      if (!item.isConfirmed && !catalogConfirmed && !confidenceConfirmed) {
         rejectedCount++;
         continue;
       }
@@ -1148,6 +1266,11 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           unit: item.unit,
           price: item.price,
           confidence: item.confidence,
+          catalogMatched: catalogConfirmed,
+          priceSource: item.priceSource,
+          barcode: item.barcode,
+          gst: item.gst,
+          priceWarning: item.priceWarning,
           isConfirmed: true,
         ),
       );
@@ -1155,7 +1278,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
 
     if (rejectedCount > 0 && kDebugMode) {
       debugPrint(
-        '🎙️ [VOICE] Final billing gate rejected $rejectedCount low-confidence/invalid items',
+        '🎙️ [VOICE] Final billing gate rejected ${rejectedCount} low-confidence items',
       );
     }
 
@@ -1163,97 +1286,85 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
   }
 
   void _confirmOrder() {
-    // Apply any inline edits, and teach the feedback learning service about
-    // any name corrections the user made (so common mis-hearings get
-    // auto-corrected in future transcripts via applyLearnedCorrections()).
     for (int i = 0; i < ParsedItems.length; i++) {
       final m = _editControllers[i];
-      if (m != null) {
-        final newQty   = double.tryParse(m['qty']!.text) ?? ParsedItems[i].qty;
-        final newPrice = double.tryParse(m['price']!.text) ?? ParsedItems[i].price;
-        final editedName = m['name']!.text.trim();
-        final originalName = ParsedItems[i].name;
+      if (m == null) continue;
 
-        if (editedName.isNotEmpty && editedName.toLowerCase() != originalName.toLowerCase()) {
-          VoiceFeedbackLearningService.recordCorrection(
-            originalTranscript: originalName,
-            correctedItemName: editedName,
-            languageCode: _selectedLang.code,
-            originalConfidence: ParsedItems[i].confidence,
-          );
-        }
+      final newQty =
+          double.tryParse(m['qty']!.text.trim()) ?? ParsedItems[i].qty;
+      final newPrice =
+          double.tryParse(m['price']!.text.trim()) ?? ParsedItems[i].price;
+      final editedName = m['name']!.text.trim();
+      final originalName = ParsedItems[i].name;
 
-        ParsedItems[i] = ParsedItem(
-          name: editedName.isEmpty ? originalName : editedName,
-          qty: newQty,
-          unit: ParsedItems[i].unit,
-          price: newPrice,
-          confidence: ParsedItems[i].confidence,
-          // Manual edits are explicit merchant confirmation.
-          isConfirmed: editedName.isNotEmpty && newQty > 0 && newPrice > 0,
+      if (editedName.isNotEmpty &&
+          editedName.toLowerCase() != originalName.toLowerCase()) {
+        VoiceFeedbackLearningService.recordCorrection(
+          originalTranscript: originalName,
+          correctedItemName: editedName,
+          languageCode: _selectedLang.code,
+          originalConfidence: ParsedItems[i].confidence,
         );
       }
-    }
 
-    // Merge duplicates by product + price before sending them to the bill.
-    // This preserves quantities instead of "last occurrence wins".
-    final uniqueItems = <ParsedItem>[];
-    for (final item in ParsedItems) {
-      final existingIdx = uniqueItems.indexWhere(
-        (existing) =>
-            existing.name.trim().toLowerCase() == item.name.trim().toLowerCase() &&
-            (existing.price - item.price).abs() < 0.01,
+      ParsedItems[i] = ParsedItem(
+        name: editedName.isEmpty ? originalName : editedName,
+        qty: newQty,
+        unit: ParsedItems[i].unit,
+        price: newPrice,
+        confidence: ParsedItems[i].confidence,
+        catalogMatched: ParsedItems[i].catalogMatched,
+        priceSource: newPrice > 0 ? 'manual' : ParsedItems[i].priceSource,
+        barcode: ParsedItems[i].barcode,
+        gst: ParsedItems[i].gst,
+        priceWarning: ParsedItems[i].priceWarning,
+        isConfirmed: editedName.isNotEmpty && newQty > 0,
       );
-
-      if (existingIdx >= 0) {
-        final existing = uniqueItems[existingIdx];
-        uniqueItems[existingIdx] = ParsedItem(
-          name: existing.name,
-          qty: existing.qty + item.qty,
-          unit: item.unit.isNotEmpty ? item.unit : existing.unit,
-          price: item.price > 0 ? item.price : existing.price,
-          confidence: item.confidence > existing.confidence
-              ? item.confidence
-              : existing.confidence,
-          isConfirmed: existing.isConfirmed || item.isConfirmed,
-        );
-      } else {
-        uniqueItems.add(item);
-      }
     }
 
+    final uniqueItems = _mergeParsedItems(const [], ParsedItems);
     final confirmed = _finalizeBillingItems(uniqueItems);
+
     if (confirmed.isEmpty) {
-      _showSnack('No items selected', isError: true);
+      _showSnack(
+        _parseWarnings.isNotEmpty
+            ? _parseWarnings.first
+            : 'No valid items selected.',
+        isError: true,
+      );
       return;
     }
 
-    // Accuracy tracking: what fraction of parsed items did the user actually
-    // keep/confirm, at what average confidence. This is the only honest way
-    // to know real-world accuracy — it's measured from actual usage, not
-    // asserted. See VoiceFeedbackLearningService.getAccuracyMetrics() to
-    // surface this in a settings/debug screen.
-    final avgConfidence = uniqueItems.isEmpty
+    final avgConfidence = confirmed.isEmpty
         ? 0.0
-        : uniqueItems.map((e) => e.confidence).reduce((a, b) => a + b) / uniqueItems.length;
+        : confirmed.map((e) => e.confidence).reduce((a, b) => a + b) /
+            confirmed.length;
+
     VoiceFeedbackLearningService.recordAccuracyMetrics(
       languageCode: _selectedLang.code,
       usedCloudSTT: false,
       sttConfidence: avgConfidence,
       nlpConfidence: avgConfidence,
       itemsCorrect: confirmed.length,
-      itemsTotal: uniqueItems.length,
+      itemsTotal: ParsedItems.length,
     );
 
     widget.onOrderParsed(confirmed.map((e) => e.toMap()).toList());
-    _showSnack('✅ ${confirmed.length} items added to bill!');
-    setState(() {
-      ParsedItems = [];
-      _committedItems = [];
-      _transcript = '';
-      _transcriptCtrl.clear();
-      _clearEditControllers();
-    });
+    _showSnack(
+      '✅ ${confirmed.length} item${confirmed.length == 1 ? '' : 's'} added to bill.',
+    );
+
+    if (mounted) {
+      setState(() {
+        ParsedItems = [];
+        _committedItems = [];
+        _lastPreviewItems = [];
+        _parseWarnings = [];
+        _transcript = '';
+        _transcriptCtrl.clear();
+        _clearEditControllers();
+      });
+    }
   }
 
   void _showSnack(String msg, {bool isError = false}) {
@@ -1566,6 +1677,54 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_parseWarnings.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: Color(0xFFD97706),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Please verify',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        color: const Color(0xFF92400E),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ..._parseWarnings.take(3).map(
+                  (warning) => Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Text(
+                      '• $warning',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: const Color(0xFF92400E),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Text('DETECTED ITEMS',
@@ -1660,8 +1819,33 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
                 const SizedBox(width: 6),
                 Tooltip(
                   message: 'Low confidence — please verify',
-                  child: Icon(Icons.warning_amber_rounded,
-                    color: const Color(0xFFFF6D00), size: 14),
+                  child: Icon(
+                    Icons.warning_amber_rounded,
+                    color: const Color(0xFFFF6D00),
+                    size: 14,
+                  ),
+                ),
+              ],
+              if (item.price <= 0) ...[
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: 'Price not found. Enter it in the bill before saving.',
+                  child: const Icon(
+                    Icons.price_check_rounded,
+                    color: Color(0xFFF59E0B),
+                    size: 14,
+                  ),
+                ),
+              ],
+              if (item.priceWarning != null) ...[
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: item.priceWarning!,
+                  child: const Icon(
+                    Icons.report_problem_outlined,
+                    color: Color(0xFFEF4444),
+                    size: 14,
+                  ),
                 ),
               ],
             ],
