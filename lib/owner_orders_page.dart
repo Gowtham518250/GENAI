@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'api_client.dart';
 import 'realtime_client.dart';
 import 'secure_token_storage.dart';
+import 'otp_service.dart';
 
 class OwnerOrdersPage extends StatefulWidget {
   const OwnerOrdersPage({super.key});
@@ -177,6 +178,229 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
     }
   }
 
+  Future<void> _handleDeliver(dynamic order) async {
+    final rawOrderId = order['order_id'] ?? order['id'];
+    final orderId = int.tryParse(rawOrderId.toString());
+    if (orderId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to identify this order.')),
+        );
+      }
+      return;
+    }
+
+    final sendResult = await OTPService.sendCustomerDeliveryOTP(
+      orderId: orderId,
+    );
+    if (!mounted) return;
+
+    if (sendResult['success'] != true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            sendResult['message']?.toString() ??
+                'Unable to send the customer delivery OTP.',
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    final maskedEmail = sendResult['email']?.toString() ?? 'customer email';
+    final otpController = TextEditingController();
+    String? dialogError;
+    bool verifying = false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          Future<void> verify() async {
+            final code = otpController.text.trim();
+            if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+              setDialogState(
+                () => dialogError = 'Enter the 6-digit customer OTP.',
+              );
+              return;
+            }
+
+            setDialogState(() {
+              verifying = true;
+              dialogError = null;
+            });
+
+            final result = await OTPService.verifyCustomerDeliveryOTP(
+              orderId: orderId,
+              otp: code,
+            );
+
+            if (result['success'] == true) {
+              if (dialogContext.mounted) {
+                Navigator.of(dialogContext).pop(true);
+              }
+              return;
+            }
+
+            setDialogState(() {
+              verifying = false;
+              dialogError = result['message']?.toString() ??
+                  'Invalid or expired customer delivery OTP.';
+            });
+          }
+
+          return AlertDialog(
+            backgroundColor: _card,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            title: Row(
+              children: [
+                const Icon(
+                  Icons.verified_user_rounded,
+                  color: Colors.tealAccent,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Verify Delivery',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'A one-time delivery OTP was sent to the customer\'s registered email:',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white60,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  maskedEmail,
+                  style: GoogleFonts.poppins(
+                    color: Colors.tealAccent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: otpController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  autofocus: true,
+                  enabled: !verifying,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 20,
+                    letterSpacing: 6,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    hintText: '000000',
+                    hintStyle: GoogleFonts.poppins(
+                      color: Colors.white24,
+                      letterSpacing: 6,
+                    ),
+                    filled: true,
+                    fillColor: _cardLight,
+                    prefixIcon: const Icon(
+                      Icons.pin_rounded,
+                      color: Colors.tealAccent,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onSubmitted: (_) => verify(),
+                ),
+                if (dialogError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    dialogError!,
+                    style: GoogleFonts.poppins(
+                      color: Colors.redAccent,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Text(
+                  'The OTP expires in 10 minutes and is required before the order can be marked delivered.',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white30,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: verifying
+                    ? null
+                    : () => Navigator.of(dialogContext).pop(false),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.poppins(color: Colors.white38),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: verifying ? null : verify,
+                icon: verifying
+                    ? const SizedBox(
+                        width: 15,
+                        height: 15,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.done_all_rounded, size: 17),
+                label: Text(
+                  verifying ? 'Verifying...' : 'Verify & Deliver',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    otpController.dispose();
+
+    if (confirmed == true && mounted) {
+      await _fetchOrders();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Order #$orderId verified by customer OTP and marked delivered.',
+            ),
+            backgroundColor: Colors.teal,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleReject(dynamic order) async {
     final orderId = order['order_id'] ?? order['id'];
     final phone = order['customer_phone']?.toString() ?? '';
@@ -328,6 +552,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                         final status = (o['status'] ?? 'PENDING').toString().toUpperCase();
                         final isPending = status == 'PENDING';
                         final isAccepted = status == 'ACCEPTED';
+                        final isDispatched = status == 'DISPATCHED';
                         final items = o['items'] as List<dynamic>? ?? [];
                         final orderId = o['id'] ?? o['order_id'] ?? i + 1;
                         final phone = o['customer_phone']?.toString() ?? '';
@@ -569,6 +794,36 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                       foregroundColor: Colors.white,
                                       minimumSize: const Size(double.infinity, 44),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+
+
+                              // Delivered requires customer OTP verification.
+                              if (isDispatched) ...[
+                                const Divider(color: Colors.white12, height: 1),
+                                Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _handleDeliver(o),
+                                    icon: const Icon(
+                                      Icons.verified_rounded,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      'Verify Customer OTP & Mark Delivered',
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.teal,
+                                      foregroundColor: Colors.white,
+                                      minimumSize: const Size(double.infinity, 44),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
                                     ),
                                   ),
                                 ),
