@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
-import 'nearby_shops_page.dart';
+import 'customer_marketplace_page.dart';
 
 class CustomerLoginPage extends StatefulWidget {
   const CustomerLoginPage({super.key});
@@ -62,7 +62,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           if (mounted) {
             Navigator.pushReplacement(
               context, 
-              MaterialPageRoute(builder: (_) => const NearbyShopsPage())
+              MaterialPageRoute(builder: (_) => const CustomerMarketplacePage())
             );
           }
         } else {
