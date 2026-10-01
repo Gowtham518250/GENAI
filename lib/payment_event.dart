@@ -102,16 +102,37 @@ class PaymentEvent {
     final hourBucket    = timestamp.hour;
     final fiveMinBucket = (timestamp.minute / 5).floor();
 
-    // Group by app family so PhonePe notification and its bank SMS
-    // (which arrives as bankSms app) still share the same hash.
+    // Credit and debit are different transaction directions. The old
+    // fingerprint omitted direction, so a ₹500 debit could mark that amount
+    // as already spoken and suppress a later ₹500 credit in the same window.
+    final direction = _transactionDirection(rawText);
+
+    // Group by app family so notification variants remain consistently grouped.
     final appFamily = _appFamily(app);
 
     final payload =
         '${amount.toStringAsFixed(2)}_'
         '$appFamily'
+        '_$direction'
         '$hourBucket$fiveMinBucket';
 
     return 'hash_${md5.convert(utf8.encode(payload))}';
+  }
+
+  static String _transactionDirection(String text) {
+    final t = text.toLowerCase();
+
+    final credit = RegExp(
+      r'\b(?:credited|credit|received|deposited|money\s+received|amount\s+received|payment\s+received|added\s+to|sent\s+to\s+your|paid\s+to\s+your|has\s+sent)\b',
+    ).hasMatch(t);
+
+    final debit = RegExp(
+      r'\b(?:debited|debit|sent|you\s+sent|paid|payment\s+to|deducted|withdrawn|spent|purchase|transferred\s+to)\b',
+    ).hasMatch(t);
+
+    if (credit && !debit) return 'credit';
+    if (debit && !credit) return 'debit';
+    return 'unknown';
   }
 
   /// Maps any payment app to a broad family string so that a PhonePe
