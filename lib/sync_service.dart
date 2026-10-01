@@ -197,6 +197,100 @@ class SyncService {
     }
   }
 
+  /// Attempt an immediate online checkout for a worker.
+  /// If the backend accepts it, acknowledge/remove the durable outbox item.
+  /// Returns false without destroying the queued operation when offline or
+  /// when the server rejects the request.
+  static Future<bool> syncAttendanceCheckoutNow({
+    required String workerId,
+    required String operationId,
+  }) async {
+    try {
+      final connection = await Connectivity().checkConnectivity();
+      final offline = connection is List
+          ? (connection.isEmpty ||
+              (connection.length == 1 &&
+                  connection.first == ConnectivityResult.none))
+          : connection == ConnectivityResult.none;
+      if (offline) return false;
+
+      final success = await checkOutWorker(workerId);
+      if (!success) return false;
+
+      await SyncQueueManager.removeByBusinessIdentifier(
+        'attendance_check_out',
+        {
+          'operation_id': operationId,
+          'idempotency_key': operationId,
+        },
+      );
+      return true;
+    } catch (e, stackTrace) {
+      await ErrorLogHelper.logException(
+        e,
+        stackTrace,
+        context: 'SyncService.syncAttendanceCheckoutNow',
+        attributes: {
+          'workerId': workerId,
+          'operationId': operationId,
+        },
+      );
+      return false;
+    }
+  }
+
+  /// Verify from the backend that a worker no longer has an open session.
+  /// Used after an immediate checkout attempt so the UI only reports server
+  /// success when the remote session is actually closed.
+  static Future<bool> verifyWorkerCheckedOut(String workerId) async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return false;
+
+      final today = DateTime.now().toIso8601String().split('T').first;
+      final response = await ApiClient.getJson(
+        '${ApiClient.attendancePrefix}/date/$today?employee_id=$workerId',
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode != 200) return false;
+      final decoded = jsonDecode(response.body);
+      final records = decoded is List
+          ? decoded
+          : (decoded is Map && decoded['records'] is List
+              ? decoded['records'] as List
+              : const []);
+
+      for (final raw in records) {
+        if (raw is! Map) continue;
+        final employee = raw['employee_id'] ?? raw['worker_id'];
+        if (employee?.toString() != workerId.toString()) continue;
+
+        final sessions = raw['sessions'];
+        if (sessions is Map && sessions.isNotEmpty) {
+          for (final value in sessions.values) {
+            if (value is Map &&
+                value['check_in_time'] != null &&
+                value['check_out_time'] == null) {
+              return false;
+            }
+          }
+        }
+
+        if (raw['check_in_time'] != null &&
+            raw['check_out_time'] == null) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ verifyWorkerCheckedOut failed: $e');
+      }
+      return false;
+    }
+  }
   /// Syncs an individual check-out event to the backend
   static Future<bool> checkOutWorker(String workerId) async {
     try {
@@ -239,8 +333,17 @@ class SyncService {
         await ErrorLogHelper.logMessage(
           'Worker check-out failed: ${res.statusCode}',
           level: 'ERROR',
-          attributes: {'workerId': workerId, 'status': res.statusCode.toString()},
+          attributes: {
+            'workerId': workerId,
+            'status': res.statusCode.toString(),
+            'response': res.body,
+          },
         );
+        if (kDebugMode) {
+          debugPrint(
+            '❌ Worker check-out failed: HTTP ${res.statusCode} body=${res.body}',
+          );
+        }
         return false;
       }
     } catch (e) {
@@ -767,12 +870,37 @@ class SyncService {
     }
   }
 
-  /// Process sync queue - Thread-safe with Lock
-  static Future<void> processQueueSafe() async {
+  /// Process sync queue - Thread-safe with Lock.
+  ///
+  /// UI-critical attendance actions may request a short wait for an already
+  /// running background sync so a tap is not silently ignored.
+  static Future<void> processQueueSafe({
+    bool waitForActiveSync = false,
+  }) async {
     if (SyncQueueManager.isSyncing) {
-      if (kDebugMode) debugPrint('⚠️ Sync already in progress, skipping overlap');
-      return;
+      if (!waitForActiveSync) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Sync already in progress, skipping overlap');
+        }
+        return;
+      }
+
+      final deadline = DateTime.now().add(const Duration(seconds: 8));
+      while (SyncQueueManager.isSyncing &&
+          DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 120));
+      }
+
+      if (SyncQueueManager.isSyncing) {
+        if (kDebugMode) {
+          debugPrint(
+            '⚠️ Attendance sync wait timed out; background sync remains active',
+          );
+        }
+        return;
+      }
     }
+
     SyncQueueManager.isSyncing = true;
     try {
       await _syncLock.synchronized(() async {

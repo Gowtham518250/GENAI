@@ -1509,25 +1509,53 @@ class _AttendancePageState extends State<AttendancePage>
         if (workerId == null || workerId <= 0) {
           throw StateError('Invalid worker ID: ${worker.id}');
         }
+        final openSession = await OfflineAttendanceService.openSessionToday(
+          employeeId: workerId,
+          workerId: workerId,
+        );
+        final sessionIndex = int.tryParse(
+              openSession?['session_index']?.toString() ?? '',
+            ) ??
+            0;
+        final operationId =
+            'ATT_OUT_' + workerId.toString() + '_' + _df.format(DateTime.now()) + '_s' + sessionIndex.toString();
+
         await OfflineAttendanceService.checkOut(
           employeeId: workerId,
           workerId: workerId,
         );
 
-        // The checkout is written to the durable local outbox first. Trigger
-        // the canonical sync immediately so an online device does not wait
-        // for the background timer to reach /api/attendance/check-out.
-        try {
-          await SyncService.processQueueSafe();
-        } catch (syncError) {
-          if (kDebugMode) {
-            debugPrint('⚠️ Immediate attendance checkout sync deferred: $syncError');
+        // Try the authenticated backend write immediately. The local record
+        // stays durable/queued if the network is unavailable or the server
+        // rejects the request.
+        var syncedNow = await SyncService.syncAttendanceCheckoutNow(
+          workerId: workerId.toString(),
+          operationId: operationId,
+        );
+
+        if (!syncedNow) {
+          try {
+            await SyncService.processQueueSafe(
+              waitForActiveSync: true,
+            );
+          } catch (syncError) {
+            if (kDebugMode) {
+              debugPrint(
+                '⚠️ Attendance checkout queue sync deferred: $syncError',
+              );
+            }
           }
         }
 
+        final verified = await SyncService.verifyWorkerCheckedOut(
+          workerId.toString(),
+        );
+
         _showSnack(
-          '✅ ${worker.name} checked out',
-          _primary,
+          verified
+              ? '✅ ' + worker.name + ' checked out successfully'
+              : '⏳ ' + worker.name + ' checked out locally; server sync is pending',
+          verified ? _primary : _half,
         );
       } else {
         final workerId = int.tryParse(worker.id.toString());
