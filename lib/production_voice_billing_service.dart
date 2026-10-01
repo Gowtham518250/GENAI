@@ -275,10 +275,10 @@ class ProductionVoiceBillingService {
   static Set<String> _tokens(String value) => value
       .toLowerCase()
       .replaceAll(
-        RegExp(r'[^a-z0-9\\u0900-\\u097f\\u0c00-\\u0c7f\\u0b80-\\u0bff\\s]'),
+        RegExp(r'[^a-z0-9\u0900-\u097f\u0c00-\u0c7f\u0b80-\u0bff\s]'),
         ' ',
       )
-      .split(RegExp(r'\\s+'))
+      .split(RegExp(r'\s+'))
       .where((e) => e.length >= 2)
       .toSet();
 
