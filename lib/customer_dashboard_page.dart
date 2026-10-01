@@ -88,8 +88,13 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
           ElevatedButton.icon(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopBrowserPage())),
             icon: const Icon(Icons.shopping_bag_outlined, color: Color(0xFF4F46E5)),
-            label: const Text('Shop Nearby', style: TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.bold)),
+            label: const Text('Discover & Order', style: TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Search any shop or product, compare prices, and use AI advice for cheaper or higher-rated options.',
+            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 11, height: 1.4),
           ),
         ],
       ),
