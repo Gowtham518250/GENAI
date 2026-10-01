@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../visual_widgets.dart';
 
 /// Owner hub for online shopping
 class OnlineStoreHubPage extends StatelessWidget {
@@ -60,33 +59,6 @@ class OnlineStoreHubPage extends StatelessWidget {
             title: 'Online Orders',
             subtitle: 'Accept or reject customer orders and deduct stock',
             route: '/online-orders',
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Customer app (preview)',
-            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF9CA3AF)),
-          ),
-          const SizedBox(height: 12),
-          _HubTile(
-            icon: Icons.near_me_outlined,
-            color: const Color(0xFF10B981),
-            title: 'Nearby Shops',
-            subtitle: 'See how customers find live shops on the map',
-            route: '/nearby-shops',
-          ),
-          _HubTile(
-            icon: Icons.shopping_bag_outlined,
-            color: const Color(0xFF3B82F6),
-            title: 'Customer Storefront',
-            subtitle: 'Preview browse & cart experience',
-            route: '/customer-home',
-          ),
-          _HubTile(
-            icon: Icons.local_shipping_outlined,
-            color: const Color(0xFF6366F1),
-            title: 'Order Tracking',
-            subtitle: 'Preview delivery status screen for customers',
-            route: '/order-tracking',
           ),
         ],
       ),
