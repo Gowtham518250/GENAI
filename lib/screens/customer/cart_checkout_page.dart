@@ -10,14 +10,14 @@ class CustomerCartPage extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
   final String shopId;
   final String shopName;
-  final double widget.onlineSetupFee;
+  final double onlineSetupFee;
 
   const CustomerCartPage({
     super.key,
     required this.cartItems,
     this.shopId = '',
     this.shopName = 'Shop',
-    this.widget.onlineSetupFee = 0,
+    this.onlineSetupFee = 0,
   });
 
   @override
