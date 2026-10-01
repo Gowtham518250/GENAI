@@ -1518,7 +1518,9 @@ class _AttendancePageState extends State<AttendancePage>
         // the canonical sync immediately so an online device does not wait
         // for the background timer to reach /api/attendance/check-out.
         try {
-          await SyncService.processQueueSafe();
+          await SyncService.processQueueSafe(
+            waitForActiveSync: true,
+          );
         } catch (syncError) {
           if (kDebugMode) {
             debugPrint('⚠️ Immediate attendance checkout sync deferred: $syncError');
