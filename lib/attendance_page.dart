@@ -299,14 +299,23 @@ class _AttendancePageState extends State<AttendancePage>
 
   Future<void> _updateLiveHours() async {
     if (_userId == null) return;
-    // Sum across ALL of today's sessions (not just one record), so hours
-    // keep accumulating correctly across multiple check-in/check-out pairs.
+    // Keep the owner's personal session clock separate from the staff roster.
     final total = await OfflineAttendanceService.todayTotalHours(employeeId: _userId!);
     if (mounted) {
       setState(() {
         _liveHours = total.toStringAsFixed(2);
       });
     }
+  }
+
+  double _teamHoursToday() {
+    double total = 0.0;
+    for (final worker in _staff) {
+      for (final session in _workerSessionsToday(worker)) {
+        total += _hoursForSession(session);
+      }
+    }
+    return total;
   }
 
   /// Refreshes the open-session pointer used to drive the check-in/out
@@ -655,7 +664,7 @@ class _AttendancePageState extends State<AttendancePage>
               const SizedBox(width: 16),
               _bannerStat('${_staff.length}', 'Workers'),
               const SizedBox(width: 16),
-              _bannerStat(_liveHours, 'Hours today'),
+              _bannerStat(_teamHoursToday().toStringAsFixed(2), 'Team hours today'),
             ]),
           ]),
         ),
