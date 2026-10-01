@@ -383,7 +383,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
             children: [
               Text(
                 'A 6-digit delivery OTP was sent to $maskedEmail. '
-                'It expires in $(expires / 60).ceil() minutes.',
+                'It expires in ${(expires / 60).ceil()} minutes.',
                 style: const TextStyle(
                   color: Colors.black54,
                   height: 1.4,
