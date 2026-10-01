@@ -603,6 +603,82 @@ class _AttendancePageState extends State<AttendancePage>
     );
   }
 
+  String _sessionKeyForRecord(Map<String, dynamic> record) {
+    final raw = (record['session_key'] ?? record['session'] ?? '').toString().trim().toLowerCase();
+    if (raw == 'morning') return 'morning';
+    if (raw == 'afternoon' || raw == 'evening') return 'afternoon';
+
+    final label = (record['label'] ?? record['session_label'] ?? '').toString().toLowerCase();
+    if (label.contains('morning')) return 'morning';
+    if (label.contains('afternoon') || label.contains('evening')) return 'afternoon';
+
+    final checkIn = _parseServerTime(record['check_in_time']);
+    if (checkIn != null) {
+      return checkIn.hour < 14 ? 'morning' : 'afternoon';
+    }
+    return _sessionIndex(record) == 0 ? 'morning' : 'afternoon';
+  }
+
+  String _currentSessionKey() {
+    return DateTime.now().hour < 14 ? 'morning' : 'afternoon';
+  }
+
+  List<Map<String, dynamic>> _workerSessionRecords(Worker worker, String sessionKey) {
+    return _workerSessionsToday(worker)
+        .where((record) => _sessionKeyForRecord(record) == sessionKey)
+        .toList();
+  }
+
+  Widget _sessionHeader(String sessionKey, int present, int active, int staffCount) {
+    final morning = sessionKey == 'morning';
+    final color = morning ? const Color(0xFFF59E0B) : _primary;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0.12),
+            color.withValues(alpha: 0.04),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: color.withValues(alpha: 0.14),
+            child: Icon(morning ? Icons.wb_sunny_outlined : Icons.wb_twilight, color: color),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  morning ? 'Morning Session' : 'Afternoon Session',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 15),
+                ),
+                Text(
+                  morning ? 'Check-ins before 2:00 PM' : 'Check-ins from 2:00 PM onward',
+                  style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('$present/$staffCount', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, color: color)),
+              Text('$active active', style: GoogleFonts.poppins(fontSize: 9, color: Colors.grey.shade600)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _todayTab(List<Map<String, dynamic>> mySessions, bool hasOpenSession) {
     final today = DateFormat('EEEE, dd MMMM yyyy').format(DateTime.now());
     var inShop = 0;
@@ -679,8 +755,28 @@ class _AttendancePageState extends State<AttendancePage>
             const SizedBox(width: 8),
             Expanded(child: _miniStat('Not marked', '$notMarked', Colors.grey)),
           ]),
-          const SizedBox(height: 12),
-          ..._staff.map((worker) => _workerAttendanceTile(worker)),
+          const SizedBox(height: 16),
+          Builder(builder: (context) {
+            final morningPresent = _staff.where((worker) => _workerSessionRecords(worker, 'morning').isNotEmpty).length;
+            final morningActive = _staff.where((worker) => _workerSessionRecords(worker, 'morning').any(_isOpenSession)).length;
+            return Column(
+              children: [
+                _sessionHeader('morning', morningPresent, morningActive, _staff.length),
+                ..._staff.map((worker) => _workerAttendanceTile(worker, sessionKey: 'morning')),
+              ],
+            );
+          }),
+          const SizedBox(height: 14),
+          Builder(builder: (context) {
+            final afternoonPresent = _staff.where((worker) => _workerSessionRecords(worker, 'afternoon').isNotEmpty).length;
+            final afternoonActive = _staff.where((worker) => _workerSessionRecords(worker, 'afternoon').any(_isOpenSession)).length;
+            return Column(
+              children: [
+                _sessionHeader('afternoon', afternoonPresent, afternoonActive, _staff.length),
+                ..._staff.map((worker) => _workerAttendanceTile(worker, sessionKey: 'afternoon')),
+              ],
+            );
+          }),
         ],
         const SizedBox(height: 24),
         const Divider(thickness: 1, height: 1),
