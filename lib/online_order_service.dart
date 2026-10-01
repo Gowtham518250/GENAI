@@ -40,41 +40,50 @@ class OnlineOrderService {
     }
   }
 
-  /// Online metrics from the canonical FastAPI owner-order source.
-  /// Firestore remains available for customer-store UPI configuration, but
-  /// owner analytics must come from the same backend that drives order status.
+
+  /// Canonical online-store analytics from the same owner-order dataset
+  /// used by the Online Orders page. One request keeps dashboard and hub
+  /// figures identical.
   static Future<Map<String, dynamic>> getAnalytics(String shopId) async {
-    if (shopId.isEmpty || shopId == '0') {
-      return {'pending': 0, 'todayCount': 0, 'todayRevenue': 0.0, 'paidCount': 0, 'totalCount': 0};
-    }
+    const empty = {
+      'pending': 0,
+      'todayCount': 0,
+      'todayRevenue': 0.0,
+      'paidCount': 0,
+      'todayPaidCount': 0,
+      'totalCount': 0,
+      'totalRevenue': 0.0,
+      'totalPaidCount': 0,
+      'rejectedCount': 0,
+    };
+
+    if (shopId.isEmpty || shopId == '0') return empty;
 
     try {
       final token = await SecureTokenStorage.getToken() ?? '';
-      if (token.isEmpty) {
-        return {'pending': 0, 'todayCount': 0, 'todayRevenue': 0.0, 'paidCount': 0, 'totalCount': 0};
+      if (token.isEmpty) return empty;
+
+      final response = await ApiClient.getJson(
+        '/store/owner/orders',
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 12));
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Owner orders returned HTTP ' + response.statusCode.toString(),
+        );
       }
 
-      const statuses = <String>['PENDING', 'ACCEPTED', 'DISPATCHED', 'DELIVERED'];
+      final body = jsonDecode(response.body);
+      final raw = body is Map ? body['orders'] : body;
+      if (raw is! List) return empty;
+
       final ordersById = <String, Map<String, dynamic>>{};
-      for (final status in statuses) {
-        try {
-          final response = await ApiClient.getJson(
-            '/store/owner/orders?status=$status',
-            headers: {'Authorization': 'Bearer $token'},
-          ).timeout(const Duration(seconds: 10));
-          if (response.statusCode != 200) continue;
-          final body = jsonDecode(response.body);
-          final raw = body is Map ? body['orders'] : body;
-          if (raw is! List) continue;
-          for (final item in raw) {
-            if (item is! Map) continue;
-            final order = Map<String, dynamic>.from(item);
-            final id = (order['order_id'] ?? order['id'] ?? '').toString();
-            if (id.isNotEmpty) ordersById[id] = order;
-          }
-        } catch (e) {
-          if (kDebugMode) debugPrint('getAnalytics $status: $e');
-        }
+      for (final item in raw) {
+        if (item is! Map) continue;
+        final order = Map<String, dynamic>.from(item);
+        final id = (order['order_id'] ?? order['id'] ?? '').toString();
+        if (id.isNotEmpty) ordersById[id] = order;
       }
 
       final now = DateTime.now();
@@ -82,18 +91,47 @@ class OnlineOrderService {
       int pending = 0;
       int todayCount = 0;
       int paidCount = 0;
+      int todayPaidCount = 0;
+      int totalPaidCount = 0;
+      int rejectedCount = 0;
       double todayRevenue = 0.0;
+      double totalRevenue = 0.0;
 
       for (final order in ordersById.values) {
-        final status = (order['status'] ?? order['order_status'] ?? '').toString().toUpperCase();
+        final status =
+            (order['status'] ?? order['order_status'] ?? '').toString().toUpperCase();
+        final total = (order['total_amount'] as num?)?.toDouble() ??
+            double.tryParse(order['total_amount']?.toString() ?? '0') ??
+            0.0;
+
         if (status == 'PENDING') pending++;
-        final rawDate = order['created_at'] ?? order['timestamp'] ?? order['placed_at'];
-        final dt = rawDate == null ? null : DateTime.tryParse(rawDate.toString())?.toLocal();
-        if (dt != null && DateTime(dt.year, dt.month, dt.day) == today && status != 'REJECTED') {
+        if (status == 'REJECTED') {
+          rejectedCount++;
+        } else {
+          totalRevenue += total;
+        }
+
+        final paymentStatus =
+            (order['payment_status'] ?? '').toString().toUpperCase();
+        final isPaid = paymentStatus == 'PAID' || status == 'DELIVERED';
+        if (isPaid) totalPaidCount++;
+
+        final rawDate =
+            order['created_at'] ?? order['timestamp'] ?? order['placed_at'];
+        final dt = rawDate == null
+            ? null
+            : DateTime.tryParse(rawDate.toString())?.toLocal();
+        final isToday = dt != null &&
+            DateTime(dt.year, dt.month, dt.day) == today &&
+            status != 'REJECTED';
+
+        if (isToday) {
           todayCount++;
-          todayRevenue += (order['total_amount'] as num?)?.toDouble() ?? double.tryParse(order['total_amount']?.toString() ?? '0') ?? 0.0;
-          final paymentStatus = (order['payment_status'] ?? '').toString().toUpperCase();
-          if (paymentStatus == 'PAID' || status == 'DELIVERED') paidCount++;
+          todayRevenue += total;
+          if (isPaid) {
+            paidCount++;
+            todayPaidCount++;
+          }
         }
       }
 
@@ -102,11 +140,15 @@ class OnlineOrderService {
         'todayCount': todayCount,
         'todayRevenue': todayRevenue,
         'paidCount': paidCount,
+        'todayPaidCount': todayPaidCount,
         'totalCount': ordersById.length,
+        'totalRevenue': totalRevenue,
+        'totalPaidCount': totalPaidCount,
+        'rejectedCount': rejectedCount,
       };
     } catch (e) {
-      if (kDebugMode) debugPrint('getAnalytics: $e');
-      return {'pending': 0, 'todayCount': 0, 'todayRevenue': 0.0, 'paidCount': 0, 'totalCount': 0};
+      if (kDebugMode) debugPrint('getAnalytics: ' + e.toString());
+      return empty;
     }
   }
 
