@@ -175,6 +175,17 @@ class _ShopModulesSectionState extends State<ShopModulesSection> {
                   ),
                   _buildSheetItem(
                     ctx,
+                    color: const Color(0xFF7C3AED),
+                    icon: Icons.auto_awesome_rounded,
+                    label: 'Retail\nGrowth',
+                    subtitle: 'AI & analytics',
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.pushNamed(navContext, '/retail-growth').then((_) => widget.onModuleClosed());
+                    },
+                  ),
+                  _buildSheetItem(
+                    ctx,
                     color: const Color(0xFF2563EB),
                     icon: Icons.storefront_rounded,
                     label: 'Online\nStore',
