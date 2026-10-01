@@ -1575,7 +1575,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                         '/gift-cards': (context) => const GiftCardsPage(),
                         '/system-mgmt': (context) =>
                             const SystemManagementPage(),
-                        '/owner-orders': (context) => const OwnerOrdersPage(),
+                        // Canonical online-order screen. Keep the legacy route name working for old navigation links.
+                        '/owner-orders': (context) => const OnlineOrdersTab(),
                         '/shop-browser': (context) => const ShopBrowserPage(),
                         '/geometric-registration': (context) =>
                             const GeometricRegistrationPage(),

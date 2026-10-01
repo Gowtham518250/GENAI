@@ -126,46 +126,88 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
       setState(() => _isLoading = true);
     }
 
-    await Future.wait([
-      _fetchOrdersByStatus('PENDING'),
-      _fetchOrdersByStatus('ACCEPTED'),
-      _fetchOrdersByStatus('DISPATCHED'),
-      _fetchOrdersByStatus('DELIVERED'),
-    ]);
-
-    if (mounted) setState(() => _isLoading = false);
-  }
-
-  Future<void> _fetchOrdersByStatus(String status) async {
     try {
-      final res = await ApiClient.getJson('/store/owner/orders?status=$status');
-      if (res.statusCode == 200) {
-        final body = json.decode(res.body);
-        final orders = List<Map<String, dynamic>>.from(body['orders'] ?? []);
+      // Fetch the canonical owner order list once. The backend already scopes
+      // this response to the authenticated shop. Grouping locally avoids the
+      // old four-request status/filter path that could show zero orders even
+      // while the dashboard correctly reported existing online orders.
+      final res = await ApiClient.getJson('/store/owner/orders');
 
-        final prefs = await SharedPreferences.getInstance();
-        final shopId = int.tryParse(_shopId) ?? 0;
-        if (shopId > 0) {
-          await _saveCachedOrders(prefs, shopId, status, orders);
-        }
-
-        if (!mounted) return;
-        setState(() {
-          if (status == 'PENDING') {
-            _pendingOrders = orders;
-          } else if (status == 'ACCEPTED') {
-            _acceptedOrders = orders;
-          } else if (status == 'DISPATCHED') {
-            _dispatchedOrders = orders;
-          } else {
-            _deliveredOrders = orders;
-          }
-        });
+      if (res.statusCode != 200) {
+        throw Exception('Online orders request failed (status ' + res.statusCode.toString() + ').');
       }
+
+      final decoded = json.decode(res.body);
+      final rawOrders = decoded is Map ? decoded['orders'] : decoded;
+      final allOrders = rawOrders is List
+          ? rawOrders
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList()
+          : <Map<String, dynamic>>[];
+
+      final pending = <Map<String, dynamic>>[];
+      final accepted = <Map<String, dynamic>>[];
+      final dispatched = <Map<String, dynamic>>[];
+      final delivered = <Map<String, dynamic>>[];
+
+      for (final order in allOrders) {
+        final status = (order['status'] ?? order['order_status'] ?? '')
+            .toString()
+            .trim()
+            .toUpperCase();
+
+        switch (status) {
+          case 'PENDING':
+            pending.add(order);
+            break;
+          case 'ACCEPTED':
+            accepted.add(order);
+            break;
+          case 'DISPATCHED':
+            dispatched.add(order);
+            break;
+          case 'DELIVERED':
+            delivered.add(order);
+            break;
+          default:
+            // Keep malformed/legacy statuses visible instead of silently
+            // discarding an order. Surface it in Pending for owner attention.
+            pending.add({...order, 'status': status.isEmpty ? 'PENDING' : status});
+        }
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final shopId = int.tryParse(_shopId) ?? 0;
+      if (shopId > 0) {
+        await Future.wait([
+          _saveCachedOrders(prefs, shopId, 'PENDING', pending),
+          _saveCachedOrders(prefs, shopId, 'ACCEPTED', accepted),
+          _saveCachedOrders(prefs, shopId, 'DISPATCHED', dispatched),
+          _saveCachedOrders(prefs, shopId, 'DELIVERED', delivered),
+        ]);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _pendingOrders = pending;
+        _acceptedOrders = accepted;
+        _dispatchedOrders = dispatched;
+        _deliveredOrders = delivered;
+      });
+
+      debugPrint(
+        'Loaded ' + allOrders.length.toString() + ' online orders '
+        '(pending=' + pending.length.toString() + ', accepted=' +
+        accepted.length.toString() + ', dispatched=' +
+        dispatched.length.toString() + ', delivered=' +
+        delivered.length.toString() + ')',
+      );
     } catch (e) {
-      debugPrint('Failed to fetch $status orders: $e');
-      // Deliberately NOT clearing the existing list here — a failed refresh
-      // should never make previously-loaded orders disappear from the screen.
+      debugPrint('Failed to fetch online orders: ' + e.toString());
+      // Preserve locally cached data when a refresh fails.
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

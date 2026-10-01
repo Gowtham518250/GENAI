@@ -59,7 +59,7 @@ class OnlineStoreHubPage extends StatelessWidget {
             color: const Color(0xFFF59E0B),
             title: 'Online Orders',
             subtitle: 'Accept or reject customer orders and deduct stock',
-            route: '/owner-orders',
+            route: '/online-orders',
           ),
           const SizedBox(height: 8),
           Text(
