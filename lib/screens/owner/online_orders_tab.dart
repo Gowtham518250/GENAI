@@ -660,7 +660,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                             onPressed: syncing ? null : () => _updateOrderStatus(order, 'DELIVER'),
                             style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                             icon: const Icon(Icons.check_circle_outline, size: 18),
-                            label: const Text('Mark as Delivered'),
+                            label: const Text('Verify OTP & deliver'),
                           ),
                         ),
                       ] else if (syncing) ...[
