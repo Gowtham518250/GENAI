@@ -1326,7 +1326,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       routePrefs.getInt('userId') ??
                       0;
 
-                  if (role == 'CUSTOMER') return '/nearby-shops';
+                  if (role == 'CUSTOMER') return '/customer-marketplace';
 
                   // Shop Details is a registration-only onboarding step.
                   // Existing authenticated users must never be forced back into
