@@ -35,6 +35,7 @@ import 'forgot_password_page.dart';
 import 'decent_login_page.dart';
 import 'screens/customer/customer_login_page.dart';
 import 'screens/customer/nearby_shops_page.dart';
+import 'screens/customer/customer_marketplace_page.dart';
 import 'screens/customer/customer_home_page.dart';
 import 'screens/customer/cart_checkout_page.dart';
 import 'screens/customer/order_tracking_page.dart';
@@ -1532,6 +1533,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                         '/login': (context) => const DecentLoginPage(),
                         '/customer-login': (context) =>
                             const CustomerLoginPage(),
+                        '/customer-marketplace': (context) =>
+                            const CustomerMarketplacePage(),
                         '/nearby-shops': (context) => const NearbyShopsPage(),
                         '/customer-home': (context) => const CustomerHomePage(),
                         '/customer-cart': (context) {
