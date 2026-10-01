@@ -27,7 +27,9 @@ class SmartNotificationsService {
     
     if (kDebugMode) debugPrint('$_tag Initializing Smart Notifications Service');
     
-    _startDailySummaryTimer();
+    // Daily sales reporting is owned by DailySummaryNotificationService,
+    // which reads the final canonical sales snapshot at 9 PM. Do not start a
+    // second summary timer here or the phone receives two conflicting reports.
     _startStockAlertTimer();
     _startLoyaltyMilestoneTimer();
   }
