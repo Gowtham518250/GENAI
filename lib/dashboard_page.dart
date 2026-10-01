@@ -14366,6 +14366,15 @@ class _DashboardPageState extends State<DashboardPage>
                 // 0. GREETING HEADER
                 _buildGreetingHeader(),
 
+                // 0.0001 ONLINE SHOPPING CTA
+                // Keep this immediately below the dashboard summary so owners
+                // can discover and enable marketplace ordering without digging
+                // through Shop Modules.
+                if (!_isStaffMode) ...[
+                  _buildOnlineStoreStatusCard(),
+                  const SizedBox(height: 16),
+                ],
+
                 // 0.001 PAYMENT DETECTION SETUP — keep this visible and highlighted
                 // until the OS reports that every required permission is enabled.
                 if (!_isStaffMode && _isPermissionsMissing)
