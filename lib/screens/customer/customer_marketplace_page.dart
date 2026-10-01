@@ -346,6 +346,11 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
         elevation: 0,
         actions: [
           IconButton(
+            tooltip: 'AI Shopping',
+            onPressed: () => Navigator.pushNamed(context, '/customer-ai-shopping'),
+            icon: const Icon(Icons.auto_awesome_rounded),
+          ),
+          IconButton(
             tooltip: 'My orders',
             onPressed: () => Navigator.pushNamed(context, '/order-tracking'),
             icon: const Icon(Icons.receipt_long_outlined),
