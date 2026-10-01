@@ -1054,7 +1054,9 @@ class _AttendancePageState extends State<AttendancePage>
     final predictedSalary = worker.salary > 0 ? (monthlyHours / 200.0) * worker.salary : 0.0;
     final isLateToday = workerRecord != null && _isLateCheckIn(workerRecord);
     final isCurrentSession = sessionKey == null || sessionKey == currentSessionKey;
-    final canChange = sessionKey == null || isCurrentSession && (workerIsCurrentlyIn || !sessionCompleted);
+    final canChange = sessionKey == null ||
+        (workerIsCurrentlyIn && sessionHasOpen) ||
+        (!workerIsCurrentlyIn && isCurrentSession && !sessionCompleted);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
