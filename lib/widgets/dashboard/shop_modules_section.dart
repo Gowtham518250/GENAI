@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../local_storage_service.dart';
 import '../../premium_ui.dart';
-import '../../share_shop_page.dart';
+import '../../screens/owner/online_store_hub_page.dart';
 
 class ShopModulesSection extends StatefulWidget {
   final VoidCallback onModuleClosed;
@@ -175,12 +175,18 @@ class _ShopModulesSectionState extends State<ShopModulesSection> {
                   ),
                   _buildSheetItem(
                     ctx,
-                    color: const Color(0xFFF43F5E),
-                    icon: Icons.qr_code_2_rounded,
-                    label: 'Share\nShop',
+                    color: const Color(0xFF2563EB),
+                    icon: Icons.storefront_rounded,
+                    label: 'Online\nStore',
+                    subtitle: 'Marketplace & orders',
                     onTap: () {
                       Navigator.pop(ctx);
-                      Navigator.push(navContext, MaterialPageRoute(builder: (_) => const ShareShopPage())).then((_) => widget.onModuleClosed());
+                      Navigator.push(
+                        navContext,
+                        MaterialPageRoute(
+                          builder: (_) => const OnlineStoreHubPage(),
+                        ),
+                      ).then((_) => widget.onModuleClosed());
                     },
                   ),
                 ],
