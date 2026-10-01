@@ -172,3 +172,31 @@ class AIQueryResponse {
     };
   }
 }
+
+
+class AIQueryHistoryItem {
+  final int id;
+  final String question;
+  final String answer;
+  final int resultCount;
+  final DateTime createdAt;
+
+  const AIQueryHistoryItem({
+    required this.id,
+    required this.question,
+    required this.answer,
+    required this.resultCount,
+    required this.createdAt,
+  });
+
+  factory AIQueryHistoryItem.fromJson(Map<String, dynamic> json) {
+    return AIQueryHistoryItem(
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      question: json['question']?.toString() ?? '',
+      answer: json['answer']?.toString() ?? '',
+      resultCount: int.tryParse(json['result_count']?.toString() ?? '') ?? 0,
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '')?.toLocal() ??
+          DateTime.now(),
+    );
+  }
+}
