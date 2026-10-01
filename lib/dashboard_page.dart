@@ -144,6 +144,8 @@ class _DashboardPageState extends State<DashboardPage>
   late final ScrollController _scrollController;
   late final AnimationController _paymentDetectionPulseController;
   late final Animation<double> _paymentDetectionPulse;
+  late final AnimationController _onlineStorePulseController;
+  late final Animation<double> _onlineStorePulse;
   Timer? _refreshTimer;
 
   // sales + insight state
@@ -470,6 +472,18 @@ class _DashboardPageState extends State<DashboardPage>
         curve: Curves.easeInOut,
       ),
     );
+
+    _onlineStorePulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _onlineStorePulse = Tween<double>(begin: 0.96, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _onlineStorePulseController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    _onlineStorePulseController.repeat(reverse: true);
 
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
@@ -1517,6 +1531,12 @@ class _DashboardPageState extends State<DashboardPage>
         setState(() {
           _isOnlineStoreActive = enable;
           _onlineStoreLoading = false;
+          if (enable) {
+            _onlineStorePulseController.stop();
+            _onlineStorePulseController.value = 1.0;
+          } else if (!_onlineStorePulseController.isAnimating) {
+            _onlineStorePulseController.repeat(reverse: true);
+          }
         });
         // 🔒 SECURITY: Persist with scoped SharedPreferences
         await ScopedSharedPreferences.setBool('online_store_active', enable);
@@ -1685,7 +1705,7 @@ class _DashboardPageState extends State<DashboardPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Sell Products Online',
+                        'Enable Online Shopping',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -1696,11 +1716,11 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Start accepting online orders',
+                        'One switch to make your shop discoverable to customers',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF6366F1),
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF4F46E5),
                         ),
                       ),
                     ],
@@ -1721,34 +1741,38 @@ class _DashboardPageState extends State<DashboardPage>
               ],
             ),
             const SizedBox(height: 14),
-            Text(
-              'Publish your product catalog online, let customers find your shop on the map, and process WhatsApp/Web orders directly.',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: isDark ? Colors.grey[300] : const Color(0xFF4B5563),
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const OnlineStoreManagerPage(),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.public_rounded, color: Color(0xFF4F46E5), size: 19),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Turn this on to appear in the customer marketplace. Only enabled shops can be searched or ordered from.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: isDark ? Colors.grey[300] : const Color(0xFF4B5563),
+                      height: 1.45,
                     ),
-                  ).then((_) => _loadOnlineStoreStatus());
-                },
-                icon: const Icon(Icons.settings, size: 18),
-                label: Text(
-                  'Configure Online Store',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ScaleTransition(
+              scale: _onlineStorePulse,
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _onlineStoreLoading ? null : () => _toggleOnlineStore(true),
+                  icon: const Icon(Icons.shopping_bag_rounded, size: 19),
+                  label: Text(
+                    _onlineStoreLoading ? 'Enabling…' : 'Enable Online Shopping',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4F46E5),
                   foregroundColor: Colors.white,
@@ -2193,6 +2217,7 @@ class _DashboardPageState extends State<DashboardPage>
     InventoryManagementService.onInventoryChanged = null;
     _animationController.dispose();
     _paymentDetectionPulseController.dispose();
+    _onlineStorePulseController.dispose();
     _scrollController.dispose();
     // Clear analytics engine cache to prevent memory leak
     engine.sales.clear();
