@@ -113,6 +113,50 @@ void main() {
     });
   });
 
+  group('Payment voice dedup direction', () {
+    test('same amount debit and credit get different fallback fingerprints', () {
+      final now = DateTime(2026, 10, 1, 14, 30);
+
+      final debit = PaymentEvent(
+        amount: 500,
+        timestamp: now,
+        app: PaymentApp.phonePe,
+        rawText: '₹500 debited from your account',
+      );
+
+      final credit = PaymentEvent(
+        amount: 500,
+        timestamp: now.add(const Duration(minutes: 1)),
+        app: PaymentApp.phonePe,
+        rawText: '₹500 credited to your account',
+      );
+
+      expect(debit.referenceId, isNull);
+      expect(credit.referenceId, isNull);
+      expect(debit.fingerprint, isNot(equals(credit.fingerprint)));
+    });
+
+    test('same direction and same amount still deduplicate inside the same bucket', () {
+      final now = DateTime(2026, 10, 1, 14, 30);
+
+      final first = PaymentEvent(
+        amount: 500,
+        timestamp: now,
+        app: PaymentApp.phonePe,
+        rawText: '₹500 credited to your account',
+      );
+
+      final second = PaymentEvent(
+        amount: 500,
+        timestamp: now.add(const Duration(minutes: 1)),
+        app: PaymentApp.phonePe,
+        rawText: 'Payment received ₹500',
+      );
+
+      expect(first.fingerprint, equals(second.fingerprint));
+    });
+  });
+
   group('Payment voice direction', () {
     test('detects credited payment from bank/UPI text', () {
       expect(
