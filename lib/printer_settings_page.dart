@@ -5,7 +5,12 @@ import 'printer_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PrinterSettingsPage extends StatefulWidget {
-  const PrinterSettingsPage({super.key});
+  final bool returnAfterConnect;
+
+  const PrinterSettingsPage({
+    super.key,
+    this.returnAfterConnect = false,
+  });
 
   @override
   State<PrinterSettingsPage> createState() => _PrinterSettingsPageState();
@@ -71,9 +76,17 @@ class _PrinterSettingsPageState extends State<PrinterSettingsPage> {
         
         PrinterService.updateConnectionState(true, _selectedDevice);
 
+        if (widget.returnAfterConnect && mounted) {
+          Navigator.pop(context, true);
+          return;
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Printer connected successfully'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Text('Printer connected successfully'),
+              backgroundColor: Colors.green,
+            ),
           );
         }
       }
