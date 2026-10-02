@@ -1462,7 +1462,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
 
     // Fast path: normalized key.
     final direct = _localProducts[normalized];
-    if (direct is Map) return Map<String, dynamic>.from(direct);
+    if (direct != null) return direct;
 
     // Backward-compatible scan of legacy cache keys/values.
     for (final entry in _localProducts.entries) {
