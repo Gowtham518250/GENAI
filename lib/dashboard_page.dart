@@ -4135,96 +4135,134 @@ class _DashboardPageState extends State<DashboardPage>
     final score = _dailyHealthScore.clamp(0, 100);
 
     final Color scoreColor;
-    final Color borderColor;
     if (score >= 80) {
-      scoreColor = const Color(0xFF10B981); // green
-      borderColor = const Color(0xFF10B981);
+      scoreColor = const Color(0xFF10B981);
     } else if (score >= 50) {
-      scoreColor = const Color(0xFFF59E0B); // amber
-      borderColor = const Color(0xFFF59E0B);
+      scoreColor = const Color(0xFFF59E0B);
     } else {
-      scoreColor = const Color(0xFFEF4444); // red
-      borderColor = const Color(0xFFEF4444);
+      scoreColor = const Color(0xFFEF4444);
     }
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor.withValues(alpha: 0.25)),
-        boxShadow: [
-          BoxShadow(
-            color: scoreColor.withValues(alpha: 0.08),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.97, end: 1),
+      duration: const Duration(milliseconds: 460),
+      curve: Curves.easeOutCubic,
+      builder: (context, scale, child) => Transform.scale(
+        scale: scale,
+        alignment: Alignment.center,
+        child: child,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: scoreColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              Icons.favorite_rounded,
-              semanticLabel: 'Favorite Rounded',
-              color: scoreColor,
-              size: 22,
-            ),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.fromLTRB(13, 12, 13, 11),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(
+            color: scoreColor.withValues(alpha: 0.18),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Daily Health Score',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                    color: const Color(0xFF111827),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isLoading ? '...' : '$score/100',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 24,
-                    color: scoreColor,
-                    letterSpacing: -0.4,
-                  ),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: scoreColor.withValues(alpha: 0.07),
+              blurRadius: 16,
+              offset: const Offset(0, 7),
             ),
-          ),
-          if (!isLoading)
+          ],
+        ),
+        child: Row(
+          children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              width: 35,
+              height: 35,
               decoration: BoxDecoration(
-                color: scoreColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: scoreColor.withValues(alpha: 0.35)),
+                color: scoreColor.withValues(alpha: 0.11),
+                borderRadius: BorderRadius.circular(11),
               ),
-              child: Text(
-                score >= 80
-                    ? 'Excellent'
-                    : (score >= 50 ? 'Improving' : 'Needs focus'),
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: scoreColor,
-                ),
+              child: Icon(
+                Icons.favorite_rounded,
+                semanticLabel: 'Daily health score',
+                color: scoreColor,
+                size: 19,
               ),
             ),
-        ],
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Daily Health Score',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12.5,
+                      color: const Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(
+                      begin: 0,
+                      end: isLoading ? 0 : score.toDouble(),
+                    ),
+                    duration: const Duration(milliseconds: 720),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, animatedScore, _) => Text(
+                      isLoading
+                          ? '...'
+                          : '\${animatedScore.round()}/100',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 20,
+                        color: scoreColor,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (!isLoading)
+              Container(
+                width: 86,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: scoreColor.withValues(alpha: 0.075),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      score >= 80
+                          ? 'Excellent'
+                          : (score >= 50 ? 'Improving' : 'Needs focus'),
+                      style: GoogleFonts.poppins(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        color: scoreColor,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        minHeight: 4,
+                        value: score / 100,
+                        backgroundColor:
+                            scoreColor.withValues(alpha: 0.12),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(scoreColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
