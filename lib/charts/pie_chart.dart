@@ -100,14 +100,22 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
       (v) => _asDouble(v['total']) > 0,
     );
     if (direct.isNotEmpty && directHasRevenue) {
-      return {
-        for (final entry in direct.entries)
-          entry.key: {
-            ...entry.value,
-            'display_name': entry.value['display_name'] ?? entry.key,
-            'total': _asDouble(entry.value['total']),
-          },
-      };
+      // The analytics engine keeps zero-revenue product keys for KPI/uniqueness
+      // calculations. They must not appear in a revenue distribution chart.
+      final soldOnly = <String, Map<String, dynamic>>{};
+      for (final entry in direct.entries) {
+        final revenue = _asDouble(entry.value['total']);
+        if (revenue <= 0) continue;
+
+        soldOnly[entry.key] = {
+          ...entry.value,
+          'display_name': entry.value['display_name'] ??
+              entry.value['name'] ??
+              entry.key,
+          'total': revenue,
+        };
+      }
+      return soldOnly;
     }
 
     // Fallback: derive directly from the engine's already-filtered sales.
@@ -118,6 +126,10 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
       final sale = Map<String, dynamic>.from(raw);
       final name = _productNameFromSale(sale);
       final revenue = _saleRevenue(sale);
+
+      // A revenue distribution should contain only products that
+      // contributed positive revenue in the selected period.
+      if (revenue <= 0) continue;
 
       final current = derived.putIfAbsent(name, () => {
         'total': 0.0,
@@ -139,14 +151,20 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
     if (productData.isEmpty) return _empty();
 
     // Sort by revenue (total sale value)
-    final products = productData.entries.toList()
+    final products = productData.entries
+        .where((entry) => _asDouble(entry.value['total']) > 0)
+        .toList()
       ..sort((a, b) {
         final bv = _asDouble(b.value['total']);
         final av = _asDouble(a.value['total']);
         return bv.compareTo(av);
       });
+
+    // Show the actual sold products first; zero-sales catalog items are never
+    // eligible for the pie/legend.
     final top = products.take(6).toList();
-    final grandTotal = top.fold<double>(0, (s, e) => s + _asDouble(e.value['total']));
+    final grandTotal =
+        top.fold<double>(0, (s, e) => s + _asDouble(e.value['total']));
     if (grandTotal <= 0) return _empty();
 
     return AnimatedBuilder(
