@@ -5849,6 +5849,60 @@ class _DashboardPageState extends State<DashboardPage>
           children: [
             Expanded(
               child: GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/retail-growth'),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF4F46E5).withValues(alpha: 0.18),
+                        const Color(0xFF22D3EE).withValues(alpha: 0.10),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.30),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.14),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: Color(0xFF4F46E5),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'AI Growth Center',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Copilot · Stock · Returns · Delivery',
+                        style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: const SizedBox()),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
                 onTap: () {
                   if (_isOnlineStoreActive) {
                     Navigator.push(
