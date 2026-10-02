@@ -19,7 +19,7 @@ class PrinterService {
     )).toList();
   }
 
-  static bool get isConnected => _isConnected && _selectedDevice != null;
+  static bool get isConnected => _isConnected;
   static BluetoothDevice? get selectedDevice => _selectedDevice;
 
   static Future<bool> isPrinterConnected() async {
@@ -304,7 +304,7 @@ class BluetoothPrinter {
 
     while (!printSuccess && retryCount < maxRetries) {
       try {
-        await PrinterService.printBill(
+        final printed = await PrinterService.printBill(
           context: context,
           invoiceId: invoiceId,
           customerName: customerName,
@@ -312,7 +312,7 @@ class BluetoothPrinter {
           totalAmount: totalAmount,
           gstPercent: gstPercent,
         );
-        printSuccess = true;
+        printSuccess = printed;
       } catch (e) {
         retryCount++;
         if (!context.mounted) break;
