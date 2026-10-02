@@ -25,114 +25,144 @@ class OnlineAnalyticsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF5B3DF5), Color(0xFF7058F7), Color(0xFF4A6CF7)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF5B3DF5).withValues(alpha: 0.24),
-                blurRadius: 26,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.18),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.storefront_rounded,
-                      color: Colors.white,
-                      size: 21,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Online Store Overview',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 17,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '' + totalOrders.toString() + ' orders across your online store',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white.withValues(alpha: 0.68),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _statusPill(),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.96, end: 1),
+      duration: const Duration(milliseconds: 520),
+      curve: Curves.easeOutCubic,
+      builder: (context, scale, child) => Transform.scale(
+        scale: scale,
+        alignment: Alignment.center,
+        child: child,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Ink(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF4F46E5),
+                  Color(0xFF6366F1),
+                  Color(0xFF4F74F7),
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  _metric(Icons.shopping_bag_rounded, 'Total orders', '' + totalOrders.toString() + ''),
-                  _metric(Icons.schedule_rounded, 'Pending', '' + pendingOrders.toString() + ''),
-                  _metric(Icons.payments_rounded, 'Revenue', '₹' + totalRevenue.toStringAsFixed(0) + ''),
-                  _metric(Icons.verified_rounded, 'Paid', '' + totalPaidCount.toString() + ''),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.11),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.10),
-                  ),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF4F46E5).withValues(alpha: 0.16),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
                 ),
-                child: Row(
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    const Icon(Icons.today_rounded, size: 16, color: Colors.white),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Today: ' + todayOrderCount.toString() + ' orders · ₹' + todayRevenue.toStringAsFixed(0) + ' revenue · ' + todayPaidCount.toString() + ' paid',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.13),
+                        borderRadius: BorderRadius.circular(11),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.16),
                         ),
                       ),
+                      child: const Icon(
+                        Icons.storefront_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
-                    const Icon(Icons.arrow_forward_rounded, size: 17, color: Colors.white70),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Online Store',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15.5,
+                              height: 1.05,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '$totalOrders orders · live overview',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white.withValues(alpha: 0.68),
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _statusPill(),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _metric(Icons.shopping_bag_rounded, 'Orders', '$totalOrders'),
+                    _metric(Icons.schedule_rounded, 'Pending', '$pendingOrders'),
+                    _metric(
+                      Icons.payments_rounded,
+                      'Revenue',
+                      '₹\${totalRevenue.toStringAsFixed(0)}',
+                    ),
+                    _metric(Icons.verified_rounded, 'Paid', '$totalPaidCount'),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.today_rounded,
+                        size: 15,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          'Today  ·  $todayOrderCount orders  ·  ₹\${todayRevenue.toStringAsFixed(0)}  ·  $todayPaidCount paid',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 16,
+                        color: Colors.white70,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -140,37 +170,48 @@ class OnlineAnalyticsCard extends StatelessWidget {
   }
 
   Widget _statusPill() {
-    final label = pendingOrders > 0 ? '' + pendingOrders.toString() + ' pending' : 'All caught up';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+    final label = pendingOrders > 0 ? '$pendingOrders pending' : 'All caught up';
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.92, end: 1),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) => Transform.scale(
+        scale: scale,
+        child: child,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: pendingOrders > 0
-                  ? const Color(0xFFFDE68A)
-                  : const Color(0xFF86EFAC),
-              shape: BoxShape.circle,
-            ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.16),
           ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: pendingOrders > 0
+                    ? const Color(0xFFFDE68A)
+                    : const Color(0xFF86EFAC),
+                shape: BoxShape.circle,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -178,37 +219,45 @@ class OnlineAnalyticsCard extends StatelessWidget {
   Widget _metric(IconData icon, String label, String value) {
     return Expanded(
       child: Container(
-        margin: const EdgeInsets.only(right: 7),
-        padding: const EdgeInsets.fromLTRB(10, 10, 8, 9),
+        margin: const EdgeInsets.only(right: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+          color: Colors.white.withValues(alpha: 0.09),
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.08),
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Icon(icon, color: Colors.white70, size: 15),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
-                color: Colors.white70,
-                fontSize: 9.5,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
+            Icon(icon, color: Colors.white70, size: 14),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white70,
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
