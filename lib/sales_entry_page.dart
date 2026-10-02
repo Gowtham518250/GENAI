@@ -85,6 +85,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
   bool _isVoiceAssistantOpen = false;
   double _schemeDiscount = 0.0;
   double _flashSaleDiscount = 0.0;
+  Map<String, dynamic>? _activeFlashSale;
   String _activeSchemeName = '';
   String _paymentAnnounceLang = 'en-IN'; // 🎙️ Payment announcement language
   
@@ -1507,6 +1508,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
           'gst': (p['gst_percent'] ?? p['gst'] ?? '18').toString(),
           'barcode': pBarcode,
           'sku': p['sku']?.toString() ?? pBarcode,
+          'category': p['category'] ?? p['category_name'] ?? '',
           'source': 'Backend Catalog',
         };
         known.add(pData);
@@ -2333,6 +2335,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     addEntry();
     _loadLocalProducts();
     _loadLocalCustomers();
+    unawaited(_refreshActiveFlashSaleFromBackend());
     
     // 🔧 FIX: Refresh session when app starts to ensure authentication is valid
     _refreshSessionIfNeeded();
@@ -2687,14 +2690,144 @@ class _SalesEntryPageState extends State<SalesEntryPage>
   // Looks up any active flash sale from SharedPreferences (async), applies it
   // to _flashSaleDiscount, and re-runs calculateTotal() so the displayed
   // total picks up the discount once it's known.
+  Future<void> _refreshActiveFlashSaleFromBackend() async {
+    try {
+      final response = await ApiClient.getJson('/api/flash-sale/active');
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) {
+          final data = Map<String, dynamic>.from(decoded);
+          final expiry = DateTime.tryParse(data['end_time']?.toString() ?? '');
+          if (expiry != null && DateTime.now().isBefore(expiry)) {
+            _activeFlashSale = {
+              ...data,
+              'status': 'ACTIVE',
+              'discount': data['discount_pct'] ?? data['discount'] ?? 0,
+              'expiry': data['end_time'],
+            };
+            await ScopedSharedPreferences.setString(
+              'active_flash_sale',
+              jsonEncode(_activeFlashSale),
+            );
+            if (mounted) calculateTotal();
+            return;
+          }
+        }
+      }
+
+      if (response.statusCode == 404) {
+        _activeFlashSale = null;
+        _flashSaleDiscount = 0;
+        await ScopedSharedPreferences.remove('active_flash_sale');
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Backend flash sale lookup failed: $e');
+    }
+  }
+
+  Map<String, dynamic>? _findSaleProductForEntry(
+    Map<String, TextEditingController> entry,
+  ) {
+    final name = entry['item']?.text.trim().toLowerCase() ?? '';
+    final barcode = entry['barcode']?.text.trim().toLowerCase() ?? '';
+
+    for (final product in _localProducts.values) {
+      final productName = (product['product_name'] ?? product['name'] ?? '')
+          .toString().trim().toLowerCase();
+      final productBarcode = (product['barcode'] ?? product['sku'] ?? product['product_code'] ?? '')
+          .toString().trim().toLowerCase();
+      if ((barcode.isNotEmpty && productBarcode == barcode) ||
+          (name.isNotEmpty && productName == name)) {
+        return product;
+      }
+    }
+
+    for (final product in _knownProducts) {
+      final productName = product['name']?.toString().trim().toLowerCase() ?? '';
+      final productBarcode = product['barcode']?.toString().trim().toLowerCase() ?? '';
+      if ((barcode.isNotEmpty && productBarcode == barcode) ||
+          (name.isNotEmpty && productName == name)) {
+        return product;
+      }
+    }
+    return null;
+  }
+
+  double _flashSaleDiscountForEntry(
+    Map<String, TextEditingController> entry,
+  ) {
+    final sale = _activeFlashSale;
+    if (sale == null) return 0;
+
+    final expiry = DateTime.tryParse(sale['expiry']?.toString() ?? '');
+    if (expiry == null || !DateTime.now().isBefore(expiry)) return 0;
+
+    final pct = (double.tryParse(
+      (sale['discount_pct'] ?? sale['discount'] ?? 0).toString(),
+    ) ?? 0).clamp(0, 100);
+    if (pct <= 0) return 0;
+
+    final product = _findSaleProductForEntry(entry);
+    if (product == null) return 0;
+
+    final productId = product['id']?.toString() ?? product['product_id']?.toString() ?? '';
+    final productSku = (product['sku'] ?? product['barcode'] ?? '').toString().trim().toLowerCase();
+    final productCategory = (product['category'] ?? product['category_name'] ?? '').toString().trim().toLowerCase();
+    final ids = (sale['product_ids'] as List?)?.map((e) => e.toString()).toSet() ?? <String>{};
+    final skus = (sale['skus'] as List?)?.map((e) => e.toString().trim().toLowerCase()).toSet() ?? <String>{};
+    final category = sale['category']?.toString().trim().toLowerCase() ?? '';
+
+    final applies = ids.isNotEmpty
+        ? ids.contains(productId)
+        : skus.isNotEmpty
+            ? skus.contains(productSku)
+            : category.isEmpty ||
+                category == 'all' ||
+                category == 'all products' ||
+                category == '*' ||
+                category == productCategory;
+    if (!applies) return 0;
+
+    final qty = double.tryParse(entry['qty']?.text.trim() ?? '1') ?? 1;
+    final price = double.tryParse(entry['price']?.text.trim() ?? '0') ?? 0;
+    return (qty * price * (pct / 100)).clamp(0, qty * price);
+  }
+
   Future<void> _applyFlashSaleDiscount(double subTotal) async {
     double flashSaleDiscount = 0.0;
     try {
+      try {
+        final response = await ApiClient.getJson('/api/flash-sale/active');
+        if (response.statusCode == 200 && response.body.isNotEmpty) {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map) {
+            final data = Map<String, dynamic>.from(decoded);
+            final expiry = DateTime.tryParse(data['end_time']?.toString() ?? '');
+            if (expiry != null && DateTime.now().isBefore(expiry)) {
+              _activeFlashSale = {
+                ...data,
+                'status': 'ACTIVE',
+                'discount': data['discount_pct'] ?? data['discount'] ?? 0,
+                'expiry': data['end_time'],
+              };
+              await ScopedSharedPreferences.setString(
+                'active_flash_sale',
+                jsonEncode(_activeFlashSale),
+              );
+            }
+          }
+        } else if (response.statusCode == 404) {
+          _activeFlashSale = null;
+          await ScopedSharedPreferences.remove('active_flash_sale');
+        }
+      } catch (_) {}
+
       final flashSaleData = await ScopedSharedPreferences.getString('active_flash_sale');
       if (flashSaleData != null && flashSaleData.isNotEmpty) {
         final dynamic decoded = jsonDecode(flashSaleData);
         if (decoded is! Map) throw const FormatException('Invalid flash sale payload');
         final sale = Map<String, dynamic>.from(decoded);
+        _activeFlashSale = sale;
         final status = (sale['status'] ?? 'ACTIVE').toString().trim().toUpperCase();
         final expiry = DateTime.tryParse(sale['expiry']?.toString() ?? '');
         if (status != 'ACTIVE') {
@@ -2928,9 +3061,33 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       final price     = double.tryParse(e['price']?.text.trim() ?? '0') ?? 0.0;
       final gstPct    = double.tryParse(e['gst']?.text.trim() ?? '0') ?? 0.0;
       
-      final lineSub   = qty * price;
-      final lineGst   = _withTax ? lineSub * (gstPct / 100) : 0.0;
-      final lineTotal = double.parse((lineSub + lineGst).toStringAsFixed(2));
+      final lineSub = qty * price;
+      final manualDiscountPerUnit =
+          double.tryParse(e['discount']?.text.trim() ?? '0') ?? 0;
+      final manualDiscountTotal =
+          (qty * manualDiscountPerUnit).clamp(0, lineSub);
+      final flashDiscountTotal = _flashSaleDiscountForEntry(e);
+      final totalLineDiscount =
+          (manualDiscountTotal + flashDiscountTotal).clamp(0, lineSub);
+      final discountedLineSub =
+          math.max(0.0, lineSub - totalLineDiscount);
+      final lineGst =
+          _withTax ? lineSub * (gstPct / 100) : 0.0;
+      final lineTotal =
+          double.parse(discountedLineSub.toStringAsFixed(2));
+
+      final discountReasons = <String>[];
+      if (manualDiscountTotal > 0) {
+        discountReasons.add('Manual Discount');
+      }
+      if (flashDiscountTotal > 0) {
+        final salePct = _activeFlashSale?['discount_pct'] ??
+            _activeFlashSale?['discount'] ??
+            0;
+        discountReasons.add(
+          'Special Discount: Flash Sale $salePct%',
+        );
+      }
 
       // Try to find the exact matching product ID from 'known' list
       final nameLower = rawName.toLowerCase();
@@ -2949,7 +3106,14 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         'quantity':     qty,
         'gst_percent':  gstPct.toString(),
         'total_with_tax': lineTotal.toString(),
-        'item_index':   entries.indexOf(e),
+        'line_total': lineTotal,
+        'discount_amount': double.parse(
+          totalLineDiscount.toStringAsFixed(2),
+        ),
+        'discount_reason': discountReasons.join(' + '),
+        'discount_source': flashDiscountTotal > 0 ? 'FLASH_SALE' : null,
+        'original_unit_price': price,
+        'item_index': entries.indexOf(e),
       };
     }).toList();
   }
@@ -3561,6 +3725,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     final String nextBillNo = 'BILL-${(currentLast + 1).toString().padLeft(4, '0')}';
 
     // snapshot entry data before dialog
+    final processedSnapshot = _getProcessedItems();
     final snapshot = entries.where((e) => e['item']?.text.trim().isNotEmpty ?? false).map((e) {
       final rawName = e['item']?.text ?? '';
       final barcode = e['barcode']?.text ?? '';
@@ -3594,14 +3759,26 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         }
       }
 
+      final processedIndex =
+          entries.indexWhere((entry) => identical(entry, e));
+      final processedItem =
+          processedIndex >= 0 && processedIndex < processedSnapshot.length
+              ? processedSnapshot[processedIndex]
+              : <String, dynamic>{};
+      final lineDiscount =
+          double.tryParse(processedItem['discount_amount']?.toString() ?? '0') ??
+              0;
+      final discountPerUnit = qty > 0 ? lineDiscount / qty : 0;
+
       return {
         'item': displayName,
         'qty': qty,
         'price': price,
         'gstPercent': gstPercent,
         'barcode': barcode,
-        'originalPrice': originalPrice,
-        'discount': discount,
+        'originalPrice': math.max(originalPrice, price + discountPerUnit),
+        'discount': discountPerUnit,
+        'discountReason': processedItem['discount_reason']?.toString() ?? '',
       };
     }).toList();
 
@@ -5998,1361 +6175,3 @@ class _SalesField extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
 
   @override
-  State<_SalesField> createState() => _SalesFieldState();
-}
-
-class _SalesFieldState extends State<_SalesField> {
-  bool _focused = false;
-  late FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode = widget.focusNode ?? FocusNode();
-    _focusNode.addListener(_onFocusChange);
-  }
-
-  void _onFocusChange() {
-    if (mounted) {
-      setState(() => _focused = _focusNode.hasFocus);
-      if (_focusNode.hasFocus) {
-        FocusScope.of(context).requestFocus(_focusNode);
-      }
-    }
-  }
-
-  @override
-  void didUpdateWidget(_SalesField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.focusNode != oldWidget.focusNode) {
-      _focusNode.removeListener(_onFocusChange);
-      _focusNode = widget.focusNode ?? FocusNode();
-      _focusNode.addListener(_onFocusChange);
-    }
-  }
-
-  @override
-  void dispose() {
-    _focusNode.removeListener(_onFocusChange);
-    if (widget.focusNode == null) {
-      _focusNode.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: widget.controller,
-      focusNode: _focusNode,
-      keyboardType: widget.keyboardType,
-      textInputAction: widget.textInputAction ?? TextInputAction.next,
-      validator: widget.validator,
-      onChanged: widget.onChanged,
-      onFieldSubmitted: widget.onSubmitted,
-      onTap: () {
-        FocusScope.of(context).requestFocus(_focusNode);
-      },
-      style: GoogleFonts.poppins(
-            fontSize: 16,
-            color: Colors.black,
-            fontWeight: FontWeight.bold),
-        decoration: InputDecoration(
-          labelText: widget.label,
-          hintText: widget.hint,
-          labelStyle: GoogleFonts.poppins(
-            fontSize: 14,
-            color: _focused
-                ? widget.accentColor
-                : const Color(0xFF6B7280),
-          ),
-          prefixIcon: Icon(widget.icon,
-              size: 20,
-              color: _focused
-                  ? widget.accentColor
-                  : const Color(0xFF9CA3AF)),
-          isDense: true,
-          filled: true,
-          fillColor: _focused
-              ? widget.accentColor.withValues(alpha: 0.08)
-              : const Color(0xFFF9FAFB),
-          border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: const Color(0xFFE5E7EB)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: widget.accentColor, width: 2.0),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFEF4444)),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide:
-                const BorderSide(color: Color(0xFFEF4444), width: 2.0),
-          ),
-          errorStyle: GoogleFonts.poppins(
-              fontSize: 11, color: const Color(0xFFEF4444)),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          suffixIcon: widget.suffixIcon,
-        ),
-    );
-  }
-}
-
-class _MessageBanner extends StatelessWidget {
-  const _MessageBanner({required this.message});
-  final String message;
-
-  bool get _isSuccess =>
-      message.contains('✅') || message.contains('success') ||
-      message.contains('✍️“');
-
-  @override
-  Widget build(BuildContext context) {
-    final color =
-        _isSuccess ? const Color(0xFF10B981) : const Color(0xFFEF4444);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _isSuccess
-                ? Icons.check_circle_rounded
-                : Icons.error_outline_rounded,
-            color: color,
-            size: 18,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(message,
-                style: GoogleFonts.poppins(
-                    color: color,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionBtn extends StatelessWidget {
-  const _ActionBtn({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.isLoading,
-    required this.onTap,
-    this.height = 40,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final bool isLoading;
-  final VoidCallback? onTap;
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        height: height,
-        decoration: BoxDecoration(
-          color: onTap == null ? color.withValues(alpha: 0.25) : color,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: onTap == null
-              ? []
-              : [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-        ),
-        child: Center(
-          child: isLoading
-              ? SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.8)),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 14, color: Colors.white),
-                    const SizedBox(width: 6),
-                    Text(
-                      label,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: .3,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DialogBtn extends StatelessWidget {
-  const _DialogBtn({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.textColor,
-    this.borderColor,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final Color textColor;
-  final Color? borderColor;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 38,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(10),
-            border: borderColor != null
-                ? Border.all(color: borderColor!)
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 13, color: textColor),
-              const SizedBox(width: 5),
-              Text(label,
-                  style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: textColor)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _QrDialog extends StatelessWidget {
-  const _QrDialog({
-    required this.qrImageUrl,
-    required this.billContent,
-    required this.billText,
-    required this.mounted,
-    required this.context,
-  });
-
-  final String qrImageUrl;
-  final StringBuffer billContent;
-  final String billText;
-  final bool mounted;
-  final BuildContext context;
-
-  @override
-  Widget build(BuildContext ctx) {
-    return AlertDialog(
-      backgroundColor: const Color(0xFF0F172A),
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text('Bill QR Code',
-          style: GoogleFonts.playfairDisplay(
-              color: Colors.white, fontWeight: FontWeight.w700)),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Image.network(
-                qrImageUrl,
-                width: 240,
-                height: 240,
-                errorBuilder: (c, e, s) => Text('Unable to load QR image',
-                    style: GoogleFonts.poppins(
-                        color: Colors.red, fontSize: 12)),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0A0F1A),
-                borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: Colors.white.withValues(alpha: 0.07)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Bill content (scan or copy):',
-                      style: GoogleFonts.poppins(
-                          color: Colors.white60,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 6),
-                  SelectableText(billContent.toString(),
-                      style: GoogleFonts.spaceMono(
-                          fontSize: 10.5,
-                          color: Colors.white54)),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      _TextBtn(
-                        label: 'Copy',
-                        icon: Icons.copy_rounded,
-                        onTap: () {
-                          Clipboard.setData(
-                              ClipboardData(text: billContent.toString()));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Bill copied to clipboard')),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _TextBtn(
-                        label: 'Share',
-                        icon: Icons.share_rounded,
-                        onTap: () =>
-                            Share.share(billText, subject: 'Sales Bill'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text('Scan this QR to load bill on any device',
-                style: GoogleFonts.poppins(
-                    color: Colors.white38, fontSize: 11)),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text('Close',
-              style: GoogleFonts.poppins(
-                  color: const Color(0xFF6366F1),
-                  fontWeight: FontWeight.w600)),
-        ),
-      ],
-    );
-  }
-}
-
-class _TextBtn extends StatelessWidget {
-  const _TextBtn(
-      {required this.label, required this.icon, required this.onTap});
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: const Color(0xFF6366F1).withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12, color: const Color(0xFF818CF8)),
-            const SizedBox(width: 4),
-            Text(label,
-                style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: const Color(0xFF818CF8),
-                    fontWeight: FontWeight.w600)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  AppBar icon button
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-class _AppBarIconBtn extends StatelessWidget {
-  const _AppBarIconBtn(
-      {required this.icon, required this.onTap, this.tooltip});
-  final IconData icon;
-  final VoidCallback onTap;
-  final String? tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip ?? '',
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 36,
-          height: 36,
-          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(10),
-            border:
-                Border.all(color: Colors.white.withValues(alpha: 0.1)),
-          ),
-          child: Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.8)),
-        ),
-      ),
-    );
-  }
-}
-
-Widget _buildSetupStep(String number, String text) {
-  return Row(
-    children: [
-      Container(
-        width: 20,
-        height: 20,
-        decoration: const BoxDecoration(color: Color(0xFF4F46E5), shape: BoxShape.circle),
-        child: Center(
-          child: Text(
-            number,
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
-      const SizedBox(width: 12),
-      Expanded(
-        child: Text(
-          text,
-          style: GoogleFonts.poppins(color: const Color(0xFF1F2937), fontSize: 12, fontWeight: FontWeight.w600),
-        ),
-      ),
-    ],
-  );
-}
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  Helpers
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-class _Orb extends StatelessWidget {
-  const _Orb({required this.size, required this.color});
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: color,
-              blurRadius: size * 0.85,
-              spreadRadius: size * 0.06,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GridLinePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.022)
-      ..strokeWidth = .7;
-    for (double x = -size.height; x < size.width + size.height; x += 38) {
-      canvas.drawLine(
-          Offset(x, 0), Offset(x + size.height, size.height), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
-}
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  Premium Bill Image Dialog  (share as PNG, button outside dialog)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-class _BillImageDialog extends StatefulWidget {
-  const _BillImageDialog({
-    required this.billKey,
-    required this.snapshot,
-    required this.totalAmount,
-    required this.billNumber,
-    required this.dateStr,
-    required this.timeStr,
-    required this.paymentMode,
-    required this.shopName,
-    required this.shopPhone,
-    required this.shopLocation,
-    required this.shopType,
-    required this.shopEmail,
-    required this.customerPhone,
-    this.shopLogo,
-    this.withGstInitial = true,
-  });
-
-  final GlobalKey billKey;
-  final List<Map<String, dynamic>> snapshot;
-  final double totalAmount;
-  final String billNumber;
-  final String dateStr;
-  final String timeStr;
-  final String paymentMode;
-  final String shopName;
-  final String shopPhone;
-  final String shopLocation;
-  final String shopType;
-  final String shopEmail;
-  final String customerPhone;
-  final String? shopLogo;
-  final bool withGstInitial;
-
-  @override
-  State<_BillImageDialog> createState() => _BillImageDialogState();
-}
-
-class _BillImageDialogState extends State<_BillImageDialog> {
-  bool _sharing = false;
-  late bool _withGst;
-
-  @override
-  void initState() {
-    super.initState();
-    _withGst = widget.withGstInitial;
-  }
-
-  Future<Uint8List> _captureBillPng() async {
-    await Future.delayed(const Duration(milliseconds: 80));
-    final boundary =
-        widget.billKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-    if (boundary == null) throw Exception('Cannot find bill widget');
-    // Capture at a reasonable pixel ratio (3.0) to avoid lagging on mobile/web.
-    final img = await boundary.toImage(pixelRatio: 3.0);
-    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-    if (byteData == null) throw Exception('Cannot encode image');
-    return byteData.buffer.asUint8List();
-  }
-
-  Future<void> _shareAsImage() async {
-    setState(() => _sharing = true);
-    try {
-      final bytes = await _captureBillPng();
-      final xFile = XFile.fromData(
-        bytes,
-        mimeType: 'image/png',
-        name: 'bill_${DateTime.now().millisecondsSinceEpoch}.png',
-      );
-      await Share.shareXFiles([xFile], subject: 'Sales Bill');
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Share failed: $e'), backgroundColor: Colors.red[800]),
-        );
-      }
-    }
-    if (mounted) setState(() => _sharing = false);
-  }
-
-  Future<void> _promptWhatsAppShare() async {
-    final controller = TextEditingController();
-    controller.text = widget.customerPhone;
-    final phone = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Send bill via WhatsApp'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-            labelText: 'Customer WhatsApp number',
-            hintText: 'e.g. 919876543210 (with country code)',
-            helperText: 'You can send to non-contacts using wa.me link',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Send'),
-          ),
-        ],
-      ),
-    );
-    if (phone == null) return;
-    if (phone.isEmpty) {
-      // If no number provided, just share the bill image using system share UI
-      await _shareAsImage();
-      return;
-    }
-    await _shareBillToWhatsApp(phone);
-  }
-
-  Future<void> _shareBillToWhatsApp(String phone) async {
-    setState(() => _sharing = true);
-    try {
-      final bytes = await _captureBillPng();
-      final xFile = XFile.fromData(
-        bytes,
-        mimeType: 'image/png',
-        name: 'bill_${DateTime.now().millisecondsSinceEpoch}.png',
-      );
-      final message =
-          'Thank you for shopping at ${widget.shopName}\\nYour bill total is ₹${widget.totalAmount.toStringAsFixed(2)}.\\nInvoice generated via AI Shop App.';
-
-      // Sharing via wa.me allows sending to non-contacts easily
-      // Ensure phone is cleaned and has country code
-      String cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
-      if (cleanPhone.length == 10) cleanPhone = '91$cleanPhone'; // Default to India if 10 digits
-      
-      final url = 'https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}';
-      if (await canLaunchUrlString(url)) {
-        await launchUrlString(url, mode: LaunchMode.externalApplication);
-      }
-
-      // We still share the file. WhatsApp usually prioritizes the "Send to" contact if opened from link
-      await Share.shareXFiles(
-        [xFile],
-        text: message,
-        subject: 'Sales Bill',
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('WhatsApp share failed: $e'), backgroundColor: Colors.red[800]),
-        );
-      }
-    }
-    if (mounted) setState(() => _sharing = false);
-  }
-
-  @override
-  Widget build(BuildContext ctx) {
-    return Scaffold(
-      backgroundColor: Colors.black87,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Top bar with close + share ──────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(ctx),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.close, color: Colors.white, size: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text('Bill Preview',
-                      style: GoogleFonts.poppins(
-                          color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                  const Spacer(),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 1. GST Toggle Button
-                      GestureDetector(
-                        onTap: () => setState(() => _withGst = !_withGst),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: _withGst ? AppColors.brand.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: _withGst ? AppColors.brand : Colors.white24,
-                            ),
-                          ),
-                          child: Icon(_withGst ? Icons.check_circle_rounded : Icons.circle_outlined, color: _withGst ? AppColors.brandSubtle : Colors.white38, size: 18),
-                        ),
-                      ),
-                      // 2. BT PRINT BUTTON
-                      GestureDetector(
-                        onTap: () {
-                           final state = widget.billKey.currentContext?.findAncestorStateOfType<_SalesEntryPageState>();
-                           if (state != null) {
-                              state._printBluetooth();
-                           }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5)),
-                          ),
-                          child: const Icon(Icons.print_rounded, color: Colors.white, size: 18),
-                        ),
-                      ),
-                      // 3. WHATSAPP BUTTON
-                      GestureDetector(
-                        onTap: _sharing ? null : _promptWhatsAppShare,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: AppColors.listening.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.listening.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
-                        ),
-                      ),
-                      // 4. SHARE BUTTON (Combined)
-                      GestureDetector(
-                        onTap: _sharing ? null : _shareAsImage,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [AppColors.brand, Color(0xFF8B5CF6)],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.brand.withValues(alpha: 0.4),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: _sharing
-                              ? const SizedBox(
-                                  width: 18, height: 18,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.share_rounded,
-                                        color: Colors.white, size: 18),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Bill card (captured as image) ──────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: RepaintBoundary(
-                  key: widget.billKey,
-                  child: Center(
-                    child: ConstrainedBox(
-                      // Larger capture so shared image looks bigger,
-                      // with bigger receipt dimensions for better visibility.
-                      constraints: const BoxConstraints(
-                        maxWidth: 380,
-                        minHeight: 750,
-                      ),
-                      child: _BillCard(
-                        snapshot: widget.snapshot,
-                        totalAmount: widget.totalAmount,
-                        billNumber: widget.billNumber,
-                        dateStr: widget.dateStr,
-                        timeStr: widget.timeStr,
-                        paymentMode: widget.paymentMode,
-                        shopName: widget.shopName,
-                        shopPhone: widget.shopPhone,
-                        shopLocation: widget.shopLocation,
-                        shopType: widget.shopType,
-                        shopEmail: widget.shopEmail,
-                        shopLogo: widget.shopLogo,
-                        withGst: _withGst,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  The actual bill card widget (what gets captured as image)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _BillCard extends StatelessWidget {
-  const _BillCard({
-    required this.snapshot,
-    required this.totalAmount,
-    required this.billNumber,
-    required this.dateStr,
-    required this.timeStr,
-    required this.paymentMode,
-    required this.shopName,
-    required this.shopPhone,
-    required this.shopLocation,
-    required this.shopType,
-    required this.shopEmail,
-    this.shopLogo,
-    this.withGst = true,
-  });
-
-  final List<Map<String, dynamic>> snapshot;
-  final double totalAmount;
-  final String billNumber;
-  final String dateStr;
-  final String timeStr;
-  final String paymentMode;
-  final String shopName;
-  final String shopPhone;
-  final String shopLocation;
-  final String shopType;
-  final String shopEmail;
-  final String? shopLogo;
-  final bool withGst;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    // ── Per-GST-slab aggregation for proper CGST/SGST breakdown ──
-    double billSubtotal = 0;
-    // Map of gstPercent -> { subtotal, gstAmount }
-    final Map<double, Map<String, double>> slabMap = {};
-
-    for (var item in snapshot) {
-      final double q = (item['qty'] as num?)?.toDouble() ?? 0;
-      final double p = (item['price'] as num?)?.toDouble() ?? 0;
-      final double g = (item['gstPercent'] as num?)?.toDouble() ?? 0;
-
-      final double lineSub = q * p;
-      billSubtotal += lineSub;
-
-      if (withGst && g > 0) {
-        final double lineGst = lineSub * (g / 100);
-        slabMap.putIfAbsent(g, () => {'subtotal': 0, 'gst': 0});
-        slabMap[g]!['subtotal'] = slabMap[g]!['subtotal']! + lineSub;
-        slabMap[g]!['gst']     = slabMap[g]!['gst']!     + lineGst;
-      }
-    }
-
-    double totalGstAmount = slabMap.values.fold(0.0, (s, v) => s + (v['gst'] ?? 0));
-    final double finalGrandTotal = withGst
-        ? double.parse((billSubtotal + totalGstAmount).toStringAsFixed(2))
-        : double.parse(billSubtotal.toStringAsFixed(2));
-
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 80, 16, 40),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Header (Shop Details) ──
-          if (shopLogo != null && shopLogo!.isNotEmpty) ...[
-            Center(
-              child: Image.memory(
-                base64Decode(shopLogo!),
-                width: 60,
-                height: 60,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const SizedBox(),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-          Text(
-            shopName.toUpperCase(),
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.0,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 2),
-          if (shopLocation.isNotEmpty)
-            Text(
-              shopLocation,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w800),
-            ),
-          Text(
-            [
-              if (shopPhone.isNotEmpty) '${l.translate('phone')}: $shopPhone',
-              if (shopType.isNotEmpty) 'GSTin: $shopType',
-            ].join(' | '),
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 12),
-
-          // ── Bill Label & Metadata ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(4)),
-                child: Text(
-                  l.translate('cashBill').toUpperCase(),
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('${l.translate('billNo')}: $billNumber', 
-                      style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w900)),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('${l.translate('date')}: $dateStr', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
-              Text('${l.translate('time')}: $timeStr', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('${l.translate('cashier')}: POS', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
-              Text('${l.translate('counter')}: 1', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
-              Text('${l.translate('serve')}: POS', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Divider(thickness: 1, color: Colors.black87),
-
-          // ── Table Header ──
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Expanded(flex: 5, child: Text(l.translate('description'), style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
-                Expanded(flex: 2, child: Text(l.translate('mrp'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
-                Expanded(flex: 2, child: Text(l.translate('rate'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
-                Expanded(flex: 2, child: Text(l.translate('qty'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
-                Expanded(flex: 2, child: Text(l.translate('amt'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
-              ],
-            ),
-          ),
-          const Divider(thickness: 1, color: Colors.black87),
-
-          // ── Line Items (with Multi-language support) ──
-          ...snapshot.map((item) {
-            final double qty = item['qty'] ?? 0.0;
-            final double rate = item['price'] ?? 0.0;
-            final double discount = item['discount'] ?? 0.0;
-            final double originalPrice = item['originalPrice'] ?? rate;
-            final double mrp = originalPrice * 1.15; // Mock MRP based on original price
-            final double amt = qty * rate;
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 5,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item['item'] ?? '',
-                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black),
-                            ),
-                              Text(
-                                '(Disc Saved: Rs.${(discount * qty).toStringAsFixed(2)})',
-                                style: GoogleFonts.poppins(fontSize: 9, color: Colors.black, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic),
-                              ),
-                          ],
-                        ),
-                      ),
-                      Expanded(flex: 2, child: Text(mrp.toStringAsFixed(2), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700))),
-                      Expanded(flex: 2, child: Text(rate.toStringAsFixed(2), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700))),
-                      Expanded(flex: 2, child: Text(qty.toStringAsFixed(0), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700))),
-                      Expanded(flex: 2, child: Text(amt.toStringAsFixed(2), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black))),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          }),
-          const Divider(thickness: 1, color: Colors.black87),
-
-          // ── Summary & Totals ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('E & O.E., #Incl Gst', style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black)),
-              Text('${l.translate('total')} : ${totalAmount.toStringAsFixed(1)}', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${l.translate('qty')} : ${snapshot.fold<double>(0, (p, c) => p + (c['qty'] ?? 0)).toStringAsFixed(0)}', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black)),
-                    Text('${l.translate('items')} : ${snapshot.length}', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black)),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  '${l.translate('total')} : ${totalAmount.toStringAsFixed(2)}',
-                  textAlign: TextAlign.right,
-                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Text('${l.translate('cash')}     :', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black)),
-              const SizedBox(width: 20),
-              Text(totalAmount.toStringAsFixed(2), style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black)),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Removed Savings Widget
-
-          // ── Footer ──
-          Text(
-            l.translate('thankYouVisitAgain'),
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black),
-          ),
-          const SizedBox(height: 4),
-          const Divider(thickness: 1, color: Colors.black26),
-        ],
-      ),
-    );
-  }
-}
-
-class _BillMeta extends StatelessWidget {
-  const _BillMeta({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: GoogleFonts.poppins(
-                color: Colors.white54, fontSize: 8, letterSpacing: 0.8)),
-        const SizedBox(height: 2),
-        Text(value,
-            style: GoogleFonts.poppins(
-                color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
-}
-
-/// Reusable bill total row widget
-class _BillTotalRow extends StatelessWidget {
-  const _BillTotalRow({
-    required this.label,
-    required this.value,
-    this.bold = false,
-    this.fontSize = 11,
-    this.labelColor,
-    this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final bool bold;
-  final double fontSize;
-  final Color? labelColor;
-  final Color? valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1.5),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: fontSize,
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-              color: labelColor ?? Colors.black87,
-            ),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: fontSize,
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-              color: valueColor ?? Colors.black,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ZigzagPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white..style = PaintingStyle.fill;
-    final path = Path();
-    path.moveTo(0, size.height);
-    double x = 0;
-    const w = 12.0;
-    while (x < size.width) {
-      path.lineTo(x + w / 2, 0);
-      path.lineTo(x + w, size.height);
-      x += w;
-    }
-    path.lineTo(size.width, size.height);
-    path.close();
-    canvas.drawPath(path, paint);
-    // top fill (gradient header color)
-    final topPaint = Paint()..color = AppColors.brand..style = PaintingStyle.fill;
-    final topPath = Path();
-    topPath.moveTo(0, 0);
-    topPath.lineTo(size.width, 0);
-    x = size.width;
-    while (x > 0) {
-      topPath.lineTo(x - w / 2, size.height);
-      topPath.lineTo(x - w, 0);
-      x -= w;
-    }
-    topPath.close();
-    canvas.drawPath(topPath, topPaint);
-  }
-
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GST Breakdown Row Helper (used in Total Card)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _TaxRow extends StatelessWidget {
-  const _TaxRow({
-    required this.label,
-    required this.value,
-    this.isBold = false,
-    this.isLight = false,
-    this.color,
-  });
-
-  final String label;
-  final String value;
-  final bool isBold;
-  final bool isLight;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    final textColor = color ?? (isLight ? Colors.black54 : Colors.black87);
-    final fontSize = isBold ? 14.0 : 11.5;
-    final weight = (isBold || !isLight) ? FontWeight.w700 : FontWeight.w500;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(fontSize: fontSize, fontWeight: weight, color: textColor),
-        ),
-        Text(
-          value,
-          style: GoogleFonts.poppins(fontSize: fontSize, fontWeight: weight, color: textColor),
-        ),
-      ],
-    );
-  }
-}
-
-
-class _StickySecondaryBtn extends StatelessWidget {
-  const _StickySecondaryBtn({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-    this.isLoading = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback? onTap;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool enabled = onTap != null && !isLoading;
-    return Material(
-      color: enabled ? color.withValues(alpha: 0.08) : const Color(0xFFF3F4F6),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: enabled ? color.withValues(alpha: 0.25) : const Color(0xFFE5E7EB),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: enabled ? color : const Color(0xFF9CA3AF),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: GoogleFonts.poppins(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  color: enabled ? color : const Color(0xFF9CA3AF),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// â”€â”€ Bill Summary Metadata Chip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Small info chip shown in the bill summary card for items/GST/discount
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({
-    required this.icon,
-    required this.label,
-    this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    final chipColor = color ?? const Color(0xFF6B7280);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: chipColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: chipColor.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 11, color: chipColor),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: chipColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
