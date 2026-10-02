@@ -1450,7 +1450,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
   List<Map<String, dynamic>> _knownCustomers = [];
 
   String _normalizeBarcode(String value) {
-    return value.trim().replaceAll(RegExp(r'[\\s-]'), '').toUpperCase();
+    return value.trim().replaceAll(RegExp(r'[\s-]'), '').toUpperCase();
   }
 
   Map<String, dynamic>? _barcodeCatalogLookup(String barcode) {
@@ -1741,8 +1741,8 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     return null;
   }
 
-  Future<void> _handleScannedBarcode(String normalizedCode) async {
-    final normalizedCode = _normalizeBarcode(normalizedCode);
+  Future<void> _handleScannedBarcode(String code) async {
+    final normalizedCode = _normalizeBarcode(code);
     if (normalizedCode.isEmpty) return;
 
     // 🛑 BARCODE DEBOUNCE (300ms)
