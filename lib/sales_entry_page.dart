@@ -1148,6 +1148,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       barrierDismissible: false,
       builder: (ctx) {
         bool isSaving = false;
+        String savingStatus = 'Adding customer…';
 
         Future<void> saveCustomer(void Function(void Function()) setDialogState) async {
           if (isSaving) return;
@@ -1170,7 +1171,10 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             return;
           }
 
-          setDialogState(() => isSaving = true);
+          setDialogState(() {
+            isSaving = true;
+            savingStatus = 'Adding customer…';
+          });
 
           try {
             final List<dynamic> customers =
@@ -1188,6 +1192,10 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                   DateFormat('yyyy-MM-dd').format(DateTime.now()),
             });
             await LocalStorageService.saveLocalCustomers(customers);
+
+            setDialogState(() {
+              savingStatus = 'Syncing with server…';
+            });
 
             // Sync to backend, with offline fallback and retry queue.
             try {
@@ -1266,12 +1274,38 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                       ),
                     ),
                   ),
-                  if (isSaving)
-                    const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2.4),
-                    ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: isSaving
+                        ? Row(
+                            key: const ValueKey('customer-saving'),
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  color: Color(0xFF4F46E5),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Saving',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF6B7280),
+                                ),
+                              ),
+                            ],
+                          )
+                        : const SizedBox(
+                            key: ValueKey('customer-idle'),
+                            width: 0,
+                            height: 0,
+                          ),
+                  ),
                 ],
               ),
               content: Stack(
@@ -1334,41 +1368,99 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                   ),
                   if (isSaving)
                     Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.72),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 52,
-                                height: 52,
+                      child: AnimatedOpacity(
+                        opacity: isSaving ? 1 : 0,
+                        duration: const Duration(milliseconds: 180),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.86),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0.92, end: 1),
+                              duration: const Duration(milliseconds: 260),
+                              curve: Curves.easeOutBack,
+                              builder: (context, scale, child) =>
+                                  Transform.scale(scale: scale, child: child),
+                              child: Container(
+                                width: 180,
+                                padding: const EdgeInsets.fromLTRB(
+                                  14,
+                                  14,
+                                  14,
+                                  12,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF4F46E5)
-                                      .withValues(alpha: 0.10),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Padding(
-                                  padding: EdgeInsets.all(14),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                    color: Color(0xFF4F46E5),
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: const Color(0xFF4F46E5)
+                                        .withValues(alpha: 0.10),
                                   ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF4F46E5)
+                                          .withValues(alpha: 0.12),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(
+                                      width: 34,
+                                      height: 34,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                        color: Color(0xFF4F46E5),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 180),
+                                      child: Text(
+                                        savingStatus,
+                                        key: ValueKey(savingStatus),
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF374151),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(999),
+                                      child: LinearProgressIndicator(
+                                        minHeight: 4,
+                                        value: savingStatus
+                                                .startsWith('Syncing')
+                                            ? 0.72
+                                            : 0.30,
+                                        backgroundColor: const Color(0xFFE5E7EB),
+                                        valueColor:
+                                            const AlwaysStoppedAnimation<Color>(
+                                          Color(0xFF4F46E5),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 7),
+                                    Text(
+                                      'Please wait',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 9.5,
+                                        color: const Color(0xFF9CA3AF),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Adding customer…',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF374151),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -1392,19 +1484,38 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                   onPressed: isSaving
                       ? null
                       : () => saveCustomer(setDialogState),
-                  child: isSaving
-                      ? const SizedBox(
-                          width: 21,
-                          height: 21,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            color: Colors.white,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: isSaving
+                        ? Row(
+                            key: const ValueKey('customer-button-saving'),
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 17,
+                                height: 17,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 7),
+                              Text(
+                                savingStatus.startsWith('Syncing')
+                                    ? 'Syncing…'
+                                    : 'Adding…',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          )
+                        : const Text(
+                            'Add',
+                            key: ValueKey('customer-button-add'),
+                            style: TextStyle(fontWeight: FontWeight.w700),
                           ),
-                        )
-                      : const Text(
-                          'Add',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
+                  ),
                 ),
               ],
             );
