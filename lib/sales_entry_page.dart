@@ -1449,6 +1449,41 @@ class _SalesEntryPageState extends State<SalesEntryPage>
   List<Map<String, dynamic>> _knownProducts = [];
   List<Map<String, dynamic>> _knownCustomers = [];
 
+  String _normalizeBarcode(String value) {
+    return value.trim().replaceAll(RegExp(r'[\s-]'), '').toUpperCase();
+  }
+
+  Map<String, dynamic>? _barcodeCatalogLookup(String barcode) {
+    final normalized = _normalizeBarcode(barcode);
+    if (normalized.isEmpty) return null;
+
+    // Fast path: normalized key.
+    final direct = _localProducts[normalized];
+    if (direct is Map) return Map<String, dynamic>.from(direct);
+
+    // Backward-compatible scan of legacy cache keys/values.
+    for (final entry in _localProducts.entries) {
+      final value = entry.value;
+      if (value is! Map) continue;
+
+      final candidates = <dynamic>[
+        entry.key,
+        value['barcode'],
+        value['sku'],
+        value['product_code'],
+      ];
+
+      if (candidates.any(
+        (candidate) =>
+            _normalizeBarcode(candidate?.toString() ?? '') == normalized,
+      )) {
+        return Map<String, dynamic>.from(value);
+      }
+    }
+
+    return null;
+  }
+
   Future<void> _loadLocalProducts() async {
     final prefs = await SharedPreferences.getInstance();
     final List<Map<String, dynamic>> known = [];
@@ -1457,18 +1492,28 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     try {
       final backendProds = await LocalStorageService.loadBackendProducts();
       for (var p in backendProds) {
-        final pBarcode = p['barcode'] ?? '';
+        final rawBarcode =
+            p['barcode'] ??
+            p['sku'] ??
+            p['barcode_number'] ??
+            p['product_code'] ??
+            '';
+        final pBarcode = _normalizeBarcode(rawBarcode.toString());
         final pData = {
-          'id': p['id']?.toString() ?? '',
+          'id': (p['id'] ?? p['product_id'] ?? '').toString(),
           'name': p['product_name'] ?? p['name'] ?? '',
-          'price': p['price']?.toString() ?? '0',
-          'gst': p['gst_percent']?.toString() ?? '18',
+          'price': (p['price'] ?? p['unit_price'] ?? '0').toString(),
+          'gst': (p['gst_percent'] ?? p['gst'] ?? '18').toString(),
           'barcode': pBarcode,
+          'sku': p['sku']?.toString() ?? pBarcode,
+          'source': 'Backend Catalog',
         };
         known.add(pData);
-        // Also put them in localProducts for quick lookup during barcode scan!
-        if (pBarcode.toString().isNotEmpty) {
-           _localProducts[pBarcode.toString()] = pData;
+
+        // The backend contract calls the barcode/SKU "sku". Index it under
+        // the normalized value so a hardware scan can match it instantly.
+        if (pBarcode.isNotEmpty) {
+          _localProducts[pBarcode] = pData;
         }
       }
     } catch (e) {
@@ -1478,10 +1523,31 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     // Load local products
     try {
       final localMap = await LocalStorageService.loadLocalProducts();
-      setState(() {
-        _localProducts = localMap.map((key, value) => MapEntry(key.toString(), Map<String, dynamic>.from(value)));
-      });
-      known.addAll(_localProducts.values.map((v) => Map<String, dynamic>.from(v)));
+
+      // Merge local cache on top of the backend catalog instead of replacing
+      // it. Replacing here used to erase backend barcode entries that were
+      // loaded a few lines earlier.
+      final mergedProducts = <String, Map<String, dynamic>>{};
+      for (final entry in _localProducts.entries) {
+        mergedProducts[_normalizeBarcode(entry.key)] =
+            Map<String, dynamic>.from(entry.value);
+      }
+      for (final entry in localMap.entries) {
+        final value = Map<String, dynamic>.from(entry.value);
+        final rawBarcode =
+            value['barcode'] ??
+            value['sku'] ??
+            value['barcode_number'] ??
+            entry.key;
+        final barcode = _normalizeBarcode(rawBarcode.toString());
+        final key = barcode.isNotEmpty ? barcode : entry.key.toString();
+        mergedProducts[key] = value;
+      }
+
+      _localProducts = mergedProducts;
+      known.addAll(
+        localMap.values.map((v) => Map<String, dynamic>.from(v)),
+      );
     } catch (e) {
       if (kDebugMode) debugPrint('Error loading local products: $e');
     }
@@ -1628,12 +1694,16 @@ class _SalesEntryPageState extends State<SalesEntryPage>
           final String itemPrice = (item['price'] ?? '0').toString();
           final String itemGst = (item['gst_percent'] ?? item['gst'] ?? '18').toString();
 
-          bool match = (itemId == barcode);
+          final normalizedItemId = _normalizeBarcode(itemId);
+          final normalizedBarcode = _normalizeBarcode(barcode);
+          bool match = normalizedItemId == normalizedBarcode;
 
           // Legacy Fallback: check if barcode was embedded in the item name
           String itemName = rawItemName;
           if (!match && itemName.isNotEmpty) {
-            if (itemName == barcode || itemName.endsWith('_$barcode')) {
+            if (itemName == barcode ||
+                itemName.endsWith('_$barcode') ||
+                _normalizeBarcode(itemName) == normalizedBarcode) {
               match = true;
             }
           }
@@ -1672,6 +1742,9 @@ class _SalesEntryPageState extends State<SalesEntryPage>
   }
 
   Future<void> _handleScannedBarcode(String code) async {
+    final normalizedCode = _normalizeBarcode(code);
+    if (normalizedCode.isEmpty) return;
+
     // 🛑 BARCODE DEBOUNCE (300ms)
     final now = DateTime.now();
     if (_lastScanTime != null && now.difference(_lastScanTime!).inMilliseconds < 300) {
@@ -1692,7 +1765,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     PaymentAnnouncementService().speakSimple("Ok", _paymentSoundLang);
 
     // 1. Check Local catalog FIRST (Direct match from shopkeeper's catalog)
-    final local = _localProducts[code];
+    final local = _barcodeCatalogLookup(normalizedCode);
     if (local != null) {
       _applyProductToBill(local);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1702,7 +1775,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     }
 
     // 2. Check Historical Sales Data (From this shopkeeper's previous sales)
-    final historicalPrice = await _searchPriceInHistory(code);
+    final historicalPrice = await _searchPriceInHistory(normalizedCode);
     if (historicalPrice != null && double.tryParse(historicalPrice['price']?.toString() ?? '0') != null && double.parse(historicalPrice['price'].toString()) > 0) {
       _applyProductToBill(historicalPrice);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1715,7 +1788,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     final emptyProduct = {
       'name': '',
       'price': '0',
-      'barcode': code,
+      'barcode': normalizedCode,
       'source': 'Manual Entry'
     };
     
@@ -1856,6 +1929,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     Map<String, TextEditingController>? target;
 
     final String scanCode = (product['barcode'] ?? '').toString().trim();
+    final String normalizedScanCode = _normalizeBarcode(scanCode);
     int targetIndex = -1;
 
     // 1ï¸âƒ£ SMART MATCHING: Priority Barcode (Structured or Legacy)
@@ -1867,12 +1941,13 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         // 🧪 Deep Match: Check if barcode is stored inside the item name (Legacy cleanup)
         if (storedBarcode.isEmpty) {
           String itemName = e['item']?.text?.trim() ?? '';
-          if (itemName.endsWith('_$scanCode') || itemName == scanCode) {
+          if (itemName.endsWith('_$scanCode') ||
+              _normalizeBarcode(itemName) == normalizedScanCode) {
             storedBarcode = scanCode;
           }
         }
 
-        if (storedBarcode == scanCode) {
+        if (_normalizeBarcode(storedBarcode) == normalizedScanCode) {
           target = e;
           targetIndex = i;
           break;
@@ -1954,7 +2029,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         target['qty']!.text = (currentQty + 1).toString();
       }
 
-      if (scanCode.isNotEmpty && target != null) {
+      if (normalizedScanCode.isNotEmpty && target != null) {
         if (target['barcode'] == null) {
           target['barcode'] = TextEditingController(text: scanCode);
         } else {
