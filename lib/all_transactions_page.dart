@@ -104,7 +104,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
           'raw': sale,
         };
 
-        // Categorize by transaction type first; Khata is distinct from cash/online.
+        // Categorize Khata independently from cash/online payment method.
         if (_isKhataSale(sale)) {
           _khataTransactions.add({
             ...transaction,
@@ -171,8 +171,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                 : (data is Map && data['invoices'] is List ? data['invoices'] : const []);
             if (invoiceRows is List) {
               for (var invoice in invoiceRows) {
-                final invoiceDate =
-                    invoice['created_at'] ??
+                final invoiceDate = invoice['created_at'] ??
                     invoice['sale_timestamp'] ??
                     invoice['business_date'] ??
                     invoice['invoice_date'] ??
@@ -183,7 +182,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                   'id': invoiceId,
                   'type': 'Invoice',
                   'amount': double.tryParse(invoice['total_amount']?.toString() ?? '0') ?? 0,
-                  'date': invoiceDate, 
+                  'date': invoiceDate,
                   'event_timestamp': invoice['created_at'] ?? invoice['sale_timestamp'],
                   'business_date': invoice['business_date'] ?? invoice['invoice_date'],
                   'customer': invoice['customer_name'] ?? 'Unknown',
@@ -236,7 +235,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
         };
       }).toList();
 
-      // Sort by actual event time; date-only business dates are a fallback.
+      // Sort by real event time; date-only business dates are a fallback.
       _allTransactions.sort((a, b) {
         final dateA = _transactionEventDate(a) ?? DateTime(1970);
         final dateB = _transactionEventDate(b) ?? DateTime(1970);
@@ -480,7 +479,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
 
   Widget _buildTransactionCard(Map<String, dynamic> txn) {
     final amount = txn['amount'] as double? ?? 0.0;
-    var date = _transactionEventDate(txn) ?? DateTime(1970);
+    final date = _transactionEventDate(txn) ?? DateTime(1970);
     final formattedDate = DateFormat('dd MMM yyyy, hh:mm a').format(date);
     final customerPhone = txn['customer_phone'] as String?;
     final detectionStatus = txn['detection_status'] as String?;
@@ -1072,7 +1071,8 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
       }
     }
   }
-}).hasMatch(value)) return null;
+}
+).hasMatch(value)) return null;
     final parsed = DateTime.tryParse(value);
     if (parsed == null) return null;
     final explicitZone = value.endsWith('Z') || RegExp(r'[+-]\d{2}:?\d{2}
@@ -2076,7 +2076,8 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
       }
     }
   }
-}).hasMatch(value);
+}
+).hasMatch(value);
     if (explicitZone) return parsed.toLocal();
     return DateTime.parse(value + 'Z').toLocal();
   }
@@ -3085,7 +3086,8 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
       }
     }
   }
-}).firstMatch(value);
+}
+).firstMatch(value);
     if (match == null) return _eventTime(value);
     return DateTime(int.parse(match.group(1)!), int.parse(match.group(2)!), int.parse(match.group(3)!));
   }
@@ -3100,9 +3102,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
 
   bool _isKhataSale(Map<String, dynamic> sale) {
     final values = [sale['transaction_kind'], sale['type'], sale['notes'], sale['description'], sale['sale_type']]
-        .where((v) => v != null)
-        .map((v) => v.toString().toLowerCase())
-        .join(' ');
+        .where((v) => v != null).map((v) => v.toString().toLowerCase()).join(' ');
     return values.contains('khata') || values.contains('borrow') ||
         values.contains('udhar') || values.contains('udhaar') ||
         values.contains('credit sale');
