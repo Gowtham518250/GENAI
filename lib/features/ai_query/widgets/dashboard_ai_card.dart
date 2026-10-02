@@ -146,14 +146,7 @@ class _DashboardAiQueryCardState extends State<DashboardAiQueryCard>
                     const SizedBox(height: 11),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTapDown: (_) => setState(() => _pressed = true),
-                        onTapUp: (_) {
-                          setState(() => _pressed = false);
-                          widget.onTap();
-                        },
-                        onTapCancel: () => setState(() => _pressed = false),
-                        child: AnimatedContainer(
+                      child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
