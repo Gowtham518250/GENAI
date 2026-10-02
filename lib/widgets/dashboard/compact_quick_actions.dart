@@ -5,126 +5,66 @@ import '../../commission_dashboard_page.dart';
 import '../../delivery_tracking_page.dart';
 import '../../retail_intelligence_page.dart';
 
-/// 🚀 Compact Quick Actions Widget
-/// Premium glassmorphism horizontal quick actions section
-class CompactQuickActions extends StatefulWidget {
+/// Small, restrained quick actions that do not overpower the dashboard.
+class CompactQuickActions extends StatelessWidget {
   const CompactQuickActions({super.key});
-
-  @override
-  State<CompactQuickActions> createState() => _CompactQuickActionsState();
-}
-
-class _CompactQuickActionsState extends State<CompactQuickActions>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 7),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Text(
-              'Quick Actions',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
+          _action(
+            context,
+            icon: Icons.fingerprint_rounded,
+            label: 'Biometric',
+            color: const Color(0xFF4F46E5),
+            onTap: () => Navigator.pushNamed(
+              context,
+              '/owner-biometric-register',
+              arguments: const {'fromDashboard': true},
+            ),
+          ),
+          _action(
+            context,
+            icon: Icons.psychology_rounded,
+            label: 'AI Hub',
+            color: const Color(0xFF7C3AED),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const RetailIntelligencePage(),
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                _buildQuickActionChip(
-                  icon: Icons.fingerprint,
-                  label: 'Biometric',
-                  color: const Color(0xFF4F46E5),
-                  onTap: () {
-                    _triggerHapticFeedback();
-                    Navigator.pushNamed(
-                      context,
-                      '/owner-biometric-register',
-                      arguments: const {'fromDashboard': true},
-                    );
-                  },
-                ),
-                _buildQuickActionChip(
-                  icon: Icons.psychology,
-                  label: 'AI Hub',
-                  color: const Color(0xFF7C3AED),
-                  onTap: () {
-                    _triggerHapticFeedback();
-                    // ✅ PHASE 7 FIX: Navigate to actual Retail Intelligence page
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const RetailIntelligencePage(),
-                      ),
-                    );
-                  },
-                ),
-                _buildQuickActionChip(
-                  icon: Icons.attach_money,
-                  label: 'Commission',
-                  color: const Color(0xFF10B981),
-                  onTap: () {
-                    _triggerHapticFeedback();
-                    // ✅ PHASE 7 FIX: Navigate to actual Commission Dashboard
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CommissionDashboardPage(),
-                      ),
-                    );
-                  },
-                ),
-                _buildQuickActionChip(
-                  icon: Icons.local_shipping,
-                  label: 'Delivery',
-                  color: const Color(0xFF3B82F6),
-                  onTap: () {
-                    _triggerHapticFeedback();
-                    // ✅ PHASE 7 FIX: Navigate to actual Delivery Tracking page
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const DeliveryTrackingPage(orderId: 101),
-                      ),
-                    );
-                  },
-                ),
-              ],
+          _action(
+            context,
+            icon: Icons.attach_money_rounded,
+            label: 'Commission',
+            color: const Color(0xFF10B981),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const CommissionDashboardPage(),
+              ),
+            ),
+          ),
+          _action(
+            context,
+            icon: Icons.local_shipping_rounded,
+            label: 'Delivery',
+            color: const Color(0xFF3B82F6),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const DeliveryTrackingPage(orderId: 101),
+              ),
             ),
           ),
         ],
@@ -132,67 +72,104 @@ class _CompactQuickActionsState extends State<CompactQuickActions>
     );
   }
 
-  Widget _buildQuickActionChip({
+  Widget _action(
+    BuildContext context, {
     required IconData icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
   }) {
     return Expanded(
-      child: GestureDetector(
-        onTapDown: (_) {
-          _controller.forward();
-        },
-        onTapUp: (_) {
-          _controller.reverse();
-          onTap();
-        },
-        onTapCancel: () {
-          _controller.reverse();
-        },
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: color.withValues(alpha: 0.3),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: 18),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
+      child: Semantics(
+        button: true,
+        label: label,
+        child: _QuickActionTile(
+          icon: icon,
+          label: label,
+          color: color,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
         ),
       ),
     );
   }
+}
 
-  void _triggerHapticFeedback() {
-    HapticFeedback.lightImpact();
+class _QuickActionTile extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<_QuickActionTile> createState() => _QuickActionTileState();
+}
+
+class _QuickActionTileState extends State<_QuickActionTile> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.94 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+          constraints: const BoxConstraints(minHeight: 58),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: widget.color.withValues(alpha: 0.18),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: widget.color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(widget.icon, color: widget.color, size: 14),
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  widget.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF374151),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
