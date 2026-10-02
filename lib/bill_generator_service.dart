@@ -45,10 +45,10 @@ class BillGeneratorService {
                     style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
                   ),
                   if (shopAddress != null && shopAddress.isNotEmpty)
-                    pw.Text(shopAddress, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
-                  pw.Text(shopPhone, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                    pw.Text(shopAddress, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+                  pw.Text(shopPhone, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
                   if (gstNumber != null && gstNumber.isNotEmpty)
-                    pw.Text('GST: $gstNumber', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                    pw.Text('GST: $gstNumber', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
                 ],
               ),
             ),
@@ -63,13 +63,13 @@ class BillGeneratorService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text('Bill No: $invoiceId', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-                    pw.Text('Customer: ${customerName.isNotEmpty ? customerName : "Guest"}', style: const pw.TextStyle(fontSize: 9)),
+                    pw.Text('Customer: ${customerName.isNotEmpty ? customerName : "Guest"}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
                   ],
                 ),
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    pw.Text(dateStr, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                    pw.Text(dateStr, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
                     pw.Container(
                       padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: pw.BoxDecoration(
@@ -96,7 +96,7 @@ class BillGeneratorService {
             pw.TableHelper.fromTextArray(
               headers: ['#', 'Item', 'Qty', 'Rate', 'Total'],
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-              cellStyle: const pw.TextStyle(fontSize: 9),
+              cellStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
               headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
               border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
               cellAlignments: {
@@ -139,8 +139,8 @@ class BillGeneratorService {
                     ],
                   ),
                   if (paidAmount > 0 && paidAmount < totalAmount) ...[
-                    pw.Text('Paid: ₹${paidAmount.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.green700)),
-                    pw.Text('Balance Due: ₹${due.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.red700)),
+                    pw.Text('Paid: ₹${paidAmount.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.green700)),
+                    pw.Text('Balance Due: ₹${due.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.red700)),
                   ],
                 ],
               ),
@@ -152,8 +152,8 @@ class BillGeneratorService {
             pw.Center(
               child: pw.Column(
                 children: [
-                  pw.Text('Thank you for shopping with us!', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
-                  pw.Text('Powered by Retail Mind', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
+                  pw.Text('Thank you for shopping with us!', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+                  pw.Text('Powered by Retail Mind', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey500)),
                 ],
               ),
             ),
