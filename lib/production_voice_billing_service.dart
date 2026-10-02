@@ -308,21 +308,26 @@ class ProductionVoiceBillingService {
     return null;
   }
 
-$marker
+
+  static Map<String, dynamic>? _findKnownProduct(
+    List<Map<String, dynamic>> products,
+    String canonicalName, [
+    String? fallbackName,
+  ]) {
     if (products.isEmpty) return null;
 
     final candidates = <String>{
       canonicalName.trim().toLowerCase(),
       if (fallbackName != null && fallbackName.trim().isNotEmpty)
         fallbackName.trim().toLowerCase(),
-    };
+    }..removeWhere((value) => value.isEmpty);
 
     for (final product in products) {
       final names = <String>{
         (product['name'] ?? '').toString().trim().toLowerCase(),
         (product['product_name'] ?? '').toString().trim().toLowerCase(),
         (product['canonical_name'] ?? '').toString().trim().toLowerCase(),
-      }..removeWhere((e) => e.isEmpty);
+      }..removeWhere((value) => value.isEmpty);
 
       if (names.any(candidates.contains)) {
         return product;
@@ -337,11 +342,11 @@ $marker
       for (final product in products) {
         final name =
             (product['name'] ?? product['product_name'] ?? '').toString();
-        final tokens = _tokens(name);
-        if (tokens.isEmpty) continue;
+        final productTokens = _tokens(name);
+        if (productTokens.isEmpty) continue;
 
-        final intersection = qTokens.intersection(tokens).length;
-        final union = qTokens.union(tokens).length;
+        final intersection = qTokens.intersection(productTokens).length;
+        final union = qTokens.union(productTokens).length;
         final score = union == 0 ? 0.0 : intersection / union;
 
         if (score > bestScore) {
@@ -365,8 +370,9 @@ $marker
         ' ',
       )
       .split(RegExp(r'\s+'))
-      .where((e) => e.length >= 2)
+      .where((value) => value.length >= 2)
       .toSet();
+
 
   static double? _firstPositiveDouble(Iterable<dynamic> values) {
     for (final value in values) {
