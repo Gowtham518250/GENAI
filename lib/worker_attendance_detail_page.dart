@@ -125,6 +125,71 @@ class _WorkerAttendanceDetailPageState
 
   // ---- Data helpers ----------------------------------------------------
 
+  Map<String, Map<String, dynamic>> _sessionsFor(
+    Map<String, dynamic> record,
+  ) {
+    final raw = record['sessions'];
+    if (raw is Map) {
+      final out = <String, Map<String, dynamic>>{};
+      for (final entry in raw.entries) {
+        if (entry.value is Map) {
+          out[entry.key.toString()] =
+              Map<String, dynamic>.from(entry.value as Map);
+        }
+      }
+      if (out.isNotEmpty) return out;
+    }
+
+    final hasSession =
+        record['check_in_time'] != null ||
+        record['check_out_time'] != null ||
+        record['working_hours'] != null;
+    if (!hasSession) return <String, Map<String, dynamic>>{};
+
+    return {
+      'session': <String, dynamic>{
+        'label': 'Attendance Session',
+        'check_in_time': record['check_in_time'],
+        'check_out_time': record['check_out_time'],
+        'working_hours': _hoursOf(record),
+      },
+    };
+  }
+
+  int _sessionCount(Map<String, dynamic> record) {
+    return _sessionsFor(record).values.where((session) {
+      return session['check_in_time'] != null ||
+          session['check_out_time'] != null ||
+          ((session['working_hours'] is num) &&
+              (session['working_hours'] as num).toDouble() > 0);
+    }).length;
+  }
+
+  String _dayAttendanceStatus(Map<String, dynamic> record) {
+    final count = _sessionCount(record);
+    if (count >= 2) return 'PRESENT';
+    if (count == 1) return 'HALF_DAY';
+    return 'ABSENT';
+  }
+
+  Color _dayStatusColor(Map<String, dynamic> record) {
+    switch (_dayAttendanceStatus(record)) {
+      case 'PRESENT':
+        return _present;
+      case 'HALF_DAY':
+        return _half;
+      default:
+        return _absent;
+    }
+  }
+
+  String _dayStatusLabel(Map<String, dynamic> record) {
+    final count = _sessionCount(record);
+    if (count >= 2) return 'Present • 2 sessions';
+    if (count == 1) return 'Partial • 1 session';
+    return 'Absent / no session';
+  }
+
   Map<String, dynamic>? _recordFor(DateTime day) {
     final target = DateFormat('yyyy-MM-dd').format(day);
     for (final r in _records) {
@@ -215,7 +280,7 @@ class _WorkerAttendanceDetailPageState
 
     double score = 0;
     for (final r in recs) {
-      final st = (r['status'] ?? '').toString().trim().toUpperCase();
+      final st = _dayAttendanceStatus(r);
       if (st == 'PRESENT') {
         score += 1;
       } else if (st == 'HALF_DAY') {
@@ -507,43 +572,75 @@ class _WorkerAttendanceDetailPageState
   Widget _calendar() {
     final firstDay = DateTime(_month.year, _month.month, 1);
     final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
-    final leadingBlanks = firstDay.weekday % 7; // Sunday-first grid
+    final leadingBlanks = firstDay.weekday % 7;
 
     final cells = <Widget>[];
     for (var i = 0; i < leadingBlanks; i++) {
       cells.add(const SizedBox());
     }
+
     for (var d = 1; d <= daysInMonth; d++) {
       final day = DateTime(_month.year, _month.month, d);
       final rec = _recordFor(day);
       final isFuture = day.isAfter(DateTime.now());
+
       Color color = Colors.grey.shade200;
       Color textColor = Colors.grey.shade500;
+
       if (rec != null) {
-        final st = (rec['status'] ?? '').toString().trim().toUpperCase();
-        if (st == 'PRESENT') {
-          color = _present;
-          textColor = Colors.white;
-        } else if (st == 'HALF_DAY') {
-          color = _half;
-          textColor = Colors.white;
-        } else {
-          color = _absent;
-          textColor = Colors.white;
-        }
+        color = _dayStatusColor(rec);
+        textColor = Colors.white;
       } else if (!isFuture) {
         color = _absent.withValues(alpha: 0.15);
         textColor = _absent;
       }
-      cells.add(GestureDetector(
-        onTap: rec == null ? null : () => _showDayDetail(day, rec),
-        child: Container(
-          margin: const EdgeInsets.all(3),
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
-          alignment: Alignment.center,
-          child: Text('$d', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
+
+      cells.add(
+        GestureDetector(
+          onTap: rec == null ? null : () => _showDayDetail(day, rec),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOutCubic,
+            margin: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(9),
+              boxShadow: rec != null
+                  ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.18),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '$d',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                ),
+                if (rec != null && _sessionCount(rec) == 1)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 1),
+                    child: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 11,
+                      color: Colors.white70,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
-      ));
+      );
     }
 
     return Container(
@@ -551,26 +648,43 @@ class _WorkerAttendanceDetailPageState
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+          ),
+        ],
       ),
-      child: Column(children: [
-        Row(
-          children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-              .map((d) => Expanded(
-                  child: Center(
-                      child: Text(d,
-                          style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w600)))))
-              .toList(),
-        ),
-        const SizedBox(height: 4),
-        GridView.count(
-          crossAxisCount: 7,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1,
-          children: cells,
-        ),
-      ]),
+      child: Column(
+        children: [
+          Row(
+            children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+                .map(
+                  (d) => Expanded(
+                    child: Center(
+                      child: Text(
+                        d,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 4),
+          GridView.count(
+            crossAxisCount: 7,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 1,
+            children: cells,
+          ),
+        ],
+      ),
     );
   }
 
@@ -715,19 +829,253 @@ class _WorkerAttendanceDetailPageState
   }
 
   void _showDayDetail(DateTime day, Map<String, dynamic> rec) {
-    showDialog(
+    final sessions = _sessionsFor(rec);
+    final ordered = sessions.entries.toList()
+      ..sort((a, b) {
+        final aIn = _parseServerTime(a.value['check_in_time']);
+        final bIn = _parseServerTime(b.value['check_in_time']);
+        if (aIn == null && bIn == null) return 0;
+        if (aIn == null) return 1;
+        if (bIn == null) return -1;
+        return aIn.compareTo(bIn);
+      });
+
+    final totalHours = ordered.fold<double>(
+      0,
+      (sum, entry) {
+        final value = entry.value['working_hours'];
+        if (value is num) return sum + value.toDouble();
+        return sum;
+      },
+    );
+
+    showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(DateFormat('dd MMM yyyy').format(day), style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Status: ${rec['status'] ?? 'N/A'}'),
-          if (rec['check_in_time'] != null)
-            Text('Check-in: ${_fmtTime(rec['check_in_time'])}${_isLate(rec) ? ' (Late)' : ''}'),
-          if (rec['check_out_time'] != null)
-            Text('Check-out: ${_fmtTime(rec['check_out_time'])}${_isEarly(rec) ? ' (Early)' : ''}'),
-          Text('Hours: ${_hoursOf(rec).toStringAsFixed(2)}'),
-        ]),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Color(0xFFE5E7EB),
+                        borderRadius: BorderRadius.all(Radius.circular(99)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          DateFormat('EEEE, dd MMM yyyy').format(day),
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _dayStatusColor(rec).withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          _dayStatusLabel(rec),
+                          style: GoogleFonts.poppins(
+                            color: _dayStatusColor(rec),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Attendance sessions for this date',
+                    style: GoogleFonts.poppins(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ...ordered.map((entry) {
+                    final session = entry.value;
+                    final label = (session['label'] ?? entry.key).toString();
+                    final checkIn = _parseServerTime(session['check_in_time']);
+                    final checkOut = _parseServerTime(session['check_out_time']);
+                    final rawHours = session['working_hours'];
+                    final hours = rawHours is num ? rawHours.toDouble() : 0.0;
+                    final isOpen = session['check_in_time'] != null &&
+                        session['check_out_time'] == null;
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: _primary.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: _primary.withValues(alpha: 0.10),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.access_time_filled_rounded,
+                                  size: 18,
+                                  color: _primary,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  label,
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                hours > 0
+                                    ? '${hours.toStringAsFixed(2)} hrs'
+                                    : (isOpen ? 'In progress' : '0.00 hrs'),
+                                style: GoogleFonts.poppins(
+                                  color: isOpen ? _half : _primary,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _sessionTimeTile(
+                                  icon: Icons.login_rounded,
+                                  label: 'Check-in',
+                                  value: checkIn == null
+                                      ? 'Not recorded'
+                                      : _fmtTime(checkIn.toIso8601String()),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _sessionTimeTile(
+                                  icon: Icons.logout_rounded,
+                                  label: 'Check-out',
+                                  value: checkOut == null
+                                      ? (isOpen ? 'Still active' : 'Not recorded')
+                                      : _fmtTime(checkOut.toIso8601String()),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.schedule_rounded, color: Color(0xFF6366F1), size: 19),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Total worked hours',
+                            style: GoogleFonts.poppins(
+                              color: Colors.grey.shade700,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${totalHours.toStringAsFixed(2)} hrs',
+                          style: GoogleFonts.poppins(
+                            color: Colors.black87,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Record date: ${((rec['attendance_date'] ?? '').toString().split('T').first)}',
+                    style: GoogleFonts.poppins(
+                      color: Colors.grey.shade500,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _sessionTimeTile({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: _primary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: GoogleFonts.poppins(color: Colors.grey.shade500, fontSize: 9)),
+                const SizedBox(height: 2),
+                Text(value, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(color: Colors.black87, fontSize: 11, fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
