@@ -797,178 +797,366 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       icon: Icons.cloud_upload_rounded,
       accentColor: AppColors.primary,
       child: PopScope(
-      canPop: true,
-      onPopInvoked: (didPop) {
-        if (didPop) return;
-        // Check if form has changes before allowing back
-        final hasChanges = shopNameController.text.isNotEmpty ||
-            locationController.text.isNotEmpty ||
-            taglineController.text.isNotEmpty ||
-            upiIdController.text.isNotEmpty;
-        
-        if (hasChanges) {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Discard Changes?'),
-              content: const Text('You have unsaved shop profile changes.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Keep Editing'),
+        canPop: true,
+        onPopInvoked: (didPop) {
+          if (didPop) return;
+          final hasChanges = shopNameController.text.isNotEmpty ||
+              locationController.text.isNotEmpty ||
+              taglineController.text.isNotEmpty ||
+              upiIdController.text.isNotEmpty;
+          if (hasChanges) {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF111827),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
                 ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Discard'),
+                title: const Text(
+                  'Discard Changes?',
+                  style: TextStyle(color: Colors.white),
                 ),
-              ],
-            ),
-          );
-        } else {
-          Navigator.pop(context);
-        }
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFF020617),
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Shop Profile',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        // Share shop action
-                        IconButton(
-                          icon: const Icon(Icons.share_rounded, color: Colors.white70),
-                          tooltip: 'Share Shop',
-                          onPressed: () async {
-                            try {
-                              final prefs = await SharedPreferences.getInstance();
-                              final shopId = prefs.getString('shop_id') ?? prefs.getInt('user_id')?.toString() ?? '1';
-                              final shopName = prefs.getString('shop_name') ?? shopNameController.text.trim();
-                              final shopUrl = 'https://retail-mind-web.onrender.com/shop/$shopId';
-                              await Share.share('🛍️ Browse products from $shopName\n$shopUrl', subject: 'Visit $shopName');
-                            } catch (e) {
-                              if (kDebugMode) debugPrint('Share failed: $e');
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not share shop')));
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF111827).withValues(alpha: 0.96),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black54,
-                            blurRadius: 18,
-                            offset: Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          _buildLogoPicker(),
-                          const SizedBox(height: 24),
-                          _buildForm(),
+                content: const Text(
+                  'You have unsaved shop profile changes.',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Keep Editing'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Discard'),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            Navigator.pop(context);
+          }
+        },
+        child: Scaffold(
+          backgroundColor: const Color(0xFF050816),
+          body: Stack(
+            children: [
+              Positioned(
+                top: -100,
+                right: -90,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 280,
+                    height: 280,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          AppColors.primary.withValues(alpha: 0.12),
+                          Colors.transparent,
                         ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+              Positioned(
+                bottom: 120,
+                left: -140,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 300,
+                    height: 300,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFF14B8A6).withValues(alpha: 0.06),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 430),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              IconButton(
+                                onPressed: () => Navigator.maybePop(context),
+                                visualDensity: VisualDensity.compact,
+                                icon: const Icon(
+                                  Icons.arrow_back_rounded,
+                                  color: Colors.white70,
+                                  size: 21,
+                                ),
+                              ),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Complete Your Shop Details',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        letterSpacing: -0.35,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      'Set up your store once. You can change it later.',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10.5,
+                                        color: Colors.white.withValues(alpha: 0.48),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () async {
+                                  try {
+                                    final prefs =
+                                        await SharedPreferences.getInstance();
+                                    final shopId = prefs.getString('shop_id') ??
+                                        prefs.getInt('user_id')?.toString() ??
+                                        '1';
+                                    final shopName = prefs.getString('shop_name') ??
+                                        shopNameController.text.trim();
+                                    final shopUrl =
+                                        'https://retail-mind-web.onrender.com/shop/\$shopId';
+                                    await Share.share(
+                                      '🛍️ Browse products from \$shopName\n\$shopUrl',
+                                      subject: 'Visit \$shopName',
+                                    );
+                                  } catch (e) {
+                                    if (kDebugMode) {
+                                      debugPrint('Share failed: $e');
+                                    }
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Could not share shop'),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                visualDensity: VisualDensity.compact,
+                                icon: const Icon(
+                                  Icons.ios_share_rounded,
+                                  color: Colors.white60,
+                                  size: 19,
+                                ),
+                                tooltip: 'Share Shop',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 13),
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.96, end: 1),
+                            duration: const Duration(milliseconds: 520),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, scale, child) =>
+                                Transform.scale(scale: scale, child: child),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.fromLTRB(
+                                14,
+                                14,
+                                14,
+                                14,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0F1723),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.07),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.24),
+                                    blurRadius: 26,
+                                    offset: const Offset(0, 14),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary
+                                              .withValues(alpha: 0.10),
+                                          borderRadius:
+                                              BorderRadius.circular(9),
+                                        ),
+                                        child: const Icon(
+                                          Icons.storefront_rounded,
+                                          color: AppColors.primary,
+                                          size: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Store profile',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'Basic information',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 9.5,
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.46),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF10B981)
+                                              .withValues(alpha: 0.08),
+                                          borderRadius:
+                                              BorderRadius.circular(999),
+                                          border: Border.all(
+                                            color: const Color(0xFF10B981)
+                                                .withValues(alpha: 0.22),
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          '1 of 3',
+                                          style: TextStyle(
+                                            color: Color(0xFF86EFAC),
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 13),
+                                  _buildLogoPicker(),
+                                  const SizedBox(height: 12),
+                                  _buildForm(),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
-    ),
-  );
-  }
-
-  Widget _buildLogoPicker() {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: pickLogo,
-          child: Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceDark2,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 3),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-              image: logoBytes != null
-                  ? DecorationImage(image: MemoryImage(logoBytes!), fit: BoxFit.cover)
-                  : null,
-            ),
-            child: logoBytes == null
-                ? Icon(Icons.add_a_photo_rounded, size: 40, color: AppColors.primary)
-                : null,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Upload Shop Logo',
-          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-      ],
     );
   }
 
 
-
-  Widget _buildForm() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827).withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black54,
-            blurRadius: 18,
-            offset: Offset(0, 10),
+  Widget _buildLogoPicker() {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.88, end: 1),
+      duration: const Duration(milliseconds: 620),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) =>
+          Transform.scale(scale: scale, child: child),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: pickLogo,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              width: 92,
+              height: 92,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceDark2,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.42),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    blurRadius: 18,
+                    spreadRadius: 2,
+                  ),
+                ],
+                image: logoBytes != null
+                    ? DecorationImage(
+                        image: MemoryImage(logoBytes!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: logoBytes == null
+                  ? const Icon(
+                      Icons.add_a_photo_rounded,
+                      size: 28,
+                      color: AppColors.primary,
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            logoBytes == null ? 'Tap to add shop logo' : 'Tap to change logo',
+            style: GoogleFonts.inter(
+              color: Colors.white.withValues(alpha: 0.58),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(24),
+    );
+  }
+
+
+  Widget _buildForm() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(11, 12, 11, 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1220).withValues(alpha: 0.70),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.055),
+        ),
+      ),
       child: Form(
         key: _formKey,
         child: Column(
@@ -979,7 +1167,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
               icon: Icons.storefront_rounded,
               validator: (v) => v!.isEmpty ? 'Please enter shop name' : null,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 11),
             _StyledField(
               controller: locationController,
               label: 'Location',
@@ -990,28 +1178,28 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
               ),
               validator: (v) => v!.isEmpty ? 'Please enter location' : null,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 11),
             _StyledField(
               controller: shopTypeController,
               label: 'Shop Type',
               icon: Icons.category_rounded,
               hint: 'e.g. Grocery, Electronics',
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 11),
             _StyledField(
               controller: phoneController,
               label: 'Shop Phone Number',
               icon: Icons.phone_android_rounded,
               hint: 'e.g. +91 9876543210',
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 11),
             _StyledField(
               controller: websiteController,
               label: 'Website',
               icon: Icons.language_rounded,
               hint: 'optional',
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 11),
             _StyledField(
               controller: playStoreUrlController,
               label: 'Play Store / invite link',
@@ -1028,7 +1216,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 11),
             _StyledField(
               controller: upiIdController,
               label: 'UPI ID (VPA) for Payments',
@@ -1041,13 +1229,13 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
               ),
               validator: (v) => InputValidator.validateUpiId(v),  // 🔧 Added UPI validation
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 11),
             _StyledField(
               controller: taglineController,
               label: 'Shop Tagline (Optional)',
               icon: Icons.auto_awesome_rounded,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 11),
             _StyledField(
               controller: gstController,
               label: 'GSTIN (Optional)',
@@ -1057,7 +1245,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
             const SizedBox(height: 16),
             // Enable Online Shopping toggle
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.02),
                 borderRadius: BorderRadius.circular(12),
@@ -1072,7 +1260,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                       children: [
                         Text('Enable Online Shopping', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
-                        Text('Allow customers to browse & order online', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12)),
+                        Text('Allow customers to browse & order online', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10.5)),
                       ],
                     ),
                   ),
@@ -1084,7 +1272,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             
             // --- QR CODE PREVIEW ---
             ValueListenableBuilder<TextEditingValue>(
@@ -1100,10 +1288,10 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                       ),
                       const SizedBox(height: 12),
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(
                               color: const Color(0xFF6366F1).withValues(alpha: 0.3),
@@ -1115,7 +1303,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                         child: QrImageView(
                           data: "upi://pay?pa=${value.text.trim()}&pn=${shopNameController.text.trim()}&cu=INR",
                           version: QrVersions.auto,
-                          size: 180.0,
+                          size: 148.0,
                           eyeStyle: const QrEyeStyle(
                             eyeShape: QrEyeShape.square,
                             color: Color(0xFF1E293B),
@@ -1138,15 +1326,15 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
               }
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             _buildBiometricSection(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             _buildBackupSection(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             _buildSecuritySection(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             _buildDeleteAccountSection(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             if (errorMessage != null) ...[
                 const SizedBox(height: 16),
                 Text(errorMessage!, style: const TextStyle(color: Colors.redAccent)),
@@ -1162,7 +1350,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
               children: [
                 Expanded(
                   child: SizedBox(
-                    height: 55,
+                    height: 48,
                     child: ElevatedButton(
                       onPressed: isLoading ? null : saveShopProfile,
                       child: isLoading
@@ -1173,8 +1361,8 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 ),
                 const SizedBox(width: 12),
                 SizedBox(
-                  height: 55,
-                  width: 55,
+                  height: 48,
+                  width: 48,
                   child: IconButton(
                     icon: const Icon(Icons.sync),
                     onPressed: isLoading ? null : _forceRetrySync,
@@ -1192,7 +1380,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
 
   Widget _buildBackupSection() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
@@ -1230,7 +1418,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
               color: Colors.white.withValues(alpha: 0.6),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -1307,7 +1495,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
         backgroundColor: AppColors.surfaceDark,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
         builder: (ctx) => Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1360,7 +1548,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
 
   Widget _buildBiometricSection() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
@@ -1398,7 +1586,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
               color: Colors.white.withValues(alpha: 0.6),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -1492,7 +1680,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
 
   Widget _buildSecuritySection() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
@@ -1530,7 +1718,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
               color: Colors.white.withValues(alpha: 0.6),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -1649,7 +1837,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
 
   Widget _buildDeleteAccountSection() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.red.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
@@ -1687,7 +1875,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
               color: Colors.white.withValues(alpha: 0.6),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             height: 50,
@@ -1736,32 +1924,40 @@ class _StyledField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.9), fontSize: 15, fontWeight: FontWeight.w600),
+          style: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.9), fontSize: 12.5, fontWeight: FontWeight.w650),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           validator: validator,
           keyboardType: keyboardType,
-          style: GoogleFonts.poppins(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+          style: GoogleFonts.poppins(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
-            prefixIcon: Icon(icon, color: AppColors.primary, size: 24),
+            hintStyle: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.5), fontSize: 11.5),
+            prefixIcon: Icon(icon, color: AppColors.primary, size: 18),
             suffixIcon: suffixIcon,
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.05),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: AppColors.primary.withValues(alpha: 0.72),
+                width: 1.2,
+              ),
+            ),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 13,
             ),
           ),
         ),
