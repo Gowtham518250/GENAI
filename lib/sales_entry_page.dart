@@ -86,6 +86,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
   double _schemeDiscount = 0.0;
   double _flashSaleDiscount = 0.0;
   Map<String, dynamic>? _activeFlashSale;
+  DateTime? _lastFlashSaleSyncAt;
   String _activeSchemeName = '';
   String _paymentAnnounceLang = 'en-IN'; // 🎙️ Payment announcement language
   
@@ -2690,7 +2691,19 @@ class _SalesEntryPageState extends State<SalesEntryPage>
   // Looks up any active flash sale from SharedPreferences (async), applies it
   // to _flashSaleDiscount, and re-runs calculateTotal() so the displayed
   // total picks up the discount once it's known.
-  Future<void> _refreshActiveFlashSaleFromBackend() async {
+  Future<void> _refreshActiveFlashSaleFromBackend({
+    bool force = false,
+  }) async {
+    final now = DateTime.now();
+    if (!force &&
+        _lastFlashSaleSyncAt != null &&
+        now.difference(_lastFlashSaleSyncAt!) <
+            const Duration(seconds: 15)) {
+      return;
+    }
+
+    _lastFlashSaleSyncAt = now;
+
     try {
       final response = await ApiClient.getJson('/api/flash-sale/active');
       if (response.statusCode == 200 && response.body.isNotEmpty) {
@@ -2721,7 +2734,22 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         await ScopedSharedPreferences.remove('active_flash_sale');
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Backend flash sale lookup failed: $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ Backend flash sale lookup failed: $e');
+      }
+      // Preserve the last known server state while offline.
+      if (_activeFlashSale == null) {
+        try {
+          final cached =
+              await ScopedSharedPreferences.getString('active_flash_sale');
+          if (cached != null && cached.isNotEmpty) {
+            final decoded = jsonDecode(cached);
+            if (decoded is Map) {
+              _activeFlashSale = Map<String, dynamic>.from(decoded);
+            }
+          }
+        } catch (_) {}
+      }
     }
   }
 
@@ -2781,11 +2809,10 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         ? ids.contains(productId)
         : skus.isNotEmpty
             ? skus.contains(productSku)
-            : category.isEmpty ||
-                category == 'all' ||
+            : category == 'all' ||
                 category == 'all products' ||
                 category == '*' ||
-                category == productCategory;
+                (category.isNotEmpty && category == productCategory);
     if (!applies) return 0;
 
     final qty = double.tryParse(entry['qty']?.text.trim() ?? '1') ?? 1;
@@ -2794,97 +2821,54 @@ class _SalesEntryPageState extends State<SalesEntryPage>
   }
 
   Future<void> _applyFlashSaleDiscount(double subTotal) async {
-    double flashSaleDiscount = 0.0;
-    try {
+    if (_activeFlashSale == null) {
       try {
-        final response = await ApiClient.getJson('/api/flash-sale/active');
-        if (response.statusCode == 200 && response.body.isNotEmpty) {
-          final decoded = jsonDecode(response.body);
+        final cached =
+            await ScopedSharedPreferences.getString('active_flash_sale');
+        if (cached != null && cached.isNotEmpty) {
+          final decoded = jsonDecode(cached);
           if (decoded is Map) {
-            final data = Map<String, dynamic>.from(decoded);
-            final expiry = DateTime.tryParse(data['end_time']?.toString() ?? '');
-            if (expiry != null && DateTime.now().isBefore(expiry)) {
-              _activeFlashSale = {
-                ...data,
-                'status': 'ACTIVE',
-                'discount': data['discount_pct'] ?? data['discount'] ?? 0,
-                'expiry': data['end_time'],
-              };
-              await ScopedSharedPreferences.setString(
-                'active_flash_sale',
-                jsonEncode(_activeFlashSale),
-              );
-            }
+            _activeFlashSale = Map<String, dynamic>.from(decoded);
           }
-        } else if (response.statusCode == 404) {
-          _activeFlashSale = null;
-          await ScopedSharedPreferences.remove('active_flash_sale');
         }
       } catch (_) {}
+    }
 
-      final flashSaleData = await ScopedSharedPreferences.getString('active_flash_sale');
-      if (flashSaleData != null && flashSaleData.isNotEmpty) {
-        final dynamic decoded = jsonDecode(flashSaleData);
-        if (decoded is! Map) throw const FormatException('Invalid flash sale payload');
-        final sale = Map<String, dynamic>.from(decoded);
-        _activeFlashSale = sale;
-        final status = (sale['status'] ?? 'ACTIVE').toString().trim().toUpperCase();
-        final expiry = DateTime.tryParse(sale['expiry']?.toString() ?? '');
-        if (status != 'ACTIVE') {
-          await ScopedSharedPreferences.remove('active_flash_sale');
-          if (mounted && _flashSaleDiscount != 0) setState(() => _flashSaleDiscount = 0);
-          return;
-        }
-        if (expiry == null || !DateTime.now().isBefore(expiry)) {
-          await ScopedSharedPreferences.remove('active_flash_sale');
-        } else {
-          final pct = (double.tryParse(sale['discount']?.toString() ?? '0') ?? 0).clamp(0, 100);
-          final singleCategory = sale['category']?.toString().trim().toLowerCase() ?? '';
-          final categories = (sale['categories'] as List?)?.map((e) => e.toString().trim().toLowerCase()).toSet() ?? <String>{};
-          if (singleCategory.isNotEmpty) categories.add(singleCategory);
-          final productIds = (sale['product_ids'] as List?)?.map((e) => e.toString()).toSet() ?? <String>{};
-          final skus = (sale['skus'] as List?)?.map((e) => e.toString().trim().toLowerCase()).toSet() ?? <String>{};
-          final products = await LocalStorageService.loadBackendProducts();
-          double eligible = 0;
+    final lastSync = _lastFlashSaleSyncAt;
+    if (lastSync == null ||
+        DateTime.now().difference(lastSync) >=
+            const Duration(seconds: 15)) {
+      unawaited(_refreshActiveFlashSaleFromBackend());
+    }
 
-          for (final entry in entries) {
-            final name = entry['item']?.text?.trim() ?? '';
-            final barcode = entry['barcode']?.text?.trim() ?? '';
-            final qty = double.tryParse(entry['qty']?.text?.trim() ?? '1') ?? 1;
-            final price = double.tryParse(entry['price']?.text?.trim() ?? '0') ?? 0;
-            final line = math.max(0, qty * price);
-            if (line <= 0) continue;
-            final product = products.cast<Map<String, dynamic>>().firstWhere(
-              (p) => p['id']?.toString() == barcode ||
-                     p['product_id']?.toString() == barcode ||
-                     p['sku']?.toString().toLowerCase() == barcode.toLowerCase() ||
-                     p['product_name']?.toString().toLowerCase() == name.toLowerCase(),
-              orElse: () => <String, dynamic>{},
-            );
-            final id = product['id']?.toString() ?? product['product_id']?.toString() ?? barcode;
-            final sku = product['sku']?.toString().toLowerCase() ?? barcode.toLowerCase();
-            final category = product['category']?.toString().trim().toLowerCase() ?? '';
-            final eligibleLine = productIds.isNotEmpty
-                ? productIds.contains(id)
-                : skus.isNotEmpty
-                    ? skus.contains(sku)
-                    : categories.isNotEmpty
-                        ? categories.contains(category)
-                        : true;
-            if (eligibleLine) eligible += line;
-          }
-          flashSaleDiscount = eligible * (pct / 100);
-          if (kDebugMode) debugPrint('✅ Scoped Flash Sale discount: $pct% = ₹$flashSaleDiscount');
+    double flashSaleDiscount = 0.0;
+    if (_activeFlashSale != null) {
+      final expiry =
+          DateTime.tryParse(_activeFlashSale!['expiry']?.toString() ?? '');
+      final status =
+          (_activeFlashSale!['status'] ?? 'ACTIVE').toString().toUpperCase();
+
+      if (expiry != null &&
+          DateTime.now().isBefore(expiry) &&
+          status == 'ACTIVE') {
+        for (final entry in entries) {
+          flashSaleDiscount += _flashSaleDiscountForEntry(entry);
         }
       }
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Error applying flash sale discount: $e');
     }
-    if (mounted && flashSaleDiscount != _flashSaleDiscount) {
+
+    if (mounted && (flashSaleDiscount - _flashSaleDiscount).abs() > 0.01) {
       setState(() => _flashSaleDiscount = flashSaleDiscount);
-      calculateTotal();
+      // Recalculate only after the discount value changed. The caller's
+      // current calculation remains deterministic and avoids a network loop.
+      if ((subTotal - 0).abs() >= 0) {
+        Future.microtask(() {
+          if (mounted) calculateTotal();
+        });
+      }
     }
   }
+
 
   Map<String, double> calculateTotal() {
     double subTotal = 0.0;
@@ -5998,180 +5982,3 @@ class _ProductEntryCardState extends State<_ProductEntryCard> {
             },
           ),
           const SizedBox(height: 10),
-
-          _SalesField(
-            controller: entry['barcode'] ?? TextEditingController(),
-            label: 'Barcode (Optional)',
-            hint: 'Scan or enter barcode (optional)',
-            icon: Icons.qr_code_2_rounded,
-            accentColor: const Color(0xFF8B5CF6),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.barcode_reader, size: 18),
-              color: const Color(0xFF8B5CF6).withValues(alpha: 0.8),
-              onPressed: onScan,
-              tooltip: 'Scan barcode',
-            ),
-            textInputAction: TextInputAction.next,
-            onSubmitted: (val) {
-              if (val.trim().isNotEmpty) {
-                 onScan();
-              }
-            },
-            onChanged: (_) => onChanged(),
-          ),
-          const SizedBox(height: 8),
-
-          // â”€â”€ Qty + Rate + Discount in a single compact row â”€â”€
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: _SalesField(
-                  controller: entry['qty']!,
-                  label: 'Qty',
-                  icon: Icons.add_box_rounded,
-                  keyboardType: TextInputType.number,
-                  accentColor: const Color(0xFF059669),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Enter qty';
-                    try {
-                      final qty = double.parse(v.trim());
-                      if (qty <= 0) return 'Qty > 0';
-                      if (qty > 1000000) return 'Too large';
-                      return null;
-                    } catch (e) {
-                      return 'Invalid';
-                    }
-                  },
-                  onChanged: (_) => onChanged(),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                flex: 3,
-                child: _SalesField(
-                  controller: entry['price']!,
-                  label: 'Rate (₹)',
-                  icon: Icons.currency_rupee_rounded,
-                  keyboardType: TextInputType.number,
-                  accentColor: const Color(0xFFF59E0B),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Enter price';
-                    try {
-                      final prc = double.parse(v.trim());
-                      if (prc <= 0) return 'Price > 0';
-                      if (prc > 10000000) return 'Too large';
-                      return null;
-                    } catch (e) {
-                      return 'Invalid';
-                    }
-                  },
-                  onChanged: (newPrice) {
-                    onChanged();
-                    if (entry['barcode'] != null &&
-                        entry['barcode']!.text.isNotEmpty &&
-                        newPrice.isNotEmpty) {
-                      final code = entry['barcode']!.text;
-                      final name = entry['item']!.text;
-                      final gst = entry['gst']?.text ?? '18';
-                      onPriceLearned?.call(code, name, newPrice, gst);
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                flex: 2,
-                child: _SalesField(
-                  controller: entry['discount']!,
-                  label: 'Disc (₹)',
-                  icon: Icons.percent_rounded,
-                  keyboardType: TextInputType.number,
-                  accentColor: Colors.deepOrange,
-                  onChanged: (_) => onChanged(),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // â”€â”€ Compact item subtotal chip â”€â”€
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Sub ₹${subtotal.toStringAsFixed(2)}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        color: const Color(0xFF6B7280),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    if (gst > 0)
-                      Text(
-                        'GST ${gst.toStringAsFixed(0)}%  ₹${gstAmount.toStringAsFixed(2)}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF4F46E5),
-                        ),
-                      ),
-                  ],
-                ),
-                Text(
-                  '₹${itemTotal.toStringAsFixed(2)}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF111827),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SalesField extends StatefulWidget {
-  const _SalesField({
-    required this.controller,
-    required this.label,
-    required this.icon,
-    this.validator,
-    this.onChanged,
-    this.keyboardType,
-    this.accentColor = const Color(0xFF6366F1),
-    this.suffixIcon,
-    this.hint,
-    this.focusNode,
-    this.textInputAction,
-    this.onSubmitted,
-  });
-
-  final TextEditingController controller;
-  final String label;
-  final IconData icon;
-  final FormFieldValidator<String>? validator;
-  final ValueChanged<String>? onChanged;
-  final TextInputType? keyboardType;
-  final Color accentColor;
-  final Widget? suffixIcon;
-  final String? hint;
-  final FocusNode? focusNode;
-  final TextInputAction? textInputAction;
-  final ValueChanged<String>? onSubmitted;
-
-  @override
