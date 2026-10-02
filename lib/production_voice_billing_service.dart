@@ -109,6 +109,7 @@ class ProductionVoiceBillingService {
     final parsed = VoiceNlpEngineV2.parse(
       normalized,
       localeCode,
+      catalog: knownProducts,
       deduplicate: false,
     );
 
