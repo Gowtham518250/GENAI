@@ -1182,24 +1182,171 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     );
   }
 
+  int? _resolveBackendProductId(
+    Map<String, dynamic> product, {
+    List<Map<String, dynamic>>? cachedProducts,
+  }) {
+    final candidates = <dynamic>[
+      product['id'],
+      product['product_id'],
+      product['backend_id'],
+      product['server_id'],
+    ];
+
+    for (final value in candidates) {
+      final parsed = int.tryParse(value?.toString() ?? '');
+      if (parsed != null && parsed > 0) return parsed;
+    }
+
+    // A stale cache may contain the server row under the same SKU/name.
+    final cache = cachedProducts ?? const <Map<String, dynamic>>[];
+    final sku = product['sku']?.toString().trim().toLowerCase() ?? '';
+    final name = product['product_name']?.toString().trim().toLowerCase() ?? '';
+
+    for (final candidate in cache) {
+      final candidateSku =
+          candidate['sku']?.toString().trim().toLowerCase() ?? '';
+      final candidateName =
+          candidate['product_name']?.toString().trim().toLowerCase() ?? '';
+
+      final sameSku = sku.isNotEmpty && candidateSku == sku;
+      final sameName = name.isNotEmpty && candidateName == name;
+      if (!sameSku && !sameName) continue;
+
+      for (final value in <dynamic>[
+        candidate['id'],
+        candidate['product_id'],
+        candidate['backend_id'],
+        candidate['server_id'],
+      ]) {
+        final parsed = int.tryParse(value?.toString() ?? '');
+        if (parsed != null && parsed > 0) return parsed;
+      }
+    }
+
+    return null;
+  }
+
+  Future<void> _deleteUnsyncedLocalProduct(
+    Map<String, dynamic> product,
+  ) async {
+    final localProducts = await LocalStorageService.loadLocalProducts();
+
+    final identityCandidates = <String>{
+      product['id']?.toString() ?? '',
+      product['sku']?.toString() ?? '',
+      product['barcode']?.toString() ?? '',
+      product['product_name']?.toString() ?? '',
+    }..removeWhere((value) => value.trim().isEmpty);
+
+    localProducts.removeWhere((key, value) {
+      if (identityCandidates.contains(key.toString())) return true;
+      if (value is! Map) return false;
+
+      final map = Map<String, dynamic>.from(value);
+      return identityCandidates.contains(map['id']?.toString()) ||
+          identityCandidates.contains(map['sku']?.toString()) ||
+          identityCandidates.contains(map['barcode']?.toString()) ||
+          identityCandidates.contains(map['product_name']?.toString());
+    });
+
+    await LocalStorageService.saveLocalProducts(localProducts);
+
+    // Cancel the pending CREATE so deleting an unsynced product cannot make
+    // it reappear on the next outbox retry.
+    final operationId = product['operation_id']?.toString().isNotEmpty == true
+        ? product['operation_id'].toString()
+        : 'PRODUCT_CREATE_${product['id'] ?? product['sku'] ?? product['product_name']}';
+    await SyncQueueManager.removeByBusinessIdentifier(
+      'create_local_product',
+      {'operation_id': operationId},
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _products.removeWhere((item) {
+        if (identityCandidates.contains(item['id']?.toString() ?? '')) {
+          return true;
+        }
+        if (identityCandidates.contains(item['sku']?.toString() ?? '')) {
+          return true;
+        }
+        return identityCandidates.contains(
+          item['product_name']?.toString() ?? '',
+        );
+      });
+    });
+  }
+
   Future<void> _deleteProduct(Map<String, dynamic> p) async {
-    final productId = p['id']?.toString() ?? '';
-    if (productId.isEmpty || int.tryParse(productId) == null) {
+    final cached = await LocalStorageService.loadBackendProducts();
+    final productId = _resolveBackendProductId(
+      p,
+      cachedProducts: cached,
+    );
+
+    if (productId == null) {
+      final isUnsyncedLocal = p['is_offline'] == true ||
+          p['sync_status']?.toString().toLowerCase() == 'pending' ||
+          p['sync_status']?.toString().toLowerCase() == 'local';
+
+      if (isUnsyncedLocal) {
+        try {
+          await _deleteUnsyncedLocalProduct(p);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Local product removed. It was not synced to the backend yet.'),
+              ),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Could not remove local product: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+        return;
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Product has no valid backend ID. It cannot be deleted yet.')));
+          const SnackBar(
+            content: Text(
+              'This product has no valid server ID. Refresh inventory and try again.',
+            ),
+          ),
+        );
       }
       return;
     }
 
     try {
-      // Local-first delete. The durable outbox is responsible for server delivery.
-      final cached = await LocalStorageService.loadBackendProducts();
-      cached.removeWhere((item) => item['id'].toString() == productId);
-      await LocalStorageService.saveBackendProducts(cached);
+      // Remove only after the server operation is queued. For an online
+      // account the durable outbox remains the source of retry truth.
+      final operationId = 'PRODUCT_DELETE_${_userId ?? 0}_$productId';
+      final queued = _userId == null
+          ? false
+          : await SyncQueueManager.enqueue(
+              'delete_product',
+              {
+                'operation_id': operationId,
+                'id': productId,
+                'product_id': productId,
+                'user_id': _userId,
+              },
+            );
+
+      if (!queued && _userId != null) {
+        throw StateError('Could not queue product deletion');
+      }
+
       final localProducts = await LocalStorageService.loadLocalProducts();
-      final operationId = 'PRODUCT_DELETE_${_userId ?? 0}_${productId}';
-      localProducts['__deleted_${productId}'] = {
+      localProducts['__deleted_$productId'] = {
         'id': productId,
         'product_id': productId,
         'is_deleted': true,
@@ -1208,38 +1355,44 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
         'operation_id': operationId,
       };
       await LocalStorageService.saveLocalProducts(localProducts);
-      await CacheConsistencyService.markLocalMutation(
-        'inventory',
-        operationId: operationId,
-      );
 
-      if (_userId != null) {
-        await SyncQueueManager.enqueue('delete_product', {
-          'operation_id': 'PRODUCT_DELETE_${_userId}_$productId',
-          'id': int.parse(productId),
-          'user_id': _userId,
+      final cachedAfterQueue = await LocalStorageService.loadBackendProducts();
+      cachedAfterQueue.removeWhere((item) {
+        final id = _resolveBackendProductId(item);
+        return id == productId;
+      });
+      await LocalStorageService.saveBackendProducts(cachedAfterQueue);
+
+      if (mounted) {
+        setState(() {
+          _products.removeWhere((item) {
+            return _resolveBackendProductId(item) == productId;
+          });
         });
       }
 
-      if (mounted) {
-        setState(() => _products.removeWhere((item) => item['id'].toString() == productId));
-        await _fetch();
-      }
+      // Try immediately; the durable queue remains if the network is down.
       unawaited(SyncService.processQueueSafe());
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Product deleted locally and queued for sync.'), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('✅ Product deletion queued and syncing.'),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Delete failed: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Delete failed: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
   }
+
 
   void _showEditDialog(Map<String, dynamic> p) {
     final nameC = TextEditingController(text: p['product_name']?.toString() ?? '');

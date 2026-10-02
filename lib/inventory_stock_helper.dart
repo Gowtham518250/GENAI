@@ -20,10 +20,24 @@ class InventoryStockHelper {
 
   static Map<String, dynamic> normalizeProduct(Map<String, dynamic> raw) {
     final p = Map<String, dynamic>.from(raw);
-    final name = (p['product_name'] ?? p['name'] ?? p['product'] ?? '').toString();
+
+    // Canonical server identity. Different inventory endpoints/caches have
+    // historically used id/product_id/backend_id. Keep one stable id so
+    // update/delete operations never lose the database identity.
+    final canonicalId =
+        p['id'] ?? p['product_id'] ?? p['backend_id'] ?? p['server_id'];
+    if (canonicalId != null && canonicalId.toString().trim().isNotEmpty) {
+      p['id'] = canonicalId;
+      p['product_id'] ??= canonicalId;
+    }
+
+    final name =
+        (p['product_name'] ?? p['name'] ?? p['product'] ?? '').toString();
     if (name.isNotEmpty) p['product_name'] = name;
+
     writeStock(p, readStock(p));
-    p['min_stock'] = double.tryParse(p['min_stock']?.toString() ?? '10') ?? 10;
+    p['min_stock'] =
+        double.tryParse(p['min_stock']?.toString() ?? '10') ?? 10;
     return p;
   }
 
