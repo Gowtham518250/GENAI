@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -28,6 +29,11 @@ class BillGeneratorService {
     final dateStr = DateFormat('dd MMM yyyy, hh:mm a').format(now);
     final paymentStatus = paidAmount >= totalAmount - 0.5 ? 'PAID' : (paidAmount > 0 ? 'PARTIAL' : 'UNPAID');
     final due = totalAmount - paidAmount;
+    final specialDiscount = items.fold<double>(
+      0.0,
+      (sum, item) => sum +
+          (double.tryParse(item['discount_amount']?.toString() ?? '0') ?? 0.0),
+    );
 
     pdf.addPage(
       pw.Page(
@@ -94,7 +100,7 @@ class BillGeneratorService {
 
             // ── ITEMS TABLE ──
             pw.TableHelper.fromTextArray(
-              headers: ['#', 'Item', 'Qty', 'Rate', 'Total'],
+              headers: ['#', 'Item', 'Qty', 'Rate', 'Amount'],
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
               cellStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
               headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
@@ -112,7 +118,8 @@ class BillGeneratorService {
                 final name = (item['product_name'] ?? item['item'] ?? 'Item').toString();
                 final qty = double.tryParse(item['qty']?.toString() ?? '1') ?? 1.0;
                 final rate = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
-                final total = qty * rate;
+                final discountAmount = double.tryParse(item['discount_amount']?.toString() ?? '0') ?? 0.0;
+                final total = math.max(0.0, (qty * rate) - discountAmount);
                 return [
                   '${i + 1}',
                   name,
@@ -131,6 +138,16 @@ class BillGeneratorService {
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
                   pw.Divider(thickness: 0.5),
+                  if (specialDiscount > 0)
+                    pw.Text(
+                      'Special Discount: -₹' +
+                          specialDiscount.toStringAsFixed(2),
+                      style: pw.TextStyle(
+                        fontSize: 10,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.green700,
+                      ),
+                    ),
                   pw.Row(
                     mainAxisSize: pw.MainAxisSize.min,
                     children: [
