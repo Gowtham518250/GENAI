@@ -19,6 +19,20 @@ class PrinterService {
     )).toList();
   }
 
+  static bool get isConnected => _isConnected && _selectedDevice != null;
+  static BluetoothDevice? get selectedDevice => _selectedDevice;
+
+  static Future<bool> isPrinterConnected() async {
+    try {
+      final connected = await bluetooth.isConnected;
+      if (connected == true) {
+        _isConnected = true;
+        return true;
+      }
+    } catch (_) {}
+    return isConnected;
+  }
+
   static void updateConnectionState(bool connected, BluetoothDevice? device) {
     _isConnected = connected;
     _selectedDevice = device;
@@ -68,7 +82,7 @@ class PrinterService {
   }
 
   /// Print bill receipt
-  static Future<void> printBill({
+  static Future<bool> printBill({
     required BuildContext context,
     required String invoiceId,
     required String customerName,
@@ -76,7 +90,7 @@ class PrinterService {
     required double totalAmount,
     double gstPercent = 18.0,
   }) async {
-    if (!_isConnected || _selectedDevice == null) {
+    if (!isConnected) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -93,7 +107,7 @@ class PrinterService {
           ),
         );
       }
-      return;
+      return false;
     }
 
     try {
@@ -144,7 +158,10 @@ class PrinterService {
         final name = item['product_name'] ?? 'Item';
         final qty = item['qty'] ?? '1';
         final price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
-        subTotal += price;
+        final itemQty = qty is num
+            ? qty.toDouble()
+            : double.tryParse(qty.toString()) ?? 1.0;
+        subTotal += price * itemQty;
 
         // Handle long names
         if (name.length > 20) {
@@ -190,15 +207,23 @@ class PrinterService {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bill printed successfully')),
+          const SnackBar(
+            content: Text('Bill printed successfully'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
+      return true;
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Print failed: $e')),
+          SnackBar(
+            content: Text('Print failed: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
+      return false;
     }
   }
 
