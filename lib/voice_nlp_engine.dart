@@ -1188,7 +1188,7 @@ class VoiceNlpEngineV2 {
           final bt = tokens(norm(
             (b['name'] ?? b['product_name'] ?? '').toString(),
           ));
-          return b.intersection(queryTokens).length
+          return bt.intersection(queryTokens).length
               .compareTo(at.intersection(queryTokens).length);
         });
 
