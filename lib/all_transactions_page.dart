@@ -124,9 +124,10 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
       _onlineTransactions = [];
       
       // Process local sales and separate by payment method
-      for (var sale in sales) {
-        if (sale is! Map) continue;
-        
+      for (final rawSale in sales) {
+        if (rawSale is! Map) continue;
+        final sale = Map<String, dynamic>.from(rawSale);
+
         final paymentMethod = _normalisedPaymentMethod(sale['payment_method']);
         final amount = double.tryParse((sale['total_amount'] ?? sale['total'] ?? '0').toString()) ?? 0;
         final eventDate = _transactionEventDate(sale);
