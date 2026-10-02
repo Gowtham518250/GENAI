@@ -207,6 +207,12 @@ class ProductCatalogService {
       }
     }
 
+    // Never let a one-word alias match the beginning of a multi-word phrase.
+    // Example: "enna biryani" must not resolve to Oil because "enna" is an
+    // alias of Oil. Compound phrases need their own exact/strong catalog match.
+    final queryHasMultipleWords = query.contains(RegExp(r'\s'));
+
+
     // 3. Fingerprint index lookup (fast narrow)
     final candidateIndices = <int>{};
     if (_fpIndex.containsKey(queryFp)) {
@@ -233,6 +239,11 @@ class ProductCatalogService {
       double score = 0;
 
       for (final alias in entry.allAliases) {
+        final aliasIsSingleWord = !alias.contains(RegExp(r'\s'));
+        if (queryHasMultipleWords && aliasIsSingleWord) {
+          // A single-word learned alias cannot claim a multi-word request.
+          continue;
+        }
         final s = _hybridScore(query, alias, queryFp);
         if (s > score) score = s;
       }

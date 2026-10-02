@@ -109,6 +109,7 @@ class ProductionVoiceBillingService {
     final parsed = VoiceNlpEngineV2.parse(
       normalized,
       localeCode,
+      catalog: knownProducts,
       deduplicate: false,
     );
 
@@ -131,21 +132,34 @@ class ProductionVoiceBillingService {
         continue;
       }
 
-      final learnedMatch = catalogService.findBest(
+      // The shop's current inventory is authoritative. Never allow
+      // a persistent learned/global alias (for example "enna" -> Oil) to
+      // override a product that exists in this shop's catalog.
+      final shopProduct = _findShopProduct(
+        knownProducts,
         item.name,
-        minScore: 0.58,
       );
 
-      final canonicalName = learnedMatch?.canonicalName ??
+      final learnedMatch = shopProduct == null
+          ? catalogService.findBest(
+              item.name,
+              minScore: 0.72,
+            )
+          : null;
+
+      final canonicalName = shopProduct?['name']?.toString() ??
+          shopProduct?['product_name']?.toString() ??
+          learnedMatch?.canonicalName ??
           ((item.catalogMatchName?.trim().isNotEmpty ?? false)
               ? item.catalogMatchName!.trim()
               : item.name.trim());
 
-      final product = _findKnownProduct(
-        knownProducts,
-        canonicalName,
-        learnedMatch?.canonicalName,
-      );
+      final product = shopProduct ??
+          _findKnownProduct(
+            knownProducts,
+            canonicalName,
+            learnedMatch?.canonicalName,
+          );
 
       final catalogPrice = _firstPositiveDouble([
         product?['price'],
@@ -184,7 +198,7 @@ class ProductionVoiceBillingService {
           price: finalPrice,
           confidence: item.confidenceScore,
           catalogMatched:
-              learnedMatch != null || product != null || item.catalogMatchName != null,
+              product != null || learnedMatch != null || item.catalogMatchName != null,
           priceSource: spokenPrice != null
               ? 'spoken'
               : catalogPrice != null && catalogPrice > 0
@@ -217,11 +231,84 @@ class ProductionVoiceBillingService {
     );
   }
 
-  static Map<String, dynamic>? _findKnownProduct(
+  static Map<String, dynamic>? _findShopProduct(
     List<Map<String, dynamic>> products,
-    String canonicalName,
-    String? fallbackName,
+    String spokenName,
   ) {
+    if (products.isEmpty || spokenName.trim().isEmpty) return null;
+
+    String normalize(String value) => value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9\\u0900-\\u0d7f\\u0980-\\u09ff\\u0a00-\\u0aff\\u0b80-\\u0bff\\u0c00-\\u0c7f\\u0c80-\\u0cff\\u0d00-\\u0d7f\\s]'), ' ')
+        .replaceAll(RegExp(r'\\s+'), ' ')
+        .trim();
+
+    Set<String> tokens(String value) => normalize(value)
+        .split(RegExp(r'\\s+'))
+        .where((token) => token.length >= 3)
+        .toSet();
+
+    final query = normalize(spokenName);
+
+    // Exact shop-product name first.
+    for (final product in products) {
+      final names = [
+        product['name'],
+        product['product_name'],
+        product['canonical_name'],
+      ].whereType<String>().map(normalize).where((v) => v.isNotEmpty);
+
+      if (names.any((name) => name == query)) return product;
+    }
+
+    final queryTokens = tokens(query);
+    if (queryTokens.isEmpty) return null;
+
+    final scored = <MapEntry<Map<String, dynamic>, double>>[];
+
+    for (final product in products) {
+      final names = [
+        product['name'],
+        product['product_name'],
+        product['canonical_name'],
+      ].whereType<String>().map(normalize).where((v) => v.isNotEmpty);
+
+      var best = 0.0;
+      for (final name in names) {
+        final productTokens = tokens(name);
+        if (productTokens.isEmpty) continue;
+
+        final overlap = queryTokens.intersection(productTokens);
+        if (overlap.isEmpty) continue;
+
+        final tokenScore =
+            overlap.length / queryTokens.length;
+        final coverage =
+            overlap.length / productTokens.length;
+        final score = (tokenScore * 0.65) + (coverage * 0.35);
+        if (score > best) best = score;
+      }
+
+      if (best > 0) {
+        scored.add(MapEntry(product, best));
+      }
+    }
+
+    scored.sort((a, b) => b.value.compareTo(a.value));
+    if (scored.isEmpty) return null;
+
+    final best = scored.first;
+    final second = scored.length > 1 ? scored[1].value : 0.0;
+
+    // High confidence exact token/phrase match with a useful margin.
+    if (best.value >= 0.72 && (best.value - second) >= 0.10) {
+      return best.key;
+    }
+
+    return null;
+  }
+
+$marker
     if (products.isEmpty) return null;
 
     final candidates = <String>{

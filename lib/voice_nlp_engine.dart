@@ -573,12 +573,21 @@ class PhoneticProductResolver {
     final exact = _index[key];
     if (exact != null) return exact;
 
-    // Prefix hit (minimum 4 chars to avoid false positives)
-    if (key.length >= 4) {
+    // Prefix matching is only safe for a single token. A compound phrase
+    // such as "enna biryani" must NOT be converted to the product "Oil"
+    // simply because "enna" is an alias of Oil.
+    if (!key.contains(RegExp(r'\s')) && key.length >= 4) {
+      final prefixMatches = <String>{};
       for (final alias in _index.keys) {
         if (alias.startsWith(key) || key.startsWith(alias)) {
-          return _index[alias]!;
+          prefixMatches.add(_index[alias]!);
         }
+      }
+
+      // Only auto-resolve when the prefix identifies exactly one canonical
+      // product. Ambiguous prefixes must remain unresolved for catalog lookup.
+      if (prefixMatches.length == 1) {
+        return prefixMatches.first;
       }
     }
 
@@ -1014,7 +1023,13 @@ class VoiceNlpEngineV2 {
       final String unit;
       bool unitInferred = false;
       if (rawUnit.isEmpty) {
-        final canonical = PhoneticProductResolver.resolve(name);
+        // Preserve multi-word product phrases for shop-catalog resolution.
+        // Generic phonetic aliases such as "chicken dum biryani" -> "Biryani"
+        // must not collapse a shop-specific product name before the catalog
+        // gets a chance to identify the exact record.
+        final canonical = name.contains(RegExp(r'\s'))
+            ? null
+            : PhoneticProductResolver.resolve(name);
         if (canonical != null) {
           unit = UnitInferrer.infer(canonical);
           unitInferred = true;
@@ -1116,21 +1131,121 @@ class VoiceNlpEngineV2 {
     String name,
     List<Map<String, dynamic>> catalog,
   ) {
-    final n = name.toLowerCase();
-    // Exact
+    final n = name.toLowerCase().trim();
+    if (n.isEmpty) return null;
+
+    String norm(String value) => value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9\u0900-\u0D7F\u0980-\u09FF\u0A00-\u0AFF\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F\s]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    Set<String> tokens(String value) => norm(value)
+        .split(RegExp(r'\s+'))
+        .where((token) => token.length >= 3)
+        .toSet();
+
+    final normalizedQuery = norm(n);
+
+    // 1. Exact name must always win.
     for (final p in catalog) {
-      final cn = (p['name'] ?? p['product_name'] ?? '').toString().toLowerCase();
-      if (cn == n || cn.contains(n) || n.contains(cn)) return p;
+      final cn = norm(
+        (p['name'] ?? p['product_name'] ?? p['canonical_name'] ?? '').toString(),
+      );
+      if (cn.isNotEmpty && cn == normalizedQuery) return p;
     }
-    // Fuzzy via bigram
-    double bestSim = 0.65;
+
+    // 2. Compound product matching: "enna biryani" should be allowed to
+    // resolve to "Chicken Dum Biryani" through the strong "biryani" token,
+    // but must never fall back to the unrelated "Oil" alias.
+    final queryTokens = tokens(normalizedQuery);
+    if (queryTokens.length >= 2) {
+      final candidates = <Map<String, dynamic>>[];
+      for (final p in catalog) {
+        final cn = norm(
+          (p['name'] ?? p['product_name'] ?? p['canonical_name'] ?? '').toString(),
+        );
+        final productTokens = tokens(cn);
+        final overlap = queryTokens.intersection(productTokens);
+        if (overlap.isEmpty) continue;
+
+        final strongOverlap = overlap.any((token) =>
+            token.length >= 5 && productTokens.contains(token));
+        if (strongOverlap) {
+          candidates.add(p);
+        }
+      }
+
+      // Only auto-select when the phrase identifies one shop product.
+      if (candidates.length == 1) return candidates.first;
+
+      if (candidates.length > 1) {
+        // Prefer the product containing the largest number of query tokens.
+        candidates.sort((a, b) {
+          final at = tokens(norm(
+            (a['name'] ?? a['product_name'] ?? '').toString(),
+          ));
+          final bt = tokens(norm(
+            (b['name'] ?? b['product_name'] ?? '').toString(),
+          ));
+          return b.intersection(queryTokens).length
+              .compareTo(at.intersection(queryTokens).length);
+        });
+
+        final top = candidates.first;
+        final topTokens = tokens(norm(
+          (top['name'] ?? top['product_name'] ?? '').toString(),
+        ));
+        final topScore = topTokens.intersection(queryTokens).length;
+        final secondTokens = tokens(norm(
+          (candidates[1]['name'] ?? candidates[1]['product_name'] ?? '').toString(),
+        ));
+        final secondScore = secondTokens.intersection(queryTokens).length;
+
+        if (topScore > secondScore) return top;
+        return null;
+      }
+    }
+
+    // 3. Single-token exact containment is safe only when unique.
+    if (queryTokens.length == 1) {
+      final token = queryTokens.first;
+      final matches = catalog.where((p) {
+        final cn = norm(
+          (p['name'] ?? p['product_name'] ?? '').toString(),
+        );
+        return tokens(cn).contains(token);
+      }).toList();
+
+      if (matches.length == 1) return matches.first;
+      if (matches.length > 1) {
+        // Never silently choose between duplicate shop products.
+        return null;
+      }
+    }
+
+    // 4. Conservative fuzzy fallback for clear single-product matches.
+    double bestSim = 0.82;
+    double secondSim = 0;
     Map<String, dynamic>? best;
     for (final p in catalog) {
-      final cn = (p['name'] ?? p['product_name'] ?? '').toString().toLowerCase();
-      final sim = PhoneticProductResolver._jaccardBigram(n, cn);
-      if (sim > bestSim) { bestSim = sim; best = p; }
+      final cn = norm(
+        (p['name'] ?? p['product_name'] ?? '').toString(),
+      );
+      if (cn.isEmpty) continue;
+      final sim = PhoneticProductResolver._jaccardBigram(normalizedQuery, cn);
+      if (sim > bestSim) {
+        secondSim = bestSim;
+        bestSim = sim;
+        best = p;
+      } else if (sim > secondSim) {
+        secondSim = sim;
+      }
     }
-    return best;
+
+    // Require a meaningful margin over the runner-up.
+    if (best != null && (bestSim - secondSim) >= 0.08) return best;
+    return null;
   }
 
   // ── NLP-3: Sliding-window segmentation ────────────────────────────────────
