@@ -55,6 +55,55 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
     super.dispose();
   }
 
+  DateTime? _eventTime(dynamic raw) {
+    if (raw == null) return null;
+    final value = raw.toString().trim();
+    if (value.isEmpty || value == 'null') return null;
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) return null;
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null) return null;
+    final explicitZone = value.endsWith('Z') || RegExp(r'[+-]\d{2}:?\d{2}$').hasMatch(value);
+    if (explicitZone) return parsed.toLocal();
+    return DateTime.parse(value + 'Z').toLocal();
+  }
+
+  DateTime? _businessDate(dynamic raw) {
+    if (raw == null) return null;
+    final value = raw.toString().trim();
+    final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
+    if (match == null) return _eventTime(value);
+    return DateTime(int.parse(match.group(1)!), int.parse(match.group(2)!), int.parse(match.group(3)!));
+  }
+
+  DateTime? _transactionEventDate(Map<String, dynamic> item) {
+    for (final key in const ['event_timestamp','sale_timestamp','created_at','createdAt','timestamp','updated_at','updatedAt','date']) {
+      final parsed = _eventTime(item[key]);
+      if (parsed != null) return parsed;
+    }
+    return _businessDate(item['business_date'] ?? item['sale_date'] ?? item['invoice_date'] ?? item['date']);
+  }
+
+  bool _isKhataSale(Map<String, dynamic> sale) {
+    final values = [sale['transaction_kind'], sale['type'], sale['notes'], sale['description'], sale['sale_type']]
+        .where((v) => v != null).map((v) => v.toString().toLowerCase()).join(' ');
+    return values.contains('khata') || values.contains('borrow') ||
+        values.contains('udhar') || values.contains('udhaar') ||
+        values.contains('credit sale');
+  }
+
+  bool _isOnlinePayment(String? method) {
+    final value = (method ?? '').toLowerCase();
+    return value.contains('upi') || value.contains('online') ||
+        value.contains('gpay') || value.contains('phonepe') ||
+        value.contains('paytm') || value.contains('card') ||
+        value.contains('bank') || value.contains('transfer');
+  }
+
+  String _normalisedPaymentMethod(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+    return text.isEmpty ? 'Cash' : text;
+  }
+
   Future<void> _loadAllTransactions() async {
     setState(() {
       _isLoading = true;
@@ -78,9 +127,11 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
       for (var sale in sales) {
         if (sale is! Map) continue;
         
-        final paymentMethod = sale['payment_method']?.toString() ?? 'Cash';
-        final amount = double.tryParse(sale['total']?.toString() ?? '0') ?? 0;
-        final saleDate = sale['business_date'] ?? sale['sale_date'] ?? sale['invoice_date'] ?? sale['date'];
+        final paymentMethod = _normalisedPaymentMethod(sale['payment_method']);
+        final amount = double.tryParse((sale['total_amount'] ?? sale['total'] ?? '0').toString()) ?? 0;
+        final eventDate = _transactionEventDate(sale);
+        final businessDate = _businessDate(sale['business_date'] ?? sale['sale_date'] ?? sale['invoice_date'] ?? sale['date']);
+        final saleDate = eventDate?.toIso8601String() ?? businessDate?.toIso8601String();
         final customerName = sale['customer_name'] ?? 'Walk-in Customer';
         final customerPhone = sale['customer_phone'];
         final saleId = sale['sale_id'] ?? sale['invoice_number'] ?? sale['id'];
@@ -98,8 +149,13 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
           'raw': sale,
         };
 
-        // Categorize by payment method
-        if (paymentMethod == 'Online') {
+        // Categorize Khata independently from cash/online payment method.
+        if (_isKhataSale(sale)) {
+          _khataTransactions.add({
+            ...transaction,
+            'type': 'Khata Sale',
+          });
+        } else if (_isOnlinePayment(paymentMethod)) {
           _onlineTransactions.add({
             ...transaction,
             'type': 'Online Payment (Manual)',
@@ -155,9 +211,16 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
 
           if (invoicesResp.statusCode == 200) {
             final data = json.decode(invoicesResp.body);
-            if (data['invoices'] is List) {
-              for (var invoice in data['invoices']) {
-                final invoiceDate = invoice['business_date'] ?? invoice['invoice_date'] ?? invoice['created_date'];
+            final invoiceRows = data is List
+                ? data
+                : (data is Map && data['invoices'] is List ? data['invoices'] : const []);
+            if (invoiceRows is List) {
+              for (var invoice in invoiceRows) {
+                final invoiceDate = invoice['created_at'] ??
+                    invoice['sale_timestamp'] ??
+                    invoice['business_date'] ??
+                    invoice['invoice_date'] ??
+                    invoice['created_date'];
                 final invoiceId = invoice['number'] ?? invoice['invoice_number'] ?? invoice['id'];
                 if (invoiceDate == null || invoiceId == null) continue;
                 _invoiceTransactions.add({
@@ -165,6 +228,8 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                   'type': 'Invoice',
                   'amount': double.tryParse(invoice['total_amount']?.toString() ?? '0') ?? 0,
                   'date': invoiceDate,
+                  'event_timestamp': invoice['created_at'] ?? invoice['sale_timestamp'],
+                  'business_date': invoice['business_date'] ?? invoice['invoice_date'],
                   'customer': invoice['customer_name'] ?? 'Unknown',
                   'customer_phone': invoice['customer_phone'],
                   'status': invoice['payment_status'] ?? 'Pending',
@@ -215,10 +280,10 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
         };
       }).toList();
 
-      // Sort by date
+      // Sort by real event time; date-only business dates are a fallback.
       _allTransactions.sort((a, b) {
-        final dateA = DateTime.tryParse(a['date'].toString()) ?? DateTime(1970);
-        final dateB = DateTime.tryParse(b['date'].toString()) ?? DateTime(1970);
+        final dateA = _transactionEventDate(a) ?? DateTime(1970);
+        final dateB = _transactionEventDate(b) ?? DateTime(1970);
         return dateB.compareTo(dateA);
       });
 
@@ -459,12 +524,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
 
   Widget _buildTransactionCard(Map<String, dynamic> txn) {
     final amount = txn['amount'] as double? ?? 0.0;
-    var date = DateTime.tryParse(txn['date'].toString()) ?? DateTime(1970);
-    // Convert UTC to local time if the string contains timezone info
-    final dateStr = txn['date'].toString();
-    if (dateStr.contains('Z') || dateStr.contains('+') || date.isUtc) {
-      date = date.toLocal();
-    }
+    final date = _transactionEventDate(txn) ?? DateTime(1970);
     final formattedDate = DateFormat('dd MMM yyyy, hh:mm a').format(date);
     final customerPhone = txn['customer_phone'] as String?;
     final detectionStatus = txn['detection_status'] as String?;

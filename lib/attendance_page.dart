@@ -1359,63 +1359,173 @@ class _AttendancePageState extends State<AttendancePage>
 
   Widget _historyTab() {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_records.isEmpty) return Center(
-        child: Text('No attendance records', style: GoogleFonts.poppins()));
+    if (_records.isEmpty) {
+      return Center(
+        child: Text('No attendance records', style: GoogleFonts.poppins()),
+      );
+    }
+
+    final records = List<Map<String, dynamic>>.from(
+      _records.whereType<Map>().map((r) => Map<String, dynamic>.from(r)),
+    );
+    records.sort((a, b) {
+      final aDate = _parseServerTime(a['check_in_time']) ??
+          DateTime.tryParse(a['attendance_date']?.toString() ?? '') ??
+          DateTime(1970);
+      final bDate = _parseServerTime(b['check_in_time']) ??
+          DateTime.tryParse(b['attendance_date']?.toString() ?? '') ??
+          DateTime(1970);
+      return bDate.compareTo(aDate);
+    });
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _records.length,
+      itemCount: records.length,
       itemBuilder: (_, i) {
-        final r = _records[i];
-        final st = r['status'] as String? ?? 'N/A';
-        final color = st == 'PRESENT' ? _present
-            : (st == 'HALF_DAY' ? Colors.orange : _absent);
+        final r = records[i];
+        final sessions = r['sessions'];
+        final sessionKey = _sessionKeyForRecord(r);
+        final label = (r['label'] ?? r['session_label'] ??
+                (sessionKey == 'morning' ? 'Morning Session' : 'Afternoon Session'))
+            .toString();
+        final status = (r['status'] ?? 'PRESENT').toString().toUpperCase();
+        final isOpen = _isOpenSession(r);
+        final color = isOpen
+            ? Colors.orange
+            : (status == 'PRESENT' ? _present : (status == 'HALF_DAY' ? _half : _absent));
+        final dateText = (r['attendance_date'] ?? '').toString().split('T').first;
+        final inTime = _fmtClock(r['check_in_time']);
+        final outTime = _fmtClock(r['check_out_time']);
+        final hours = _hoursForSession(r);
+
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)]),
-          child: Row(children: [
-            Container(width: 40, height: 40,
-                decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
-                child: Icon(
-                    st == 'PRESENT' ? Icons.check_circle_outline : Icons.cancel_outlined,
-                    color: color, size: 22)),
-            const SizedBox(width: 12),
-            Expanded(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(r['attendance_date'] ?? '', style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600, fontSize: 13)),
-              if (r['check_in_time'] != null)
-                Text('In: ${DateFormat.jm().format(DateTime.tryParse(r['check_in_time']) ?? DateTime.now())}',
-                    style: GoogleFonts.poppins(
-                        fontSize: 11, color: Colors.grey.shade500)),
-            ])),
-            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8)),
-                child: Text(st, style: GoogleFonts.poppins(
-                    fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isOpen ? Icons.timelapse : Icons.check_circle_outline,
+                      color: color,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          dateText,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          label,
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          'In: $inTime  ·  Out: $outTime',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          status == 'PRESENT' && _sessionIndex(r) >= 0 ? 'PRESENT' : status,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${hours.toStringAsFixed(2)} hrs',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              if (_isLateCheckIn(r))
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text('LATE', style: GoogleFonts.poppins(
-                      fontSize: 9, fontWeight: FontWeight.bold, color: Colors.orange.shade700)),
+              if (sessions is Map && sessions.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'Session detail: ${sessions.length} recorded session(s)',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-            ]),
-          ]),
+              ],
+              if (_isLateCheckIn(r))
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 5),
+                    child: Text(
+                      'LATE',
+                      style: GoogleFonts.poppins(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );
   }
-
   Widget _payrollTab() {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_staff.isEmpty) {
