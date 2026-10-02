@@ -154,6 +154,7 @@ class PrinterService {
       bluetooth.printNewLine();
 
       double subTotal = 0.0;
+      double specialDiscount = 0.0;
       for (var item in items) {
         final name = item['product_name'] ?? 'Item';
         final qty = item['qty'] ?? '1';
@@ -161,7 +162,10 @@ class PrinterService {
         final itemQty = qty is num
             ? qty.toDouble()
             : double.tryParse(qty.toString()) ?? 1.0;
+        final itemDiscount =
+            double.tryParse(item['discount_amount']?.toString() ?? '0') ?? 0.0;
         subTotal += price * itemQty;
+        specialDiscount += itemDiscount;
 
         // Handle long names
         if (name.length > 20) {
@@ -183,11 +187,20 @@ class PrinterService {
 
       bluetooth.printLeftRight("Subtotal", subTotal.toStringAsFixed(2), 1);
       bluetooth.printNewLine();
-      bluetooth.printLeftRight("GST ($gstPercent%)", gstAmount.toStringAsFixed(2), 1);
+      if (specialDiscount > 0) {
+        bluetooth.printLeftRight(
+          "Special Discount",
+          "-Rs " + specialDiscount.toStringAsFixed(2),
+          1,
+        );
+        bluetooth.printNewLine();
+      }
+      bluetooth.printLeftRight("GST (" + gstPercent.toString() + "%)", gstAmount.toStringAsFixed(2), 1);
       bluetooth.printNewLine();
       bluetooth.printCustom("-" * 32, 1, 1);
       bluetooth.printNewLine();
-      bluetooth.printLeftRight("TOTAL", "Rs ${total.toStringAsFixed(2)}", 3); // Bold large font
+      // Match the backend-confirmed total exactly.
+      bluetooth.printLeftRight("TOTAL", "Rs " + totalAmount.toStringAsFixed(2), 3);
       bluetooth.printNewLine();
       bluetooth.printCustom("-" * 32, 1, 1);
       bluetooth.printNewLine();
