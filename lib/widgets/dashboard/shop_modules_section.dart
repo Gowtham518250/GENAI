@@ -474,7 +474,6 @@ class _ModulesSheetState extends State<_ModulesSheet>
                         await Future<void>.delayed(
                           const Duration(milliseconds: 90),
                         );
-                        if (!context.mounted) return;
                         item.onTap();
                         widget.onClosed();
                       },
