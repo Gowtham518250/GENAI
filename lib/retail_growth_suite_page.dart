@@ -160,7 +160,52 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
   Widget _hero()=>Container(padding:const EdgeInsets.all(20),decoration:BoxDecoration(gradient:const LinearGradient(colors:[Color(0xFF11183F),Color(0xFF4C1D95),Color(0xFF5B3DF5)]),borderRadius:BorderRadius.circular(26),boxShadow:[BoxShadow(color:Color(0x334C1D95),blurRadius:28,offset:Offset(0,14))]),child:Row(children:[Container(width:52,height:52,decoration:BoxDecoration(color:Colors.white12,borderRadius:BorderRadius.circular(16)),child:const Icon(Icons.auto_awesome_rounded,color:Colors.white,size:27)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Retail Growth Suite',style:GoogleFonts.poppins(color:Colors.white,fontSize:20,fontWeight:FontWeight.w800)),const SizedBox(height:3),Text('AI insights, smart inventory, branches, delivery, loyalty, promotions and security.',style:GoogleFonts.poppins(color:Colors.white70,fontSize:11.5,height:1.4))]))]));
   Widget _title(String a,String b)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(a,style:GoogleFonts.poppins(fontSize:17,fontWeight:FontWeight.w800,color:const Color(0xFF111827))),const SizedBox(height:2),Text(b,style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF94A3B8)))]);
   Widget _metric(IconData icon,String label,String value,Color color)=>Container(padding:const EdgeInsets.all(11),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(17),border:Border.all(color:color.withValues(alpha:.12))),child:Row(children:[Container(width:38,height:38,decoration:BoxDecoration(color:color.withValues(alpha:.1),borderRadius:BorderRadius.circular(12)),child:Icon(icon,color:color,size:18)),const SizedBox(width:8),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Text(label,maxLines:1,overflow:TextOverflow.ellipsis,style:GoogleFonts.poppins(fontSize:9,color:const Color(0xFF64748B))),const SizedBox(height:2),Text(value,maxLines:1,overflow:TextOverflow.ellipsis,style:GoogleFonts.poppins(fontSize:14,fontWeight:FontWeight.w800,color:const Color(0xFF172033)))]))]));
-  Widget _copilotCard()=>Container(padding:const EdgeInsets.all(15),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(21),border:Border.all(color:const Color(0xFFE2E8F0))),child:Column(children:[TextField(controller:copilot,onSubmitted:(_)=>ask(),decoration:InputDecoration(hintText:'What should I restock today?',prefixIcon:const Icon(Icons.psychology_rounded,color:Color(0xFF6366F1)),suffixIcon:IconButton(onPressed:ask,icon:const Icon(Icons.send_rounded)),filled:true,fillColor:const Color(0xFFF8FAFC),border:OutlineInputBorder(borderRadius:BorderRadius.circular(14),borderSide:BorderSide.none))),if(answer.isNotEmpty) ...[const SizedBox(height:10),Align(alignment:Alignment.centerLeft,child:Text(answer,style:GoogleFonts.poppins(fontSize:11.5,height:1.45,color:const Color(0xFF312E81)))]]));
+  Widget _copilotCard()=>Container(
+    padding:const EdgeInsets.all(15),
+    decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(21),border:Border.all(color:const Color(0xFFE2E8F0))),
+    child:Column(children:[
+      TextField(controller:copilot,onSubmitted:(_)=>ask(),decoration:InputDecoration(
+        hintText:'Ask about stock, profit, returns, delivery or online orders…',
+        prefixIcon:const Icon(Icons.psychology_rounded,color:Color(0xFF6366F1)),
+        suffixIcon:IconButton(onPressed:()=>ask(),icon:const Icon(Icons.send_rounded)),
+        filled:true,fillColor:const Color(0xFFF8FAFC),
+        border:OutlineInputBorder(borderRadius:BorderRadius.circular(14),borderSide:BorderSide.none),
+      )),
+      const SizedBox(height:9),
+      Wrap(spacing:6,runSpacing:6,children:[
+        'What should I restock?','How is profit?','Any returns?','Delivery status','Shop summary'
+      ].map((q)=>ActionChip(
+        label:Text(q,style:GoogleFonts.poppins(fontSize:9.5,fontWeight:FontWeight.w700)),
+        onPressed:()=>ask(q),
+      )).toList()),
+      if(answer.isNotEmpty) ...[
+        const SizedBox(height:10),
+        Align(alignment:Alignment.centerLeft,child:Container(
+          width:double.infinity,
+          padding:const EdgeInsets.all(12),
+          decoration:BoxDecoration(color:const Color(0xFFEEF2FF),borderRadius:BorderRadius.circular(14)),
+          child:Text(answer,style:GoogleFonts.poppins(fontSize:11.5,height:1.45,color:const Color(0xFF312E81))),
+        )),
+      ],
+      if(copilotHistory.isNotEmpty) ...[
+        const SizedBox(height:10),
+        Align(
+          alignment:Alignment.centerLeft,
+          child:Text('Recent Copilot questions',style:GoogleFonts.poppins(fontSize:10,fontWeight:FontWeight.w800,color:const Color(0xFF64748B))),
+        ),
+        ...copilotHistory.take(3).map((raw){
+          final item=Map<String,dynamic>.from(raw as Map);
+          return ListTile(
+            dense:true,
+            contentPadding:EdgeInsets.zero,
+            leading:const Icon(Icons.history_rounded,size:17,color:Color(0xFF818CF8)),
+            title:Text(item['question']?.toString()??'',maxLines:1,overflow:TextOverflow.ellipsis,style:GoogleFonts.poppins(fontSize:10.5,fontWeight:FontWeight.w700)),
+            subtitle:Text(item['answer']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:GoogleFonts.poppins(fontSize:9.5,color:const Color(0xFF64748B))),
+          );
+        }),
+      ],
+    ),
+  );
   Widget _reorderRow(Map<String,dynamic> x)=>Container(margin:const EdgeInsets.only(bottom:8),padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFFE2E8F0))),child:Row(children:[Icon(x['priority']=='CRITICAL'?Icons.error_rounded:Icons.warning_amber_rounded,color:x['priority']=='CRITICAL'?Colors.red:Colors.orange),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(x['product_name']?.toString()??'Product',style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),Text('${x['current_stock']} stock · ${x['estimated_days_remaining']??'—'} days cover',style:GoogleFonts.poppins(fontSize:10,color:const Color(0xFF64748B)))])),Text('Order '+x['suggested_reorder_quantity'].toString(),style:GoogleFonts.poppins(fontSize:10.5,fontWeight:FontWeight.w800,color:const Color(0xFF4F46E5)))]));
   Widget _returnRow(Map<String,dynamic> x){
     final id=n(x['id']);
