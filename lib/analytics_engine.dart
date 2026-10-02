@@ -126,83 +126,108 @@ class AnalyticsEngine {
 
   static const List<String> _months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  /// Parse sale date with multiple format support and force Indian Time (IST)
+  /// Business date and event timestamp are intentionally separate.
+  ///
+  /// business_date / invoice_date identify the retail day.
+  /// sale_timestamp / created_at identify when the event actually happened.
   DateTime getLocalDate(Map<String, dynamic> sale) {
     try {
-      String str = (sale['business_date'] ?? '').toString().trim();
-      final hasTime = str.contains('T') || RegExp(r'\d{2}:\d{2}').hasMatch(str);
-      if (str.isEmpty || !hasTime) {
-        for (final field in const ['sale_timestamp', 'invoice_timestamp', 'created_at', 'createdAt', 'timestamp', 'sale_date', 'invoice_date', 'date']) {
-          final candidate = (sale[field] ?? '').toString().trim();
-          if (candidate.isNotEmpty) { str = candidate; if (candidate.contains('T') || RegExp(r'\d{2}:\d{2}').hasMatch(candidate)) break; }
+      String? businessRaw;
+      for (final field in const ['business_date', 'sale_date', 'invoice_date', 'date']) {
+        final candidate = sale[field]?.toString().trim();
+        if (candidate != null && candidate.isNotEmpty && candidate != 'null') {
+          businessRaw = candidate;
+          break;
         }
       }
-      if (str.isEmpty) return DateTime(1970);
-      
-      if (kDebugMode) debugPrint('🔍 Date parsing: "$str", is_local: ${sale['is_local']}, available fields: ${sale.keys.join(', ')}');
-      
-      // If it's just a date (YYYY-MM-DD), convert to datetime at start of day in IST
-      if (str.length == 10 && str.contains('-')) {
-        final parts = str.split('-');
-        if (parts.length == 3) {
-          final year = int.tryParse(parts[0]) ?? 1970;
-          final month = int.tryParse(parts[1]) ?? 1;
-          final day = int.tryParse(parts[2]) ?? 1;
-          final date = DateTime(year, month, day);
-          // Return as IST (already at midnight)
-          return date;
-        }
+
+      if (businessRaw == null || businessRaw.isEmpty) {
+        return getEventDate(sale);
       }
-      
-      DateTime? parsed = DateTime.tryParse(str);
-      if (parsed == null) {
-        if (kDebugMode) debugPrint('❌ Failed to parse date: $str');
-        return DateTime(1970);
+
+      final dateOnly = RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(businessRaw);
+      if (dateOnly) {
+        final parts = businessRaw.split('-');
+        return DateTime(
+          int.parse(parts[0]),
+          int.parse(parts[1]),
+          int.parse(parts[2]),
+        );
       }
-      
-        // Explicit-zone timestamps are converted to IST. Zone-less backend
-        // timestamps are treated as business-local values, never as UTC.
-        final hasExplicitZone = str.endsWith('Z') || RegExp(r'[+-]\d{2}:?\d{2}$').hasMatch(str);
-        final istTime = hasExplicitZone
-          ? parsed.toUtc().add(const Duration(hours: 5, minutes: 30))
-          : DateTime(parsed.year, parsed.month, parsed.day, parsed.hour, parsed.minute, parsed.second, parsed.millisecond, parsed.microsecond);
-      
-      if (kDebugMode) debugPrint('✅ Date: "$str" → $istTime (IST)');
-      
-      return istTime;
+
+      final parsed = _parseBusinessDateTime(businessRaw);
+      return parsed ?? DateTime(1970);
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Date parsing error: $e');
+      if (kDebugMode) debugPrint('❌ Business-date parsing error: $e');
       return DateTime(1970);
     }
   }
 
-  /// Timestamp used for intraday charts such as Best Hour. Prefer the real
-  /// creation timestamp; business_date is often date-only and would otherwise
-  /// collapse every sale into 00:00 (or midnight), producing a fake Best Hour.
+  /// Business-local timestamps may omit a zone. Preserve that wall-clock value.
+  DateTime? _parseBusinessDateTime(String str) {
+    final parsed = DateTime.tryParse(str.trim());
+    if (parsed == null) return null;
+    final hasExplicitZone =
+        str.endsWith('Z') || RegExp(r'[+-]\d{2}:?\d{2}$').hasMatch(str);
+    if (hasExplicitZone) return parsed.toLocal();
+    return DateTime(
+      parsed.year,
+      parsed.month,
+      parsed.day,
+      parsed.hour,
+      parsed.minute,
+      parsed.second,
+      parsed.millisecond,
+      parsed.microsecond,
+    );
+  }
+
+  /// Technical backend timestamps such as created_at are stored as naive UTC.
+  /// Explicitly zoned values keep their supplied offset.
   DateTime getEventDate(Map<String, dynamic> sale) {
-    final value = sale['sale_timestamp'] ?? sale['invoice_timestamp'] ??
-        sale['created_at'] ?? sale['updated_at'] ?? sale['timestamp'] ?? sale['createdAt'];
-    if (value != null && value.toString().trim().isNotEmpty) {
-      final parsed = _parseFlexibleDate(value.toString());
+    for (final field in const [
+      'sale_timestamp',
+      'invoice_timestamp',
+      'created_at',
+      'createdAt',
+      'timestamp',
+      'updated_at',
+      'updatedAt',
+      'event_timestamp',
+    ]) {
+      final raw = sale[field]?.toString().trim();
+      if (raw == null || raw.isEmpty || raw == 'null') continue;
+      final parsed = _parseBackendTimestamp(raw);
       if (parsed != null) return parsed;
     }
     return getLocalDate(sale);
   }
 
-  DateTime? _parseFlexibleDate(String str) {
-    final parsed = DateTime.tryParse(str.trim());
+  DateTime? _parseBackendTimestamp(String str) {
+    final trimmed = str.trim();
+    final parsed = DateTime.tryParse(trimmed);
     if (parsed == null) return null;
-    final hasExplicitZone = str.endsWith('Z') || RegExp(r'[+-]\d{2}:?\d{2}$').hasMatch(str);
-    return hasExplicitZone
-        ? parsed.toUtc().add(const Duration(hours: 5, minutes: 30))
-        : DateTime(parsed.year, parsed.month, parsed.day, parsed.hour, parsed.minute, parsed.second, parsed.millisecond, parsed.microsecond);
+    final hasExplicitZone =
+        trimmed.endsWith('Z') ||
+        RegExp(r'[+-]\d{2}:?\d{2}$').hasMatch(trimmed);
+    if (hasExplicitZone) return parsed.toLocal();
+    return DateTime.parse('${trimmed}Z').toLocal();
   }
 
+  DateTime? _parseFlexibleDate(String str) => _parseBackendTimestamp(str);
+
   DateTime? _tryGetBusinessDate(Map<String, dynamic> sale) {
-    final value = sale['business_date'] ?? sale['sale_date'] ?? sale['invoice_date'] ?? sale['date'];
+    final value = sale['business_date'] ??
+        sale['sale_date'] ??
+        sale['invoice_date'] ??
+        sale['date'];
     if (value == null || value.toString().trim().isEmpty) return null;
     final parsed = getLocalDate(sale);
-    return parsed.year == 1970 && parsed.month == 1 && parsed.day == 1 ? null : parsed;
+    return parsed.year == 1970 &&
+            parsed.month == 1 &&
+            parsed.day == 1
+        ? null
+        : parsed;
   }
 
   static double _toDouble(dynamic v) {
