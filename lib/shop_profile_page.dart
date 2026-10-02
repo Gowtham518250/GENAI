@@ -1931,7 +1931,7 @@ class _StyledField extends StatelessWidget {
           controller: controller,
           validator: validator,
           keyboardType: keyboardType,
-          style: GoogleFonts.poppins(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w550),
+          style: GoogleFonts.poppins(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.5), fontSize: 11.5),
