@@ -16,6 +16,9 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
   List<dynamic> reorder=[];
   Map<String,dynamic> security={};
   List<dynamic> coupons=[];
+  List<dynamic> returns=[];
+  List<dynamic> deliveries=[];
+  List<dynamic> copilotHistory=[];
   final copilot=TextEditingController();
   String answer='';
 
@@ -38,22 +41,60 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
         get('/growth/reorder-suggestions'),
         get('/growth/security-center'),
         get('/growth/coupons'),
+        get('/growth/returns?status=REQUESTED'),
+        get('/growth/deliveries'),
+        get('/growth/copilot/history?limit=6'),
       ]);
       if(!mounted)return;
       setState((){
-        overview=r[0]; analytics=r[1]; reorder=List<dynamic>.from(r[2]['suggestions']??[]); security=r[3]; coupons=List<dynamic>.from(r[4]['coupons']??[]);
+        overview=r[0]; analytics=r[1]; reorder=List<dynamic>.from(r[2]['suggestions']??[]); security=r[3]; coupons=List<dynamic>.from(r[4]['coupons']??[]); returns=List<dynamic>.from(r[5]['returns']??[]); deliveries=List<dynamic>.from(r[6]['deliveries']??[]); copilotHistory=List<dynamic>.from(r[7]['history']??[]);
       });
     }catch(e){ if(mounted)setState(()=>error=e.toString()); }
     finally{ if(mounted)setState(()=>loading=false); }
   }
 
-  Future<void> ask() async {
-    final q=copilot.text.trim();
+  Future<void> ask([String? preset]) async {
+    final q=(preset??copilot.text).trim();
     if(q.isEmpty)return;
+    if(preset!=null) copilot.text=preset;
     try{
       final r=await get('/growth/copilot?q='+Uri.encodeQueryComponent(q));
       if(mounted)setState(()=>answer=r['answer']?.toString()??'No answer.');
+      final h=await get('/growth/copilot/history?limit=6');
+      if(mounted)setState(()=>copilotHistory=List<dynamic>.from(h['history']??[]));
     }catch(_){ if(mounted)setState(()=>answer='Business Copilot is temporarily unavailable.'); }
+  }
+
+  Future<void> decideReturn(int id,bool approve) async {
+    try{
+      final response=await ApiClient.postJson('/growth/returns/'+id.toString()+'/decision',{
+        'approve':approve,
+        'note':approve?'Approved from Retail Growth Suite.':'Rejected from Retail Growth Suite.',
+      });
+      if(response.statusCode<200||response.statusCode>=300) throw Exception('Return action failed: '+response.statusCode.toString());
+      await _load();
+    }catch(e){ if(mounted)setState(()=>error=e.toString()); }
+  }
+
+  Future<void> markRefunded(int id) async {
+    try{
+      final response=await ApiClient.postJson('/growth/returns/'+id.toString()+'/mark-refunded',{
+        'note':'Refund settlement completed by owner.',
+      });
+      if(response.statusCode<200||response.statusCode>=300) throw Exception('Refund action failed: '+response.statusCode.toString());
+      await _load();
+    }catch(e){ if(mounted)setState(()=>error=e.toString()); }
+  }
+
+  Future<void> updateDelivery(int id,String status) async {
+    try{
+      final response=await ApiClient.postJson('/growth/deliveries/'+id.toString()+'/status',{
+        'status':status,
+        'notes':'Updated from Retail Growth Suite.',
+      });
+      if(response.statusCode<200||response.statusCode>=300) throw Exception('Delivery action failed: '+response.statusCode.toString());
+      await _load();
+    }catch(e){ if(mounted)setState(()=>error=e.toString()); }
   }
 
   int n(dynamic v)=>(v as num?)?.toInt()??0;
@@ -90,6 +131,14 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
         const SizedBox(height:10),
         if(reorder.isEmpty)_empty('No urgent reorder candidates right now.') else ...reorder.take(6).map((raw){final x=Map<String,dynamic>.from(raw as Map); return _reorderRow(x);}),
         const SizedBox(height:20),
+        _title('Returns & refunds',returns.length.toString()+' requests waiting for action'),
+        const SizedBox(height:10),
+        if(returns.isEmpty)_empty('No return requests are waiting for action.') else ...returns.take(6).map((raw){final x=Map<String,dynamic>.from(raw as Map); return _returnRow(x);}),
+        const SizedBox(height:20),
+        _title('Delivery control',deliveries.length.toString()+' assignments'),
+        const SizedBox(height:10),
+        if(deliveries.isEmpty)_empty('No online delivery assignments yet.') else ...deliveries.take(6).map((raw){final x=Map<String,dynamic>.from(raw as Map); return _deliveryRow(x);}),
+        const SizedBox(height:20),
         _title('Performance','Last 30 days'),
         const SizedBox(height:10),
         _performance(),
@@ -113,7 +162,70 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
   Widget _metric(IconData icon,String label,String value,Color color)=>Container(padding:const EdgeInsets.all(11),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(17),border:Border.all(color:color.withValues(alpha:.12))),child:Row(children:[Container(width:38,height:38,decoration:BoxDecoration(color:color.withValues(alpha:.1),borderRadius:BorderRadius.circular(12)),child:Icon(icon,color:color,size:18)),const SizedBox(width:8),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Text(label,maxLines:1,overflow:TextOverflow.ellipsis,style:GoogleFonts.poppins(fontSize:9,color:const Color(0xFF64748B))),const SizedBox(height:2),Text(value,maxLines:1,overflow:TextOverflow.ellipsis,style:GoogleFonts.poppins(fontSize:14,fontWeight:FontWeight.w800,color:const Color(0xFF172033)))]))]));
   Widget _copilotCard()=>Container(padding:const EdgeInsets.all(15),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(21),border:Border.all(color:const Color(0xFFE2E8F0))),child:Column(children:[TextField(controller:copilot,onSubmitted:(_)=>ask(),decoration:InputDecoration(hintText:'What should I restock today?',prefixIcon:const Icon(Icons.psychology_rounded,color:Color(0xFF6366F1)),suffixIcon:IconButton(onPressed:ask,icon:const Icon(Icons.send_rounded)),filled:true,fillColor:const Color(0xFFF8FAFC),border:OutlineInputBorder(borderRadius:BorderRadius.circular(14),borderSide:BorderSide.none))),if(answer.isNotEmpty) ...[const SizedBox(height:10),Align(alignment:Alignment.centerLeft,child:Text(answer,style:GoogleFonts.poppins(fontSize:11.5,height:1.45,color:const Color(0xFF312E81)))]]));
   Widget _reorderRow(Map<String,dynamic> x)=>Container(margin:const EdgeInsets.only(bottom:8),padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFFE2E8F0))),child:Row(children:[Icon(x['priority']=='CRITICAL'?Icons.error_rounded:Icons.warning_amber_rounded,color:x['priority']=='CRITICAL'?Colors.red:Colors.orange),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(x['product_name']?.toString()??'Product',style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),Text('${x['current_stock']} stock · ${x['estimated_days_remaining']??'—'} days cover',style:GoogleFonts.poppins(fontSize:10,color:const Color(0xFF64748B)))])),Text('Order '+x['suggested_reorder_quantity'].toString(),style:GoogleFonts.poppins(fontSize:10.5,fontWeight:FontWeight.w800,color:const Color(0xFF4F46E5)))]));
-  Widget _performance()=>Container(padding:const EdgeInsets.all(15),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFFE2E8F0))),child:Text('See month revenue, expenses, estimated profit, online revenue and top products from the live backend.',style:GoogleFonts.poppins(fontSize:11,color:const Color(0xFF64748B),height:1.45)));
+  Widget _returnRow(Map<String,dynamic> x){
+    final id=n(x['id']);
+    final status=x['status']?.toString()??'REQUESTED';
+    return Container(
+      margin:const EdgeInsets.only(bottom:8),
+      padding:const EdgeInsets.all(13),
+      decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFFFECACA))),
+      child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Row(children:[
+          const Icon(Icons.assignment_return_rounded,color:Color(0xFFEF4444)),
+          const SizedBox(width:8),
+          Expanded(child:Text('Order #${x['order_id']}',style:GoogleFonts.poppins(fontWeight:FontWeight.w800))),
+          Text('₹${d(x['refund_amount']).toStringAsFixed(0)}',style:GoogleFonts.poppins(fontWeight:FontWeight.w800,color:const Color(0xFFB91C1C))),
+        ]),
+        const SizedBox(height:6),
+        Text(x['reason']?.toString()??'No reason',style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF64748B))),
+        const SizedBox(height:10),
+        if(status=='REQUESTED') Row(children:[
+          Expanded(child:OutlinedButton.icon(onPressed:()=>decideReturn(id,false),icon:const Icon(Icons.close_rounded,size:15),label:const Text('Reject'))),
+          const SizedBox(width:8),
+          Expanded(child:FilledButton.icon(onPressed:()=>decideReturn(id,true),icon:const Icon(Icons.check_rounded,size:15),label:const Text('Approve'))),
+        ]) else if(status=='REFUND_PENDING')
+          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:()=>markRefunded(id),icon:const Icon(Icons.payments_rounded,size:15),label:const Text('Mark refunded'))),
+      ]),
+    );
+  }
+
+  Widget _deliveryRow(Map<String,dynamic> x){
+    final id=n(x['id']);
+    final status=x['status']?.toString()??'ASSIGNED';
+    final next=status=='ASSIGNED'?'PICKED_UP':status=='PICKED_UP'?'OUT_FOR_DELIVERY':status=='OUT_FOR_DELIVERY'?'DELIVERED':null;
+    final label=next=='PICKED_UP'?'Pick up':next=='OUT_FOR_DELIVERY'?'Dispatch':next=='DELIVERED'?'Delivered':'';
+    return Container(
+      margin:const EdgeInsets.only(bottom:8),
+      padding:const EdgeInsets.all(13),
+      decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFFE2E8F0))),
+      child:Row(children:[
+        Container(width:42,height:42,decoration:BoxDecoration(color:const Color(0xFFEFF6FF),borderRadius:BorderRadius.circular(13)),child:const Icon(Icons.local_shipping_rounded,color:Color(0xFF2563EB))),
+        const SizedBox(width:10),
+        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text('Order #${x['order_id']}',style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),
+          Text('${x['driver_name']} · ${status.replaceAll('_',' ')}',style:GoogleFonts.poppins(fontSize:9.5,color:const Color(0xFF64748B))),
+        ])),
+        if(next!=null) FilledButton(onPressed:()=>updateDelivery(id,next),child:Text(label,style:const TextStyle(fontSize:10))),
+      ]),
+    );
+  }
+
+  Widget _performance()=>Container(
+    padding:const EdgeInsets.all(15),
+    decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFFE2E8F0))),
+    child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      Row(children:[
+        Expanded(child:Text('30-day intelligence',style:GoogleFonts.poppins(fontWeight:FontWeight.w800))),
+        Text('${List<dynamic>.from(analytics['top_products']??[]).length} top products',style:GoogleFonts.poppins(fontSize:10,color:const Color(0xFF64748B))),
+      ]),
+      const SizedBox(height:10),
+      Text(
+        'Revenue ₹${d((analytics['sales']??{})['revenue']).toStringAsFixed(0)} · Online ₹${d((analytics['online']??{})['revenue']).toStringAsFixed(0)} · Profit estimate ₹${d((analytics['sales']??{})['profit_estimate']).toStringAsFixed(0)}',
+        style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF475569)),
+      ),
+    ]),
+  );
+(padding:const EdgeInsets.all(15),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFFE2E8F0))),child:Text('See month revenue, expenses, estimated profit, online revenue and top products from the live backend.',style:GoogleFonts.poppins(fontSize:11,color:const Color(0xFF64748B),height:1.45)));
   Widget _security()=>Container(padding:const EdgeInsets.all(15),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFFE2E8F0))),child:Text('JWT RBAC · rate limiting · restricted CORS · audit logging\n\nActive sessions: '+n(security['active_sessions']).toString(),style:GoogleFonts.poppins(fontSize:11,color:const Color(0xFF475569),height:1.5)));
   Widget _feature(IconData icon,String title,String subtitle,Color color)=>Container(margin:const EdgeInsets.only(bottom:9),padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFFE2E8F0))),child:Row(children:[Container(width:42,height:42,decoration:BoxDecoration(color:color.withValues(alpha:.1),borderRadius:BorderRadius.circular(13)),child:Icon(icon,color:color)),const SizedBox(width:11),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),const SizedBox(height:3),Text(subtitle,style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF64748B)))]))]));
   Widget _error(String s)=>Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:const Color(0xFFFFF1F2),borderRadius:BorderRadius.circular(14),border:Border.all(color:const Color(0xFFFECACA))),child:Text(s,style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFFBE123C))));
