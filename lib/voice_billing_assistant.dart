@@ -1406,12 +1406,9 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
         children: [
           _buildHeader(),
           _buildLanguageSelector(),
-          const Divider(color: Color(0xFF2A3A5C), height: 1),
-          LanguageDetectionVisualizer(
-            transcript: _transcript,
-            selectedLocale: _selectedLang.code,
-            parsedItems: ParsedItems.map((e) => e.toMap()).toList(),
-            isListening: _isListening,
+          Container(
+            height: 1,
+            color: const Color(0xFFE5E7EB),
           ),
           _buildTranscriptBox(),
           _buildMicButton(),
@@ -1517,7 +1514,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
       height: 42,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         itemCount: _languages.length,
         itemBuilder: (_, i) {
           final lang = _languages[i];
@@ -1528,30 +1525,37 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
               _updateHint();
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              margin: const EdgeInsets.only(right: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: selected
-                    ? const Color(0xFF1565C0)
-                    : const Color(0xFF1B2838),
-                borderRadius: BorderRadius.circular(20),
+                    ? const Color(0xFFEEF2FF)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: selected ? const Color(0xFF42A5F5) : const Color(0xFF2A3A5C),
-                  width: 1,
+                  color: selected
+                      ? const Color(0xFF818CF8)
+                      : const Color(0xFFE2E8F0),
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(lang.flag, style: const TextStyle(fontSize: 13)),
+                  Text(lang.flag, style: const TextStyle(fontSize: 12)),
                   const SizedBox(width: 5),
-                  Text(lang.label,
-                    style: GoogleFonts.rajdhani(
-                      color: selected ? Colors.white : const Color(0xFF7986CB),
-                      fontSize: 12,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    )),
+                  Text(
+                    lang.label,
+                    style: GoogleFonts.inter(
+                      color: selected
+                          ? const Color(0xFF4F46E5)
+                          : const Color(0xFF64748B),
+                      fontSize: 9.5,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1560,6 +1564,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
       ),
     );
   }
+
 
   Widget _buildTranscriptBox() {
     return Padding(
