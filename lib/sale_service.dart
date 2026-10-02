@@ -225,8 +225,19 @@ try {
       'qty': qtyWire,
       'unit_price': price,
       'line_total': lineTotal,
+      'discount_amount': (
+        item['discount_amount'] is num
+            ? (item['discount_amount'] as num).toDouble()
+            : double.tryParse(item['discount_amount']?.toString() ?? '0') ?? 0.0
+      ),
       if (item['discount'] != null) 'discount': item['discount'],
       if (item['original_price'] != null) 'original_price': item['original_price'],
+      if (item['discount_reason'] != null &&
+          item['discount_reason'].toString().trim().isNotEmpty)
+        'discount_reason': item['discount_reason'],
+      if (item['discount_source'] != null &&
+          item['discount_source'].toString().trim().isNotEmpty)
+        'discount_source': item['discount_source'],
     };
   }).toList();
 
