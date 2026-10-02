@@ -102,6 +102,7 @@ class SaleService {
     required Map<String, dynamic> totals,
     String paymentMethod = 'Cash',
     bool isBorrow = false,
+    String? invoiceNumber,
   }) async {
     const String context = 'SALE_SUBMIT';
 
@@ -162,6 +163,10 @@ try {
 
   // Stable offline_id = saleId so retries remain idempotent.
   final String offlineId = saleId;
+  final String canonicalInvoiceNumber =
+      (invoiceNumber ?? '').trim().isNotEmpty
+          ? invoiceNumber!.trim()
+          : saleId;
 
   final localProducts = await LocalStorageService.loadLocalProducts();
 
@@ -275,7 +280,7 @@ try {
   final String saleTimestampIso = saleTimestamp.toIso8601String();
 
   final invoicePayload = {
-    'invoice_number': saleId,
+    'invoice_number': canonicalInvoiceNumber,
     'offline_id': offlineId,
     'customer_name': customerName.isNotEmpty ? customerName : 'Cash Customer',
     'customer_phone': customerPhone.isNotEmpty ? customerPhone : null,
@@ -303,6 +308,7 @@ try {
     totals: totals,
     paymentMethod: paymentMethod,
     syncStatus: 'pending',
+    invoiceNumber: canonicalInvoiceNumber,
   );
 
   await SyncQueueManager.enqueue('save_sale', {
@@ -311,6 +317,7 @@ try {
     'payload': invoicePayload,
     'invoice_payload': invoicePayload,
     'sale_id': saleId,
+    'invoice_number': canonicalInvoiceNumber,
     'retry_priority': 'high',
   });
 
@@ -351,6 +358,7 @@ try {
       totals: totals,
       paymentMethod: paymentMethod,
       syncStatus: 'synced',
+      invoiceNumber: canonicalInvoiceNumber,
     );
     await RetailGrowthKit.recordBillCompleted();
     SyncService.triggerDashboardRefresh();
@@ -370,6 +378,7 @@ try {
       'backendSuccess': backendSuccess,
       'success': cloudConfirmed || !networkAvailableAtCheckout,
       'saleId': saleId,
+      'invoiceNumber': canonicalInvoiceNumber,
       'syncStatus': backendSuccess ? 'synced' : 'pending',
       'cloudConfirmed': cloudConfirmed,
       'networkAvailableAtCheckout': networkAvailableAtCheckout,
@@ -386,6 +395,7 @@ try {
       'error': 'SYNC_NOT_CONFIRMED',
       'message': 'Sale saved on this device, but the server did not confirm it yet. Do not create another bill; automatic sync will retry.',
       'saleId': saleId,
+      'invoiceNumber': canonicalInvoiceNumber,
       'syncStatus': 'pending',
       'cloudConfirmed': false,
       'localSaved': true,
@@ -398,6 +408,7 @@ try {
     'success': true,
     'syncCount': backendSuccess ? items.length : 0,
     'saleId': saleId,
+    'invoiceNumber': canonicalInvoiceNumber,
     'syncStatus': backendSuccess ? 'synced' : 'pending',
     'cloudConfirmed': cloudConfirmed,
     'localSaved': true,
@@ -650,7 +661,7 @@ try {
     final Map<String, dynamic> saleRecord = {
       'sale_id': saleId,
       'offline_id': saleId,
-      'invoice_number': saleId,
+      'invoice_number': (invoiceNumber ?? saleId),
       'created_at': existingSale?['created_at'] ?? saleTimestamp,
       'sale_timestamp': existingSale?['sale_timestamp'] ?? (existingSale?['created_at'] ?? saleTimestamp),
       'updated_at': saleTimestamp,
