@@ -427,7 +427,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                                       fontWeight: FontWeight.w500,
                                     ),
                                     decoration: _fieldDecoration(
-                                      label: '\${l.shopName} (optional)',
+                                      label: '${l.shopName} (optional)',
                                       hint: 'Your shop display name',
                                       icon: Icons.storefront_outlined,
                                     ),
