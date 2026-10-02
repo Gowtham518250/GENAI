@@ -39,7 +39,6 @@ import 'screens/customer/customer_marketplace_page.dart';
 import 'screens/customer/customer_ai_shopping_page.dart';
 import 'screens/customer/customer_home_page.dart';
 import 'screens/customer/cart_checkout_page.dart';
-import 'screens/customer/order_tracking_page.dart';
 import 'screens/owner/online_orders_tab.dart';
 import 'screens/owner/online_shopping_config_page.dart';
 import 'screens/owner/online_store_hub_page.dart';
@@ -1557,8 +1556,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                           final legacy = args as List<Map<String, dynamic>>?;
                           return CustomerCartPage(cartItems: legacy ?? []);
                         },
-                        '/order-tracking': (context) =>
-                            const OrderTrackingPage(),
                         '/online-store': (context) =>
                             const OnlineStoreHubPage(),
                         '/retail-growth': (context) =>
