@@ -1924,7 +1924,7 @@ class _StyledField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.9), fontSize: 12.5, fontWeight: FontWeight.w650),
+          style: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.9), fontSize: 12.5, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         TextFormField(
