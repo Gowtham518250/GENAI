@@ -38,6 +38,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'udhar_reminder_service.dart';
 import 'printer_service.dart';
+import 'printer_settings_page.dart';
 import 'package:blue_thermal_printer/blue_thermal_printer.dart';
 import 'inventory_management_service.dart';
 import 'sale_service.dart';
@@ -2953,6 +2954,72 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     }).toList();
   }
 
+  Future<String> _allocateNextBillNumber() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
+    final key = 'last_bill_number_' + userId.toString();
+
+    var current = prefs.getInt(key) ?? prefs.getInt('last_bill_number') ?? 0;
+    if (current == 0) {
+      try {
+        final sales = await LocalStorageService.loadSales();
+        for (final raw in sales) {
+          if (raw is! Map) continue;
+          final rawBill = raw['bill_number'] ?? raw['invoice_display_number'] ?? '';
+          final match = RegExp(r'BILL-(\d+)', caseSensitive: false).firstMatch(rawBill.toString());
+          if (match != null) {
+            current = math.max(current, int.tryParse(match.group(1) ?? '0') ?? 0);
+          }
+        }
+      } catch (_) {}
+    }
+
+    final next = current + 1;
+    await prefs.setInt(key, next);
+    await prefs.setInt('last_bill_number', next);
+    return 'BILL-' + next.toString().padLeft(4, '0');
+  }
+
+  Future<void> _printOrOpenPrinterSetup({
+    required String billNumber,
+    required String customerName,
+    required List<Map<String, dynamic>> items,
+    required double totalAmount,
+    required double gstPercent,
+  }) async {
+    final connected = await PrinterService.isPrinterConnected();
+    if (connected && mounted) {
+      await PrinterService.printBill(
+        context: context,
+        invoiceId: billNumber,
+        customerName: customerName,
+        items: items,
+        totalAmount: totalAmount,
+        gstPercent: gstPercent,
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final connectedAfterSetup = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const PrinterSettingsPage(returnAfterConnect: true),
+      ),
+    );
+
+    if (connectedAfterSetup == true && mounted) {
+      await PrinterService.printBill(
+        context: context,
+        invoiceId: billNumber,
+        customerName: customerName,
+        items: items,
+        totalAmount: totalAmount,
+        gstPercent: gstPercent,
+      );
+    }
+  }
+
   Future<bool> submitAllSales({bool isBorrow = false}) async {
     if (isLoading) return false;
 
@@ -3007,8 +3074,9 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     // (Helps D1→D7 retention; backend sync can happen later.)
     final bool isFirstSaleForThisShop = (await LocalStorageService.loadSales()).isEmpty;
 
-    // Generate unique ID for this sale using Microseconds for absolute collision avoidance
+    // Internal transaction id is separate from the customer-facing bill number.
     final saleId = 'SALE_${DateTime.now().microsecondsSinceEpoch}';
+    final billNumber = await _allocateNextBillNumber();
 
     try {
       final items = _getProcessedItems();
@@ -3023,14 +3091,13 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         totals: totals,
         paymentMethod: _isOnlinePayment ? 'Online' : 'Cash', // NEW: Pass payment type
         isBorrow: isBorrow, // NEW: Pass borrow flag to use correct endpoint
+        invoiceNumber: billNumber,
       );
 
       // If it's a borrow sale, also create an invoice!
       if (isBorrow) {
-        // Reuse the canonical sale id as the invoice identity.
-        // SaleService already syncs borrow sales with saleId as the backend
-        // idempotency key. Keep this local mirror on that same canonical id.
-        final String invoiceNumber = saleId;
+        // Use the same customer-facing bill number for the credit invoice.
+        final String invoiceNumber = billNumber;
         
         // Build product list string for invoice
         final String productList = items.map((e) {
@@ -3073,9 +3140,6 @@ class _SalesEntryPageState extends State<SalesEntryPage>
 
       if (result['success'] == true) {
         _hapticSuccess();
-        final commitPrefs = await SharedPreferences.getInstance();
-        final committedBillNumber = commitPrefs.getInt('last_bill_number') ?? 0;
-        await commitPrefs.setInt('last_bill_number', committedBillNumber + 1);
         // ✅ CRITICAL: Reset loading BEFORE clearing interface so buttons re-enable
         if (mounted) setState(() { isLoading = false; message = ''; });
         _clearSaleInterface();
@@ -3106,7 +3170,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
           String billFilePath = '';
           try {
             billFilePath = await BillGeneratorService.generateAndSaveBill(
-              invoiceId: saleId,
+              invoiceId: billNumber,
               shopName: shopName,
               shopPhone: shopPhone2,
               shopAddress: shopAddress2,
@@ -3175,7 +3239,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                         ),
                       ),
                     ],
-                    Text('Invoice: $saleId', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey)),
+                    Text('Bill No: ' + billNumber, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF111827))),
                     if (capturedBillPath.isNotEmpty) ...[  
                       const SizedBox(height: 4),
                       Text('✅ Bill PDF saved to Downloads/RetailMind',
@@ -3240,20 +3304,13 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () async {
-                          if (capturedBillPath.isNotEmpty) {
-                            await BillGeneratorService.printBill(capturedBillPath);
-                          } else {
-                            // Show message if bill not generated yet
-                            if (mounted) {
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please wait for bill generation or use Bluetooth printer'),
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                            }
-                            _printBluetooth();
-                          }
+                          await _printOrOpenPrinterSetup(
+                            billNumber: billNumber,
+                            customerName: capturedCustomer,
+                            items: items,
+                            totalAmount: grandTotal,
+                            gstPercent: _withTax ? 18.0 : 0.0,
+                          );
                         },
                         icon: const Icon(Icons.print_rounded, color: Color(0xFF10B981), size: 18),
                         label: Text('PRINT RECEIPT', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
