@@ -1381,25 +1381,23 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [const Color(0xFF0D1B2A), const Color(0xFF1B2838), const Color(0xFF0D1B2A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: _isListening ? const Color(0xFFFF3D71) : const Color(0xFF2A3A5C),
-          width: 1.5,
+          color: _isListening
+              ? const Color(0xFF6366F1).withValues(alpha: 0.42)
+              : const Color(0xFFE2E8F0),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: _isListening
-                ? const Color(0xFFFF3D71).withValues(alpha: 0.25)
-                : Colors.black.withValues(alpha: 0.4),
-            blurRadius: 24,
-            spreadRadius: 2,
+            color: const Color(0xFF334155).withValues(alpha: 0.08),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -1435,51 +1433,59 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF1565C0).withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(10),
+              color: const Color(0xFFEEF2FF),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.mic_rounded, color: Color(0xFF82B1FF), size: 20),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: Color(0xFF4F46E5),
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('AI Voice Billing',
-                style: GoogleFonts.rajdhani(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                )),
-              Text('Speak in any Indian language',
-                style: GoogleFonts.rajdhani(
-                  color: const Color(0xFF7986CB),
-                  fontSize: 12,
-                  letterSpacing: 0.3,
-                )),
+              Text(
+                'AI Voice Billing',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFF111827),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Speak naturally. Review before billing.',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFF64748B),
+                  fontSize: 10,
+                ),
+              ),
             ],
           ),
           const Spacer(),
           // Live indicator
           if (_isListening)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF3D71).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFFF3D71), width: 1),
+                color: const Color(0xFFEEF2FF),
+                borderRadius: BorderRadius.circular(999),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildBlinkDot(),
                   const SizedBox(width: 5),
-                  Text('LIVE', style: GoogleFonts.rajdhani(
-                    color: const Color(0xFFFF3D71),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1,
-                  )),
+                  Text(
+                    'Listening',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFF4F46E5),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1557,13 +1563,13 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
 
   Widget _buildTranscriptBox() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
         decoration: BoxDecoration(
-          color: const Color(0xFF0A1628),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF1E3A5F), width: 1),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1571,23 +1577,37 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(_isListening ? 'Listening...' : 'Tap mic to speak or type here',
-                  style: GoogleFonts.rajdhani(
-                    color: _isListening ? const Color(0xFF42A5F5) : const Color(0xFF546E7A),
+                const Icon(
+                  Icons.record_voice_over_rounded,
+                  size: 16,
+                  color: Color(0xFF6366F1),
+                ),
+                const SizedBox(width: 7),
+                Text(
+                  'What I heard',
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF374151),
                     fontSize: 11,
-                    letterSpacing: 1,
-                    fontWeight: FontWeight.w600,
-                  )),
-                if (!_isListening && _transcriptCtrl.text.isNotEmpty)
-                  GestureDetector(
-                    onTap: () => _doProcess(_transcriptCtrl.text),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF42A5F5),
-                        borderRadius: BorderRadius.circular(4),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (!_isListening &&
+                    _transcriptCtrl.text.isNotEmpty &&
+                    !_isProcessing)
+                  TextButton(
+                    onPressed: () => _doProcess(_transcriptCtrl.text),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF4F46E5),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'Process',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
                       ),
-                      child: Text('Process', style: GoogleFonts.rajdhani(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ),
               ],
@@ -1595,17 +1615,18 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
             const SizedBox(height: 6),
             TextField(
               controller: _transcriptCtrl,
-              style: GoogleFonts.notoSans(
-                color: Colors.white,
-                fontSize: 14,
-                height: 1.5,
+              style: GoogleFonts.inter(
+                color: const Color(0xFF111827),
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
               ),
               decoration: InputDecoration(
                 hintText: _hint,
-                hintStyle: GoogleFonts.notoSans(
-                  color: const Color(0xFF37474F),
+                hintStyle: GoogleFonts.inter(
+                  color: const Color(0xFF94A3B8),
                   fontStyle: FontStyle.italic,
-                  fontSize: 14,
+                  fontSize: 12,
                 ),
                 border: InputBorder.none,
                 isDense: true,
@@ -1642,16 +1663,16 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
                   height: 72,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: RadialGradient(
+                    gradient: LinearGradient(
                       colors: _isListening
-                          ? [const Color(0xFFFF3D71), const Color(0xFFB71C1C)]
-                          : [const Color(0xFF1565C0), const Color(0xFF0D47A1)],
+                          ? const [Color(0xFF7C3AED), Color(0xFF4F46E5)]
+                          : const [Color(0xFF4F46E5), Color(0xFF6366F1)],
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: _isListening
-                            ? const Color(0xFFFF3D71).withValues(alpha: 0.5)
-                            : const Color(0xFF1565C0).withValues(alpha: 0.4),
+                            ? const Color(0xFF6366F1).withValues(alpha: 0.28)
+                            : const Color(0xFF6366F1).withValues(alpha: 0.16),
                         blurRadius: _isListening ? 28 : 16,
                         spreadRadius: _isListening ? 4 : 0,
                       ),
@@ -1788,10 +1809,10 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: item.isConfirmed
-                    ? const Color(0xFF00C853)
-                    : const Color(0xFF263238),
+                    ? const Color(0xFF10B981)
+                    : const Color(0xFFF1F5F9),
                 border: Border.all(
-                  color: item.isConfirmed ? const Color(0xFF00C853) : const Color(0xFF546E7A),
+                  color: item.isConfirmed ? const Color(0xFF10B981) : const Color(0xFFCBD5E1),
                   width: 1.5,
                 ),
               ),
@@ -1802,7 +1823,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           ),
           title: TextField(
             controller: _editControllers[idx]!['name'],
-            style: GoogleFonts.notoSans(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+            style: GoogleFonts.inter(color: const Color(0xFF111827), fontSize: 13, fontWeight: FontWeight.w800),
             decoration: const InputDecoration(
               isDense: true,
               contentPadding: EdgeInsets.zero,
@@ -1916,13 +1937,18 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           ElevatedButton(
             onPressed: _confirmOrder,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
+              backgroundColor: const Color(0xFF10B981),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             ),
-            child: Text('Add to Bill',
-              style: GoogleFonts.rajdhani(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+            child: Text(
+            'Add to Bill',
+            style: GoogleFonts.inter(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           ),
         ],
       ),
