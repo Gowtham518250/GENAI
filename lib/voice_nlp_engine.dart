@@ -1023,7 +1023,13 @@ class VoiceNlpEngineV2 {
       final String unit;
       bool unitInferred = false;
       if (rawUnit.isEmpty) {
-        final canonical = PhoneticProductResolver.resolve(name);
+        // Preserve multi-word product phrases for shop-catalog resolution.
+        // Generic phonetic aliases such as "chicken dum biryani" -> "Biryani"
+        // must not collapse a shop-specific product name before the catalog
+        // gets a chance to identify the exact record.
+        final canonical = name.contains(RegExp(r'\s'))
+            ? null
+            : PhoneticProductResolver.resolve(name);
         if (canonical != null) {
           unit = UnitInferrer.infer(canonical);
           unitInferred = true;
