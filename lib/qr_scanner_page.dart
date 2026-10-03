@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'dart:ui';
 import 'dart:async';
@@ -8,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'payment_detection_service.dart';
 import 'payment_event.dart';
-import 'local_storage_service.dart';
 import 'local_storage_service.dart';
 
 class QrScannerPage extends StatefulWidget {
@@ -140,7 +140,8 @@ class _QrScannerPageState extends State<QrScannerPage> with SingleTickerProvider
       if (!_scannedCodes.contains(code)) {
         _scannedCodes.add(code);
         HapticFeedback.lightImpact();
-        _tts.speak("Scan"); // Short confirmation for batch mode
+        unawaited(_playScanBeep());
+        HapticFeedback.lightImpact();
         
         setState(() => _isProcessing = true);
         Future.delayed(const Duration(milliseconds: 300), () {
