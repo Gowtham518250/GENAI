@@ -83,9 +83,48 @@ class _QrScannerPageState extends State<QrScannerPage> with SingleTickerProvider
     
     final List<Barcode> barcodes = capture.barcodes;
     if (barcodes.isEmpty) return;
-    
-    final String code = barcodes.first.rawValue ?? '';
-    if (code.isEmpty) return;
+
+    // Retail packs often contain multiple barcodes: product EAN/UPC,
+    // serial/lot codes, and internal logistics labels. Prefer a standard
+    // GTIN so inventory lookup doesn't accidentally use a serial number.
+    final candidates = barcodes
+        .map((barcode) => barcode.rawValue?.trim() ?? '')
+        .where((code) => code.isNotEmpty)
+        .toList();
+
+    if (candidates.isEmpty) return;
+
+    String normalizeDigits(String value) => value.replaceAll(RegExp(r'\D'), '');
+    final gtinCandidates = candidates
+        .where((code) {
+          final digits = normalizeDigits(code);
+          return [8, 12, 13, 14].contains(digits.length);
+        })
+        .toList();
+
+    String code;
+    if (gtinCandidates.isNotEmpty) {
+      gtinCandidates.sort((a, b) {
+        final rankA = normalizeDigits(a).length == 13
+            ? 0
+            : normalizeDigits(a).length == 12
+                ? 1
+                : normalizeDigits(a).length == 14
+                    ? 2
+                    : 3;
+        final rankB = normalizeDigits(b).length == 13
+            ? 0
+            : normalizeDigits(b).length == 12
+                ? 1
+                : normalizeDigits(b).length == 14
+                    ? 2
+                    : 3;
+        return rankA.compareTo(rankB);
+      });
+      code = normalizeDigits(gtinCandidates.first);
+    } else {
+      code = candidates.first;
+    }
 
     // 1-second Duplicate Protection
     final now = DateTime.now();
