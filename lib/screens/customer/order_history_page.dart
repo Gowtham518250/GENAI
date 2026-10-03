@@ -252,7 +252,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     final total = order['total'] ?? order['amount'] ?? 0;
     final createdAt = order['created_at'] ?? '';
     final items = order['items'] as List<dynamic>? ?? [];
-    final customerName = order['customer_name'] ?? 'Customer';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -316,19 +315,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               ),
               Row(
                 children: [
-                  // Track button
-                  OutlinedButton.icon(
-                    onPressed: () => _showOrderTracking(orderId),
-                    icon: const Icon(Icons.local_shipping, size: 16),
-                    label: const Text('Track'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF6366F1),
-                      side: const BorderSide(color: Color(0xFF6366F1)),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      textStyle: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   // Cancel button (only for cancellable orders)
                   if (_isCancellable(status))
                     OutlinedButton.icon(
@@ -399,71 +385,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     } catch (e) {
       return dateString;
     }
-  }
-
-  Future<void> _showOrderTracking(String orderId) async {
-    final timeline = await OrderHistoryService.getOrderTracking(orderId);
-    
-    if (!mounted) return;
-    
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.6,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Order Tracking',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1F2937),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            // Timeline
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  Text(
-                    orderId,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF6B7280),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ...timeline.map((item) => _buildTimelineItem(item)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildTimelineItem(Map<String, dynamic> item) {
