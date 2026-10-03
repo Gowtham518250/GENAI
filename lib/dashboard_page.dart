@@ -10499,7 +10499,7 @@ class _DashboardPageState extends State<DashboardPage>
           height: 48,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white,
+            color: navigationSurface,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.12),
@@ -12651,6 +12651,16 @@ class _DashboardPageState extends State<DashboardPage>
                     _buildSettingToggle('Notifications', true),
                     const SizedBox(height: 10),
                     _buildSettingToggle('Dark Mode', isDarkMode),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () async {
+                          await context.read<AppThemeController>().setAuto();
+                        },
+                        icon: const Icon(Icons.wb_twilight_rounded, size: 16),
+                        label: const Text('Use automatic day / night'),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -14225,8 +14235,16 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   Widget build(BuildContext context) {
     // convert HTML dashboard layout into Flutter widgets
+    final appColors = Theme.of(context).colorScheme;
+    final surfaceColor = isDarkMode
+        ? const Color(0xFF0B1020)
+        : const Color(0xFFF7F9FC);
+    final navigationSurface = isDarkMode
+        ? const Color(0xFF121A2B)
+        : Colors.white;
+
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: surfaceColor,
       bottomNavigationBar: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Container(
@@ -14241,7 +14259,9 @@ class _DashboardPageState extends State<DashboardPage>
               ),
             ],
             border: Border(
-              top: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
+              top: BorderSide(
+                color: appColors.outlineVariant.withValues(alpha: 0.55),
+              ),
             ),
           ),
           child: SingleChildScrollView(
