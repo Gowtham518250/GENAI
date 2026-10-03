@@ -47,6 +47,7 @@ import 'retail_growth_suite_page.dart';
 import 'reset_password_page.dart';
 import 'responsive.dart';
 import 'language_provider.dart';
+import 'app_theme_controller.dart';
 import 'providers/setup.dart';
 import 'session_management.dart';
 // Conditional import: use the real scanner on native, stub on web to avoid web plugin errors
@@ -1296,10 +1297,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       );
     }
 
-    return ChangeNotifierProvider(
-      create: (_) => LanguageProvider(),
-      child: Consumer<LanguageProvider>(
-        builder: (context, languageProvider, _) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LanguageProvider>(
+          create: (_) => LanguageProvider(),
+        ),
+        ChangeNotifierProvider<AppThemeController>(
+          create: (_) => AppThemeController(),
+        ),
+      ],
+      child: Consumer2<LanguageProvider, AppThemeController>(
+        builder: (context, languageProvider, themeController, _) {
           return FutureBuilder<bool>(
             future: _loggedInFuture,
             builder: (context, snapshot) {
@@ -1483,7 +1491,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       ),
                       visualDensity: VisualDensity.adaptivePlatformDensity,
                     ),
-                    themeMode: ThemeMode.dark,
+                    themeMode: themeController.themeMode,
                     onUnknownRoute: (settings) {
                       return MaterialPageRoute<void>(
                         builder: (context) => Scaffold(
