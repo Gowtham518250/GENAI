@@ -1378,6 +1378,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                         seedColor: AppColors.primary,
                         brightness: Brightness.light,
                       ),
+                      scaffoldBackgroundColor: const Color(0xFFF7F9FC),
+                      cardTheme: CardThemeData(
+                        color: Colors.white,
+                        surfaceTintColor: Colors.transparent,
+                        elevation: 2,
+                        margin: EdgeInsets.zero,
+                      ),
+                      appBarTheme: const AppBarTheme(
+                        backgroundColor: Color(0xFFF7F9FC),
+                        foregroundColor: Color(0xFF111827),
+                        elevation: 0,
+                      ),
                       elevatedButtonTheme: ElevatedButtonThemeData(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -1434,9 +1446,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       colorScheme: ColorScheme.fromSeed(
                         seedColor: AppColors.primary,
                         brightness: Brightness.dark,
-                        surface: AppColors.surfaceDark2,
+                        surface: const Color(0xFF111827),
                       ),
-                      scaffoldBackgroundColor: AppColors.surfaceDark,
+                      scaffoldBackgroundColor: const Color(0xFF0B1020),
+                      cardTheme: CardThemeData(
+                        color: const Color(0xFF121A2B),
+                        surfaceTintColor: Colors.transparent,
+                        elevation: 2,
+                        margin: EdgeInsets.zero,
+                      ),
+                      appBarTheme: const AppBarTheme(
+                        backgroundColor: Color(0xFF0B1020),
+                        foregroundColor: Color(0xFFF8FAFC),
+                        elevation: 0,
+                      ),
                       elevatedButtonTheme: ElevatedButtonThemeData(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -1492,6 +1515,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       visualDensity: VisualDensity.adaptivePlatformDensity,
                     ),
                     themeMode: themeController.themeMode,
+                    themeAnimationDuration: const Duration(milliseconds: 420),
+                    themeAnimationCurve: Curves.easeInOutCubic,
+
                     onUnknownRoute: (settings) {
                       return MaterialPageRoute<void>(
                         builder: (context) => Scaffold(
