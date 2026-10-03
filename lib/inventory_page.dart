@@ -610,23 +610,37 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                           final prefs = await SharedPreferences.getInstance();
                           final stateCode = prefs.getString('shop_state') ?? 'MH';
                           
-                          final magicProduct = await FmcgBarcodeService.fetchProductFromCdn(code, stateCode);
-                          
+                          final magicProduct = await FmcgBarcodeService.fetchProductFromCdn(
+                            code,
+                            stateCode,
+                          );
+
                           if (magicProduct != null && mounted) {
                             ss(() {
                               _nameC.text = magicProduct.name;
-                              _priceC.text = magicProduct.adjustedPrice.toString();
+                              if ((magicProduct.category ?? '').trim().isNotEmpty) {
+                                _catC.text = magicProduct.category!.split('>').first.trim();
+                              }
                             });
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('✅ Found: ${magicProduct.name} (State Pricing: $stateCode)'), 
+                                content: Text(
+                                  '✅ Product found: ' +
+                                      magicProduct.name +
+                                      '. Verify the selling price and MRP.',
+                                ),
                                 backgroundColor: _success,
                               ),
                             );
                           } else if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('❌ Not found in CDN, please enter manually.'), 
+                              SnackBar(
+                                content: Text(
+                                  'Barcode ' +
+                                      code +
+                                      ' was not matched to a real catalog item. '
+                                      'Enter the product name manually.',
+                                ),
                                 backgroundColor: _warning,
                               ),
                             );

@@ -1,106 +1,91 @@
-import 'dart:math';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'api_client.dart';
 
-// Represents an FMCG Product received from the Barcode CDN
 class FmcgProduct {
   final String barcode;
   final String name;
   final double mrp;
   final double stateTaxModifier;
+  final String? brand;
+  final String? model;
+  final String? category;
+  final String? imageUrl;
 
   FmcgProduct({
     required this.barcode,
     required this.name,
     required this.mrp,
     this.stateTaxModifier = 1.0,
+    this.brand,
+    this.model,
+    this.category,
+    this.imageUrl,
   });
 
-  // Calculate the final price factoring in the state's tax modifier
-  double get adjustedPrice => (mrp * stateTaxModifier).roundToDouble();
+  double get adjustedPrice =>
+      mrp > 0 ? (mrp * stateTaxModifier).roundToDouble() : 0;
 }
 
 class FmcgBarcodeService {
-  // Simulates a master global database of 2M+ Indian FMCG barcodes (EAN-13 typically).
-  static final Map<String, FmcgProduct> _globalDb = {
-    '8901030310243': FmcgProduct(barcode: '8901030310243', name: 'Coca-Cola 500ml', mrp: 40.0),
-    '8901058860225': FmcgProduct(barcode: '8901058860225', name: 'Maggi 2-Min Noodles 70g', mrp: 14.0),
-    '8901526101229': FmcgProduct(barcode: '8901526101229', name: 'Parle-G Gold 1kg', mrp: 120.0),
-    '8901030113172': FmcgProduct(barcode: '8901030113172', name: 'Sprite 2L', mrp: 95.0),
-    '8901012111059': FmcgProduct(barcode: '8901012111059', name: 'Amul Butter 500g', mrp: 280.0),
-    '8901463131341': FmcgProduct(barcode: '8901463131341', name: 'Surf Excel Quick Wash 1kg', mrp: 195.0),
-    '8901764012273': FmcgProduct(barcode: '8901764012273', name: 'Lays Magic Masala 50g', mrp: 20.0),
-  };
+  static Future<FmcgProduct?> fetchProductFromCdn(
+    String barcode,
+    String stateCode,
+  ) async {
+    final clean = barcode.replaceAll(RegExp(r'\D'), '');
 
-  /// Simulates fetching a product from the distributed Barcode CDN.
-  /// Applies a state-specific pricing model.
-  static Future<FmcgProduct?> fetchProductFromCdn(String barcode, String stateCode) async {
-    // 1. Simulate extremely fast CDN edge network lookup
-    await Future.delayed(const Duration(milliseconds: 150));
-    
-    // In production, this would make an HTTPS call to:
-    // https://cdn.aishoppro.com/v1/barcodes/$barcode?locale=$stateCode
+    if (![8, 12, 13, 14].contains(clean.length)) {
+      if (kDebugMode) {
+        debugPrint('🚫 Ignoring non-GTIN barcode: ' + clean);
+      }
+      return null;
+    }
 
-    // 2. Fetch the base product
-    final product = _globalDb[barcode];
-    
-    FmcgProduct? resolvedProduct;
-    if (product != null) {
-      resolvedProduct = product;
-    } else if (barcode.length >= 6 && double.tryParse(barcode) != null) {
-      // 3. Fallback mock generation using random Indian FMCG products since we can't bundle 2M codes here.
-      // This is purely to ensure any barcode the user scans gives a "wow" demonstration of the CDN.
-      final randomNames = [
-        'Britannia Good Day', 
-        'Tata Salt 1kg', 
-        'Patanjali Honey 500g', 
-        'Aashirvaad Atta 5kg', 
-        'Dairy Milk Silk',
-        'Haldiram Bhujia 400g',
-        'Red Bull 250ml'
-      ];
-      final rnd = Random(barcode.hashCode); // stable random based on barcode
-      final name = randomNames[rnd.nextInt(randomNames.length)];
-      final fakeMrp = (rnd.nextInt(20) + 1) * 10.0;
-      
-      resolvedProduct = FmcgProduct(
-        barcode: barcode,
-        name: name,
-        mrp: fakeMrp,
+    try {
+      final response = await ApiClient.getJson(
+        '/api/inventory/barcode-lookup?barcode=' + clean,
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode != 200) {
+        if (kDebugMode) {
+          debugPrint(
+            'Barcode lookup failed: ' + response.statusCode.toString() +
+                ' ' + response.body,
+          );
+        }
+        return null;
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map || decoded['found'] != true) {
+        if (kDebugMode) {
+          debugPrint(
+            'No real product match for barcode ' +
+                clean +
+                ': ' +
+                (decoded is Map ? (decoded['message']?.toString() ?? 'unknown') : 'unknown'),
+          );
+        }
+        return null;
+      }
+
+      final lowest =
+          double.tryParse('${decoded['lowest_recorded_price'] ?? ''}') ?? 0;
+
+      return FmcgProduct(
+        barcode: decoded['barcode']?.toString() ?? clean,
+        name: decoded['name']?.toString().trim() ?? '',
+        mrp: lowest,
+        brand: decoded['brand']?.toString(),
+        model: decoded['model']?.toString(),
+        category: decoded['category']?.toString(),
+        imageUrl: decoded['image_url']?.toString(),
       );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Barcode lookup exception: ' + e.toString());
+      }
+      return null;
     }
-
-    if (resolvedProduct == null) return null;
-
-    // 4. Apply State-Level Taxation / Freight adjustments
-    double taxModifier = 1.0;
-    switch (stateCode.toUpperCase()) {
-      case 'MH': // Maharashtra (Higher local limits/VAT overlay)
-        taxModifier = 1.05; 
-        break;
-      case 'UP': // Uttar Pradesh (Potential rebate/differing logistics)
-        taxModifier = 0.98;
-        break;
-      case 'KA': // Karnataka
-        taxModifier = 1.03;
-        break;
-      case 'DL': // Delhi
-        taxModifier = 1.0;
-        break;
-      case 'TN': // Tamil Nadu
-        taxModifier = 1.02;
-        break;
-      case 'GJ': // Gujarat
-        taxModifier = 0.99;
-        break;
-      default:
-        taxModifier = 1.0;
-    }
-
-    // 5. Return the dynamically priced product
-    return FmcgProduct(
-      barcode: resolvedProduct.barcode,
-      name: resolvedProduct.name,
-      mrp: resolvedProduct.mrp,
-      stateTaxModifier: taxModifier,
-    );
   }
 }
