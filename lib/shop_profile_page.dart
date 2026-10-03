@@ -524,15 +524,17 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       ).timeout(const Duration(seconds: 30));
 
       final statusCode = resp.statusCode;
+      // Multipart responses are streamed, so read the response body exactly once.
+      final responseBody = await resp.stream.bytesToString();
       if (kDebugMode) {
-        debugPrint('📥 Logo upload response: \${statusCode} - \${resp.body}');
+        debugPrint('📥 Logo upload response: \${statusCode} - \${responseBody}');
       }
 
       if (statusCode != 200 && statusCode != 201) {
         return false;
       }
 
-      final body = json.decode(resp.body);
+      final body = json.decode(responseBody);
       final logoUrl = body is Map ? body['logo_url']?.toString() : null;
       final persisted = body is Map &&
           body['status']?.toString().toLowerCase() == 'success' &&
