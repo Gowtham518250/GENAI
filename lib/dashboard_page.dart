@@ -37,6 +37,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:notification_listener_service/notification_listener_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'language_provider.dart';
+import 'app_theme_controller.dart';
 import 'tutorial_service.dart';
 import 'security_service.dart';
 import 'providers/payment_state.dart' hide PaymentDecision;
@@ -10498,7 +10499,7 @@ class _DashboardPageState extends State<DashboardPage>
           height: 48,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white,
+            color: navigationSurface,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.12),
@@ -10591,10 +10592,12 @@ class _DashboardPageState extends State<DashboardPage>
           MaterialPageRoute(builder: (c) => const PrinterSettingsPage()),
         ),
         isDarkMode: isDarkMode,
+        isAutoTheme: context.read<AppThemeController>().isAuto,
         onToggleDarkMode: (val) async {
-          // 🔒 SECURITY: Use scoped SharedPreferences for dark mode
-          await ScopedSharedPreferences.setBool('is_dark_mode', val);
-          setState(() => isDarkMode = val);
+          await context.read<AppThemeController>().setDark(val);
+        },
+        onSetAutoTheme: () async {
+          await context.read<AppThemeController>().setAuto();
         },
         onMigrateData: () async {
           final result = await CSVImportService.importKhatabookCSV();
@@ -12648,6 +12651,16 @@ class _DashboardPageState extends State<DashboardPage>
                     _buildSettingToggle('Notifications', true),
                     const SizedBox(height: 10),
                     _buildSettingToggle('Dark Mode', isDarkMode),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () async {
+                          await context.read<AppThemeController>().setAuto();
+                        },
+                        icon: const Icon(Icons.wb_twilight_rounded, size: 16),
+                        label: const Text('Use automatic day / night'),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -12727,9 +12740,7 @@ class _DashboardPageState extends State<DashboardPage>
           value: label == 'Dark Mode' ? isDarkMode : value,
           onChanged: (newValue) {
             if (label == 'Dark Mode') {
-              setState(() {
-                isDarkMode = newValue;
-              });
+              context.read<AppThemeController>().setDark(newValue);
             }
           },
           activeColor: const Color(0xFF8B5CF6),
@@ -14212,10 +14223,28 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final effectiveDark =
+        Theme.of(context).brightness == Brightness.dark;
+    if (isDarkMode != effectiveDark) {
+      isDarkMode = effectiveDark;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // convert HTML dashboard layout into Flutter widgets
+    final appColors = Theme.of(context).colorScheme;
+    final surfaceColor = isDarkMode
+        ? const Color(0xFF0B1020)
+        : const Color(0xFFF7F9FC);
+    final navigationSurface = isDarkMode
+        ? const Color(0xFF121A2B)
+        : Colors.white;
+
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: surfaceColor,
       bottomNavigationBar: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Container(
@@ -14230,7 +14259,9 @@ class _DashboardPageState extends State<DashboardPage>
               ),
             ],
             border: Border(
-              top: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
+              top: BorderSide(
+                color: appColors.outlineVariant.withValues(alpha: 0.55),
+              ),
             ),
           ),
           child: SingleChildScrollView(
@@ -15664,7 +15695,9 @@ class _ShopSettingsBottomSheet extends StatefulWidget {
   final VoidCallback onRestoreSettings;
   final VoidCallback onPrinterSettings;
   final bool isDarkMode;
+  final bool isAutoTheme;
   final Function(bool) onToggleDarkMode;
+  final VoidCallback onSetAutoTheme;
   final VoidCallback onMigrateData;
 
   const _ShopSettingsBottomSheet({
@@ -15686,7 +15719,9 @@ class _ShopSettingsBottomSheet extends StatefulWidget {
     required this.onRestoreSettings,
     required this.onPrinterSettings,
     required this.isDarkMode,
+    required this.isAutoTheme,
     required this.onToggleDarkMode,
+    required this.onSetAutoTheme,
     required this.onMigrateData,
   });
 
@@ -16094,26 +16129,67 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                     size: 20,
                   ),
                 ),
-                title: Text(
-                  'Night Shop (Low-Light Mode)',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1F2937),
-                  ),
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.isAutoTheme
+                            ? 'Day / Night • Automatic'
+                            : widget.isDarkMode
+                                ? 'Night Shop • Manual'
+                                : 'Day Shop • Manual',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1F2937),
+                        ),
+                      ),
+                    ),
+                    if (widget.isAutoTheme)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2FF),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'AUTO',
+                          style: TextStyle(
+                            color: Color(0xFF4F46E5),
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 subtitle: Text(
-                  'Optimized for late-working vendors',
+                  widget.isAutoTheme
+                      ? 'Light 07:00–19:00 • Dark 19:00–07:00'
+                      : 'Manual palette enabled',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     color: Colors.grey[500],
                   ),
                 ),
-                trailing: Switch(
-                  value: widget.isDarkMode,
-                  onChanged: (val) => widget.onToggleDarkMode(val),
-                  activeColor: Colors.blueGrey,
-                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!widget.isAutoTheme)
+                      TextButton(
+                        onPressed: widget.onSetAutoTheme,
+                        child: const Text('Auto'),
+                      ),
+                    Switch(
+                      value: widget.isDarkMode,
+                      onChanged: (val) => widget.onToggleDarkMode(val),
+                      activeColor: Colors.blueGrey,
+                    ),
+                  ],
+                )
               ),
             ),
 

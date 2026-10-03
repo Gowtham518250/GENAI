@@ -47,6 +47,7 @@ import 'retail_growth_suite_page.dart';
 import 'reset_password_page.dart';
 import 'responsive.dart';
 import 'language_provider.dart';
+import 'app_theme_controller.dart';
 import 'providers/setup.dart';
 import 'session_management.dart';
 // Conditional import: use the real scanner on native, stub on web to avoid web plugin errors
@@ -1296,10 +1297,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       );
     }
 
-    return ChangeNotifierProvider(
-      create: (_) => LanguageProvider(),
-      child: Consumer<LanguageProvider>(
-        builder: (context, languageProvider, _) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LanguageProvider>(
+          create: (_) => LanguageProvider(),
+        ),
+        ChangeNotifierProvider<AppThemeController>(
+          create: (_) => AppThemeController(),
+        ),
+      ],
+      child: Consumer2<LanguageProvider, AppThemeController>(
+        builder: (context, languageProvider, themeController, _) {
           return FutureBuilder<bool>(
             future: _loggedInFuture,
             builder: (context, snapshot) {
@@ -1370,6 +1378,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                         seedColor: AppColors.primary,
                         brightness: Brightness.light,
                       ),
+                      scaffoldBackgroundColor: const Color(0xFFF7F9FC),
+                      cardTheme: CardThemeData(
+                        color: Colors.white,
+                        surfaceTintColor: Colors.transparent,
+                        elevation: 2,
+                        margin: EdgeInsets.zero,
+                      ),
+                      appBarTheme: const AppBarTheme(
+                        backgroundColor: Color(0xFFF7F9FC),
+                        foregroundColor: Color(0xFF111827),
+                        elevation: 0,
+                      ),
                       elevatedButtonTheme: ElevatedButtonThemeData(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -1426,9 +1446,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       colorScheme: ColorScheme.fromSeed(
                         seedColor: AppColors.primary,
                         brightness: Brightness.dark,
-                        surface: AppColors.surfaceDark2,
+                        surface: const Color(0xFF111827),
                       ),
-                      scaffoldBackgroundColor: AppColors.surfaceDark,
+                      scaffoldBackgroundColor: const Color(0xFF0B1020),
+                      cardTheme: CardThemeData(
+                        color: const Color(0xFF121A2B),
+                        surfaceTintColor: Colors.transparent,
+                        elevation: 2,
+                        margin: EdgeInsets.zero,
+                      ),
+                      appBarTheme: const AppBarTheme(
+                        backgroundColor: Color(0xFF0B1020),
+                        foregroundColor: Color(0xFFF8FAFC),
+                        elevation: 0,
+                      ),
                       elevatedButtonTheme: ElevatedButtonThemeData(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -1483,7 +1514,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       ),
                       visualDensity: VisualDensity.adaptivePlatformDensity,
                     ),
-                    themeMode: ThemeMode.dark,
+                    themeMode: themeController.themeMode,
+                    themeAnimationDuration: const Duration(milliseconds: 420),
+                    themeAnimationCurve: Curves.easeInOutCubic,
+
                     onUnknownRoute: (settings) {
                       return MaterialPageRoute<void>(
                         builder: (context) => Scaffold(
