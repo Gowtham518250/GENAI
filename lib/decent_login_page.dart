@@ -234,6 +234,17 @@ class _DecentLoginPageState extends State<DecentLoginPage>
           deviceId: deviceId,
         );
 
+        // Backend is the canonical source for the owner's shop profile.
+        // The auth response may contain a minimal profile; hydrate the complete
+        // profile immediately after the new session is established.
+        final loginShopProfile = data['shop_profile'];
+        if (loginShopProfile is Map) {
+          final normalizedProfile = Map<String, dynamic>.from(loginShopProfile);
+          await ShopProfilePersistenceService.saveProfileLocally(normalizedProfile);
+          await ShopProfilePersistenceService.applyProfileToPrefs(normalizedProfile);
+        }
+        unawaited(ShopProfilePersistenceService.restoreProfile());
+
         final prefs = await SharedPreferences.getInstance();
         if (data['shop_name'] != null) {
           await prefs.setString('shop_name', data['shop_name'].toString());
