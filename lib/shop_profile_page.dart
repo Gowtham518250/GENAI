@@ -21,6 +21,7 @@ import 'api_client.dart';
 import 'secure_token_storage.dart';
 import 'validation_helper.dart';
 import 'shop_profile_persistence_service.dart';
+import 'scoped_shared_preferences.dart';
 
 class ShopProfilePage extends StatefulWidget {
   const ShopProfilePage({super.key});
@@ -58,34 +59,52 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
   }
 
   Future<void> _loadShopData() async {
-    final prefs = await SharedPreferences.getInstance();
     final biometricAvailable = await SecurityService.isBiometricHardwareAvailable();
     final biometricEnabled = await SecurityService.isBiometricEnabled();
 
+    // Profile fields must be user-scoped. Never restore another account's
+    // legacy unscoped shop_name/location values from SharedPreferences.
+    final scopedShopName = await ScopedSharedPreferences.getString('shop_name') ?? '';
+    final scopedLocation = await ScopedSharedPreferences.getString('location') ?? '';
+    final scopedShopType = await ScopedSharedPreferences.getString('shop_type') ?? '';
+    final scopedPhone = await ScopedSharedPreferences.getString('shop_phone') ?? '';
+    final scopedWebsite = await ScopedSharedPreferences.getString('website') ?? '';
+    final scopedPlayStore = await ScopedSharedPreferences.getString(RetailGrowthKit.kPlayStoreHint) ?? '';
+    final scopedTagline = await ScopedSharedPreferences.getString('shop_tagline') ??
+        await ScopedSharedPreferences.getString('tagline') ?? '';
+    final scopedUpi = await ScopedSharedPreferences.getString('primary_upi_id') ??
+        await ScopedSharedPreferences.getString('upi_id') ?? '';
+    final scopedGst = await ScopedSharedPreferences.getString('shop_gst') ??
+        await ScopedSharedPreferences.getString('gst_number') ?? '';
+    final scopedState = await ScopedSharedPreferences.getString('state') ??
+        await ScopedSharedPreferences.getString('shop_state');
+    final logoBase64 = await ScopedSharedPreferences.getString('logo_base64');
+    final onlineShopping = await ScopedSharedPreferences.getBool('online_shopping_enabled') ?? false;
+
+    if (!mounted) return;
     setState(() {
-      shopNameController.text = prefs.getString('shop_name') ?? '';
-      locationController.text = prefs.getString('location') ?? '';
-      shopTypeController.text = prefs.getString('shop_type') ?? '';
-      phoneController.text = prefs.getString('shop_phone') ?? '';
-      websiteController.text = prefs.getString('website') ?? '';
-      playStoreUrlController.text = prefs.getString(RetailGrowthKit.kPlayStoreHint) ?? '';
-      taglineController.text = prefs.getString('shop_tagline') ?? prefs.getString('tagline') ?? '';  // 🔧 Try backend key first
-      upiIdController.text = prefs.getString('primary_upi_id') ?? prefs.getString('upi_id') ?? '';  // 🔧 Try backend key first
-      gstController.text = prefs.getString('shop_gst') ?? prefs.getString('gst_number') ?? '';
-      _scannedStateCode = prefs.getString('state') ?? prefs.getString('shop_state');  // 🔧 Try backend key first
-      
-      final logoBase64 = prefs.getString('logo_base64');
+      shopNameController.text = scopedShopName;
+      locationController.text = scopedLocation;
+      shopTypeController.text = scopedShopType;
+      phoneController.text = scopedPhone;
+      websiteController.text = scopedWebsite;
+      playStoreUrlController.text = scopedPlayStore;
+      taglineController.text = scopedTagline;
+      upiIdController.text = scopedUpi;
+      gstController.text = scopedGst;
+      _scannedStateCode = scopedState;
+
       if (logoBase64 != null && logoBase64.isNotEmpty) {
         try {
           logoBytes = base64Decode(logoBase64);
         } catch (e) {
-          print('Error decoding logo: $e');
+          debugPrint('Error decoding scoped logo: $e');
         }
       }
 
       _biometricAvailable = biometricAvailable;
       _biometricEnabled = biometricEnabled;
-      _onlineShoppingEnabled = prefs.getBool('online_shopping_enabled') ?? false;
+      _onlineShoppingEnabled = onlineShopping;
     });
 
     await _loadShopDataFromBackend();
@@ -156,29 +175,25 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
   }
 
   Future<void> _persistShopFieldsLocally() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('shop_name', shopNameController.text.trim());
-    await prefs.setString('location', locationController.text.trim());
-    await prefs.setString('shop_type', shopTypeController.text.trim());
-    await prefs.setString('shop_phone', phoneController.text.trim());
-    await prefs.setString('website', websiteController.text.trim());
-    await prefs.setString(RetailGrowthKit.kPlayStoreHint, playStoreUrlController.text.trim());
-    await prefs.setString('shop_tagline', taglineController.text.trim());
-    await prefs.setString('primary_upi_id', upiIdController.text.trim());
-    await prefs.setString('upi_id', upiIdController.text.trim()); // 🔧 Backwards compatibility
-    await prefs.setString('shop_gst', gstController.text.trim());
-    await prefs.setString('gst_number', gstController.text.trim());
+    // Keep the compatibility keys, but scope them to the authenticated user.
+    await ScopedSharedPreferences.setString('shop_name', shopNameController.text.trim());
+    await ScopedSharedPreferences.setString('location', locationController.text.trim());
+    await ScopedSharedPreferences.setString('shop_type', shopTypeController.text.trim());
+    await ScopedSharedPreferences.setString('shop_phone', phoneController.text.trim());
+    await ScopedSharedPreferences.setString('website', websiteController.text.trim());
+    await ScopedSharedPreferences.setString(RetailGrowthKit.kPlayStoreHint, playStoreUrlController.text.trim());
+    await ScopedSharedPreferences.setString('shop_tagline', taglineController.text.trim());
+    await ScopedSharedPreferences.setString('primary_upi_id', upiIdController.text.trim());
+    await ScopedSharedPreferences.setString('upi_id', upiIdController.text.trim());
+    await ScopedSharedPreferences.setString('shop_gst', gstController.text.trim());
+    await ScopedSharedPreferences.setString('gst_number', gstController.text.trim());
 
     if (_scannedStateCode != null) {
-      await prefs.setString('state', _scannedStateCode!);
+      await ScopedSharedPreferences.setString('state', _scannedStateCode!);
     }
     if (logoBytes != null) {
-      await prefs.setString('logo_base64', base64Encode(logoBytes!));
+      await ScopedSharedPreferences.setString('logo_base64', base64Encode(logoBytes!));
     }
-    
-    // 🔐 SECURITY: Don't save full profile as JSON locally - rely only on backend as source of truth
-    // When dashboard loads, it will fetch fresh data from backend
-    // This prevents stale data from being shared across different user accounts
   }
 
   Future<void> _loadShopDataFromBackend() async {
