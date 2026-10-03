@@ -3220,7 +3220,16 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     required double totalAmount,
     required double gstPercent,
   }) async {
-    final connected = await PrinterService.isPrinterConnected();
+    var connected = await PrinterService.isPrinterConnected();
+
+    // Try the last successfully used printer before sending the owner to the
+    // settings screen. This makes a single tap print immediately when the
+    // printer is already paired and saved.
+    if (!connected) {
+      await PrinterService.autoConnect();
+      connected = await PrinterService.isPrinterConnected();
+    }
+
     if (connected && mounted) {
       await PrinterService.printBill(
         context: context,
