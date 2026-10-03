@@ -75,24 +75,33 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
       body: FutureBuilder<void>(
         future: _readyFuture,
         builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (_error != null) {
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _orderHeader(),
+                const SizedBox(height: 16),
+                _errorCard(_error!),
+              ],
+            );
+          }
+
           return StreamBuilder<DeliveryUpdate>(
             stream: _socket.updateStream,
             builder: (context, updateSnapshot) {
               final update = updateSnapshot.data ?? _latestUpdate;
-              if (update != null && update != _latestUpdate) {
-                _latestUpdate = update;
-              }
 
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   _orderHeader(),
                   const SizedBox(height: 16),
-                  if (_error != null) _errorCard(_error!),
-                  if (_error == null) ...[
-                    _connectionCard(),
-                    const SizedBox(height: 16),
-                  ],
+                  _connectionCard(),
+                  const SizedBox(height: 16),
                   _timeline(update?.status),
                   const SizedBox(height: 16),
                   _statusDetails(update),
