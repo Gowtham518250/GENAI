@@ -29,7 +29,13 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
   // explicitly closes that gap.
   List<Map<String, dynamic>> _dispatchedOrders = [];
   List<Map<String, dynamic>> _deliveredOrders = [];
+  List<Map<String, dynamic>> _returnedOrders = [];
+  List<Map<String, dynamic>> _cancelledOrders = [];
+  List<Map<String, dynamic>> _returnRequests = [];
+  List<Map<String, dynamic>> _reviews = [];
   bool _isLoading = true;
+  bool _isReturnsLoading = false;
+  bool _isReviewsLoading = false;
   // Tracks order ids whose ACCEPT/REJECT call is still being retried in the
   // background, so the UI can show a "syncing" indicator instead of silently
   // failing if the network drops mid-action.
@@ -39,7 +45,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     _loadShopIdAndOrders();
   }
 
@@ -95,7 +101,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     bool loadedCache = false;
 
     // LOCAL-FIRST: restore all order tabs immediately.
-    for (final status in const ['PENDING', 'ACCEPTED', 'DISPATCHED', 'DELIVERED']) {
+    for (final status in const ['PENDING', 'ACCEPTED', 'DISPATCHED', 'DELIVERED', 'RETURNED', 'CANCELLED']) {
       final cached = await _loadCachedOrders(prefs, shopId, status);
       if (cached.isEmpty || !mounted) continue;
 
@@ -107,8 +113,12 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
           _acceptedOrders = cached;
         } else if (status == 'DISPATCHED') {
           _dispatchedOrders = cached;
-        } else {
+        } else if (status == 'DELIVERED') {
           _deliveredOrders = cached;
+        } else if (status == 'RETURNED') {
+          _returnedOrders = cached;
+        } else {
+          _cancelledOrders = cached;
         }
       });
     }
@@ -119,6 +129,10 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     }
 
     await _fetchAllOrders(showLoading: !loadedCache);
+    await Future.wait([
+      _loadReturnRequests(),
+      _loadReviews(),
+    ]);
   }
 
   Future<void> _fetchAllOrders({bool showLoading = true}) async {
@@ -150,6 +164,8 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
       final accepted = <Map<String, dynamic>>[];
       final dispatched = <Map<String, dynamic>>[];
       final delivered = <Map<String, dynamic>>[];
+      final returned = <Map<String, dynamic>>[];
+      final cancelled = <Map<String, dynamic>>[];
 
       for (final order in allOrders) {
         final status = (order['status'] ?? order['order_status'] ?? '')
@@ -170,6 +186,13 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
           case 'DELIVERED':
             delivered.add(order);
             break;
+          case 'RETURNED':
+            returned.add(order);
+            break;
+          case 'CANCELLED':
+          case 'REJECTED':
+            cancelled.add(order);
+            break;
           default:
             // Keep malformed/legacy statuses visible instead of silently
             // discarding an order. Surface it in Pending for owner attention.
@@ -185,6 +208,8 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
           _saveCachedOrders(prefs, shopId, 'ACCEPTED', accepted),
           _saveCachedOrders(prefs, shopId, 'DISPATCHED', dispatched),
           _saveCachedOrders(prefs, shopId, 'DELIVERED', delivered),
+          _saveCachedOrders(prefs, shopId, 'RETURNED', returned),
+          _saveCachedOrders(prefs, shopId, 'CANCELLED', cancelled),
         ]);
       }
 
@@ -194,6 +219,8 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
         _acceptedOrders = accepted;
         _dispatchedOrders = dispatched;
         _deliveredOrders = delivered;
+        _returnedOrders = returned;
+        _cancelledOrders = cancelled;
       });
 
       debugPrint(
@@ -208,6 +235,124 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
       // Preserve locally cached data when a refresh fails.
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadReturnRequests() async {
+    if (mounted) setState(() => _isReturnsLoading = true);
+    try {
+      final res = await ApiClient.getJson('/growth/returns');
+      if (res.statusCode != 200) throw Exception('Returns request failed.');
+      final decoded = json.decode(res.body);
+      final rows = decoded is Map ? decoded['returns'] : decoded;
+      final list = rows is List
+          ? rows.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+          : <Map<String, dynamic>>[];
+      if (mounted) setState(() => _returnRequests = list);
+    } catch (e) {
+      debugPrint('Failed to fetch return requests: $e');
+    } finally {
+      if (mounted) setState(() => _isReturnsLoading = false);
+    }
+  }
+
+  Future<void> _loadReviews() async {
+    if (mounted) setState(() => _isReviewsLoading = true);
+    try {
+      final res = await ApiClient.getJson('/store/owner/reviews');
+      if (res.statusCode != 200) throw Exception('Reviews request failed.');
+      final decoded = json.decode(res.body);
+      final rows = decoded is Map ? decoded['reviews'] : decoded;
+      final list = rows is List
+          ? rows.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+          : <Map<String, dynamic>>[];
+      if (mounted) setState(() => _reviews = list);
+    } catch (e) {
+      debugPrint('Failed to fetch reviews: $e');
+    } finally {
+      if (mounted) setState(() => _isReviewsLoading = false);
+    }
+  }
+
+  Future<void> _decideReturn(Map<String, dynamic> request, bool approve) async {
+    final returnId = request['id']?.toString() ?? '';
+    if (returnId.isEmpty) return;
+
+    final noteController = TextEditingController();
+    final note = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(approve ? 'Accept returned order' : 'Reject return request'),
+        content: TextField(
+          controller: noteController,
+          maxLines: 3,
+          maxLength: 500,
+          decoration: InputDecoration(
+            labelText: approve ? 'Owner note (optional)' : 'Reason (optional)',
+            hintText: approve
+                ? 'Stock and online sales will be reversed.'
+                : 'Tell the customer why the return is rejected.',
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Back'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, noteController.text.trim()),
+            style: FilledButton.styleFrom(
+              backgroundColor: approve ? Colors.green : Colors.redAccent,
+            ),
+            child: Text(approve ? 'Accept return' : 'Reject return'),
+          ),
+        ],
+      ),
+    );
+    noteController.dispose();
+
+    if (!mounted || note == null) return;
+
+    try {
+      final res = await ApiClient.postJson(
+        '/growth/returns/$returnId/decision',
+        {'approve': approve, 'note': note.isEmpty ? null : note},
+      );
+      Map<String, dynamic> body = {};
+      try {
+        final decoded = json.decode(res.body);
+        if (decoded is Map) body = Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw Exception(body['detail']?.toString() ?? 'Unable to process return request.');
+      }
+
+      await Future.wait([
+        _fetchAllOrders(),
+        _loadReturnRequests(),
+      ]);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            approve
+                ? 'Return accepted. Stock restored and online sale reversed.'
+                : 'Return request rejected.',
+          ),
+          backgroundColor: approve ? Colors.green : Colors.redAccent,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
