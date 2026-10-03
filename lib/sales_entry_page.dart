@@ -1762,10 +1762,10 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       if (mounted) setState(() => _scanFlashOpacity = 0.0);
     });
 
-    // Play scan sound
-    SystemSound.play(SystemSoundType.click);
-    HapticFeedback.vibrate();
-    PaymentAnnouncementService().speakSimple("Ok", _paymentSoundLang);
+    // The scanner page plays the short POS-style beep at the instant the
+    // barcode is detected. Do not speak "OK" here and do not play a second
+    // click sound.
+    HapticFeedback.mediumImpact();
 
     // 1. Check Local catalog FIRST (Direct match from shopkeeper's catalog)
     final local = _barcodeCatalogLookup(normalizedCode);
@@ -1787,145 +1787,89 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       return;
     }
 
-    // 3. Not found in shop's own data
+    // 3. Not in inventory/history -> resolve the real retail product online.
+    // This is intentionally independent of the shop's local inventory.
+    final onlineProduct = await _lookupProductOnline(normalizedCode);
+
+    if (onlineProduct != null &&
+        (onlineProduct['name'] ?? '').toString().trim().isNotEmpty) {
+      _applyProductToBill(onlineProduct);
+
+      final onlinePrice =
+          double.tryParse(onlineProduct['price']?.toString() ?? '0') ?? 0;
+      final priceText = onlinePrice > 0
+          ? ' • reference price ₹' + onlinePrice.toStringAsFixed(0)
+          : ' • set your shop price';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        _styledSnackBar(
+          'Online match: ' + onlineProduct['name'].toString() + priceText,
+        ),
+      );
+      return;
+    }
+
+    // 4. No trusted online match -> leave the row ready for manual entry.
     final emptyProduct = {
       'name': '',
       'price': '0',
       'barcode': normalizedCode,
       'source': 'Manual Entry'
     };
-    
+
     _applyProductToBill(emptyProduct);
     ScaffoldMessenger.of(context).showSnackBar(
-      _styledSnackBar('Product not in your shop records. Please enter manually.', isError: true),
+      _styledSnackBar(
+        'Barcode detected, but no trusted catalog match was found. Enter the product manually.',
+        isError: true,
+      ),
     );
   }
 
   Future<Map<String, dynamic>?> _lookupProductOnline(String barcode) async {
-    if (_globalProductDataset.containsKey(barcode)) {
-      final p = _globalProductDataset[barcode];
-      if (p == null) return null;
+    try {
+      final response = await ApiClient.getJson(
+        '/api/inventory/barcode-lookup?barcode=' + barcode,
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode != 200) {
+        if (kDebugMode) {
+          debugPrint(
+            'Online barcode lookup failed: ' +
+                response.statusCode.toString() +
+                ' ' +
+                response.body,
+          );
+        }
+        return null;
+      }
+
+      final data = json.decode(response.body);
+      if (data is! Map || data['found'] != true) return null;
+
+      final rawPrice = data['online_price'];
+      final onlinePrice = double.tryParse('${rawPrice ?? ''}') ?? 0;
+
       return {
-        'name': p['name'],
-        'price': p['price'],
-        'gst': p['gst'],
-        'barcode': barcode,
-        'source': 'Verified Engine',
-        'region': barcode.startsWith('890') ? 'India' : 'Global'
+        'name': data['name']?.toString().trim() ?? '',
+        'price': onlinePrice > 0 ? onlinePrice.toStringAsFixed(2) : '0',
+        'gst': _getDefaultGst(data['name']?.toString() ?? ''),
+        'barcode': data['barcode']?.toString() ?? barcode,
+        'brand': data['brand']?.toString() ?? '',
+        'model': data['model']?.toString() ?? '',
+        'category': data['category']?.toString() ?? '',
+        'description': data['description']?.toString() ?? '',
+        'image_url': data['image_url']?.toString() ?? '',
+        'price_source': data['price_source']?.toString() ?? '',
+        'source': 'Verified Online Catalog',
+        'region': barcode.startsWith('890') ? 'India' : 'Global',
       };
-    }
-
-    String countryHint = barcode.startsWith('890') ? 'India' : 'Global';
-
-    // â”€â”€ PARALLEL SEARCH ENGINE (Speed Optimized for < 3s) â”€â”€
-    try {
-      if (kDebugMode) debugPrint('Launching Parallel Search for $barcode...');
-      
-      final results = await Future.wait([
-        _fetchBarcodeLookup(barcode, countryHint),
-        _fetchRetailDB(barcode, countryHint),
-        _fetchOpenFoodFacts(barcode, countryHint),
-      ]).timeout(const Duration(milliseconds: 2800), onTimeout: () => [null, null, null]);
-
-      // Rank results: 
-      // 1. Has name and price > 0
-      // 2. Has name but 0 price
-      // 3. Null
-      
-      Map<String, dynamic>? bestSub;
-      for (var res in results) {
-        if (res == null) continue;
-        double p = double.tryParse(res['price']?.toString() ?? '0') ?? 0;
-        if (res['name'].toString().isNotEmpty && p > 0) {
-          return res; // Perfect match
-        }
-        if (res['name'].toString().isNotEmpty && bestSub == null) {
-          bestSub = res; // Save for fallback
-        }
-      }
-      return bestSub;
     } catch (e) {
-      if (kDebugMode) debugPrint('Parallel search engine failed: $e');
+      if (kDebugMode) debugPrint('Online barcode lookup error: ' + e.toString());
+      return null;
     }
-
-    return null;
   }
 
-  Future<Map<String, dynamic>?> _fetchBarcodeLookup(String barcode, String countryHint) async {
-    try {
-      // NOTE: barcodelookup.com requires an API key to function.
-      // Replace 'YOUR_API_KEY' with a valid key when deploying to production, 
-      // or set via environment variable.
-      const apiKey = String.fromEnvironment('BARCODELOOKUP_API_KEY', defaultValue: '');
-      if (apiKey.isEmpty) return null; // Fail fast if no key
-      
-      final blUrl = 'https://api.barcodelookup.com/v3/products?barcode=$barcode&key=$apiKey';
-      final res = await http.get(Uri.parse(blUrl)).timeout(const Duration(milliseconds: 2500));
-      if (res.statusCode == 200) {
-        final data = json.decode(res.body);
-        if (data['products'] != null && data['products'].isNotEmpty) {
-          final p = data['products'][0];
-          return {
-            'name': p['product_name'] ?? '',
-            'price': '0',
-            'gst': _getDefaultGst(p['product_name'] ?? ''),
-            'barcode': barcode,
-            'source': 'Global Engine 1',
-            'region': countryHint
-          };
-        }
-      }
-    } catch (e) {}
-    return null;
-  }
-
-  Future<Map<String, dynamic>?> _fetchRetailDB(String barcode, String countryHint) async {
-    try {
-      final upcUrl = 'https://api.upcitemdb.com/prod/trial/lookup?upc=$barcode';
-      final res = await http.get(Uri.parse(upcUrl)).timeout(const Duration(milliseconds: 2500));
-      if (res.statusCode == 200) {
-        final data = json.decode(res.body);
-        if (data['items'] != null && data['items'].isNotEmpty) {
-          final item = data['items'][0];
-          return {
-            'name': item['title'] ?? '',
-            'price': '0',
-            'gst': _getDefaultGst(item['title'] ?? ''),
-            'barcode': barcode,
-            'source': 'Global Engine 2',
-            'region': countryHint
-          };
-        }
-      }
-    } catch (e) {}
-    return null;
-  }
-
-  Future<Map<String, dynamic>?> _fetchOpenFoodFacts(String barcode, String countryHint) async {
-    try {
-      final offUrl = 'https://world.openfoodfacts.org/api/v0/product/$barcode.json';
-      final offRes = await http.get(Uri.parse(offUrl)).timeout(const Duration(milliseconds: 2500));
-      if (offRes.statusCode == 200) {
-        final offData = json.decode(offRes.body);
-        if (offData['status'] == 1) {
-          final pDict = offData['product'];
-          String name = (pDict['product_name'] ?? pDict['generic_name'] ?? '').toString();
-          if (name.contains('_')) name = name.split('_').first;
-          String qty = (pDict['quantity'] ?? pDict['net_weight'] ?? '').toString();
-          if (qty.isNotEmpty) name = '$name $qty';
-          return {
-            'name': name,
-            'price': '0',
-            'gst': _getDefaultGst(name),
-            'barcode': barcode,
-            'source': 'Global Engine 3',
-            'region': countryHint
-          };
-        }
-      }
-    } catch (e) {}
-    return null;
-  }
 
   void _applyProductToBill(Map<String, dynamic> product) {
     if (entries.isEmpty) addEntry();
