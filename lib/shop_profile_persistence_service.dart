@@ -189,6 +189,13 @@ class ShopProfilePersistenceService {
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body) as Map<String, dynamic>;
+          final verified = await _verifyBackendProfile(token, data, payload);
+          if (!verified) {
+            return {
+              'success': false,
+              'error': 'BACKEND_PROFILE_VERIFICATION_FAILED',
+            };
+          }
           await saveProfileLocally(data);
           return {'success': true, 'profile': data};
         }
@@ -203,6 +210,13 @@ class ShopProfilePersistenceService {
 
           if (createRes.statusCode == 200 || createRes.statusCode == 201) {
             final data = json.decode(createRes.body) as Map<String, dynamic>;
+            final verified = await _verifyBackendProfile(token, data, payload);
+            if (!verified) {
+              return {
+                'success': false,
+                'error': 'BACKEND_PROFILE_VERIFICATION_FAILED',
+              };
+            }
             await saveProfileLocally(data);
             return {'success': true, 'profile': data};
           }
@@ -231,6 +245,78 @@ class ShopProfilePersistenceService {
     return {'success': false, 'error': 'MAX_RETRIES_EXCEEDED'};
   }
 
+  static Future<bool> _verifyBackendProfile(
+    String token,
+    Map<String, dynamic> writeResponse,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final outerProfile = writeResponse['profile'];
+      final profile = outerProfile is Map
+          ? Map<String, dynamic>.from(outerProfile)
+          : writeResponse;
+
+      final expectedUserId = await SecureTokenStorage.getUserId();
+      final returnedUserId = int.tryParse(
+        '${profile['shop_id'] ?? profile['user_id'] ?? writeResponse['shop_id'] ?? writeResponse['user_id'] ?? 0}',
+      ) ?? 0;
+
+      final expectedName = (payload['shop_name'] ?? '').toString().trim();
+      final returnedName = (profile['shop_name'] ?? '').toString().trim();
+
+      if (expectedUserId == null || expectedUserId <= 0) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Cannot verify shop profile ownership: secure user ID missing');
+        }
+        return false;
+      }
+
+      if (returnedUserId != expectedUserId) {
+        if (kDebugMode) {
+          debugPrint(
+            '❌ Shop profile owner mismatch: expected=$expectedUserId returned=$returnedUserId',
+          );
+        }
+        return false;
+      }
+
+      if (expectedName.isNotEmpty && returnedName != expectedName) {
+        if (kDebugMode) {
+          debugPrint(
+            '❌ Shop profile value mismatch: expected="$expectedName" returned="$returnedName"',
+          );
+        }
+        return false;
+      }
+
+      final verifyResponse = await ApiClient.getJson(
+        '/api/shop/profile',
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (verifyResponse.statusCode != 200) return false;
+
+      final decoded = json.decode(verifyResponse.body);
+      if (decoded is! Map) return false;
+
+      final outer = Map<String, dynamic>.from(decoded);
+      final nested = outer['profile'];
+      final verifiedProfile = nested is Map
+          ? Map<String, dynamic>.from(nested)
+          : outer;
+
+      final getUserId = int.tryParse(
+        '${verifiedProfile['shop_id'] ?? verifiedProfile['user_id'] ?? outer['shop_id'] ?? outer['user_id'] ?? 0}',
+      ) ?? 0;
+      final getName = (verifiedProfile['shop_name'] ?? '').toString().trim();
+
+      return getUserId == expectedUserId &&
+          (expectedName.isEmpty || getName == expectedName);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Backend profile verification error: $e');
+      return false;
+    }
+  }
   /// Get shop profile with automatic fallback
   /// Tries local cache first, then backend
   static Future<Map<String, dynamic>?> getProfile() async {

@@ -111,6 +111,12 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
   }
 
   Future<int> _resolveUserId() async {
+    final secureId = await SecureTokenStorage.getUserId();
+    if (secureId != null && secureId > 0) return secureId;
+
+    final scopedId = await ScopedSharedPreferences.getCurrentUserId();
+    if (scopedId != null && scopedId > 0) return scopedId;
+
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
   }
@@ -286,8 +292,12 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
         if (kDebugMode) debugPrint('📥 PUT response: ${putResp.statusCode} - ${putResp.body}');
 
         if (putResp.statusCode == 200 || putResp.statusCode == 201) {
-          if (kDebugMode) debugPrint('✅ Shop profile updated successfully via PUT');
-          return true;
+          final verified = await _verifyPersistedProfile(token, userId, payload);
+          if (verified) {
+            if (kDebugMode) debugPrint('✅ Shop profile persisted and verified via PUT');
+            return true;
+          }
+          if (kDebugMode) debugPrint('❌ PUT returned success but persisted profile verification failed');
         }
         if (kDebugMode) debugPrint('⚠️ PUT to profile failed with status ${putResp.statusCode}: ${putResp.body}');
       } catch (e) {
@@ -306,8 +316,12 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
         if (kDebugMode) debugPrint('📥 POST create response: ${postResp.statusCode} - ${postResp.body}');
 
         if (postResp.statusCode == 200 || postResp.statusCode == 201) {
-          if (kDebugMode) debugPrint('✅ Shop profile created successfully via POST');
-          return true;
+          final verified = await _verifyPersistedProfile(token, userId, payload);
+          if (verified) {
+            if (kDebugMode) debugPrint('✅ Shop profile created and verified via POST');
+            return true;
+          }
+          if (kDebugMode) debugPrint('❌ POST returned success but persisted profile verification failed');
         }
         if (kDebugMode) debugPrint('⚠️ POST to create failed with status ${postResp.statusCode}: ${postResp.body}');
       } catch (e) {
@@ -326,8 +340,12 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
         if (kDebugMode) debugPrint('📥 POST profile response: ${postResp.statusCode} - ${postResp.body}');
 
         if (postResp.statusCode == 200 || postResp.statusCode == 201) {
-          if (kDebugMode) debugPrint('✅ Shop profile created/updated successfully via POST');
-          return true;
+          final verified = await _verifyPersistedProfile(token, userId, payload);
+          if (verified) {
+            if (kDebugMode) debugPrint('✅ Shop profile persisted and verified via POST fallback');
+            return true;
+          }
+          if (kDebugMode) debugPrint('❌ POST fallback returned success but persisted profile verification failed');
         }
       } catch (e) {
         if (kDebugMode) debugPrint('⚠️ POST to profile request failed: $e');
@@ -341,6 +359,54 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
     }
   }
 
+  Future<bool> _verifyPersistedProfile(
+    String token,
+    int expectedUserId,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final resp = await ApiClient.getJson(
+        ApiClient.shopProfile,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (resp.statusCode != 200) {
+        if (kDebugMode) debugPrint('❌ Profile verification GET failed: ${resp.statusCode}');
+        return false;
+      }
+
+      final decoded = json.decode(resp.body);
+      if (decoded is! Map) return false;
+
+      final outer = Map<String, dynamic>.from(decoded);
+      final rawProfile = outer['profile'];
+      final profile = rawProfile is Map
+          ? Map<String, dynamic>.from(rawProfile)
+          : outer;
+
+      final returnedUserId = int.tryParse(
+        '${profile['shop_id'] ?? profile['user_id'] ?? outer['shop_id'] ?? outer['user_id'] ?? 0}',
+      ) ?? 0;
+
+      final expectedName = (payload['shop_name'] ?? '').toString().trim();
+      final returnedName = (profile['shop_name'] ?? '').toString().trim();
+
+      final identityMatches = returnedUserId == expectedUserId;
+      final nameMatches = expectedName.isEmpty || returnedName == expectedName;
+
+      if (kDebugMode) {
+        debugPrint(
+          '🔎 Profile verification: expectedUser=$expectedUserId returnedUser=$returnedUserId '
+          'expectedName="$expectedName" returnedName="$returnedName"',
+        );
+      }
+
+      return identityMatches && nameMatches;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Persisted profile verification error: $e');
+      return false;
+    }
+  }
   // Helper to redact sensitive data for logging
   Map<String, dynamic> _redactSensitiveData(Map<String, dynamic> data) {
     final sensitiveKeys = ['token', 'password', 'upi_id', 'gst', 'phone'];
