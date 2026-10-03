@@ -3128,7 +3128,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
   Future<int> _highestBackendBillSequence() async {
     try {
       final response = await ApiClient.getJson(
-        ApiClient.invoicesList + '?skip=0&limit=100',
+        '/api/invoices/next-bill-number',
       );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -3136,30 +3136,14 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       }
 
       final decoded = jsonDecode(response.body);
-      if (decoded is! List) return 0;
-
-      var highest = 0;
-      for (final raw in decoded) {
-        if (raw is! Map) continue;
-
-        final rawBill = raw['invoice_number'] ??
-            raw['bill_number'] ??
-            raw['invoice_display_number'] ??
-            '';
-        final match = RegExp(
-          r'BILL-(\d+)',
-          caseSensitive: false,
-        ).firstMatch(rawBill.toString());
-
-        if (match != null) {
-          highest = math.max(
-            highest,
-            int.tryParse(match.group(1) ?? '0') ?? 0,
-          );
-        }
+      if (decoded is Map) {
+        return int.tryParse(
+              decoded['highest_bill_number']?.toString() ?? '0',
+            ) ??
+            0;
       }
 
-      return highest;
+      return 0;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('⚠️ Could not read backend bill sequence: $e');
@@ -3167,7 +3151,6 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       return 0;
     }
   }
-
   Future<String> _allocateNextBillNumber() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
