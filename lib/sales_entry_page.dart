@@ -525,26 +525,25 @@ class _SalesEntryPageState extends State<SalesEntryPage>
   // Offline Queue for failed API writes
   final OfflinePaymentQueue _offlineQueue = OfflinePaymentQueue();
 
-  Future<void> _printBluetooth() async {
-    final itemsList = entries
-        .where((e) => e['item']?.text.isNotEmpty ?? false)
-        .map((e) => {
-              'product_name': e['item']?.text ?? '',
-              'qty': e['qty']?.text.isEmpty ?? true ? '1' : e['qty']?.text ?? '1',
-              'price': e['price']?.text.isEmpty ?? true ? '0' : e['price']?.text ?? '0',
-            })
-        .toList();
-
-    await PrinterService.printBill(
-      context: context,
-      invoiceId: 'INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-      customerName: customerNameController.text.isNotEmpty ? customerNameController.text : "Cash Customer",
-      items: itemsList,
-      totalAmount: totalAmount,
-      gstPercent: 18.0,
+  Future<void> _printBluetooth({
+    required String billNumber,
+    required List<Map<String, dynamic>> billItems,
+    required double billTotal,
+    required double gstPercent,
+    String? customerName,
+  }) async {
+    // Print the exact immutable snapshot shown in Bill Preview. The checkout
+    // flow clears the entry form before this dialog is opened.
+    await _printOrOpenPrinterSetup(
+      billNumber: billNumber,
+      customerName: (customerName ?? customerNameController.text).trim().isEmpty
+          ? 'Cash Customer'
+          : (customerName ?? customerNameController.text).trim(),
+      items: billItems,
+      totalAmount: billTotal,
+      gstPercent: gstPercent,
     );
   }
-
   // â”€â”€ Official Local & Global Dataset (GS1 / Regulatory Standard) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   final Map<String, Map<String, dynamic>> _globalProductDataset = {
     '8901030000001': {'name': 'Dove Soap 100g', 'price': '68', 'gst': '18'},
@@ -3126,32 +3125,94 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     }).toList();
   }
 
+  Future<int> _highestBackendBillSequence() async {
+    try {
+      final response = await ApiClient.getJson(
+        ApiClient.invoicesList + '?skip=0&limit=100',
+      );
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return 0;
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) return 0;
+
+      var highest = 0;
+      for (final raw in decoded) {
+        if (raw is! Map) continue;
+
+        final rawBill = raw['invoice_number'] ??
+            raw['bill_number'] ??
+            raw['invoice_display_number'] ??
+            '';
+        final match = RegExp(
+          r'BILL-(\d+)',
+          caseSensitive: false,
+        ).firstMatch(rawBill.toString());
+
+        if (match != null) {
+          highest = math.max(
+            highest,
+            int.tryParse(match.group(1) ?? '0') ?? 0,
+          );
+        }
+      }
+
+      return highest;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Could not read backend bill sequence: $e');
+      }
+      return 0;
+    }
+  }
+
   Future<String> _allocateNextBillNumber() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
-    final key = 'last_bill_number_' + userId.toString();
+    final key = userId > 0
+        ? 'last_bill_number_$userId'
+        : 'last_bill_number';
 
-    var current = prefs.getInt(key) ?? prefs.getInt('last_bill_number') ?? 0;
-    if (current == 0) {
-      try {
-        final sales = await LocalStorageService.loadSales();
-        for (final raw in sales) {
-          if (raw is! Map) continue;
-          final rawBill = raw['bill_number'] ?? raw['invoice_display_number'] ?? '';
-          final match = RegExp(r'BILL-(\d+)', caseSensitive: false).firstMatch(rawBill.toString());
-          if (match != null) {
-            current = math.max(current, int.tryParse(match.group(1) ?? '0') ?? 0);
-          }
+    var current = prefs.getInt(key) ?? 0;
+
+    // Reconcile local and backend invoice history. This prevents a cleared
+    // app-data cache from resetting an established shop to BILL-0001.
+    try {
+      final sales = await LocalStorageService.loadSales();
+      for (final raw in sales) {
+        if (raw is! Map) continue;
+
+        final rawBill = raw['bill_number'] ??
+            raw['invoice_number'] ??
+            raw['invoice_display_number'] ??
+            '';
+        final match = RegExp(
+          r'BILL-(\d+)',
+          caseSensitive: false,
+        ).firstMatch(rawBill.toString());
+
+        if (match != null) {
+          current = math.max(
+            current,
+            int.tryParse(match.group(1) ?? '0') ?? 0,
+          );
         }
-      } catch (_) {}
-    }
+      }
+    } catch (_) {}
+
+    current = math.max(current, await _highestBackendBillSequence());
 
     final next = current + 1;
     await prefs.setInt(key, next);
-    await prefs.setInt('last_bill_number', next);
+
+    if (userId <= 0) {
+      await prefs.setInt('last_bill_number', next);
+    }
+
     return 'BILL-' + next.toString().padLeft(4, '0');
   }
-
   Future<void> _printOrOpenPrinterSetup({
     required String billNumber,
     required String customerName,
@@ -6920,10 +6981,16 @@ class _BillImageDialogState extends State<_BillImageDialog> {
                       // 2. BT PRINT BUTTON
                       GestureDetector(
                         onTap: () {
-                           final state = widget.billKey.currentContext?.findAncestorStateOfType<_SalesEntryPageState>();
-                           if (state != null) {
-                              state._printBluetooth();
-                           }
+                          final state = widget.billKey.currentContext
+                              ?.findAncestorStateOfType<_SalesEntryPageState>();
+                          if (state != null) {
+                            state._printBluetooth(
+                              billNumber: widget.billNumber,
+                              billItems: widget.snapshot,
+                              billTotal: widget.totalAmount,
+                              gstPercent: widget.withGstInitial ? 18.0 : 0.0,
+                            );
+                          }
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
