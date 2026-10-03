@@ -213,7 +213,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       if (kDebugMode) debugPrint('🔄 Loading shop profile from backend...');
       
       final resp = await ApiClient.getJson(
-        '${ApiClient.shopProfile}?user_id=$userId',
+        '${ApiClient.shopProfile}',
         headers: {
           'Authorization': 'Bearer $token',
         },
@@ -278,7 +278,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       // Try PUT method first for updates
       try {
         final putResp = await ApiClient.putJson(
-          '${ApiClient.shopProfile}?user_id=$userId',
+          '${ApiClient.shopProfile}',
           payload,
           headers: headers,
         ).timeout(const Duration(seconds: 15));
@@ -298,7 +298,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       try {
         if (kDebugMode) debugPrint('🔄 Trying CREATE endpoint with POST...');
         final postResp = await ApiClient.postJson(
-          '${ApiClient.shopCreate}?user_id=$userId',
+          '${ApiClient.shopCreate}',
           payload,
           headers: headers,
         ).timeout(const Duration(seconds: 15));
