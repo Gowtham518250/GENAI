@@ -429,6 +429,8 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
         _saveCachedOrders(prefs, shopId, 'ACCEPTED', _acceptedOrders),
         _saveCachedOrders(prefs, shopId, 'DISPATCHED', _dispatchedOrders),
         _saveCachedOrders(prefs, shopId, 'DELIVERED', _deliveredOrders),
+        _saveCachedOrders(prefs, shopId, 'RETURNED', _returnedOrders),
+        _saveCachedOrders(prefs, shopId, 'CANCELLED', _cancelledOrders),
       ]);
     } catch (e) {
       debugPrint('⚠️ Online order local cache write failed: $e');
@@ -652,6 +654,241 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     }
   }
 
+
+  Widget _buildReturnRequestsTab() {
+    return RefreshIndicator(
+      onRefresh: _loadReturnRequests,
+      child: _isReturnsLoading
+          ? const ListView(children: [
+              SizedBox(height: 180),
+              Center(child: CircularProgressIndicator()),
+            ])
+          : _returnRequests.isEmpty
+              ? ListView(children: const [
+                  SizedBox(height: 120),
+                  Center(child: Text('No return requests yet')),
+                ])
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _returnRequests.length,
+                  itemBuilder: (context, index) {
+                    final request = _returnRequests[index];
+                    final status = (request['status'] ?? 'REQUESTED').toString().toUpperCase();
+                    final orderId = request['order_id']?.toString() ?? '—';
+                    final customer = request['customer_name']?.toString() ?? 'Customer';
+                    final amount = request['refund_amount'] ?? request['total_amount'] ?? 0;
+                    final reason = request['reason']?.toString() ?? 'No reason provided';
+                    final processed = status != 'REQUESTED';
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: GlassContainer(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Return for Order #$orderId',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        customer,
+                                        style: const TextStyle(color: Colors.black87, fontSize: 14),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Badge(
+                                  label: Text(status),
+                                  backgroundColor: status == 'REQUESTED'
+                                      ? Colors.orange
+                                      : status == 'REJECTED'
+                                          ? Colors.redAccent
+                                          : Colors.green,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              reason,
+                              style: const TextStyle(color: Colors.black87, fontSize: 14, height: 1.4),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Refund / order value',
+                                    style: TextStyle(color: Colors.black54)),
+                                Text(
+                                  'Rs ' + (double.tryParse(amount.toString())?.toStringAsFixed(2) ?? amount.toString()),
+                                  style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (request['stock_restored'] == true) ...[
+                              const SizedBox(height: 8),
+                              const Row(
+                                children: [
+                                  Icon(Icons.inventory_2_outlined, size: 16, color: Colors.green),
+                                  SizedBox(width: 6),
+                                  Text('Stock restored',
+                                      style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ],
+                            if (!processed) ...[
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () => _decideReturn(request, false),
+                                      icon: const Icon(Icons.close, size: 17),
+                                      label: const Text('Reject Return'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.redAccent,
+                                        side: const BorderSide(color: Colors.redAccent),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () => _decideReturn(request, true),
+                                      icon: const Icon(Icons.check_circle_outline, size: 17),
+                                      label: const Text('Accept Return'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+    );
+  }
+
+  Widget _buildReviewsTab() {
+    return RefreshIndicator(
+      onRefresh: _loadReviews,
+      child: _isReviewsLoading
+          ? const ListView(children: [
+              SizedBox(height: 180),
+              Center(child: CircularProgressIndicator()),
+            ])
+          : _reviews.isEmpty
+              ? ListView(children: const [
+                  SizedBox(height: 120),
+                  Center(child: Text('No customer reviews yet')),
+                ])
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _reviews.length,
+                  itemBuilder: (context, index) {
+                    final review = _reviews[index];
+                    final rating = int.tryParse(review['rating']?.toString() ?? '') ?? 0;
+                    final customer = review['customer_name']?.toString() ?? 'Customer';
+                    final comment = review['comment']?.toString() ?? '';
+                    final orderId = review['order_id']?.toString() ?? '—';
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: GlassContainer(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 21,
+                                  backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                                  child: Text(
+                                    customer.isEmpty ? '?' : customer[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(customer,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          )),
+                                      Text('Order #$orderId',
+                                          style: const TextStyle(
+                                            color: Colors.black54,
+                                            fontSize: 12,
+                                          )),
+                                    ],
+                                  ),
+                                ),
+                                Row(
+                                  children: List.generate(
+                                    5,
+                                    (star) => Icon(
+                                      star < rating ? Icons.star_rounded : Icons.star_border_rounded,
+                                      color: Colors.amber,
+                                      size: 19,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (comment.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  comment,
+                                  style: const TextStyle(
+                                    color: Colors.black87,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_shopId.isEmpty || _shopId == '0') {
@@ -676,6 +913,9 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
             Tab(text: 'Accepted (${_acceptedOrders.length})'),
             Tab(text: 'Dispatched (${_dispatchedOrders.length})'),
             Tab(text: 'Delivered (${_deliveredOrders.length})'),
+            Tab(text: 'Returns (${_returnRequests.where((r) => (r['status'] ?? '').toString().toUpperCase() == 'REQUESTED').length})'),
+            Tab(text: 'Cancelled (${_cancelledOrders.length})'),
+            Tab(text: 'Reviews (${_reviews.length})'),
           ],
         ),
       ),
@@ -704,6 +944,13 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                   emptyText: 'No delivered orders yet',
                   nextAction: null,
                 ),
+                _buildReturnRequestsTab(),
+                _buildOrderList(
+                  orders: _cancelledOrders,
+                  emptyText: 'No cancelled orders yet',
+                  nextAction: null,
+                ),
+                _buildReviewsTab(),
               ],
             ),
     );
