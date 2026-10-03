@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Compact dashboard entry point for the online store.
+/// Full analytics remain available after tapping this row.
 class OnlineAnalyticsCard extends StatelessWidget {
   final int pendingOrders;
   final int totalOrders;
@@ -25,193 +27,138 @@ class OnlineAnalyticsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasPending = pendingOrders > 0;
+    final statusColor =
+        hasPending ? const Color(0xFFF59E0B) : const Color(0xFF16A34A);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF5B3DF5), Color(0xFF7058F7), Color(0xFF4A6CF7)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF5B3DF5).withValues(alpha: 0.24),
-                blurRadius: 26,
-                offset: const Offset(0, 12),
+                color: const Color(0xFF0F172A).withValues(alpha: 0.055),
+                blurRadius: 16,
+                offset: const Offset(0, 7),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.18),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.storefront_rounded,
-                      color: Colors.white,
-                      size: 21,
-                    ),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5B3DF5), Color(0xFF4F6CF7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  Icons.storefront_rounded,
+                  color: Colors.white,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Text(
-                          'Online Store Overview',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 17,
+                        Flexible(
+                          child: Text(
+                            'Online Store',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF111827),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '' + totalOrders.toString() + ' orders across your online store',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white.withValues(alpha: 0.68),
-                            fontSize: 11,
+                        const SizedBox(width: 7),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.09),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                hasPending ? '$pendingOrders pending' : 'All caught up',
+                                style: GoogleFonts.poppins(
+                                  color: statusColor,
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  _statusPill(),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  _metric(Icons.shopping_bag_rounded, 'Total orders', '' + totalOrders.toString() + ''),
-                  _metric(Icons.schedule_rounded, 'Pending', '' + pendingOrders.toString() + ''),
-                  _metric(Icons.payments_rounded, 'Revenue', '₹' + totalRevenue.toStringAsFixed(0) + ''),
-                  _metric(Icons.verified_rounded, 'Paid', '' + totalPaidCount.toString() + ''),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.11),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.10),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.today_rounded, size: 16, color: Colors.white),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Today: ' + todayOrderCount.toString() + ' orders · ₹' + todayRevenue.toStringAsFixed(0) + ' revenue · ' + todayPaidCount.toString() + ' paid',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    const SizedBox(height: 3),
+                    Text(
+                      totalOrders.toString() + ' orders  •  ₹' +
+                          totalRevenue.toStringAsFixed(0) +
+                          ' revenue  •  ' + totalPaidCount.toString() + ' paid',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF64748B),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_rounded, size: 17, color: Colors.white70),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F6FF),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Open',
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF4F46E5),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward_rounded, color: Color(0xFF4F46E5), size: 15),
                   ],
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _statusPill() {
-    final label = pendingOrders > 0 ? '' + pendingOrders.toString() + ' pending' : 'All caught up';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: pendingOrders > 0
-                  ? const Color(0xFFFDE68A)
-                  : const Color(0xFF86EFAC),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metric(IconData icon, String label, String value) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.only(right: 7),
-        padding: const EdgeInsets.fromLTRB(10, 10, 8, 9),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.white70, size: 15),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
-                color: Colors.white70,
-                fontSize: 9.5,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
         ),
       ),
     );
