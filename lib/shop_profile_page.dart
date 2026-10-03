@@ -225,7 +225,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
         },
       ).timeout(const Duration(seconds: 12));
 
-      if (kDebugMode) debugPrint('📥 Backend response: ${resp.statusCode} - ${resp.body}');
+      if (kDebugMode) debugPrint('📥 Backend response: ${resp.statusCode} - ${responseBody}');
 
       if (resp.statusCode != 200) {
         if (kDebugMode) debugPrint('⚠️ Backend load failed with status ${resp.statusCode}');
@@ -524,6 +524,8 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       ).timeout(const Duration(seconds: 30));
 
       final statusCode = resp.statusCode;
+      // Multipart responses are streamed, so read the response body exactly once.
+      final responseBody = await resp.stream.bytesToString();
       if (kDebugMode) {
         debugPrint('📥 Logo upload response: \${statusCode} - \${resp.body}');
       }
