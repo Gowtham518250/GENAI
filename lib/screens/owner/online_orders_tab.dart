@@ -1046,12 +1046,20 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                                   color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
                           if (syncing)
                             const Badge(label: Text('SYNCING'), backgroundColor: Colors.orange)
+                          else if ((order['status'] ?? '').toString().toUpperCase() == 'RETURNED')
+                            const Badge(label: Text('RETURNED'), backgroundColor: Colors.deepPurple)
+                          else if ((order['status'] ?? '').toString().toUpperCase() == 'CANCELLED')
+                            const Badge(label: Text('CANCELLED'), backgroundColor: Colors.redAccent)
+                          else if ((order['status'] ?? '').toString().toUpperCase() == 'REJECTED')
+                            const Badge(label: Text('REJECTED'), backgroundColor: Colors.redAccent)
                           else if (nextAction == 'ACCEPT')
                             const Badge(label: Text('NEW'), backgroundColor: Colors.redAccent)
                           else if (nextAction == 'DISPATCH')
                             const Badge(label: Text('ACCEPTED'), backgroundColor: Colors.green)
+                          else if (nextAction == 'DELIVER')
+                            const Badge(label: Text('DISPATCHED'), backgroundColor: Colors.blue)
                           else
-                            const Badge(label: Text('DISPATCHED'), backgroundColor: Colors.blue),
+                            const Badge(label: Text('DELIVERED'), backgroundColor: Colors.green),
                         ],
                       ),
                       const Divider(color: Colors.black12, height: 24),
