@@ -381,6 +381,8 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
         _dispatchedOrders.insert(0, {...order, 'status': 'DISPATCHED'});
       } else if (action == 'DELIVER') {
         _deliveredOrders.insert(0, {...order, 'status': 'DELIVERED'});
+      } else if (action == 'REJECT') {
+        _cancelledOrders.insert(0, {...order, 'status': 'REJECTED'});
       }
 
       _pendingSync.add(orderId);
