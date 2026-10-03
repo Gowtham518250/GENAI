@@ -183,8 +183,14 @@ class _WorkerAttendanceDetailPageState
     if (parsed == null) return null;
 
     // Legacy attendance values without an offset already represent local IST.
-    if (!str.contains('Z') &&
-        !RegExp(r'[+-]\\d{2}:\\d{2}
+    final hasTimezone =
+        str.endsWith('Z') || RegExp(r'[+-]\d{2}:\d{2}$').hasMatch(str);
+    if (!hasTimezone) {
+      return parsed;
+    }
+
+    return parsed.toLocal();
+  }
 
   bool _isLate(Map<String, dynamic> r) {
     final local = _parseServerTime(r['check_in_time']);
