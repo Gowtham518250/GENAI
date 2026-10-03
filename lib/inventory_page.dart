@@ -329,7 +329,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
           for (final attemptTimeout in const [Duration(seconds: 10), Duration(seconds: 25)]) {
             try {
               res = await ApiClient.getJson(
-                '${ApiClient.inventoryPrefix}/products?user_id=$_userId',
+                '${ApiClient.inventoryPrefix}/products',
                 headers: {'Authorization': 'Bearer $token'},
               ).timeout(attemptTimeout);
               break; // got a response, stop retrying
@@ -855,75 +855,112 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   }
 
   Widget _emptyState() {
-    // 🔧 FIX: if we have zero products ONLY because the last fetch failed
-    // (bad 5G, backend hiccup, etc.), don't show the "No products yet /
-    // add your first product" onboarding copy — that tells the shop owner
-    // their data is gone when it almost certainly isn't. Show a clear
-    // "couldn't reach server" state with a retry button instead.
-    if (_lastFetchFailed) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Container(
-              width: 120, height: 120,
-              decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
-                  shape: BoxShape.circle),
-              child: const Icon(Icons.cloud_off_rounded, size: 60, color: Colors.orange),
-            ),
-            const SizedBox(height: 24),
-            Text('Couldn\'t load your products',
-                style: GoogleFonts.poppins(
-                    fontSize: 22, fontWeight: FontWeight.w700,
-                    color: Colors.black87)),
-            const SizedBox(height: 12),
-            Text('This is a connection issue, not data loss.\nYour products are safe on the server.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                    fontSize: 14, color: Colors.grey.shade600)),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => _fetch(forceRemote: true),
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-            ),
-          ]),
-        ),
-      );
-    }
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            width: 120, height: 120,
-            decoration: BoxDecoration(
-                color: _primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle),
-            child: Icon(Icons.inventory_2_outlined, size: 60, color: _primary),
-          ),
-          const SizedBox(height: 24),
-          Text(AppLocalizations.of(context).noProductsYet,
-              style: GoogleFonts.poppins(
-                  fontSize: 22, fontWeight: FontWeight.w700,
-                  color: Colors.black87)),
-          const SizedBox(height: 12),
-          Text('Start building your inventory by adding\nyour first product.',
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(28, 34, 28, 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 126,
+              height: 126,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    _primary.withValues(alpha: 0.12),
+                    _primary.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.inventory_2_outlined, size: 62, color: _primary),
+            ),
+            const SizedBox(height: 22),
+            Text(
+              'Your inventory is empty',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
-                  fontSize: 14, color: Colors.grey.shade600)),
-          const SizedBox(height: 32),
-          // Step guide
-          _guideStep('1', 'Tap the + button below', Icons.add_circle_outline),
-          _guideStep('2', 'Enter product name & price', Icons.edit_outlined),
-          _guideStep('3', 'Set stock levels & get alerts', Icons.notifications_outlined),
-        ]),
+                fontSize: 23,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Add your first product and it will appear here instantly.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            if (_lastFetchFailed) ...[
+              const SizedBox(height: 16),
+              Container(
+                constraints: const BoxConstraints(maxWidth: 430),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.22)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.cloud_off_rounded, size: 18, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'The server could not be refreshed just now. Your local data is untouched. Retry to sync again.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: Colors.brown,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: () => _fetch(forceRemote: true),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry Sync'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _primary,
+                  side: BorderSide(color: _primary.withValues(alpha: 0.35)),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                ),
+              ),
+            ],
+            const SizedBox(height: 26),
+            Container(
+              constraints: const BoxConstraints(maxWidth: 460),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.08)),
+              ),
+              child: Column(
+                children: [
+                  _guideStep('1', 'Tap + Add Product', Icons.add_circle_outline),
+                  _guideStep('2', 'Enter name, price and stock', Icons.edit_outlined),
+                  _guideStep('3', 'Your product syncs to the server', Icons.cloud_done_outlined),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
