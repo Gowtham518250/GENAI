@@ -516,10 +516,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       // Upload to backend
       final resp = await ApiClient.postMultipart(
         ApiClient.shopUploadLogo,
-        {
-          'user_id': userId.toString(),
-          'userId': userId.toString(),
-        },
+        {},
         headers: {
           if (token.isNotEmpty) 'Authorization': 'Bearer $token',
         },
@@ -527,9 +524,27 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       ).timeout(const Duration(seconds: 30));
 
       final statusCode = resp.statusCode;
-      if (kDebugMode) debugPrint('✅ Logo upload response: $statusCode');
+      if (kDebugMode) {
+        debugPrint('📥 Logo upload response: \${statusCode} - \${resp.body}');
+      }
 
-      return statusCode == 200 || statusCode == 201;
+      if (statusCode != 200 && statusCode != 201) {
+        return false;
+      }
+
+      final body = json.decode(resp.body);
+      final logoUrl = body is Map ? body['logo_url']?.toString() : null;
+      final persisted = body is Map &&
+          body['status']?.toString().toLowerCase() == 'success' &&
+          logoUrl != null &&
+          logoUrl.isNotEmpty;
+
+      if (!persisted) {
+        if (kDebugMode) debugPrint('❌ Logo upload returned success without a persisted logo_url');
+        return false;
+      }
+
+      return true;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Logo upload failed: $e');
       return false;
