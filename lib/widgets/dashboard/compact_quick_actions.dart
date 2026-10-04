@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import '../../commission_dashboard_page.dart';
-import '../../delivery_tracking_page.dart';
 import '../../retail_intelligence_page.dart';
 
 /// 🚀 Compact Quick Actions Widget
@@ -105,21 +104,6 @@ class _CompactQuickActionsState extends State<CompactQuickActions>
                       context,
                       MaterialPageRoute(
                         builder: (_) => const CommissionDashboardPage(),
-                      ),
-                    );
-                  },
-                ),
-                _buildQuickActionChip(
-                  icon: Icons.local_shipping,
-                  label: 'Delivery',
-                  color: const Color(0xFF3B82F6),
-                  onTap: () {
-                    _triggerHapticFeedback();
-                    // ✅ PHASE 7 FIX: Navigate to actual Delivery Tracking page
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const DeliveryTrackingPage(orderId: 101),
                       ),
                     );
                   },
