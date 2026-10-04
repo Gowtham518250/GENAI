@@ -15,6 +15,7 @@ import 'responsive.dart';
 import 'visual_widgets.dart';
 import 'language_provider.dart';
 import 'sync_service.dart';
+import 'sync_queue_manager.dart';
 import 'sales_dedup_helper.dart';
 import 'local_storage_service.dart';
 import 'user_data_clear_service.dart';
@@ -391,10 +392,29 @@ class _DecentLoginPageState extends State<DecentLoginPage>
         if (kDebugMode) debugPrint('⚠️ [Background] Sales restore error: $e');
       }
 
-      // Refresh inventory
+      // Refresh inventory only when there is no pending sale/product
+      // mutation. Otherwise the backend can still contain the pre-sale stock,
+      // and replacing the local cache here would visually "restock" the item
+      // before the queued sale is acknowledged.
       try {
-        await InventorySyncService.refreshAllInventory();
-        await InventorySyncService.updateLastSyncTimestamp();
+        final hasPendingMutation =
+            await SyncQueueManager.hasAnyPendingAction(const [
+          'save_sale',
+          'sync_sale',
+          'create_local_product',
+          'update_local_product',
+          'decrease_stock',
+        ]);
+        if (hasPendingMutation) {
+          if (kDebugMode) {
+            debugPrint(
+              '⏭️ [Background] Inventory refresh skipped: pending mutation awaiting server ACK',
+            );
+          }
+        } else {
+          await InventorySyncService.refreshAllInventory();
+          await InventorySyncService.updateLastSyncTimestamp();
+        }
       } catch (e) {
         if (kDebugMode)
           debugPrint('⚠️ [Background] Inventory refresh error: $e');

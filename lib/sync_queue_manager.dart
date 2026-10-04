@@ -500,6 +500,44 @@ class SyncQueueManager {
     });
   }
 
+  /// Return whether any durable queue item for [action] is still pending.
+  ///
+  /// This is used by background inventory refreshes to avoid replacing a
+  /// locally-reduced stock value with stale backend stock while the sale that
+  /// owns that reduction is still waiting for server acknowledgement.
+  static Future<bool> hasPendingAction(String action) async {
+    final wanted = action.trim();
+    if (wanted.isEmpty) return false;
+
+    return _queueLock.synchronized(() async {
+      try {
+        final box = await _getBoxUnlocked();
+        for (final raw in box.values) {
+          if (raw is! Map) continue;
+          if ((raw['action']?.toString() ?? '') != wanted) continue;
+
+          final status = (raw['status']?.toString() ?? 'PENDING').toUpperCase();
+          if (status != 'SYNCED' && status != 'DONE') {
+            return true;
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ [SyncQueue] Pending action check failed: $e');
+        }
+      }
+      return false;
+    });
+  }
+
+  /// Return whether any of the supplied durable operations are still pending.
+  static Future<bool> hasAnyPendingAction(Iterable<String> actions) async {
+    for (final action in actions) {
+      if (await hasPendingAction(action)) return true;
+    }
+    return false;
+  }
+
   static Future<Map<String, dynamic>?> peek() async {
     return _queueLock.synchronized(() async {
       try {

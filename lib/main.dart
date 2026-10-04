@@ -1122,28 +1122,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   Future<void> _syncSalesData() async {
     try {
-      // Check network availability first
       final connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult == ConnectivityResult.none) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('🌐 No network available, skipping sales sync');
+        }
         return;
       }
 
-      final response = await ApiClient.getJson('/api/invoices');
-      if (response.statusCode == 200) {
-        try {
-          final data = json.decode(response.body);
-          if (data is List && data.every((item) => item is Map)) {
-            await LocalStorageService.saveSales(data);
-            if (kDebugMode) debugPrint('✅ Synced ${data.length} sales');
-          } else {
-            if (kDebugMode)
-              debugPrint('❌ Invalid sales data format from server');
-          }
-        } catch (e) {
-          if (kDebugMode) debugPrint('❌ JSON parsing error for sales data: $e');
-        }
+      // Merge canonical backend invoices into the local ledger instead of
+      // replacing the entire ledger. Replacing it can erase a freshly created
+      // offline-first sale that is still waiting for server acknowledgement.
+      await SyncService.downloadUserDataSafe();
+      if (kDebugMode) {
+        debugPrint('✅ Sales sync merged with local ledger');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Sales sync error: $e');
@@ -1152,11 +1144,31 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   Future<void> _syncInventoryData() async {
     try {
-      // Check network availability first
       final connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult == ConnectivityResult.none) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('🌐 No network available, skipping inventory sync');
+        }
+        return;
+      }
+
+      // Do not overwrite local stock while a sale/product mutation is still
+      // pending. The local stock has already reflected that user action, while
+      // the backend may still contain the pre-mutation value.
+      final hasPendingMutation =
+          await SyncQueueManager.hasAnyPendingAction(const [
+        'save_sale',
+        'sync_sale',
+        'create_local_product',
+        'update_local_product',
+        'decrease_stock',
+      ]);
+      if (hasPendingMutation) {
+        if (kDebugMode) {
+          debugPrint(
+            '⏭️ Inventory refresh skipped: pending sale/inventory operation awaiting server ACK',
+          );
+        }
         return;
       }
 
@@ -1168,14 +1180,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             await LocalStorageService.saveBackendProducts(
               List<Map<String, dynamic>>.from(data),
             );
-            if (kDebugMode) debugPrint('✅ Synced ${data.length} products');
-          } else {
-            if (kDebugMode)
-              debugPrint('❌ Invalid inventory data format from server');
+            if (kDebugMode) {
+              debugPrint('✅ Synced ' + data.length.toString() + ' products');
+            }
+          } else if (kDebugMode) {
+            debugPrint('❌ Invalid inventory data format from server');
           }
         } catch (e) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('❌ JSON parsing error for inventory data: $e');
+          }
         }
       }
     } catch (e) {
