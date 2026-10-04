@@ -2042,27 +2042,43 @@ class _DashboardPageState extends State<DashboardPage>
       if (allItems.isEmpty) return false;
 
       final List<dynamic> currentLocal = await LocalStorageService.loadSales();
-      final Set<String> existingIds = currentLocal
-          .map((e) => e['sale_id'].toString())
-          .toSet();
+
+      // A local sale uses the durable internal sale_id while the canonical
+      // backend invoice uses BILL-xxxx as invoice_number. Treat both as the
+      // same transaction key so Dashboard reconciliation does not append a
+      // second copy of an already-recorded sale.
+      final Set<String> existingIds = <String>{};
+      for (final raw in currentLocal) {
+        if (raw is! Map) continue;
+        for (final key in const ['invoice_number', 'sale_id', 'offline_id', 'id']) {
+          final value = raw[key]?.toString().trim();
+          if (value != null && value.isNotEmpty && value != 'null') {
+            existingIds.add(value.toLowerCase());
+          }
+        }
+      }
+
       bool added = false;
 
-      // Group by sale_id/invoice_number
+      // Group by canonical invoice_number first, then fall back to sale_id.
       final Map<String, List<dynamic>> grouped = {};
       for (var item in allItems) {
-        final id =
-            item['sale_id']?.toString() ?? item['invoice_number']?.toString();
-        if (id == null) continue;
-        if (!grouped.containsKey(id)) {
-          grouped[id] = [];
-        }
-        grouped[id]!.add(item);
+        if (item is! Map) continue;
+        final id = (item['invoice_number'] ??
+                item['sale_id'] ??
+                item['number'] ??
+                item['id'])
+            ?.toString()
+            .trim();
+        if (id == null || id.isEmpty) continue;
+        final key = id.toLowerCase();
+        grouped.putIfAbsent(key, () => <dynamic>[]).add(item);
       }
 
       for (var entry in grouped.entries) {
         final id = entry.key;
         final items = entry.value;
-        if (!existingIds.contains(id)) {
+        if (!existingIds.contains(id.toLowerCase())) {
           final firstItem = items.first;
           // Get line items (handle both line_items and items keys)
           // 🔧 FIX: previously this fell back to `items` (the raw grouped
