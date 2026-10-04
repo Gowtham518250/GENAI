@@ -1455,13 +1455,51 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     return value.trim().replaceAll(RegExp(r'[\s-]'), '').toUpperCase();
   }
 
+  /// Convert any inventory/cache record into the stable shape consumed by
+  /// barcode billing. Inventory writes use product_name/unit_price while
+  /// older sales caches often use name/price, so returning the raw record
+  /// here can produce "Added null from your catalog" even when the barcode
+  /// itself matched correctly.
+  Map<String, dynamic> _canonicalBarcodeProduct(
+    Map<String, dynamic> raw, {
+    String? fallbackBarcode,
+  }) {
+    final rawBarcode =
+        raw['barcode'] ??
+        raw['sku'] ??
+        raw['barcode_number'] ??
+        raw['product_code'] ??
+        fallbackBarcode ??
+        '';
+
+    final normalizedBarcode = _normalizeBarcode(rawBarcode.toString());
+    final rawName = raw['name'] ?? raw['product_name'] ?? raw['product'];
+    final rawPrice = raw['price'] ?? raw['unit_price'] ?? raw['selling_price'] ?? 0;
+    final rawGst = raw['gst'] ?? raw['gst_percent'] ?? raw['tax_percent'] ?? 18;
+
+    return <String, dynamic>{
+      ...raw,
+      'id': (raw['id'] ?? raw['product_id'] ?? raw['backend_id'] ?? '').toString(),
+      'name': rawName?.toString().trim() ?? '',
+      'price': rawPrice.toString(),
+      'gst': rawGst.toString(),
+      'barcode': normalizedBarcode,
+      'sku': (raw['sku'] ?? normalizedBarcode).toString(),
+    };
+  }
+
   Map<String, dynamic>? _barcodeCatalogLookup(String barcode) {
     final normalized = _normalizeBarcode(barcode);
     if (normalized.isEmpty) return null;
 
     // Fast path: normalized key.
     final direct = _localProducts[normalized];
-    if (direct != null) return direct;
+    if (direct != null) {
+      return _canonicalBarcodeProduct(
+        Map<String, dynamic>.from(direct),
+        fallbackBarcode: normalized,
+      );
+    }
 
     // Backward-compatible scan of legacy cache keys/values.
     for (final entry in _localProducts.entries) {
@@ -1472,6 +1510,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         entry.key,
         value['barcode'],
         value['sku'],
+        value['barcode_number'],
         value['product_code'],
       ];
 
@@ -1479,7 +1518,10 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         (candidate) =>
             _normalizeBarcode(candidate?.toString() ?? '') == normalized,
       )) {
-        return Map<String, dynamic>.from(value);
+        return _canonicalBarcodeProduct(
+          Map<String, dynamic>.from(value),
+          fallbackBarcode: normalized,
+        );
       }
     }
 
@@ -1536,13 +1578,11 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             Map<String, dynamic>.from(entry.value);
       }
       for (final entry in localMap.entries) {
-        final value = Map<String, dynamic>.from(entry.value);
-        final rawBarcode =
-            value['barcode'] ??
-            value['sku'] ??
-            value['barcode_number'] ??
-            entry.key;
-        final barcode = _normalizeBarcode(rawBarcode.toString());
+        final value = _canonicalBarcodeProduct(
+          Map<String, dynamic>.from(entry.value),
+          fallbackBarcode: entry.key.toString(),
+        );
+        final barcode = _normalizeBarcode(value['barcode']?.toString() ?? '');
         final key = barcode.isNotEmpty ? barcode : entry.key.toString();
         mergedProducts[key] = value;
       }
