@@ -10498,7 +10498,7 @@ class _DashboardPageState extends State<DashboardPage>
           height: 48,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: navigationSurface,
+            color: Theme.of(context).colorScheme.surface,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.12),

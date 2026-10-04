@@ -803,3 +803,4 @@ class _WorkerAttendanceDetailPageState
       }),
     );
   }
+}
