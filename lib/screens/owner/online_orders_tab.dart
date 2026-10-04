@@ -795,7 +795,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     return RefreshIndicator(
       onRefresh: _loadReviews,
       child: _isReviewsLoading
-          ? const ListView(children: [
+          ? ListView(children: [
               SizedBox(height: 180),
               Center(child: CircularProgressIndicator()),
             ])
