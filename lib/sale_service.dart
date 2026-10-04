@@ -55,14 +55,20 @@ class SaleService {
     final token = await SecureTokenStorage.getToken() ?? '';
     if (token.isEmpty) return false;
 
-    const maxAttempts = 3;
+    // The sale is already durable in the encrypted outbox before this
+    // foreground request starts. Retrying here blocks the cashier for 2+4
+    // seconds on transient Render/network problems and competes with the same
+    // durable queue that will retry safely in the background.
+    // Keep checkout fast: one bounded foreground attempt, then let the
+    // outbox handle retries.
+    const maxAttempts = 1;
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         final response = await ApiClient.postJson(
           ApiClient.invoicesSync,
           invoicePayload,
           headers: {'Authorization': 'Bearer $token'},
-        ).timeout(const Duration(seconds: 12));
+        ).timeout(const Duration(seconds: 6));
 
         AgentDebugLog.log(
           location: 'sale_service.dart:_postInvoiceWithRetry',
