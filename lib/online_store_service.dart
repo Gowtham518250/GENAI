@@ -71,7 +71,17 @@ class OnlineStoreService {
       ).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
-        return Map<String, dynamic>.from(json.decode(response.body));
+        final data = Map<String, dynamic>.from(json.decode(response.body));
+        return {
+          'is_online_store_enabled': data['is_online_store_enabled'] == true,
+          'online_setup_fee': data['online_setup_fee'] ?? 0,
+          'min_order': data['min_order'] ?? 0,
+          'delivery_fee': data['delivery_fee'] ?? 0,
+          'offer_delivery': data['offer_delivery'] != false,
+          'offer_pickup': data['offer_pickup'] != false,
+          'accept_cod': data['accept_cod'] != false,
+          'accept_online': data['accept_online'] == true,
+        };
       }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Failed to load online settings: $e');
@@ -79,15 +89,31 @@ class OnlineStoreService {
     return {'online_setup_fee': 0.0, 'is_online_store_enabled': false};
   }
 
-  /// Save an online-only setup/service fee. This does not alter POS pricing.
-  static Future<Map<String, dynamic>> setOnlineSetupFee(double fee) async {
+  /// Save the complete online-store configuration on the backend.
+  static Future<Map<String, dynamic>> saveOnlineSettings({
+    required double onlineSetupFee,
+    required double minOrder,
+    required double deliveryFee,
+    required bool offerDelivery,
+    required bool offerPickup,
+    required bool acceptCod,
+    required bool acceptOnline,
+  }) async {
     try {
       final token = await SecureTokenStorage.getToken() ?? '';
       if (token.isEmpty) return {'success': false, 'error': 'NOT_AUTHENTICATED'};
 
       final response = await ApiClient.putJson(
         '/api/shop/online-settings',
-        {'online_setup_fee': fee},
+        {
+          'online_setup_fee': onlineSetupFee,
+          'min_order': minOrder,
+          'delivery_fee': deliveryFee,
+          'offer_delivery': offerDelivery,
+          'offer_pickup': offerPickup,
+          'accept_cod': acceptCod,
+          'accept_online': acceptOnline,
+        },
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 10));
 
@@ -101,11 +127,25 @@ class OnlineStoreService {
       }
       return {
         'success': false,
-        'error': data['detail'] ?? data['message'] ?? 'Unable to save online fee.',
+        'error': data['detail'] ?? data['message'] ?? 'Unable to save online store settings.',
       };
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
+  }
+
+  /// Backward-compatible helper for callers that only change the online fee.
+  static Future<Map<String, dynamic>> setOnlineSetupFee(double fee) async {
+    final current = await getOnlineSettings();
+    return saveOnlineSettings(
+      onlineSetupFee: fee,
+      minOrder: double.tryParse(current['min_order']?.toString() ?? '0') ?? 0,
+      deliveryFee: double.tryParse(current['delivery_fee']?.toString() ?? '0') ?? 0,
+      offerDelivery: current['offer_delivery'] != false,
+      offerPickup: current['offer_pickup'] != false,
+      acceptCod: current['accept_cod'] != false,
+      acceptOnline: current['accept_online'] == true,
+    );
   }
 
   /// PHASE 6 FIX: Get shop online status
