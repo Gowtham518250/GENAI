@@ -418,8 +418,10 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     }
   }
 
-  /// Backend call with a couple of quick retries — protects against a single
-  /// dropped packet on flaky mobile data from silently losing the accept/reject.
+  /// Persist the optimistic order state locally. The server action itself
+  /// is intentionally sent only once here: POST actions can commit on the
+  /// server even when the client times out before receiving the response.
+  /// The backend action endpoint is idempotent, so a later manual retry is safe.
   Future<void> _persistCurrentOrderCaches() async {
     try {
       final shopId = int.tryParse(_shopId) ?? 0;
@@ -444,28 +446,32 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     String action, {
     Map<String, dynamic>? body,
   }) async {
-    for (int attempt = 0; attempt < 3; attempt++) {
-      try {
-        final res = await ApiClient.postJson(
-          '/store/owner/orders/$orderId/action?action=$action',
-          body ?? const <String, dynamic>{},
-        ).timeout(const Duration(seconds: 12));
-        if (res.statusCode == 200) return true;
+    try {
+      // Do not layer another retry loop on top of ApiClient's transport
+      // retries. If the server commits the POST and the response is delayed,
+      // a second client POST can race on the same order row and leave the UI
+      // looking stuck. The backend now treats already-applied transitions as
+      // idempotent, so a deliberate manual retry remains safe.
+      final res = await ApiClient.postJson(
+        '/store/owner/orders/$orderId/action?action=$action',
+        body ?? const <String, dynamic>{},
+      ).timeout(const Duration(seconds: 30));
 
-        // Never retry validation/auth errors. In particular, an invalid
-        // delivery OTP must not consume multiple attempts because of client
-        // retries.
-        if (res.statusCode >= 400 && res.statusCode < 500) return false;
-      } catch (e) {
-        debugPrint('Order action attempt ${attempt + 1} failed: $e');
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return true;
       }
-      if (attempt < 2) {
-        await Future.delayed(Duration(seconds: 2 * (attempt + 1)));
+
+      if (kDebugMode) {
+        debugPrint(
+          'Order action $action for #$orderId returned ${res.statusCode}: ${res.body}',
+        );
       }
+      return false;
+    } catch (e) {
+      debugPrint('Order action $action for #$orderId failed: $e');
+      return false;
     }
-    return false;
   }
-
   Future<Map<String, dynamic>> _requestDeliveryOtp(String orderId) async {
     try {
       final res = await ApiClient.postJson(
