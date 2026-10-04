@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:google_fonts/google_fonts.dart';
@@ -85,21 +86,69 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
   }
 
   Future<void> _loadExpenses() async {
-    setState(() => _isLoading = true);
-    
+    if (mounted) setState(() => _isLoading = true);
+
     try {
+      final token = await SecureTokenStorage.getToken();
+      if (token != null && token.isNotEmpty) {
+        final response = await ApiClient.getJson(
+          '/expenses?limit=500',
+          headers: {'Authorization': 'Bearer $token'},
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final items = List<dynamic>.from(data['expenses'] ?? []);
+          final backendExpenses = items
+              .map((raw) {
+                final item = Map<String, dynamic>.from(raw as Map);
+                return Expense.fromMap({
+                  'id': item['id'],
+                  'category': item['category'],
+                  'amount': item['amount'],
+                  'description': item['description'],
+                  'date': item['expense_date'],
+                });
+              })
+              .toList()
+            ..sort((a, b) => b.date.compareTo(a.date));
+
+          if (mounted) {
+            setState(() {
+              _expenses = backendExpenses;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+
       final expenses = await LocalStorageService.loadExpenses();
-      
-      setState(() {
-        _expenses = expenses
-            .map((e) => Expense.fromMap(e as Map<String, dynamic>))
-            .toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _expenses = expenses
+              .map((e) => Expense.fromMap(e as Map<String, dynamic>))
+              .toList()
+            ..sort((a, b) => b.date.compareTo(a.date));
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      debugPrint('Error loading expenses: $e');
-      setState(() => _isLoading = false);
+      debugPrint('Error loading backend expenses: $e');
+      try {
+        final expenses = await LocalStorageService.loadExpenses();
+        if (mounted) {
+          setState(() {
+            _expenses = expenses
+                .map((e) => Expense.fromMap(e as Map<String, dynamic>))
+                .toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
+            _isLoading = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -529,8 +578,8 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                 try {
                   final token = await SecureTokenStorage.getToken();
                   if (token != null && token.isNotEmpty) {
-                    await ApiClient.postJson(
-                      '/api/expenses/create',
+                    final response = await ApiClient.postJson(
+                      '/expenses',
                       {
                         'category': selectedCategory.name,
                         'amount': double.tryParse(amountController.text) ?? 0,
@@ -539,6 +588,11 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                       },
                       headers: {'Authorization': 'Bearer $token'},
                     );
+                    if (response.statusCode < 200 || response.statusCode >= 300) {
+                      throw StateError(
+                        'Backend rejected expense: ' + response.statusCode.toString(),
+                      );
+                    }
                     if (kDebugMode) debugPrint('✅ Expense synced to backend');
                   }
                 } catch (e) {
