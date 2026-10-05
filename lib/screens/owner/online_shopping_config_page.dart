@@ -5,6 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
+import '../../online_store_service.dart';
 import '../../visual_widgets.dart';
 
 class OnlineShoppingConfigPage extends StatefulWidget {
@@ -33,29 +34,28 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
 
   Future<void> _loadShopData() async {
     final prefs = await SharedPreferences.getInstance();
-    int userId = prefs.getInt('user_id') ?? 0;
+    final userId = prefs.getInt('user_id') ?? 0;
     _shopId = userId.toString();
-    
+
     if (_shopId == '0') {
       setState(() => _isLoading = false);
       return;
     }
 
     try {
-      // 1. Get from Backend Profile
-      final profileRes = await ApiClient.getJson('/api/settings/profile');
-      if (profileRes.statusCode == 200) {
-        final profileData = json.decode(profileRes.body);
+      // Online Shopping Manager and this screen now read the same backend
+      // source of truth instead of maintaining separate toggle states.
+      final online = await OnlineStoreService.getOnlineSettings();
+      if (mounted) {
         setState(() {
-          _isOnline = profileData['is_online_store_enabled'] ?? false;
+          _isOnline = online['is_online_store_enabled'] == true;
         });
       }
 
-      // 2. Fetch inventory from Railway backend
       final res = await ApiClient.getJson(
         '/api/inventory/products?shop_id=$_shopId&user_id=$_shopId',
       );
-      if (res.statusCode == 200) {
+      if (res.statusCode == 200 && mounted) {
         final List data = json.decode(res.body);
         setState(() {
           _inventory = List<Map<String, dynamic>>.from(data);
@@ -65,51 +65,71 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
       debugPrint('Error loading shop data: $e');
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _toggleOnlineStatus(bool value) async {
+    final previous = _isOnline;
     setState(() => _isOnline = value);
 
-    if (value) {
-      // Enable: Get Live Location and push to Backend
-      try {
+    try {
+      double? latitude;
+      double? longitude;
+
+      if (value) {
         bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
         if (!serviceEnabled) throw Exception('Location services disabled.');
 
         LocationPermission permission = await Geolocator.checkPermission();
         if (permission == LocationPermission.denied) {
           permission = await Geolocator.requestPermission();
-          if (permission == LocationPermission.denied) throw Exception('Location denied.');
+        }
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          throw Exception('Location permission is required to publish the shop.');
         }
 
-        Position pos = await Geolocator.getCurrentPosition();
-
-        final res = await ApiClient.putJson('/api/settings/profile', {
-          'is_online_store_enabled': true,
-          'latitude': pos.latitude,
-          'longitude': pos.longitude,
-        });
-
-        if (res.statusCode != 200 && res.statusCode != 201) {
-            throw Exception(json.decode(res.body)['detail'] ?? 'Failed to update profile');
-        }
-
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Shop is now Live & Visible to Customers!')));
-      } catch (e) {
-        setState(() => _isOnline = false);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to enable: $e')));
+        final pos = await Geolocator.getCurrentPosition();
+        latitude = pos.latitude;
+        longitude = pos.longitude;
       }
-    } else {
-      // Disable
-      try {
-        await ApiClient.putJson('/api/settings/profile', {
-          'is_online_store_enabled': false,
-        });
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Shop is now offline.')));
-      } catch (_) {}
+
+      final current = await OnlineStoreService.getOnlineSettings();
+      final result = await OnlineStoreService.setOnlineSettings({
+        'is_online_store_enabled': value,
+        'online_setup_fee': current['online_setup_fee'] ?? 0,
+        'min_order': current['min_order'] ?? 0,
+        'delivery_fee': current['delivery_fee'] ?? 0,
+        'offer_delivery': current['offer_delivery'] ?? true,
+        'offer_pickup': current['offer_pickup'] ?? true,
+        'accept_cod': current['accept_cod'] ?? true,
+        'accept_online': current['accept_online'] ?? false,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+      });
+
+      if (result['success'] != true) {
+        throw Exception(result['error'] ?? 'Failed to update online-store status.');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              value
+                  ? 'Shop is now Live & Visible to Customers!'
+                  : 'Shop is now offline.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isOnline = previous);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update online store: $e')),
+        );
+      }
     }
   }
 
