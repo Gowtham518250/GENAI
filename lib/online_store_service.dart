@@ -79,6 +79,47 @@ class OnlineStoreService {
     return {'online_setup_fee': 0.0, 'is_online_store_enabled': false};
   }
 
+  /// Persist the complete online-store configuration on the server.
+  /// This is the source of truth shared by the owner app and customer web.
+  static Future<Map<String, dynamic>> setOnlineSettings(
+    Map<String, dynamic> settings,
+  ) async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) {
+        return {'success': false, 'error': 'NOT_AUTHENTICATED'};
+      }
+
+      final response = await ApiClient.putJson(
+        '/api/shop/online-settings',
+        settings,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 10));
+
+      Map<String, dynamic> data = {};
+      try {
+        data = Map<String, dynamic>.from(json.decode(response.body));
+      } catch (_) {}
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final prefs = await SharedPreferences.getInstance();
+        final enabled = data['is_online_store_enabled'];
+        if (enabled is bool) {
+          await prefs.setBool('online_store_active', enabled);
+          await prefs.setBool('shop_published_online', enabled);
+        }
+        return {'success': true, ...data};
+      }
+
+      return {
+        'success': false,
+        'error': data['detail'] ?? data['message'] ?? 'Unable to save online-store settings.',
+      };
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   /// Save an online-only setup/service fee. This does not alter POS pricing.
   static Future<Map<String, dynamic>> setOnlineSetupFee(double fee) async {
     try {
