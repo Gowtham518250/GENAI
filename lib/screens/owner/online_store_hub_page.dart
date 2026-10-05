@@ -33,14 +33,15 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
           (prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0).toString();
 
       final values = await Future.wait<dynamic>([
-        OnlineStoreService.getShopOnlineStatus(),
+        OnlineStoreService.getOnlineSettings(),
         OnlineOrderService.getAnalytics(shopId),
       ]);
 
       if (!mounted) return;
 
+      final onlineSettings = Map<String, dynamic>.from(values[0] as Map);
       setState(() {
-        _online = values[0] == true;
+        _online = onlineSettings['is_online_store_enabled'] == true;
         _metrics = Map<String, dynamic>.from(values[1] as Map);
       });
     } catch (e) {
