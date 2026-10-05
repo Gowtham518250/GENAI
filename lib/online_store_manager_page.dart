@@ -36,116 +36,131 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Render a cached value immediately, then replace it with the server
+    // source of truth. This prevents device-local settings from pretending
+    // that an online store is enabled when the backend says otherwise.
     setState(() {
       _isStoreActive = prefs.getBool('online_store_active') ?? false;
       _storeNameController.text = prefs.getString('shop_name') ?? 'My Kirana Store';
-      _minOrderController.text = (prefs.getInt('online_min_order') ?? 100).toString();
-      _deliveryFeeController.text = (prefs.getInt('online_delivery_fee') ?? 20).toString();
-      _onlineSetupFeeController.text = '0';
+      _minOrderController.text =
+          (prefs.getDouble('online_min_order') ?? 100).toStringAsFixed(0);
+      _deliveryFeeController.text =
+          (prefs.getDouble('online_delivery_fee') ?? 20).toStringAsFixed(0);
+      _onlineSetupFeeController.text = '0.00';
       _offerDelivery = prefs.getBool('online_offer_delivery') ?? true;
       _offerPickup = prefs.getBool('online_offer_pickup') ?? true;
       _acceptCOD = prefs.getBool('online_accept_cod') ?? true;
-      _acceptOnline = prefs.getBool('online_accept_online') ?? true;
+      _acceptOnline = prefs.getBool('online_accept_online') ?? false;
       _isLoading = false;
     });
+
     try {
       final online = await OnlineStoreService.getOnlineSettings();
-      _onlineSetupFeeController.text =
-          (double.tryParse(online['online_setup_fee']?.toString() ?? '0') ?? 0)
-              .toStringAsFixed(2);
-    } catch (_) {}
+      if (!mounted) return;
+
+      final enabled = online['is_online_store_enabled'];
+      final minOrder = double.tryParse(online['min_order']?.toString() ?? '');
+      final deliveryFee = double.tryParse(online['delivery_fee']?.toString() ?? '');
+      final setupFee = double.tryParse(online['online_setup_fee']?.toString() ?? '');
+
+      setState(() {
+        if (enabled is bool) _isStoreActive = enabled;
+        if (minOrder != null) _minOrderController.text = minOrder.toStringAsFixed(0);
+        if (deliveryFee != null) _deliveryFeeController.text = deliveryFee.toStringAsFixed(0);
+        if (setupFee != null) _onlineSetupFeeController.text = setupFee.toStringAsFixed(2);
+        if (online['offer_delivery'] is bool) _offerDelivery = online['offer_delivery'];
+        if (online['offer_pickup'] is bool) _offerPickup = online['offer_pickup'];
+        if (online['accept_cod'] is bool) _acceptCOD = online['accept_cod'];
+        if (online['accept_online'] is bool) _acceptOnline = online['accept_online'];
+      });
+
+      await prefs.setBool('online_store_active', _isStoreActive);
+      await prefs.setDouble('online_min_order', minOrder ?? 0);
+      await prefs.setDouble('online_delivery_fee', deliveryFee ?? 0);
+      await prefs.setBool('online_offer_delivery', _offerDelivery);
+      await prefs.setBool('online_offer_pickup', _offerPickup);
+      await prefs.setBool('online_accept_cod', _acceptCOD);
+      await prefs.setBool('online_accept_online', _acceptOnline);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Failed to load server online settings: $e');
+    }
   }
 
   Future<void> _saveSettings() async {
     setState(() => _isSaving = true);
-    
+
     try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      // 🔧 PHASE 6 FIX: Sync online store status with backend
-      if (_isStoreActive) {
-        // Publish shop to marketplace
-        final publishResult = await OnlineStoreService.setShopOnlineStatus(true);
-        
-        if (publishResult['success'] != true) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to enable: ${publishResult['error'] ?? "Unknown error"}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          setState(() => _isSaving = false);
-          return;
-        }
-        
-        if (kDebugMode) debugPrint('✅ Online store enabled via backend');
-      } else {
-        // Unpublish from marketplace
-        final unpublishResult = await OnlineStoreService.setShopOnlineStatus(false);
-        
-        if (unpublishResult['success'] != true) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to disable: ${unpublishResult['error'] ?? "Unknown error"}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          setState(() => _isSaving = false);
-          return;
-        }
-        
-        if (kDebugMode) debugPrint('✅ Online store disabled via backend');
+      final minOrder = double.tryParse(_minOrderController.text.trim());
+      final deliveryFee = double.tryParse(_deliveryFeeController.text.trim());
+      final onlineFee = double.tryParse(_onlineSetupFeeController.text.trim());
+
+      if (minOrder == null || minOrder < 0 || minOrder > 100000) {
+        throw StateError('Minimum order must be between ₹0 and ₹100000.');
       }
-      
-      final onlineFee = double.tryParse(_onlineSetupFeeController.text.trim()) ?? 0;
-      if (onlineFee < 0 || onlineFee > 100000) {
+      if (deliveryFee == null || deliveryFee < 0 || deliveryFee > 100000) {
+        throw StateError('Delivery fee must be between ₹0 and ₹100000.');
+      }
+      if (onlineFee == null || onlineFee < 0 || onlineFee > 100000) {
         throw StateError('Online setup fee must be between ₹0 and ₹100000.');
       }
-      final feeResult = await OnlineStoreService.setOnlineSetupFee(onlineFee);
-      if (feeResult['success'] != true) {
-        throw StateError(feeResult['error']?.toString() ?? 'Unable to save online setup fee.');
+      if (!_offerDelivery && !_offerPickup) {
+        throw StateError('Enable delivery or store pickup before saving.');
+      }
+      if (!_acceptCOD && !_acceptOnline) {
+        throw StateError('Enable at least one payment method before saving.');
       }
 
-      // Save local settings
+      // Persist the complete configuration in one request. No important
+      // online-store setting is device-local anymore.
+      final result = await OnlineStoreService.setOnlineSettings({
+        'is_online_store_enabled': _isStoreActive,
+        'online_setup_fee': onlineFee,
+        'min_order': minOrder,
+        'delivery_fee': deliveryFee,
+        'offer_delivery': _offerDelivery,
+        'offer_pickup': _offerPickup,
+        'accept_cod': _acceptCOD,
+        'accept_online': _acceptOnline,
+      });
+
+      if (result['success'] != true) {
+        throw StateError(result['error']?.toString() ?? 'Unable to save online-store settings.');
+      }
+
+      final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('online_store_active', _isStoreActive);
-      await prefs.setInt('online_min_order', int.tryParse(_minOrderController.text) ?? 100);
-      await prefs.setInt('online_delivery_fee', int.tryParse(_deliveryFeeController.text) ?? 20);
+      await prefs.setDouble('online_min_order', minOrder);
+      await prefs.setDouble('online_delivery_fee', deliveryFee);
       await prefs.setBool('online_offer_delivery', _offerDelivery);
       await prefs.setBool('online_offer_pickup', _offerPickup);
       await prefs.setBool('online_accept_cod', _acceptCOD);
       await prefs.setBool('online_accept_online', _acceptOnline);
 
-      if (mounted) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isStoreActive 
-                ? '✅ Online Shopping enabled! Customers can find your shop in the marketplace.'
-                : '✅ Online Store disabled.',
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isStoreActive
+                ? 'Online Shopping enabled and settings published to customers.'
+                : 'Online Store disabled.',
           ),
-        );
-      }
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error saving settings: $e');
-      
-      if (mounted) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
