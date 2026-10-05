@@ -416,8 +416,12 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                     const Divider(height: 1),
                     SwitchListTile(
                       title: Text('Online Payments (UPI/Cards)', style: GoogleFonts.poppins()),
-                      value: _acceptOnline,
-                      onChanged: (v) => setState(() => _acceptOnline = v),
+                      subtitle: Text(
+                        'Unavailable until a verified payment gateway is connected.',
+                        style: GoogleFonts.poppins(fontSize: 11, color: Colors.black54),
+                      ),
+                      value: false,
+                      onChanged: null,
                     ),
                   ],
                 ),
