@@ -27,32 +27,56 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
 
   Future<Map<String,dynamic>> get(String path) async {
     final r=await ApiClient.getJson(path);
-    if(r.statusCode!=200) throw Exception('Request failed: ${r.statusCode}');
+    if(r.statusCode!=200) {
+      String detail='';
+      try {
+        final body=jsonDecode(r.body);
+        if(body is Map && body['detail'] != null) detail=' — '+body['detail'].toString();
+      } catch (_) {}
+      throw Exception(path+' → HTTP '+r.statusCode.toString()+detail);
+    }
     final d=jsonDecode(r.body);
     return d is Map<String,dynamic>?d:Map<String,dynamic>.from(d as Map);
   }
 
   Future<void> _load() async {
     setState((){loading=true;error='';});
-    try{
-      final r=await Future.wait([
-        get('/growth/overview'),
-        get('/growth/analytics?days=30'),
-        get('/growth/reorder-suggestions'),
-        get('/growth/security-center'),
-        get('/growth/coupons'),
-        get('/growth/returns?status=REQUESTED'),
-        get('/growth/deliveries'),
-        get('/growth/copilot/history?limit=6'),
-      ]);
-      if(!mounted)return;
-      setState((){
-        overview=r[0]; analytics=r[1]; reorder=List<dynamic>.from(r[2]['suggestions']??[]); security=r[3]; coupons=List<dynamic>.from(r[4]['coupons']??[]); returns=List<dynamic>.from(r[5]['returns']??[]); deliveries=List<dynamic>.from(r[6]['deliveries']??[]); copilotHistory=List<dynamic>.from(r[7]['history']??[]);
-      });
-    }catch(e){ if(mounted)setState(()=>error=e.toString()); }
-    finally{ if(mounted)setState(()=>loading=false); }
-  }
+    final failures=<String>[];
 
+    Future<Map<String,dynamic>> safe(String label,String path,Map<String,dynamic> fallback) async {
+      try {
+        return await get(path);
+      } catch (e) {
+        failures.add(label+': '+e.toString());
+        return fallback;
+      }
+    }
+
+    final results=await Future.wait([
+      safe('Overview','/growth/overview',{}),
+      safe('Analytics','/growth/analytics?days=30',{}),
+      safe('Reorder engine','/growth/reorder-suggestions',{'suggestions':[]}),
+      safe('Security','/growth/security-center',{}),
+      safe('Coupons','/growth/coupons',{'coupons':[]}),
+      safe('Returns','/growth/returns?status=REQUESTED',{'returns':[]}),
+      safe('Deliveries','/growth/deliveries',{'deliveries':[]}),
+      safe('Copilot history','/growth/copilot/history?limit=6',{'history':[]}),
+    ]);
+
+    if(!mounted)return;
+    setState((){
+      overview=results[0];
+      analytics=results[1];
+      reorder=List<dynamic>.from(results[2]['suggestions']??[]);
+      security=results[3];
+      coupons=List<dynamic>.from(results[4]['coupons']??[]);
+      returns=List<dynamic>.from(results[5]['returns']??[]);
+      deliveries=List<dynamic>.from(results[6]['deliveries']??[]);
+      copilotHistory=List<dynamic>.from(results[7]['history']??[]);
+      error=failures.isEmpty ? '' : failures.join('\n');
+      loading=false;
+    });
+  }
   Future<void> ask([String? preset]) async {
     final q=(preset??copilot.text).trim();
     if(q.isEmpty)return;
