@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:blue_thermal_printer/blue_thermal_printer.dart';
 import 'printer_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class PrinterSettingsPage extends StatefulWidget {
   final bool returnAfterConnect;
@@ -31,6 +32,7 @@ class _PrinterSettingsPageState extends State<PrinterSettingsPage> {
   }
 
   Future<void> _initPrinter() async {
+    await PrinterService.requestBluetoothPermissions();
     bool? isConnected = await _bluetooth.isConnected;
     List<BluetoothDevice> devices = [];
     try {
@@ -66,7 +68,18 @@ class _PrinterSettingsPageState extends State<PrinterSettingsPage> {
 
     setState(() => _isLoading = true);
     try {
+      final permissionsOk = await PrinterService.requestBluetoothPermissions();
+      if (!permissionsOk) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Bluetooth permission is required to connect the printer.')),
+          );
+        }
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
       bool? connected = await _bluetooth.connect(_selectedDevice!);
+      connected = connected == true && await _bluetooth.isConnected == true ? true : false;
       if (connected == true) {
         setState(() => _connected = true);
         
@@ -97,7 +110,7 @@ class _PrinterSettingsPageState extends State<PrinterSettingsPage> {
         );
       }
     }
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _disconnect() async {
