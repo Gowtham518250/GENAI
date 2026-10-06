@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:blue_thermal_printer/blue_thermal_printer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'printer_settings_page.dart';
 
 class PrinterService {
@@ -11,7 +12,23 @@ class PrinterService {
   static bool _isConnected = false;
 
   /// Get available Bluetooth printers
+  static Future<bool> requestBluetoothPermissions() async {
+    try {
+      final scan = await Permission.bluetoothScan.request();
+      final connect = await Permission.bluetoothConnect.request();
+      return (scan.isGranted || scan.isLimited) &&
+          (connect.isGranted || connect.isLimited);
+    } catch (_) {
+      return true;
+    }
+  }
+
   static Future<List<BluetoothPrinter>> getAvailablePrinters() async {
+    await requestBluetoothPermissions();
+    final available = await bluetooth.isAvailable;
+    if (available != true) {
+      throw StateError('Bluetooth is unavailable or disabled.');
+    }
     final devices = await bluetooth.getBondedDevices();
     return devices.map((device) => BluetoothPrinter(
       deviceName: device.name,
@@ -25,12 +42,12 @@ class PrinterService {
   static Future<bool> isPrinterConnected() async {
     try {
       final connected = await bluetooth.isConnected;
-      if (connected == true) {
-        _isConnected = true;
-        return true;
-      }
-    } catch (_) {}
-    return isConnected;
+      _isConnected = connected == true;
+      if (_isConnected) return true;
+    } catch (_) {
+      _isConnected = false;
+    }
+    return false;
   }
 
   static void updateConnectionState(bool connected, BluetoothDevice? device) {
@@ -41,8 +58,17 @@ class PrinterService {
   /// Connect to the selected printer
   static Future<bool> connect(BluetoothPrinter device) async {
     try {
+      if (device.address == null || device.address!.trim().isEmpty) {
+        throw StateError('Selected printer has no Bluetooth address.');
+      }
+      await requestBluetoothPermissions();
       final bluetoothDevice = BluetoothDevice(device.deviceName, device.address);
       await bluetooth.connect(bluetoothDevice);
+      final connected = await bluetooth.isConnected;
+      if (connected != true) {
+        _isConnected = false;
+        return false;
+      }
       _selectedDevice = bluetoothDevice;
       _isConnected = true;
 
@@ -59,6 +85,7 @@ class PrinterService {
 
   static Future<void> autoConnect() async {
     try {
+      await requestBluetoothPermissions();
       final prefs = await SharedPreferences.getInstance();
       final savedAddress = prefs.getString('last_printer_address');
       final savedName = prefs.getString('last_printer_name');
@@ -111,6 +138,10 @@ class PrinterService {
     }
 
     try {
+      if (!await isPrinterConnected()) {
+        throw StateError('Printer connection was lost.');
+      }
+
       // Get shop details
       final prefs = await SharedPreferences.getInstance();
       final shopName = prefs.getString('shop_name') ?? 'Shop Name';
@@ -206,10 +237,17 @@ class PrinterService {
       bluetooth.printNewLine();
 
       // Premium QR Code addition
-      bluetooth.printCustom("Scan to view online", 1, 1);
-      bluetooth.printNewLine();
-      bluetooth.printQRcode("https://aishop.invoice/view/$invoiceId", 200, 200, 1);
-      bluetooth.printNewLine();
+      final publicBillBaseUrl =
+          prefs.getString('public_bill_base_url')?.trim() ?? '';
+      if (publicBillBaseUrl.isNotEmpty) {
+        bluetooth.printCustom("Scan to view online", 1, 1);
+        bluetooth.printNewLine();
+        final base = publicBillBaseUrl.endsWith('/')
+            ? publicBillBaseUrl.substring(0, publicBillBaseUrl.length - 1)
+            : publicBillBaseUrl;
+        bluetooth.printQRcode("$base/$invoiceId", 200, 200, 1);
+        bluetooth.printNewLine();
+      }
 
       bluetooth.printCustom("Thank You! Visit Again", 2, 1); // Bold thank you
       bluetooth.printNewLine();
@@ -217,6 +255,11 @@ class PrinterService {
       bluetooth.printNewLine();
       bluetooth.printNewLine();
       bluetooth.printNewLine();
+      try {
+        await bluetooth.paperCut();
+      } catch (_) {
+        // Not all 58mm/80mm printers have an automatic cutter.
+      }
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
