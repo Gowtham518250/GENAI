@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'api_client.dart';
+import 'payment_notification_parser.dart';
 
 // =============================================================================
 // payment_detection_service.dart  –  V18 REAL-WORLD DETECTION EDITION
@@ -2889,17 +2890,21 @@ class PaymentDetectionService {
   }
 
   static String _collectAccessibilityText(AccessibilityEvent event) {
-    final chunks = <String>[];
-
-    final primary = (event.text ?? '').trim();
-    if (primary.isNotEmpty) chunks.add(primary);
+    // Some payment apps expose the useful label as a content description,
+    // hint, or state description instead of AccessibilityEvent.text.
+    final chunks = <Object?>[
+      event.text,
+      _safeValue(() => (event as dynamic).contentDescription),
+      _safeValue(() => (event as dynamic).hintText),
+      _safeValue(() => (event as dynamic).paneTitle),
+      _safeValue(() => (event as dynamic).stateDescription),
+    ];
 
     for (final child in event.subNodes ?? const <AccessibilityEvent>[]) {
-      final childText = _collectAccessibilityText(child).trim();
-      if (childText.isNotEmpty) chunks.add(childText);
+      chunks.add(_collectAccessibilityText(child));
     }
 
-    return chunks.join(' ');
+    return PaymentNotificationParser.combine(chunks);
   }
 
   // ==========================================================================
@@ -2924,13 +2929,19 @@ class PaymentDetectionService {
       // `isUnverifiedApp` parameter.
       bool isUnverifiedApp = false;
 
-      final fields = <String>[
-        event.title   ?? '',
-        event.content ?? '',
-        _safe(() => (event as dynamic).bigText  as String?),
-        _safe(() => (event as dynamic).subText  as String?),
-        _safe(() => (event as dynamic).ticker   as String?),
-      ].where((s) => s.isNotEmpty).join(' ');
+      // Android can expose useful payment text through expanded notification
+      // fields even when the notification is not currently visible in the shade.
+      // Read each optional field defensively because plugin versions differ.
+      final fields = PaymentNotificationParser.combine(<Object?>[
+        event.title,
+        event.content,
+        _safe(() => (event as dynamic).bigText as String?),
+        _safe(() => (event as dynamic).subText as String?),
+        _safe(() => (event as dynamic).ticker as String?),
+        _safeValue(() => (event as dynamic).textLines),
+        _safeValue(() => (event as dynamic).messages),
+        _safeValue(() => (event as dynamic).summaryText),
+      ]);
       if (fields.isEmpty) return;
 
       if (app == PaymentApp.unknown) {
@@ -3852,6 +3863,10 @@ class PaymentDetectionService {
 
   String _safe(String? Function() fn) {
     try { return fn() ?? ''; } catch (_) { return ''; }
+  }
+
+  Object? _safeValue(Object? Function() fn) {
+    try { return fn(); } catch (_) { return null; }
   }
 }
 
