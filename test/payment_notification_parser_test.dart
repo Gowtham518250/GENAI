@@ -21,7 +21,7 @@ void main() {
         PaymentNotificationParser.combine([
           'Received   ₹10',
           ' received ₹10 ',
-          '  credited\\n  successfully ',
+          '  credited\n  successfully ',
         ]),
         'Received ₹10 credited successfully',
       );
