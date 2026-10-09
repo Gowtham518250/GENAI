@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:google_fonts/google_fonts.dart';
@@ -74,6 +75,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
   late TabController _tabController;
   List<Expense> _expenses = [];
   bool _isLoading = true;
+  String? _loadWarning;
   String _filterBy = 'all'; // all, today, week, month
   ExpenseCategory? _selectedCategory;
 
@@ -85,21 +87,72 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
   }
 
   Future<void> _loadExpenses() async {
-    setState(() => _isLoading = true);
-    
+    if (mounted) setState(() => _isLoading = true);
+
     try {
+      final token = await SecureTokenStorage.getToken();
+      if (token != null && token.isNotEmpty) {
+        final response = await ApiClient.getJson(
+          '/expenses?limit=500',
+          headers: {'Authorization': 'Bearer $token'},
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final items = List<dynamic>.from(data['expenses'] ?? []);
+          final backendExpenses = items
+              .map((raw) {
+                final item = Map<String, dynamic>.from(raw as Map);
+                return Expense.fromMap({
+                  'id': item['id'],
+                  'category': item['category'],
+                  'amount': item['amount'],
+                  'description': item['description'],
+                  'date': item['expense_date'],
+                });
+              })
+              .toList()
+            ..sort((a, b) => b.date.compareTo(a.date));
+
+          if (mounted) {
+            setState(() {
+              _expenses = backendExpenses;
+              _loadWarning = null;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+
       final expenses = await LocalStorageService.loadExpenses();
-      
-      setState(() {
-        _expenses = expenses
-            .map((e) => Expense.fromMap(e as Map<String, dynamic>))
-            .toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _loadWarning = 'Showing device-saved expenses only. Sign in and reconnect to sync with the server.';
+          _expenses = expenses
+              .map((e) => Expense.fromMap(e as Map<String, dynamic>))
+              .toList()
+            ..sort((a, b) => b.date.compareTo(a.date));
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      debugPrint('Error loading expenses: $e');
-      setState(() => _isLoading = false);
+      debugPrint('Error loading backend expenses: $e');
+      try {
+        final expenses = await LocalStorageService.loadExpenses();
+        if (mounted) {
+          setState(() {
+            _loadWarning = 'Server could not be reached. Showing device-saved expenses; these may not include all server records.';
+            _expenses = expenses
+                .map((e) => Expense.fromMap(e as Map<String, dynamic>))
+                .toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
+            _isLoading = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -169,6 +222,21 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                if (_loadWarning != null)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Text(
+                      _loadWarning!,
+                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.brown.shade800),
+                    ),
+                  ),
                 // Summary Card
                 _buildSummaryCard(),
                 
@@ -513,40 +581,58 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
             ),
             ElevatedButton(
               onPressed: () async {
+                final amount = double.tryParse(amountController.text.trim());
+                final description = descriptionController.text.trim();
+                if (amount == null || !amount.isFinite || amount <= 0 || description.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Enter a description and an amount greater than zero.')),
+                  );
+                  return;
+                }
+
                 final expense = Expense(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  id: DateTime.now().microsecondsSinceEpoch.toString(),
                   category: selectedCategory,
-                  amount: double.tryParse(amountController.text) ?? 0,
-                  description: descriptionController.text,
+                  amount: amount,
+                  description: description,
                   date: DateTime.now(),
                 );
 
+                final token = await SecureTokenStorage.getToken();
+                if (token != null && token.isNotEmpty) {
+                  final response = await ApiClient.postJson(
+                    '/expenses',
+                    {
+                      'category': selectedCategory.name,
+                      'amount': amount,
+                      'description': description,
+                      'expense_date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                    },
+                    headers: {'Authorization': 'Bearer $token'},
+                  );
+                  if (response.statusCode < 200 || response.statusCode >= 300) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Expense was not saved on the server (HTTP ${response.statusCode}). Please retry.')),
+                    );
+                    return;
+                  }
+                  if (kDebugMode) debugPrint('✅ Expense saved to backend');
+                }
+
+                // Keep a local copy only after the server accepted it, or when
+                // the user is offline/unauthenticated; offline entries are
+                // explicitly marked in the UI as not yet synced.
                 final expenses = await LocalStorageService.loadExpenses();
                 expenses.add(expense.toMap());
                 await LocalStorageService.saveExpenses(expenses);
 
-                // ✅ SYNC TO BACKEND
-                try {
-                  final token = await SecureTokenStorage.getToken();
-                  if (token != null && token.isNotEmpty) {
-                    await ApiClient.postJson(
-                      '/api/expenses/create',
-                      {
-                        'category': selectedCategory.name,
-                        'amount': double.tryParse(amountController.text) ?? 0,
-                        'description': descriptionController.text,
-                        'expense_date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                      },
-                      headers: {'Authorization': 'Bearer $token'},
-                    );
-                    if (kDebugMode) debugPrint('✅ Expense synced to backend');
-                  }
-                } catch (e) {
-                  if (kDebugMode) debugPrint('⚠️ Expense not synced: $e');
-                }
-
                 if (mounted) {
                   Navigator.pop(context);
+                  if (token == null || token.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Saved on this device only. Sign in and sync it to the server later.')),
+                    );
+                  }
                   await _loadExpenses();
                 }
               },
