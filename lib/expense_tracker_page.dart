@@ -582,52 +582,49 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
             ElevatedButton(
               onPressed: () async {
                 try {
-                final amount = double.tryParse(amountController.text.trim());
-                final description = descriptionController.text.trim();
-                if (amount == null || !amount.isFinite || amount <= 0 || description.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Enter a description and an amount greater than zero.')),
-                  );
-                  return;
-                }
-
-                final expense = Expense(
-                  id: DateTime.now().microsecondsSinceEpoch.toString(),
-                  category: selectedCategory,
-                  amount: amount,
-                  description: description,
-                  date: DateTime.now(),
-                );
-
-                final token = await SecureTokenStorage.getToken();
-                if (token != null && token.isNotEmpty) {
-                  final response = await ApiClient.postJson(
-                    '/expenses',
-                    {
-                      'category': selectedCategory.name,
-                      'amount': amount,
-                      'description': description,
-                      'expense_date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                    },
-                    headers: {'Authorization': 'Bearer $token'},
-                  );
-                  if (response.statusCode < 200 || response.statusCode >= 300) {
+                  final amount = double.tryParse(amountController.text.trim());
+                  final description = descriptionController.text.trim();
+                  if (amount == null || !amount.isFinite || amount <= 0 || description.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Expense was not saved on the server (HTTP ${response.statusCode}). Please retry.')),
+                      const SnackBar(content: Text('Enter a description and an amount greater than zero.')),
                     );
                     return;
                   }
-                  if (kDebugMode) debugPrint('✅ Expense saved to backend');
-                }
 
-                // Keep a local copy only after the server accepted it, or when
-                // the user is offline/unauthenticated; offline entries are
-                // explicitly marked in the UI as not yet synced.
-                final expenses = await LocalStorageService.loadExpenses();
-                expenses.add(expense.toMap());
-                await LocalStorageService.saveExpenses(expenses);
+                  final expense = Expense(
+                    id: DateTime.now().microsecondsSinceEpoch.toString(),
+                    category: selectedCategory,
+                    amount: amount,
+                    description: description,
+                    date: DateTime.now(),
+                  );
 
-                if (mounted) {
+                  final token = await SecureTokenStorage.getToken();
+                  if (token != null && token.isNotEmpty) {
+                    final response = await ApiClient.postJson(
+                      '/expenses',
+                      {
+                        'category': selectedCategory.name,
+                        'amount': amount,
+                        'description': description,
+                        'expense_date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                      },
+                      headers: {'Authorization': 'Bearer $token'},
+                    );
+                    if (response.statusCode < 200 || response.statusCode >= 300) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Expense was not saved on the server (HTTP ${response.statusCode}). Please retry.')),
+                      );
+                      return;
+                    }
+                    if (kDebugMode) debugPrint('✅ Expense saved to backend');
+                  }
+
+                  final expenses = await LocalStorageService.loadExpenses();
+                  expenses.add(expense.toMap());
+                  await LocalStorageService.saveExpenses(expenses);
+
+                  if (!mounted) return;
                   Navigator.pop(context);
                   if (token == null || token.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -635,14 +632,13 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                     );
                   }
                   await _loadExpenses();
-                  } catch (e) {
+                } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Could not save expense: $e')),
                     );
                   }
                 }
-              }
               },
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
               child: const Text('Add'),
