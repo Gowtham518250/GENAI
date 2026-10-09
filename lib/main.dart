@@ -590,26 +590,46 @@ void main() async {
     try {
       await setupEmailCredentialsOnce();
 
-      // Initialize AI Merchant Services
-      await NotificationService().init();
+      // Initialize independent services defensively. A failure in notifications,
+      // online orders, or TTS must not prevent payment detection from starting.
+      try {
+        await NotificationService().init();
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Notification service init failed: $e');
+      }
 
-      // Online orders: owner notifications + UPI payment matching
-      await OnlineOrdersListener.instance.start();
+      try {
+        // Online orders: owner notifications + UPI payment matching.
+        await OnlineOrdersListener.instance.start();
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Online orders listener failed: $e');
+      }
 
-      // Initialize announcement service first (ensures voice is ready before any payment events)
-      await PaymentAnnouncementService().init();
+      try {
+        // Prepare voice before detection, but do not block payment monitoring if
+        // the device's TTS engine is unavailable.
+        await PaymentAnnouncementService().init();
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Payment voice initialization failed; detection will continue: $e');
+      }
 
-      // Set language for detection engine
       final pds = PaymentDetectionService();
       pds.setLanguage(PaymentDetectionService.mapLanguage(langCode));
 
-      // Connect PDS brain to Voice engine
       pds.onSpeak = (text) async {
         final lang = appPrefs.getString('payment_sound_lang') ?? 'en-US';
-        PaymentAnnouncementService().speakSimple(text, lang);
+        try {
+          PaymentAnnouncementService().speakSimple(text, lang);
+        } catch (e) {
+          if (kDebugMode) debugPrint('⚠️ Payment announcement could not be queued: $e');
+        }
       };
 
-      await pds.start();
+      try {
+        await pds.start();
+      } catch (e, st) {
+        if (kDebugMode) debugPrint('❌ Payment detection failed to start: $e\n$st');
+      }
 
       // Initialize Email Service from secure storage
       await EmailSenderService.initialize();
