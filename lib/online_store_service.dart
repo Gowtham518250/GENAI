@@ -146,7 +146,9 @@ class OnlineStoreService {
   /// Backward-compatible helper for callers that only change the online fee.
   static Future<Map<String, dynamic>> setOnlineSetupFee(double fee) async {
     final current = await getOnlineSettings();
+    if (current['success'] != true) return current;
     return saveOnlineSettings(
+      isOnlineStoreEnabled: current['is_online_store_enabled'] == true,
       onlineSetupFee: fee,
       minOrder: double.tryParse(current['min_order']?.toString() ?? '0') ?? 0,
       deliveryFee: double.tryParse(current['delivery_fee']?.toString() ?? '0') ?? 0,
