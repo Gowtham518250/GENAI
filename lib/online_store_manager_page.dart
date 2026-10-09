@@ -35,55 +35,62 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Render a cached value immediately, then replace it with the server
-    // source of truth. This prevents device-local settings from pretending
-    // that an online store is enabled when the backend says otherwise.
-    setState(() {
-      _isStoreActive = prefs.getBool('online_store_active') ?? false;
-      _storeNameController.text = prefs.getString('shop_name') ?? 'My Kirana Store';
-      _minOrderController.text =
-          (prefs.getDouble('online_min_order') ?? 100).toStringAsFixed(0);
-      _deliveryFeeController.text =
-          (prefs.getDouble('online_delivery_fee') ?? 20).toStringAsFixed(0);
-      _onlineSetupFeeController.text = '0.00';
-      _offerDelivery = prefs.getBool('online_offer_delivery') ?? true;
-      _offerPickup = prefs.getBool('online_offer_pickup') ?? true;
-      _acceptCOD = prefs.getBool('online_accept_cod') ?? true;
-      _acceptOnline = prefs.getBool('online_accept_online') ?? false;
-      _isLoading = false;
-    });
-
+    if (mounted) setState(() => _isLoading = true);
     try {
       final online = await OnlineStoreService.getOnlineSettings();
+      if (online['success'] != true) {
+        throw StateError(online['error']?.toString() ?? 'Online settings are unavailable.');
+      }
+      final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
 
-      final enabled = online['is_online_store_enabled'];
-      final minOrder = double.tryParse(online['min_order']?.toString() ?? '');
-      final deliveryFee = double.tryParse(online['delivery_fee']?.toString() ?? '');
-      final setupFee = double.tryParse(online['online_setup_fee']?.toString() ?? '');
-
       setState(() {
-        if (enabled is bool) _isStoreActive = enabled;
-        if (minOrder != null) _minOrderController.text = minOrder.toStringAsFixed(0);
-        if (deliveryFee != null) _deliveryFeeController.text = deliveryFee.toStringAsFixed(0);
-        if (setupFee != null) _onlineSetupFeeController.text = setupFee.toStringAsFixed(2);
-        if (online['offer_delivery'] is bool) _offerDelivery = online['offer_delivery'];
-        if (online['offer_pickup'] is bool) _offerPickup = online['offer_pickup'];
-        if (online['accept_cod'] is bool) _acceptCOD = online['accept_cod'];
-        if (online['accept_online'] is bool) _acceptOnline = online['accept_online'];
+        // Backend is the source of truth. Local preferences are only a
+        // fallback for legacy/offline sessions.
+        _isStoreActive = online['is_online_store_enabled'] == true;
+        _storeNameController.text =
+            prefs.getString('shop_name') ?? 'My Kirana Store';
+        _minOrderController.text =
+            (double.tryParse(online['min_order']?.toString() ?? '0') ?? 0)
+                .toStringAsFixed(0);
+        _deliveryFeeController.text =
+            (double.tryParse(online['delivery_fee']?.toString() ?? '0') ?? 0)
+                .toStringAsFixed(0);
+        _onlineSetupFeeController.text =
+            (double.tryParse(online['online_setup_fee']?.toString() ?? '0') ?? 0)
+                .toStringAsFixed(2);
+        _offerDelivery = online['offer_delivery'] != false;
+        _offerPickup = online['offer_pickup'] != false;
+        _acceptCOD = online['accept_cod'] != false;
+        _acceptOnline = false; // online collection is not yet supported by the backend
+        _isLoading = false;
       });
-
-      await prefs.setBool('online_store_active', _isStoreActive);
-      await prefs.setDouble('online_min_order', minOrder ?? 0);
-      await prefs.setDouble('online_delivery_fee', deliveryFee ?? 0);
-      await prefs.setBool('online_offer_delivery', _offerDelivery);
-      await prefs.setBool('online_offer_pickup', _offerPickup);
-      await prefs.setBool('online_accept_cod', _acceptCOD);
-      await prefs.setBool('online_accept_online', _acceptOnline);
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Failed to load server online settings: $e');
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() {
+        _isStoreActive = prefs.getBool('online_store_active') ?? false;
+        _storeNameController.text =
+            prefs.getString('shop_name') ?? 'My Kirana Store';
+        _minOrderController.text =
+            (prefs.getInt('online_min_order') ?? 100).toString();
+        _deliveryFeeController.text =
+            (prefs.getInt('online_delivery_fee') ?? 20).toString();
+        _onlineSetupFeeController.text = '0.00';
+        _offerDelivery = prefs.getBool('online_offer_delivery') ?? true;
+        _offerPickup = prefs.getBool('online_offer_pickup') ?? true;
+        _acceptCOD = prefs.getBool('online_accept_cod') ?? true;
+        _acceptOnline = false; // prevent stale local settings from enabling an unsupported payment method
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not verify server settings. Showing saved device settings; changes may not sync.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     }
   }
 
@@ -91,47 +98,36 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
     setState(() => _isSaving = true);
 
     try {
-      final minOrder = double.tryParse(_minOrderController.text.trim());
-      final deliveryFee = double.tryParse(_deliveryFeeController.text.trim());
-      final onlineFee = double.tryParse(_onlineSetupFeeController.text.trim());
+      final minOrder = double.tryParse(_minOrderController.text.trim()) ?? -1;
+      final deliveryFee = double.tryParse(_deliveryFeeController.text.trim()) ?? -1;
+      final onlineFee = double.tryParse(_onlineSetupFeeController.text.trim()) ?? -1;
 
-      if (minOrder == null || minOrder < 0 || minOrder > 100000) {
-        throw StateError('Minimum order must be between ₹0 and ₹100000.');
-      }
-      if (deliveryFee == null || deliveryFee < 0 || deliveryFee > 100000) {
-        throw StateError('Delivery fee must be between ₹0 and ₹100000.');
-      }
-      if (onlineFee == null || onlineFee < 0 || onlineFee > 100000) {
-        throw StateError('Online setup fee must be between ₹0 and ₹100000.');
-      }
-      if (!_offerDelivery && !_offerPickup) {
-        throw StateError('Enable delivery or store pickup before saving.');
-      }
-      if (!_acceptCOD && !_acceptOnline) {
-        throw StateError('Enable at least one payment method before saving.');
+      if (minOrder < 0 || deliveryFee < 0 || onlineFee < 0) {
+        throw StateError('Fees and minimum order must be valid non-negative numbers.');
       }
 
-      // Persist the complete configuration in one request. No important
-      // online-store setting is device-local anymore.
-      final result = await OnlineStoreService.setOnlineSettings({
-        'is_online_store_enabled': _isStoreActive,
-        'online_setup_fee': onlineFee,
-        'min_order': minOrder,
-        'delivery_fee': deliveryFee,
-        'offer_delivery': _offerDelivery,
-        'offer_pickup': _offerPickup,
-        'accept_cod': _acceptCOD,
-        'accept_online': _acceptOnline,
-      });
-
-      if (result['success'] != true) {
-        throw StateError(result['error']?.toString() ?? 'Unable to save online-store settings.');
+      // Submit the complete configuration once so publication status and
+      // checkout settings are validated and persisted together.
+      final settingsResult = await OnlineStoreService.saveOnlineSettings(
+        isOnlineStoreEnabled: _isStoreActive,
+        onlineSetupFee: onlineFee,
+        minOrder: minOrder,
+        deliveryFee: deliveryFee,
+        offerDelivery: _offerDelivery,
+        offerPickup: _offerPickup,
+        acceptCod: _acceptCOD,
+        acceptOnline: false,
+      );
+      if (settingsResult['success'] != true) {
+        throw StateError(
+          settingsResult['error']?.toString() ?? 'Unable to save online settings.',
+        );
       }
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('online_store_active', _isStoreActive);
-      await prefs.setDouble('online_min_order', minOrder);
-      await prefs.setDouble('online_delivery_fee', deliveryFee);
+      await prefs.setInt('online_min_order', minOrder.round());
+      await prefs.setInt('online_delivery_fee', deliveryFee.round());
       await prefs.setBool('online_offer_delivery', _offerDelivery);
       await prefs.setBool('online_offer_pickup', _offerPickup);
       await prefs.setBool('online_accept_cod', _acceptCOD);
@@ -156,9 +152,9 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $e'),
+          content: Text('Unable to save: $e'),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -416,9 +412,8 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                     const Divider(height: 1),
                     SwitchListTile(
                       title: Text('Online Payments (UPI/Cards)', style: GoogleFonts.poppins()),
-                      subtitle: Text(
-                        'Unavailable until a verified payment gateway is connected.',
-                        style: GoogleFonts.poppins(fontSize: 11, color: Colors.black54),
+                      subtitle: const Text(
+                        'Coming soon. Online payment collection is not configured yet; use COD for now.',
                       ),
                       value: false,
                       onChanged: null,

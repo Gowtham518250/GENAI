@@ -2326,7 +2326,11 @@ class PaymentDetectionService {
   PaymentEvent? _lastConfirmed;
   // FIX: Atomic lock for pipeline racing
   final _activeFingerprints = <String>{};
-  
+
+  // Prevent concurrent events with the same UTR from both passing the
+  // check-before-register window on this device.
+  final Set<String> _utrChecksInFlight = <String>{};
+
   // ✅ FIX: In-memory lock set for concurrency-critical operations
   final Set<String> _settlingInvoiceIds = {};
 
@@ -3461,26 +3465,35 @@ class PaymentDetectionService {
   }) async {
     if (event.decision == PaymentDecision.rejected) return;
 
-    // ✅ FIX-59-CRITICAL: Cross-device UTR check MUST happen BEFORE any UI emission
-    // This is the ONLY way to close the fraud window — check must await before proceeding
-    if (event.decision == PaymentDecision.confirmed && event.referenceId != null) {
+    // Cross-device UTR check happens before UI/voice emission. Serialize
+    // concurrent same-UTR events on this device, and await the registration
+    // request rather than announcing while the write is still in flight.
+    final utr = event.referenceId;
+    if (event.decision == PaymentDecision.confirmed && utr != null && utr.isNotEmpty) {
+      if (!_utrChecksInFlight.add(utr)) {
+        PdsLogger.w('EMIT', 'Same UTR is already being verified; downgrade duplicate to LIKELY');
+        final downgraded = event.copyWith(
+          decision: PaymentDecision.likely,
+          detectionSource: '${event.detectionSource}:local_utr_check_in_flight',
+        );
+        await _emit(downgraded, isBillSettlement: false, forceMute: false);
+        return;
+      }
       try {
-        final conflict = await _isUtrAlreadyRegistered(event.referenceId!);
+        final conflict = await _isUtrAlreadyRegistered(utr);
         if (conflict) {
-          // Downgrade to LIKELY before merchant sees the confirmation
           final downgraded = event.copyWith(
             decision: PaymentDecision.likely,
             detectionSource: '${event.detectionSource}:cross_device_conflict_downgraded',
           );
-          // Recursively emit as LIKELY so merchants can manually merge if needed
           await _emit(downgraded, isBillSettlement: false, forceMute: false);
           return;
-        } else {
-          // UTR is unique - safe to register it
-          unawaited(_registerUtrConfirmed(event.referenceId!, event.amount));
         }
+        await _registerUtrConfirmed(utr, event.amount);
       } catch (e) {
-        PdsLogger.w('EMIT', 'UTR check failed: $e, proceeding with emit');
+        PdsLogger.w('EMIT', 'UTR check/register failed: $e, proceeding with local signal');
+      } finally {
+        _utrChecksInFlight.remove(utr);
       }
     }
 

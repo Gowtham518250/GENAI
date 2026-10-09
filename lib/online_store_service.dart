@@ -8,34 +8,64 @@ import 'secure_token_storage.dart';
 /// PHASE 6 FIX: Added shop publication status toggle
 /// Manages online orders, inventory, and customer interactions
 class OnlineStoreService {
-  /// Enable/disable the shop using the canonical online-store settings endpoint.
-  ///
-  /// Older builds used /api/shop/publish-status here while the online setup
-  /// screen used /api/shop/online-settings. That created two possible sources
-  /// of truth. Keep this legacy method for callers, but route it through the
-  /// same endpoint used by the owner online setup and customer marketplace.
+  /// PHASE 6 FIX: Enable/Disable shop online publishing
   static Future<Map<String, dynamic>> setShopOnlineStatus(bool isOnline) async {
-    final result = await setOnlineSettings({
-      'is_online_store_enabled': isOnline,
-    });
-
-    if (result['success'] == true) {
-      return {
-        ...result,
-        'is_published': result['is_online_store_enabled'] ?? isOnline,
-        'message': isOnline
-            ? 'Shop is now visible on Retail Mind marketplace'
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) {
+        return {'success': false, 'error': 'NOT_AUTHENTICATED'};
+      }
+      
+      final response = await ApiClient.putJson(
+        '/api/shop/publish-status',
+        {'is_published': isOnline},
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        // Save to local preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('shop_published_online', isOnline);
+        
+        if (kDebugMode) {
+          debugPrint('✅ Shop online status updated: $isOnline');
+        }
+        
+        return {
+          'success': true,
+          'is_published': isOnline,
+          'message': isOnline 
+            ? 'Shop is now visible on Retail Mind marketplace' 
             : 'Shop is now hidden from Retail Mind marketplace',
+          'timestamp': data['timestamp'],
+        };
+      } else {
+        if (kDebugMode) debugPrint('⚠️ Failed to update shop online status: ${response.statusCode}');
+        return {
+          'success': false,
+          'error': 'BACKEND_ERROR',
+          'status_code': response.statusCode,
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Shop online status error: $e');
+      return {
+        'success': false,
+        'error': 'NETWORK_ERROR',
+        'message': e.toString(),
       };
     }
-
-    return result;
   }
+  
   /// Read online-only store settings from the backend.
   static Future<Map<String, dynamic>> getOnlineSettings() async {
     try {
       final token = await SecureTokenStorage.getToken() ?? '';
-      if (token.isEmpty) return {'online_setup_fee': 0.0, 'is_online_store_enabled': false};
+      if (token.isEmpty) {
+        return {'success': false, 'error': 'NOT_AUTHENTICATED'};
+      }
 
       final response = await ApiClient.getJson(
         '/api/shop/online-settings',
@@ -43,64 +73,56 @@ class OnlineStoreService {
       ).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
-        return Map<String, dynamic>.from(json.decode(response.body));
+        final data = Map<String, dynamic>.from(json.decode(response.body));
+        return {
+          'success': true,
+          'is_online_store_enabled': data['is_online_store_enabled'] == true,
+          'online_setup_fee': data['online_setup_fee'] ?? 0,
+          'min_order': data['min_order'] ?? 0,
+          'delivery_fee': data['delivery_fee'] ?? 0,
+          'offer_delivery': data['offer_delivery'] != false,
+          'offer_pickup': data['offer_pickup'] != false,
+          'accept_cod': data['accept_cod'] != false,
+          'accept_online': data['accept_online'] == true,
+        };
       }
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Failed to load online settings: $e');
-    }
-    return {'online_setup_fee': 0.0, 'is_online_store_enabled': false};
-  }
-
-  /// Persist the complete online-store configuration on the server.
-  /// This is the source of truth shared by the owner app and customer web.
-  static Future<Map<String, dynamic>> setOnlineSettings(
-    Map<String, dynamic> settings,
-  ) async {
-    try {
-      final token = await SecureTokenStorage.getToken() ?? '';
-      if (token.isEmpty) {
-        return {'success': false, 'error': 'NOT_AUTHENTICATED'};
-      }
-
-      final response = await ApiClient.putJson(
-        '/api/shop/online-settings',
-        settings,
-        headers: {'Authorization': 'Bearer $token'},
-      ).timeout(const Duration(seconds: 10));
-
-      Map<String, dynamic> data = {};
-      try {
-        data = Map<String, dynamic>.from(json.decode(response.body));
-      } catch (_) {}
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final prefs = await SharedPreferences.getInstance();
-        final enabled = data['is_online_store_enabled'];
-        if (enabled is bool) {
-          await prefs.setBool('online_store_active', enabled);
-          await prefs.setBool('shop_published_online', enabled);
-        }
-        return {'success': true, ...data};
-      }
-
       return {
         'success': false,
-        'error': data['detail'] ?? data['message'] ?? 'Unable to save online-store settings.',
+        'error': 'Unable to load online settings (HTTP ${response.statusCode}).',
       };
     } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Failed to load online settings: $e');
       return {'success': false, 'error': e.toString()};
     }
   }
 
-  /// Save an online-only setup/service fee. This does not alter POS pricing.
-  static Future<Map<String, dynamic>> setOnlineSetupFee(double fee) async {
+  /// Save the complete online-store configuration on the backend.
+  static Future<Map<String, dynamic>> saveOnlineSettings({
+    required bool isOnlineStoreEnabled,
+    required double onlineSetupFee,
+    required double minOrder,
+    required double deliveryFee,
+    required bool offerDelivery,
+    required bool offerPickup,
+    required bool acceptCod,
+    required bool acceptOnline,
+  }) async {
     try {
       final token = await SecureTokenStorage.getToken() ?? '';
       if (token.isEmpty) return {'success': false, 'error': 'NOT_AUTHENTICATED'};
 
       final response = await ApiClient.putJson(
         '/api/shop/online-settings',
-        {'online_setup_fee': fee},
+        {
+          'is_online_store_enabled': isOnlineStoreEnabled,
+          'online_setup_fee': onlineSetupFee,
+          'min_order': minOrder,
+          'delivery_fee': deliveryFee,
+          'offer_delivery': offerDelivery,
+          'offer_pickup': offerPickup,
+          'accept_cod': acceptCod,
+          'accept_online': acceptOnline,
+        },
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 10));
 
@@ -114,27 +136,66 @@ class OnlineStoreService {
       }
       return {
         'success': false,
-        'error': data['detail'] ?? data['message'] ?? 'Unable to save online fee.',
+        'error': data['detail'] ?? data['message'] ?? 'Unable to save online store settings.',
       };
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
   }
 
-  /// Read the shop online status from the canonical online-store settings.
-  static Future<bool> getShopOnlineStatus() async {
-    final settings = await getOnlineSettings();
-    final enabled = settings['is_online_store_enabled'];
-    if (enabled is bool) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('shop_published_online', enabled);
-      await prefs.setBool('online_store_active', enabled);
-      return enabled;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('shop_published_online') ?? false;
+  /// Backward-compatible helper for callers that only change the online fee.
+  static Future<Map<String, dynamic>> setOnlineSetupFee(double fee) async {
+    final current = await getOnlineSettings();
+    if (current['success'] != true) return current;
+    return saveOnlineSettings(
+      isOnlineStoreEnabled: current['is_online_store_enabled'] == true,
+      onlineSetupFee: fee,
+      minOrder: double.tryParse(current['min_order']?.toString() ?? '0') ?? 0,
+      deliveryFee: double.tryParse(current['delivery_fee']?.toString() ?? '0') ?? 0,
+      offerDelivery: current['offer_delivery'] != false,
+      offerPickup: current['offer_pickup'] != false,
+      acceptCod: current['accept_cod'] != false,
+      acceptOnline: current['accept_online'] == true,
+    );
   }
+
+  /// PHASE 6 FIX: Get shop online status
+  static Future<bool> getShopOnlineStatus() async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) {
+        // Return local cached value if available
+        final prefs = await SharedPreferences.getInstance();
+        return prefs.getBool('shop_published_online') ?? false;
+      }
+      
+      final response = await ApiClient.getJson(
+        '/api/shop/publish-status',
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 5));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final isPublished = data['is_published'] ?? false;
+        
+        // Cache locally
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('shop_published_online', isPublished);
+        
+        return isPublished;
+      }
+      
+      // Fallback to cached value
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('shop_published_online') ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Failed to get shop online status: $e');
+      // Return cached value on error
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('shop_published_online') ?? false;
+    }
+  }
+  
   /// PHASE 6 FIX: Publish shop to marketplace with location services
   static Future<Map<String, dynamic>> publishShopToMarketplace({
     required double latitude,

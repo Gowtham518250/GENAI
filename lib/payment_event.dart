@@ -99,12 +99,16 @@ class PaymentEvent {
     //
     // The 5-min bucket allows the same customer to pay the same amount again
     // after 5 minutes without being treated as a duplicate.
-    final hourBucket    = timestamp.hour;
-    final fiveMinBucket = (timestamp.minute / 5).floor();
+    // Include the full local calendar date. The previous fingerprint used
+    // only hour + five-minute slot, so an identical payment on a later day
+    // could collide with a still-live dedup entry.
+    final dateBucket =
+        '${timestamp.year.toString().padLeft(4, '0')}-'
+        '${timestamp.month.toString().padLeft(2, '0')}-'
+        '${timestamp.day.toString().padLeft(2, '0')}';
+    final fiveMinuteSlot = timestamp.hour * 12 + (timestamp.minute ~/ 5);
 
-    // Credit and debit are different transaction directions. The old
-    // fingerprint omitted direction, so a ₹500 debit could mark that amount
-    // as already spoken and suppress a later ₹500 credit in the same window.
+    // Credit and debit are different transaction directions.
     final direction = _transactionDirection(rawText);
 
     // Group by app family so notification variants remain consistently grouped.
@@ -114,7 +118,8 @@ class PaymentEvent {
         '${amount.toStringAsFixed(2)}_'
         '$appFamily'
         '_$direction'
-        '$hourBucket$fiveMinBucket';
+        '_$dateBucket'
+        '_$fiveMinuteSlot';
 
     return 'hash_${md5.convert(utf8.encode(payload))}';
   }
