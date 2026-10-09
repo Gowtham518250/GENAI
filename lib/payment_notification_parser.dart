@@ -13,7 +13,7 @@ abstract final class PaymentNotificationParser {
       if (value == null) return;
 
       if (value is String) {
-        final normalized = value.replaceAll(RegExp(r'\\s+'), ' ').trim();
+        final normalized = value.replaceAll(RegExp(r'\s+), ' ').trim();
         if (normalized.isEmpty) return;
         final key = normalized.toLowerCase();
         if (seen.add(key)) chunks.add(normalized);
@@ -38,6 +38,6 @@ abstract final class PaymentNotificationParser {
       addValue(value);
     }
 
-    return chunks.join(' ').replaceAll(RegExp(r'\\s+'), ' ').trim();
+    return chunks.join(' ').replaceAll(RegExp(r'\s+), ' ').trim();
   }
 }
