@@ -581,6 +581,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
             ),
             ElevatedButton(
               onPressed: () async {
+                try {
                 final amount = double.tryParse(amountController.text.trim());
                 final description = descriptionController.text.trim();
                 if (amount == null || !amount.isFinite || amount <= 0 || description.isEmpty) {
@@ -634,7 +635,14 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                     );
                   }
                   await _loadExpenses();
+                  } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Could not save expense: $e')),
+                    );
+                  }
                 }
+              }
               },
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
               child: const Text('Add'),
