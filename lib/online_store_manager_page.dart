@@ -62,7 +62,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
         _offerDelivery = online['offer_delivery'] != false;
         _offerPickup = online['offer_pickup'] != false;
         _acceptCOD = online['accept_cod'] != false;
-        _acceptOnline = online['accept_online'] == true;
+        _acceptOnline = false; // online collection is not yet supported by the backend
         _isLoading = false;
       });
     } catch (e) {
@@ -80,7 +80,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
         _offerDelivery = prefs.getBool('online_offer_delivery') ?? true;
         _offerPickup = prefs.getBool('online_offer_pickup') ?? true;
         _acceptCOD = prefs.getBool('online_accept_cod') ?? true;
-        _acceptOnline = prefs.getBool('online_accept_online') ?? false;
+        _acceptOnline = false; // prevent stale local settings from enabling an unsupported payment method
         _isLoading = false;
       });
       if (mounted) {
@@ -116,7 +116,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
         offerDelivery: _offerDelivery,
         offerPickup: _offerPickup,
         acceptCod: _acceptCOD,
-        acceptOnline: _acceptOnline,
+        acceptOnline: false,
       );
       if (settingsResult['success'] != true) {
         throw StateError(
