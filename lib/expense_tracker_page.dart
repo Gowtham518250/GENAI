@@ -128,7 +128,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
       final expenses = await LocalStorageService.loadExpenses();
       if (mounted) {
         setState(() {
-          _loadWarning = 'Showing device-saved expenses only. Sign in and reconnect to sync with the server.';
+          _loadWarning = 'Showing device-saved expenses only. Server records may not be included until connection is restored.';
           _expenses = expenses
               .map((e) => Expense.fromMap(e as Map<String, dynamic>))
               .toList()
@@ -630,7 +630,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                   Navigator.pop(context);
                   if (token == null || token.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Saved on this device only. Sign in and sync it to the server later.')),
+                      const SnackBar(content: Text('Saved on this device only. This expense has not been sent to the server.')),
                     );
                   }
                   await _loadExpenses();
