@@ -234,13 +234,14 @@ class SyncService {
       var needsRefresh = false;
       final observedEvents = <Map<String, dynamic>>[];
       var hasMore = true;
+      // Only invoice/payment events require the shared local invoice restore.
+      // Inventory and attendance screens refresh their own data from events;
+      // pulling every invoice after each attendance/stock change wastes bandwidth.
       final refreshTypes = <String>{
         'invoice.created',
         'invoice.updated',
         'invoice.deleted',
         'payment.updated',
-        'inventory.changed',
-        'attendance.changed',
       };
 
       // Bound network work per pulse on low-memory / mobile connections. If
