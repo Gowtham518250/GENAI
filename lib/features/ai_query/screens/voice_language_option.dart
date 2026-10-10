@@ -28,7 +28,7 @@ const List<VoiceLanguageOption> kVoiceLanguages = [
   VoiceLanguageOption(name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', code: 'pa'),
   VoiceLanguageOption(name: 'Odia', nativeName: 'ଓଡ଼ିଆ', code: 'or'),
   VoiceLanguageOption(name: 'Assamese', nativeName: 'অসমীয়া', code: 'as'),
-  VoiceLanguageOption(name: 'Bodo', nativeName: 'बड़ो', code: 'br'),
+  VoiceLanguageOption(name: 'Bodo', nativeName: 'बड़ो', code: 'brx'),
   VoiceLanguageOption(name: 'Dogri', nativeName: 'डोगरी', code: 'doi'),
   VoiceLanguageOption(name: 'Kashmiri', nativeName: 'کٲشُر', code: 'ks'),
   VoiceLanguageOption(name: 'Konkani', nativeName: 'कोंकणी', code: 'kok'),
