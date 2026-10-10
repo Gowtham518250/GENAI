@@ -1,9 +1,7 @@
 /// Speech options offered in Ask Retail Mind.
 ///
-/// The ISO-like `code` values are passed unchanged to the self-hosted
-/// Indic speech service; that service maps them to IndicConformer and
-/// IndicTrans2 language identifiers. The 22 scheduled Indian languages are
-/// included, plus English for convenience.
+/// Language options used for voice input and translated spoken answers.
+/// The 22 scheduled Indian languages are included, plus English.
 class VoiceLanguageOption {
   final String name;
   final String nativeName;
