@@ -120,7 +120,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
           onError: _handleSpeechError,
           debugLogging: false,
         );
-        _speechInitialized = true;
+        _speechInitialized = _speechAvailable;
       }
 
       if (!_speechAvailable) {
@@ -276,6 +276,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
       setState(() {
         _isVoiceProcessing = false;
         _currentResponse = response;
+        _translatedEnglish = response.translatedQuery;
         _errorMessage = response.isSuccess
             ? null
             : (response.errorMessage ?? 'Unable to answer this voice query.');
