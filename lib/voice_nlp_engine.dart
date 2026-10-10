@@ -41,6 +41,7 @@ class ParsedItemV2 {
   final ConfidenceDetail confidence;
   final String? catalogMatchName; // canonical name from catalog, if any
   final double? catalogPrice;     // catalog price, for sanity check display
+  final bool priceWasSpoken;       // true only when price tokens came from the transcript
   bool isConfirmed;
 
   ParsedItemV2({
@@ -51,6 +52,7 @@ class ParsedItemV2 {
     required this.confidence,
     this.catalogMatchName,
     this.catalogPrice,
+    this.priceWasSpoken = false,
     this.isConfirmed = true,
   });
 
@@ -1004,6 +1006,8 @@ class VoiceNlpEngineV2 {
       }
 
       name = name.trim();
+      // Keep price provenance before the catalog fallback below fills missing values.
+      final bool priceWasSpoken = price > 0;
 
       // ── GUARD 1: Reject pure price/currency keywords as product names ──────
       if (_priceKeywords.hasMatch(name)) continue;
@@ -1100,6 +1104,7 @@ class VoiceNlpEngineV2 {
         confidence:      conf,
         catalogMatchName: catalogHit ? resolvedName : null,
         catalogPrice:    catalogPrice,
+        priceWasSpoken:  priceWasSpoken,
       );
     }
     return null;
