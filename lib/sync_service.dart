@@ -68,7 +68,7 @@ class SyncService {
         }
       });
 
-      // 🚀 Start LivePulseTimer (Runs every 60 seconds)
+      // Start the throttled queue/data refresh pulse.
       _startPulseTimer();
       
       // Initial sync
