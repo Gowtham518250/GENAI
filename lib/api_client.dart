@@ -114,6 +114,7 @@ class ApiClient {
   static const String todayInsightEndpoint = '/today_insight/';
   static const String askQueryEndpoint = '/askquery';
   static const String askQueryVoiceEndpoint = '/askquery/voice';
+  static const String askQueryTranscribeEndpoint = '/askquery/transcribe';
 
   // Inventory
   static const String inventoryPrefix = '/api/inventory';

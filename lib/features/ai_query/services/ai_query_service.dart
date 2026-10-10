@@ -67,6 +67,70 @@ class AiQueryService {
     return 'Voice processing failed (HTTP $statusCode). Please try again.';
   }
 
+  /// Transcribe a recorded question into the selected spoken language.
+  ///
+  /// This endpoint only returns text. The screen displays that text in the query
+  /// box first, then submits it to /askquery with the same language code so the
+  /// existing Groq text translator runs before business-data retrieval.
+  static Future<String> transcribeVoiceQuery({
+    required String audioPath,
+    required String languageCode,
+  }) async {
+    if (audioPath.trim().isEmpty) {
+      throw Exception('No voice recording was saved. Please record your question again.');
+    }
+
+    final fileName = audioPath.split(Platform.pathSeparator).last;
+    final audioFile = await http.MultipartFile.fromPath(
+      'audio',
+      audioPath,
+      filename: fileName.isEmpty ? 'voice-query.wav' : fileName,
+    );
+
+    try {
+      final streamedResponse = await ApiClient.postMultipart(
+        ApiClient.askQueryTranscribeEndpoint,
+        {'language_code': languageCode},
+        files: [audioFile],
+        timeout: const Duration(minutes: 2),
+      );
+      final response = await http.Response.fromStream(streamedResponse)
+          .timeout(const Duration(minutes: 2));
+
+      dynamic decoded;
+      try {
+        decoded = json.decode(response.body);
+      } catch (_) {
+        decoded = null;
+      }
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        final detail = decoded is Map
+            ? (decoded['detail'] ?? decoded['error'] ?? decoded['message'])?.toString()
+            : null;
+        throw Exception(
+          (detail != null && detail.trim().isNotEmpty)
+              ? detail.trim()
+              : 'Speech recognition failed (HTTP ${response.statusCode}). Please try again.',
+        );
+      }
+
+      if (decoded is! Map) {
+        throw Exception('The speech service returned an invalid transcript.');
+      }
+      final transcript = (decoded['transcript'] ?? '').toString().trim();
+      if (transcript.isEmpty) {
+        throw Exception('No clear speech was detected. Please record your question again.');
+      }
+      unawaited(saveQueryToHistory(transcript));
+      return transcript;
+    } on TimeoutException {
+      throw Exception('Speech recognition timed out. Please try a shorter recording.');
+    } on SocketException {
+      throw Exception('No internet connection. Please check your connection.');
+    }
+  }
+
   /// Upload a complete recording to the self-hosted open-source speech service.
   /// The server runs IndicConformer + IndicTrans2 before invoking the same
   /// authenticated RAG/SQL query path. This deliberately avoids device locale
