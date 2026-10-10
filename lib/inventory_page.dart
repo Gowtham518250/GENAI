@@ -46,6 +46,9 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   // "No products yet" empty-state when the real problem is just network.
   bool _lastFetchFailed = false;
   bool _realtimeConnected = false;
+  StreamSubscription<List<Map<String, dynamic>>>? _durableEventsSubscription;
+  bool _durableInventoryRefreshInProgress = false;
+  bool _durableInventoryRefreshPending = false;
 
   // Add-product form controllers
   final _nameC = TextEditingController();
@@ -71,6 +74,13 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       if (mounted) _fetch(preferLocalCache: true);
     };
     _connectRealtime();
+    _durableEventsSubscription = SyncService.durableEventsStream.listen((events) {
+      if (!mounted) return;
+      final hasInventoryChange = events.any(
+        (event) => event['type']?.toString() == 'inventory.changed',
+      );
+      if (hasInventoryChange) unawaited(_refreshInventoryFromDurableFeed());
+    });
   }
 
   Future<void> _connectRealtime() async {
@@ -229,6 +239,30 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     }
   }
 
+  /// Apply a bounded remote reconciliation for inventory changes recovered
+  /// from the durable feed. Redis events update known stock immediately; this
+  /// path also handles product create/update/archive events whose payload only
+  /// contains an ID, and catches WebSocket messages that were missed.
+  Future<void> _refreshInventoryFromDurableFeed() async {
+    if (!mounted) return;
+    if (_durableInventoryRefreshInProgress) {
+      _durableInventoryRefreshPending = true;
+      return;
+    }
+    _durableInventoryRefreshInProgress = true;
+    try {
+      await _fetch(forceRemote: true);
+    } catch (e) {
+      if (kDebugMode) debugPrint('Inventory durable refresh deferred: $e');
+    } finally {
+      _durableInventoryRefreshInProgress = false;
+      if (_durableInventoryRefreshPending && mounted) {
+        _durableInventoryRefreshPending = false;
+        unawaited(_refreshInventoryFromDurableFeed());
+      }
+    }
+  }
+
   double? _asStockNumber(dynamic value) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '');
@@ -236,6 +270,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
 
   @override
   void dispose() {
+    _durableEventsSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     RealtimeClient.disconnect();
     _nameC.dispose(); _barcodeC.dispose(); _priceC.dispose(); _mrpC.dispose();
