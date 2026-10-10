@@ -43,6 +43,8 @@ class _AttendancePageState extends State<AttendancePage>
   Timer? _timer;
   Timer? _refreshTimer;
   bool _refreshInFlight = false;
+  bool _refreshPending = false;
+  StreamSubscription<List<Map<String, dynamic>>>? _durableEventsSubscription;
   String _liveHours = '0.0';
   List<Worker> _staff = [];
   final TextEditingController _workerSearchController = TextEditingController();
@@ -73,10 +75,18 @@ class _AttendancePageState extends State<AttendancePage>
     _init();
     _startTimer();
     _startRefreshTimer();
+    _durableEventsSubscription = SyncService.durableEventsStream.listen((events) {
+      if (!mounted) return;
+      final hasAttendanceChange = events.any(
+        (event) => event['type']?.toString() == 'attendance.changed',
+      );
+      if (hasAttendanceChange) unawaited(_refreshAttendanceData());
+    });
   }
 
   @override
   void dispose() {
+    _durableEventsSubscription?.cancel();
     _workerSearchController.dispose();
     _tab.dispose();
     _timer?.cancel();
@@ -286,14 +296,28 @@ class _AttendancePageState extends State<AttendancePage>
   }
 
   Future<void> _refreshAttendanceData() async {
-    if (!mounted || _refreshInFlight) return;
+    if (!mounted) return;
+    if (_refreshInFlight) {
+      // Do not drop an event arriving during reconciliation. Schedule exactly
+      // one follow-up pass after the current refresh completes.
+      _refreshPending = true;
+      return;
+    }
     _refreshInFlight = true;
     try {
       await _loadStaff();
-      try { await OfflineAttendanceService.reconcileFromBackend(); } catch (e) { if (kDebugMode) debugPrint('⚠️ Attendance reconcile refresh failed: $e'); }
+      try {
+        await OfflineAttendanceService.reconcileFromBackend();
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Attendance reconcile refresh failed: $e');
+      }
       await _fetch();
     } finally {
       _refreshInFlight = false;
+      if (_refreshPending && mounted) {
+        _refreshPending = false;
+        unawaited(_refreshAttendanceData());
+      }
     }
   }
 
