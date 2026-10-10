@@ -329,7 +329,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
       }
     }
 
-    var locale = language.ttsLocale;
+    var locale = ttsLocaleForLanguageCode(language.code);
     var available = false;
     try {
       available = await _answerTts.isLanguageAvailable(locale) == true;
