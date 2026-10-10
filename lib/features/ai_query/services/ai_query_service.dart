@@ -33,6 +33,40 @@ class AiQueryService {
   static const int _maxHistoryItems = 20;
   static const Duration _requestTimeout = Duration(seconds: 30);
 
+  static String _friendlyVoiceServiceError(String? detail, int statusCode) {
+    final message = (detail ?? '').trim();
+    final normalized = message.toLowerCase();
+
+    if (normalized.contains('open-source voice service is not configured') ||
+        normalized.contains('indic_speech_service_url') ||
+        normalized.contains('indic_speech_service_api_key must be configured')) {
+      return 'Multilingual speech recognition is not configured on the server yet. '
+          'Please ask the app administrator to finish the speech-service setup. '
+          'Your phone does not need to support the selected language.';
+    }
+    if (normalized.contains('speech models are not ready') ||
+        normalized.contains('temporarily unreachable') ||
+        normalized.contains('speech service is not configured')) {
+      return 'The multilingual speech service is unavailable or still starting. '
+          'Please try again shortly.';
+    }
+    if (normalized.contains('unsupported voice language')) {
+      return 'Speech recognition is not enabled for this language on the server yet. '
+          'Please choose another language or contact the app administrator.';
+    }
+    if (statusCode == 401 || normalized.contains('invalid speech service credentials')) {
+      return 'The multilingual speech service credentials need to be checked by the app administrator.';
+    }
+
+    if (message.isNotEmpty &&
+        !normalized.contains('traceback') &&
+        !normalized.contains('sqlalchemy') &&
+        !normalized.contains('internal server error')) {
+      return message;
+    }
+    return 'Voice processing failed (HTTP $statusCode). Please try again.';
+  }
+
   /// Upload a complete recording to the self-hosted open-source speech service.
   /// The server runs IndicConformer + IndicTrans2 before invoking the same
   /// authenticated RAG/SQL query path. This deliberately avoids device locale
@@ -73,9 +107,7 @@ class AiQueryService {
             ? (decoded['detail'] ?? decoded['error'] ?? decoded['message'])?.toString()
             : null;
         return AIQueryVoiceResult.error(
-          (detail != null && detail.trim().isNotEmpty)
-              ? detail.trim()
-              : 'Voice processing failed (HTTP ${response.statusCode}). Please try again.',
+          _friendlyVoiceServiceError(detail, response.statusCode),
         );
       }
 

@@ -802,43 +802,131 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   }
 
   Widget _buildLanguagePicker() {
+    const primaryText = Color(0xFF142B52);
+    const secondaryText = Color(0xFF64748B);
+    final menuHeight = (MediaQuery.sizeOf(context).height * 0.68)
+        .clamp(320.0, 560.0)
+        .toDouble();
+
+    String languageLabel(VoiceLanguageOption language) =>
+        '${language.nativeName}  ·  ${language.name}';
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFDDE5F4)),
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: const Color(0xFF1B3A6B).withValues(alpha: 0.04), blurRadius: 14, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1B3A6B).withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             width: 38,
             height: 38,
-            decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(13)),
-            child: const Icon(Icons.language_rounded, color: Color(0xFF2563EB), size: 21),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(
+              Icons.language_rounded,
+              color: Color(0xFF2563EB),
+              size: 21,
+            ),
           ),
           const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Speak in your language', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                Text(
+                  'Speak in your language',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: secondaryText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 DropdownButtonHideUnderline(
                   child: DropdownButton<VoiceLanguageOption>(
                     isExpanded: true,
                     value: _selectedLanguage,
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF142B52)),
-                    items: kVoiceLanguages.map((language) => DropdownMenuItem(
-                      value: language,
-                      child: Text('${language.nativeName}  ·  ${language.name}', overflow: TextOverflow.ellipsis),
-                    )).toList(),
+                    dropdownColor: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    menuMaxHeight: menuHeight,
+                    focusColor: const Color(0xFFEFF6FF),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(0xFF2563EB),
+                    ),
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: primaryText,
+                    ),
+                    selectedItemBuilder: (context) => kVoiceLanguages
+                        .map(
+                          (language) => Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              languageLabel(language),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: primaryText,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    items: kVoiceLanguages
+                        .map(
+                          (language) => DropdownMenuItem<VoiceLanguageOption>(
+                            value: language,
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 7),
+                              child: Text(
+                                languageLabel(language),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: primaryText,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (_isRecording || _isVoiceProcessing || _isLoading)
                         ? null
                         : (language) {
-                            if (language != null) setState(() => _selectedLanguage = language);
+                            if (language != null) {
+                              setState(() => _selectedLanguage = language);
+                            }
                           },
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  'Server speech recognition · 22 Indian languages + English',
+                  maxLines: 2,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    height: 1.25,
+                    color: const Color(0xFF0F766E),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
