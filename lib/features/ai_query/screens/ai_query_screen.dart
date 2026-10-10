@@ -122,7 +122,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
       await _recorder.start(
         path: path,
         encoder: AudioEncoder.wav,
-        sampleRate: 16000,
+        samplingRate: 16000,
         bitRate: 256000,
       );
       if (!mounted) return;
