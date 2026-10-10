@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'api_client.dart';
 import 'realtime_client.dart';
 import 'secure_token_storage.dart';
+import 'sync_service.dart';
 import 'otp_service.dart';
 
 class OwnerOrdersPage extends StatefulWidget {
@@ -17,6 +19,9 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
   bool _loading = true;
   bool _realtimeConnected = false;
   List<dynamic> _orders = [];
+  StreamSubscription<List<Map<String, dynamic>>>? _durableEventsSubscription;
+  bool _ordersFetchInProgress = false;
+  bool _ordersRefreshPending = false;
 
   static const _bg = Color(0xFF0F0F1A);
   static const _card = Color(0xFF1A1A2E);
@@ -27,10 +32,19 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
     super.initState();
     _fetchOrders();
     _connectRealtime();
+    _durableEventsSubscription = SyncService.durableEventsStream.listen((events) {
+      if (!mounted) return;
+      final hasOrderChange = events.any((event) {
+        final type = event['type']?.toString();
+        return type == 'order.created' || type == 'order.status_changed';
+      });
+      if (hasOrderChange) unawaited(_fetchOrders(showLoading: false));
+    });
   }
 
   @override
   void dispose() {
+    _durableEventsSubscription?.cancel();
     RealtimeClient.disconnect(subscriberId: 'owner_orders');
     super.dispose();
   }
@@ -60,6 +74,13 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
   }
 
   Future<void> _fetchOrders({bool showLoading = true}) async {
+    // Coalesce WebSocket, durable-feed and user refreshes. If a new event
+    // lands during a request, schedule one follow-up read instead of dropping it.
+    if (_ordersFetchInProgress) {
+      _ordersRefreshPending = true;
+      return;
+    }
+    _ordersFetchInProgress = true;
     if (showLoading && mounted) setState(() => _loading = true);
     try {
       final res = await ApiClient.getJson('/store/owner/orders');
@@ -68,11 +89,18 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
         if (mounted) {
           setState(() => _orders = d is List ? d : (d['orders'] ?? []));
         }
+      } else {
+        debugPrint('Owner orders fetch returned ${res.statusCode}');
       }
     } catch (e) {
       debugPrint('Owner orders fetch error: $e');
     } finally {
+      _ordersFetchInProgress = false;
       if (showLoading && mounted) setState(() => _loading = false);
+      if (_ordersRefreshPending && mounted) {
+        _ordersRefreshPending = false;
+        unawaited(_fetchOrders(showLoading: false));
+      }
     }
   }
 
