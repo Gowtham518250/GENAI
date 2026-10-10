@@ -265,9 +265,10 @@ void main() {
       );
 
       expect(find.text('Ask Retail Mind'), findsOneWidget);
-      expect(find.text('Ask AI'), findsOneWidget);
+      // The redesigned card uses a compact 'Ask' CTA instead of the old 'Ask AI' label.
+      expect(find.text('Ask'), findsOneWidget);
 
-      await tester.tap(find.text('Ask AI'));
+      await tester.tap(find.text('Ask'));
       await tester.pump();
 
       expect(tapped, isTrue);
