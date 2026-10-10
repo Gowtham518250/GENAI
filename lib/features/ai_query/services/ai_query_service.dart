@@ -251,6 +251,78 @@ class AiQueryService {
     }
   }
 
+  /// Uploads recorded audio to the open-source speech service proxy.
+  ///
+  /// The backend transcribes the selected Indian language, translates it to
+  /// English, and feeds that English question into the existing /askquery RAG
+  /// + SQL pipeline. One request keeps the transcript, translation and answer
+  /// correlated in the UI and history.
+  static Future<VoiceQueryResult> askQueryFromAudio(
+    File audioFile, {
+    required String languageCode,
+  }) async {
+    if (!await audioFile.exists() || await audioFile.length() == 0) {
+      throw Exception('The recording is empty. Please record your question again.');
+    }
+
+    final streamed = await ApiClient.postMultipart(
+      ApiClient.askQueryVoiceEndpoint,
+      {'language_code': languageCode},
+      files: [await http.MultipartFile.fromPath('audio', audioFile.path)],
+      timeout: const Duration(minutes: 3),
+    );
+    final body = await streamed.stream
+        .bytesToString()
+        .timeout(const Duration(minutes: 3));
+
+    dynamic decoded;
+    try {
+      decoded = json.decode(body);
+    } catch (_) {
+      decoded = null;
+    }
+
+    if (streamed.statusCode != 200 && streamed.statusCode != 201) {
+      String message = 'Voice query failed (HTTP ${streamed.statusCode}).';
+      if (decoded is Map && decoded['detail'] != null) {
+        message = decoded['detail'].toString();
+      } else if (decoded is Map && decoded['message'] != null) {
+        message = decoded['message'].toString();
+      }
+      throw Exception(message);
+    }
+
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('The voice service returned an unexpected response.');
+    }
+
+    final voice = decoded['voice'] is Map
+        ? Map<String, dynamic>.from(decoded['voice'] as Map)
+        : decoded;
+    final transcript = (voice['transcript'] ?? voice['source_transcript'] ?? '').toString().trim();
+    final englishQuery = (voice['translated_query'] ??
+            voice['english_query'] ??
+            decoded['translated_query'] ??
+            decoded['query'] ??
+            '')
+        .toString()
+        .trim();
+
+    if (englishQuery.isEmpty) {
+      throw Exception('No English question was produced. Try speaking more slowly and clearly.');
+    }
+
+    final response = AIQueryResponse.fromJson(
+      decoded,
+      originalQuery: englishQuery,
+    );
+    return VoiceQueryResult(
+      transcript: transcript,
+      englishQuery: englishQuery,
+      response: response,
+    );
+  }
+
   /// Fetch persistent question + answer history for the authenticated owner.
   static Future<List<AIQueryHistoryItem>> fetchQueryHistory({
     int limit = 100,
@@ -354,4 +426,17 @@ class AiQueryService {
       if (kDebugMode) debugPrint('⚠️ Failed to clear query history: $e');
     }
   }
+}
+
+/// Result from the multilingual speech -> English -> RAG/SQL flow.
+class VoiceQueryResult {
+  final String transcript;
+  final String englishQuery;
+  final AIQueryResponse response;
+
+  const VoiceQueryResult({
+    required this.transcript,
+    required this.englishQuery,
+    required this.response,
+  });
 }
