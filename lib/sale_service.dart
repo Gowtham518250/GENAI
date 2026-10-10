@@ -98,6 +98,10 @@ AgentDebugLog.log(
   },
 );
 
+// Only clear the crash-recovery marker after both the queue write and local stock
+// update succeeded. Otherwise startup recovery still has the original sale payload.
+bool recoveryCanBeCleared = false;
+
 try {
   if (kDebugMode) {
     debugPrint('🚀 Processing ${isBorrow ? 'Invoice/Borrow' : 'Sale'} Transaction (Offline-First): $saleId');
@@ -280,6 +284,7 @@ try {
   // Local inventory is updated once. Backend inventory is updated only by /invoices/sync.
   await InventoryManagementService.deductStockLocally(items, saleId: saleId);
   SyncService.triggerDashboardRefresh();
+  recoveryCanBeCleared = true;
 
   // Single upload path: the encrypted durable queue owns the request. The
   // local sale was saved and stock adjusted before returning to the cashier;
@@ -335,10 +340,20 @@ try {
   };
 } finally {
   _pendingSales.remove(saleId);
-  try {
-    await CrashRecoveryService.instance.clearSpecificTransaction('sale', {'sale_id': saleId});
-  } catch (e) {
-    if (kDebugMode) debugPrint('⚠️ Failed to clear incomplete-transaction safety net: $e');
+  if (recoveryCanBeCleared) {
+    try {
+      await CrashRecoveryService.instance.clearSpecificTransaction(
+        'sale',
+        {'sale_id': saleId},
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Failed to clear incomplete-transaction safety net: $e');
+    }
+  } else if (kDebugMode) {
+    debugPrint(
+      '⚠️ Retaining recovery record for sale $saleId because its durable '
+      'outbox/local stock step was not confirmed.',
+    );
   }
   InventoryManagementService.suppressInventoryCallback = false;
   InventoryManagementService.onInventoryChanged?.call();

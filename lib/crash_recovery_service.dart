@@ -90,6 +90,11 @@ class CrashRecoveryService {
     }
   }
   
+  /// Test-only entry point for deterministic offline recovery tests.
+  @visibleForTesting
+  Future<void> recoverIncompleteTransactionsForTesting() =>
+      _recoverIncompleteTransactions();
+
   /// Recover incomplete transactions
   Future<void> _recoverIncompleteTransactions() async {
     try {
@@ -103,54 +108,79 @@ class CrashRecoveryService {
       
       final List<dynamic> incomplete = json.decode(incompleteJson);
       if (kDebugMode) debugPrint('📋 Found ${incomplete.length} incomplete transactions');
-      
+
+      // Keep every record whose recovery could not be confirmed. Clearing the
+      // entire list after a best-effort attempt used to discard the only backup
+      // for a sale when queue persistence failed during startup.
+      final remaining = <dynamic>[];
       for (final transaction in incomplete) {
+        var recovered = false;
         try {
-          await _recoverTransaction(transaction as Map<String, dynamic>);
+          if (transaction is Map) {
+            recovered = await _recoverTransaction(
+              Map<String, dynamic>.from(transaction),
+            );
+          }
         } catch (e) {
           if (kDebugMode) debugPrint('❌ Error recovering transaction: $e');
         }
+
+        if (!recovered) {
+          remaining.add(transaction);
+        }
       }
-      
-      // Clear incomplete transactions after recovery attempt
-      await prefs.remove(_incompleteTransactionsKey);
+
+      if (remaining.isEmpty) {
+        await prefs.remove(_incompleteTransactionsKey);
+      } else {
+        await prefs.setString(_incompleteTransactionsKey, json.encode(remaining));
+        if (kDebugMode) {
+          debugPrint(
+            '⚠️ Retained ${remaining.length} transaction(s) for a later recovery attempt.',
+          );
+        }
+      }
       
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error recovering incomplete transactions: $e');
     }
   }
   
-  /// Recover a single transaction
-  Future<void> _recoverTransaction(Map<String, dynamic> transaction) async {
+  /// Recover a single transaction and report whether its recovery is durable.
+  Future<bool> _recoverTransaction(
+    Map<String, dynamic> transaction,
+  ) async {
     try {
-      final type = transaction['type'] as String;
-      final data = transaction['data'] as Map<String, dynamic>;
-      
+      final type = transaction['type']?.toString() ?? '';
+      final rawData = transaction['data'];
+      if (type.isEmpty || rawData is! Map) return false;
+      final data = Map<String, dynamic>.from(rawData);
+
       if (kDebugMode) debugPrint('🔄 Recovering transaction: $type');
-      
+
       switch (type) {
         case 'sale':
-          await _recoverSale(data);
-          break;
+          return _recoverSale(data);
         case 'product_update':
-          await _recoverProductUpdate(data);
-          break;
+          return _recoverProductUpdate(data);
         case 'customer_update':
-          await _recoverCustomerUpdate(data);
-          break;
+          return _recoverCustomerUpdate(data);
         default:
-          if (kDebugMode) debugPrint('⚠️ Unknown transaction type: $type');
+          if (kDebugMode) {
+            debugPrint('⚠️ Unknown transaction type retained for recovery: $type');
+          }
+          return false;
       }
-      
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error in transaction recovery: $e');
+      return false;
     }
   }
   
   /// Recover sale transaction using the same durable outbox as normal sales.
   /// Recovery is idempotent: restoring a sale that already exists is harmless,
   /// and local inventory deduction itself is guarded by sale-level idempotency.
-  Future<void> _recoverSale(Map<String, dynamic> data) async {
+  Future<bool> _recoverSale(Map<String, dynamic> data) async {
     try {
       final sales = await LocalStorageService.loadSales();
       final saleId = data['sale_id']?.toString();
@@ -210,48 +240,50 @@ class CrashRecoveryService {
       if (kDebugMode) {
         debugPrint('✅ Sale recovery complete: $saleId');
       }
+      return true;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error recovering sale: $e');
+      return false;
     }
   }
   
-  /// Recover product update transaction
-  Future<void> _recoverProductUpdate(Map<String, dynamic> data) async {
+  /// Recover product update transaction.
+  Future<bool> _recoverProductUpdate(Map<String, dynamic> data) async {
     try {
-      final productId = data['product_id'] as String?;
-      if (productId == null) return;
-      
+      final productId = data['product_id']?.toString();
+      if (productId == null || productId.isEmpty) return false;
+
       final products = await LocalStorageService.loadBackendProducts();
       final index = products.indexWhere((p) => p['id'].toString() == productId);
-      
-      if (index != -1) {
-        products[index] = data;
-        await LocalStorageService.saveBackendProducts(products);
-        if (kDebugMode) debugPrint('✅ Product update recovered');
-      }
-      
+      if (index == -1) return false;
+
+      products[index] = data;
+      await LocalStorageService.saveBackendProducts(products);
+      if (kDebugMode) debugPrint('✅ Product update recovered');
+      return true;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error recovering product update: $e');
+      return false;
     }
   }
   
-  /// Recover customer update transaction
-  Future<void> _recoverCustomerUpdate(Map<String, dynamic> data) async {
+  /// Recover customer update transaction.
+  Future<bool> _recoverCustomerUpdate(Map<String, dynamic> data) async {
     try {
-      final customerId = data['customer_id'] as String?;
-      if (customerId == null) return;
-      
+      final customerId = data['customer_id']?.toString();
+      if (customerId == null || customerId.isEmpty) return false;
+
       final customers = await LocalStorageService.loadLocalCustomers();
       final index = customers.indexWhere((c) => c['id'].toString() == customerId);
-      
-      if (index != -1) {
-        customers[index] = data;
-        await LocalStorageService.saveLocalCustomers(customers);
-        if (kDebugMode) debugPrint('✅ Customer update recovered');
-      }
-      
+      if (index == -1) return false;
+
+      customers[index] = data;
+      await LocalStorageService.saveLocalCustomers(customers);
+      if (kDebugMode) debugPrint('✅ Customer update recovered');
+      return true;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error recovering customer update: $e');
+      return false;
     }
   }
   
