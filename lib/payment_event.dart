@@ -191,7 +191,7 @@ class PaymentEvent {
 
     final payload =
         '${amount.toStringAsFixed(2)}_'
-        '$direction_'
+        '${direction}_'
         '${_appFamily(app)}_'
         '$normalized';
 
