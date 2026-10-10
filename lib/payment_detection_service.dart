@@ -3865,7 +3865,7 @@ class PaymentDetectionService {
     try { return fn() ?? ''; } catch (_) { return ''; }
   }
 
-  Object? _safeValue(Object? Function() fn) {
+  static Object? _safeValue(Object? Function() fn) {
     try { return fn(); } catch (_) { return null; }
   }
 }
