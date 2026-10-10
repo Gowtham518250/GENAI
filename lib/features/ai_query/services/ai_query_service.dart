@@ -9,12 +9,106 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../api_client.dart';
 import '../models/ai_query_response.dart';
 
+/// Successful or failed result from recorded-audio voice queries.
+class AIQueryVoiceResult {
+  final AIQueryResponse response;
+  final String transcript;
+  final String englishQuery;
+
+  const AIQueryVoiceResult({
+    required this.response,
+    this.transcript = '',
+    this.englishQuery = '',
+  });
+
+  factory AIQueryVoiceResult.error(String message) => AIQueryVoiceResult(
+        response: AIQueryResponse.error(message),
+      );
+}
+
 /// Service for executing AI-powered natural-language business queries against the
 /// Retail Mind backend (`POST /askquery`) and managing local query history.
 class AiQueryService {
   static const String _historyKey = 'retail_mind_ai_query_history_v1';
   static const int _maxHistoryItems = 20;
   static const Duration _requestTimeout = Duration(seconds: 30);
+
+  /// Upload a complete recording to the self-hosted open-source speech service.
+  /// The server runs IndicConformer + IndicTrans2 before invoking the same
+  /// authenticated RAG/SQL query path. This deliberately avoids device locale
+  /// availability and speech recognizers that clear partial text after silence.
+  static Future<AIQueryVoiceResult> askVoiceQuery({
+    required String audioPath,
+    required String languageCode,
+  }) async {
+    if (audioPath.trim().isEmpty) {
+      return AIQueryVoiceResult.error('No voice recording was saved. Please record your question again.');
+    }
+
+    try {
+      final fileName = audioPath.split(RegExp(r'[/\\\\]')).last;
+      final audioFile = await http.MultipartFile.fromPath(
+        'audio',
+        audioPath,
+        filename: fileName.isEmpty ? 'voice-query.wav' : fileName,
+      );
+      final streamedResponse = await ApiClient.postMultipart(
+        ApiClient.askQueryVoiceEndpoint,
+        {'language_code': languageCode},
+        files: [audioFile],
+        // Cold starts can take longer while the open-source model weights load.
+        timeout: const Duration(minutes: 4),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+
+      dynamic decoded;
+      try {
+        decoded = json.decode(response.body);
+      } catch (_) {
+        decoded = null;
+      }
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        final detail = decoded is Map
+            ? (decoded['detail'] ?? decoded['error'] ?? decoded['message'])?.toString()
+            : null;
+        return AIQueryVoiceResult.error(
+          (detail != null && detail.trim().isNotEmpty)
+              ? detail.trim()
+              : 'Voice processing failed (HTTP ${response.statusCode}). Please try again.',
+        );
+      }
+
+      if (decoded is! Map) {
+        return AIQueryVoiceResult.error('The voice service returned an invalid response. Please try again.');
+      }
+      final payload = Map<String, dynamic>.from(decoded);
+      final rawVoice = payload['voice'];
+      final voice = rawVoice is Map ? rawVoice : const <String, dynamic>{};
+      final transcript = (voice['transcript'] ?? payload['original_query'] ?? '').toString().trim();
+      final englishQuery = (voice['translated_query'] ?? payload['translated_query'] ?? payload['query'] ?? '').toString().trim();
+
+      if (transcript.isEmpty || englishQuery.isEmpty) {
+        return AIQueryVoiceResult.error('Speech was captured, but no clear question was recognized. Please speak once more and try again.');
+      }
+
+      final queryResponse = AIQueryResponse.fromJson(
+        payload,
+        originalQuery: transcript,
+      );
+      unawaited(saveQueryToHistory(transcript));
+      return AIQueryVoiceResult(
+        response: queryResponse,
+        transcript: transcript,
+        englishQuery: englishQuery,
+      );
+    } on TimeoutException {
+      return AIQueryVoiceResult.error('Voice processing took too long. Please try a shorter question or retry.');
+    } catch (error) {
+      if (kDebugMode) debugPrint('AI voice query upload failed: $error');
+      return AIQueryVoiceResult.error('Could not reach the open-source speech service. Check the connection and speech-service configuration, then retry.');
+    }
+  }
 
   /// Executes a natural-language business query against the backend.
   ///
