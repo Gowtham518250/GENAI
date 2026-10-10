@@ -574,7 +574,10 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.spaceBetween,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
@@ -591,7 +594,6 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                       ],
                     ),
                   ),
-                  const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                     decoration: BoxDecoration(color: const Color(0xFFEAF8F0), borderRadius: BorderRadius.circular(999), border: Border.all(color: const Color(0xFFCBEED9))),
@@ -737,36 +739,86 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
 
   Widget _buildPipelineHint() {
     const items = [
-      (Icons.mic_none_rounded, 'Your voice'),
-      (Icons.translate_rounded, 'English'),
-      (Icons.schema_rounded, 'RAG + SQL'),
-      (Icons.insights_rounded, 'Answer'),
+      (Icons.mic_none_rounded, 'Your voice', 'Speak or type'),
+      (Icons.translate_rounded, 'English', 'Translate'),
+      (Icons.storage_rounded, 'RAG + SQL', 'Search shop data'),
+      (Icons.insights_rounded, 'Answer', 'Useful insights'),
     ];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEEF2FF).withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDDE3FF)),
-      ),
-      child: Row(
-        children: [
-          for (int i = 0; i < items.length; i++) ...[
-            if (i > 0) const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4),
-              child: Icon(Icons.chevron_right_rounded, size: 14, color: Color(0xFF9CA3AF)),
-            ),
-            Expanded(
-              child: Column(
-                children: [
-                  Icon(items[i].$1, color: const Color(0xFF6366F1), size: 18),
-                  const SizedBox(height: 4),
-                  Text(items[i].$2, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w700, color: const Color(0xFF475569))),
-                ],
+
+    Widget stepCard(int index) {
+      final item = items[index];
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFF),
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: const Color(0xFFE7ECFA)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(colors: [Color(0xFFE7EEFF), Color(0xFFF0E9FF)]),
+                shape: BoxShape.circle,
               ),
+              child: Icon(item.$1, color: const Color(0xFF4161E9), size: 20),
             ),
+            const SizedBox(height: 5),
+            Container(
+              width: 19,
+              height: 19,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: Color(0xFFE6EDFF), shape: BoxShape.circle),
+              child: Text((index + 1).toString(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: const Color(0xFF3159D8))),
+            ),
+            const SizedBox(height: 5),
+            Text(item.$2, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w800, color: const Color(0xFF17264A))),
+            const SizedBox(height: 3),
+            Text(item.$3, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 9.5, height: 1.3, color: const Color(0xFF71809B))),
           ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE1E8F5)),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF203A68).withValues(alpha: 0.035), blurRadius: 16, offset: const Offset(0, 5)),
         ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 520) {
+            final tileWidth = (constraints.maxWidth - 8) / 2;
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var i = 0; i < items.length; i++)
+                  SizedBox(width: tileWidth, child: stepCard(i)),
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                Expanded(child: stepCard(i)),
+                if (i < items.length - 1)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF9AA8C2)),
+                  ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
