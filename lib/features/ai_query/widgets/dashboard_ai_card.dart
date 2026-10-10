@@ -128,7 +128,7 @@ class DashboardAiQueryCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Ask',
+                      'Ask AI',
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontSize: 9.5,
