@@ -51,9 +51,17 @@ class SyncService {
       return;
     }
     _initialized = true;
-    
+
     try {
-      // Listen for connectivity changes
+      // Flush already-persisted offline actions first. Then establish the
+      // change-feed cursor before the initial full download so new installs
+      // do not replay the shop's entire historical event log.
+      await processQueueSafe();
+      await _initializeDurableSyncCursor();
+      await downloadUserDataSafe();
+
+      // Listen for connectivity changes after the initial bootstrap so a
+      // reconnect callback cannot start a competing full refresh mid-bootstrap.
       _connectivitySub?.cancel();
       bool? previousOfflineState;
       _connectivitySub = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
@@ -69,13 +77,9 @@ class SyncService {
         }
       });
 
-      // Start the throttled queue/data refresh pulse.
+      // Start the throttled queue/data refresh pulse only after bootstrap.
       _startPulseTimer();
-      
-      // Initial sync
-      await processQueueSafe();
-      await downloadUserDataSafe();
-      
+
       if (kDebugMode) debugPrint('✅ SyncService initialized successfully');
     } catch (e) {
       await ErrorLogHelper.logException(e, StackTrace.current, context: 'SyncService.init');
@@ -105,6 +109,76 @@ class SyncService {
         _pulseInProgress = false;
       }
     });
+  }
+
+  /// Establish a per-owner event baseline before doing a full sync. This
+  /// prevents a fresh install from replaying the entire history while preserving
+  /// all changes committed after the baseline for the subsequent cursor pull.
+  static Future<bool> _initializeDurableSyncCursor() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return false;
+
+      final tokenParts = token.split('.');
+      if (tokenParts.length != 3) return false;
+      final claims = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(tokenParts[1]))),
+      );
+      if (claims is! Map ||
+          claims['role']?.toString().toUpperCase() != 'OWNER') {
+        return false;
+      }
+
+      final userId = int.tryParse(claims['sub']?.toString() ?? '') ??
+          prefs.getInt('user_id') ??
+          prefs.getInt('userId');
+      if (userId == null || userId <= 0) return false;
+
+      final cursorKey = 'durable_sync_cursor_v1_$userId';
+      if (prefs.containsKey(cursorKey)) return true;
+
+      final unsupportedProbeKey = 'durable_sync_next_probe_ms_v1_$userId';
+      final nextProbeMs = prefs.getInt(unsupportedProbeKey) ?? 0;
+      if (DateTime.now().millisecondsSinceEpoch < nextProbeMs) return false;
+
+      final response = await ApiClient.getJson(
+        '/api/sync/changes?after=0&limit=1',
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 404) {
+        // During a staged deployment, avoid probing the older backend every
+        // 30 seconds. Existing five-minute full refresh remains the fallback.
+        await prefs.setInt(
+          unsupportedProbeKey,
+          DateTime.now().add(const Duration(minutes: 5)).millisecondsSinceEpoch,
+        );
+        return false;
+      }
+      if (response.statusCode != 200) return false;
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map) {
+        throw const FormatException('Invalid durable sync baseline response');
+      }
+      final highWatermark = int.tryParse(
+            decoded['high_watermark']?.toString() ?? '',
+          ) ??
+          0;
+      await prefs.setInt(cursorKey, highWatermark);
+      await prefs.remove(unsupportedProbeKey);
+      return true;
+    } catch (e) {
+      // Bootstrap failure must not block queue flushing or legacy full sync.
+      if (kDebugMode) debugPrint('Durable sync baseline deferred: $e');
+      await ErrorLogHelper.logException(
+        e,
+        StackTrace.current,
+        context: 'SyncService.durableCursorBaseline',
+      );
+      return false;
+    }
   }
 
   /// Recover database changes even when the Redis/WebSocket notification was missed.
@@ -139,6 +213,18 @@ class SyncService {
       final nowMs = DateTime.now().millisecondsSinceEpoch;
       final nextProbeMs = prefs.getInt(unsupportedProbeKey) ?? 0;
       if (nowMs < nextProbeMs) return;
+
+      // Login may occur after SyncService initialization. In that case create
+      // a baseline now, then run a full refresh after the baseline was saved.
+      // Any writes during that refresh have sequence numbers above the cursor
+      // and will be recovered by the next pulse.
+      if (!prefs.containsKey(cursorKey)) {
+        final initialized = await _initializeDurableSyncCursor();
+        if (initialized) {
+          await downloadUserDataSafe();
+        }
+        return;
+      }
       var cursor = prefs.getInt(cursorKey) ?? 0;
       var nextCursor = cursor;
       var needsRefresh = false;
