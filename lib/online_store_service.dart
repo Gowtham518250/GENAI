@@ -143,6 +143,27 @@ class OnlineStoreService {
     }
   }
 
+  /// Compatibility API used by the online shopping configuration screen.
+  /// Accepts the existing UI payload and forwards it through the validated
+  /// typed settings method so all settings are persisted consistently.
+  static Future<Map<String, dynamic>> setOnlineSettings(
+    Map<String, dynamic> settings,
+  ) async {
+    double asDouble(dynamic value) =>
+        value is num ? value.toDouble() : double.tryParse(value?.toString() ?? '') ?? 0;
+
+    return saveOnlineSettings(
+      isOnlineStoreEnabled: settings['is_online_store_enabled'] == true,
+      onlineSetupFee: asDouble(settings['online_setup_fee']),
+      minOrder: asDouble(settings['min_order']),
+      deliveryFee: asDouble(settings['delivery_fee']),
+      offerDelivery: settings['offer_delivery'] != false,
+      offerPickup: settings['offer_pickup'] != false,
+      acceptCod: settings['accept_cod'] != false,
+      acceptOnline: settings['accept_online'] == true,
+    );
+  }
+
   /// Backward-compatible helper for callers that only change the online fee.
   static Future<Map<String, dynamic>> setOnlineSetupFee(double fee) async {
     final current = await getOnlineSettings();

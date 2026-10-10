@@ -95,6 +95,7 @@ import 'secure_token_storage.dart';
 import 'retail_intelligence_page.dart';
 import 'whatsapp_order_page.dart';
 import 'sync_service.dart';
+import 'sync_queue_manager.dart';
 import 'background_sync_worker.dart';
 import 'automatic_backup_service.dart';
 import 'enhanced_sync_queue.dart';
