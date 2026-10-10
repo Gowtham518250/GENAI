@@ -169,7 +169,9 @@ class ProductionVoiceBillingService {
         item.catalogPrice,
       ]);
 
-      final spokenPrice = item.price > 0 ? item.price : null;
+      final spokenPrice = item.priceWasSpoken && item.price > 0
+          ? item.price
+          : null;
       final finalPrice = spokenPrice ?? catalogPrice ?? 0.0;
 
       final unit = _cleanUnit(
