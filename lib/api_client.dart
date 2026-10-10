@@ -113,6 +113,7 @@ class ApiClient {
   static const String billQrEndpoint = '/bill/qr/';
   static const String todayInsightEndpoint = '/today_insight/';
   static const String askQueryEndpoint = '/askquery';
+  static const String askQueryVoiceEndpoint = '/askquery/voice';
 
   // Inventory
   static const String inventoryPrefix = '/api/inventory';
@@ -1293,6 +1294,7 @@ class ApiClient {
     Map<String, String> fields, {
     Map<String, String>? headers,
     List<http.MultipartFile>? files,
+    Duration timeout = const Duration(seconds: 30),
   }) async {
     // 🔒 NETWORK CONNECTIVITY VALIDATION: Check network before API calls
     if (!await _checkNetworkConnectivity()) {
@@ -1315,7 +1317,7 @@ class ApiClient {
           sanitizedFields,
           headers,
           files,
-        ).timeout(const Duration(seconds: 30));
+        ).timeout(timeout);
 
         // 🔒 RESPONSE VALIDATION: Validate response before returning
         if (resp.statusCode < 200 || resp.statusCode >= 600) {
@@ -1340,7 +1342,7 @@ class ApiClient {
           sanitizedFields,
           headers,
           files,
-        ).timeout(const Duration(seconds: 30));
+        ).timeout(timeout);
 
         // 🔒 RESPONSE VALIDATION: Validate response before returning
         if (resp.statusCode < 200 || resp.statusCode >= 600) {
