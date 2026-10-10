@@ -259,7 +259,13 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
       setState(() {
         _isRecording = false;
         _isVoiceProcessing = false;
-        _errorMessage = 'Could not process the voice recording. Please retry.';
+        _errorMessage = error
+            .toString()
+            .replaceFirst(RegExp(r'^Exception:\s*'), '')
+            .trim();
+        if (_errorMessage == null || _errorMessage!.isEmpty) {
+          _errorMessage = 'Could not process the voice recording. Please retry.';
+        }
       });
       if (kDebugMode) debugPrint('Ask Retail Mind voice query failed: $error');
     } finally {
