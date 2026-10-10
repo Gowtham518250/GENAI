@@ -206,6 +206,56 @@ class AiQueryService {
     }
   }
 
+  /// Translates an already-generated answer for spoken playback.
+  ///
+  /// The backend uses the existing Groq translation configuration/key, so the
+  /// Flutter client never stores or exposes a provider secret.
+  static Future<String> translateAnswerForSpeech(
+    String answer, {
+    required String languageCode,
+  }) async {
+    final cleanAnswer = answer.trim();
+    if (cleanAnswer.isEmpty) {
+      throw Exception('There is no answer to speak.');
+    }
+    if (languageCode == 'en') return cleanAnswer;
+
+    final response = await ApiClient.postForm(
+      ApiClient.askQueryTranslateAnswerEndpoint,
+      {
+        'text': cleanAnswer,
+        'language_code': languageCode,
+      },
+    ).timeout(const Duration(seconds: 45));
+
+    dynamic decoded;
+    try {
+      decoded = json.decode(response.body);
+    } catch (_) {
+      decoded = null;
+    }
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final detail = decoded is Map
+          ? (decoded['detail'] ?? decoded['error'] ?? decoded['message'])?.toString()
+          : null;
+      throw Exception(
+        detail != null && detail.trim().isNotEmpty
+            ? detail.trim()
+            : 'Answer translation failed (HTTP ${response.statusCode}).',
+      );
+    }
+
+    if (decoded is! Map) {
+      throw Exception('The translation service returned an invalid response.');
+    }
+    final translated = (decoded['translated_text'] ?? '').toString().trim();
+    if (translated.isEmpty) {
+      throw Exception('No translated answer was produced.');
+    }
+    return translated;
+  }
+
   /// Executes a natural-language business query against the backend.
   ///
   /// The user question is sent as-is without manual date conversion or SQL generation.
