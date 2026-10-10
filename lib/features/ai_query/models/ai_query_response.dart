@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 class AIQueryResponse {
   final String? queryEngineVersion;
   final String? query;
+  final String? translatedQuery;
   final String? generatedSql;
   final String? generatedModelResponse;
   final List<dynamic> retrievedTableInformation;
@@ -20,6 +21,7 @@ class AIQueryResponse {
   AIQueryResponse({
     this.queryEngineVersion,
     this.query,
+    this.translatedQuery,
     this.generatedSql,
     this.generatedModelResponse,
     this.retrievedTableInformation = const [],
@@ -50,6 +52,7 @@ class AIQueryResponse {
 
       // 2. Query
       final query = json['query']?.toString() ?? originalQuery;
+      final translatedQuery = json['translated_query']?.toString();
 
       // 3. Generated SQL / SQL
       final generatedSql = json['generated_sql']?.toString();
@@ -96,6 +99,7 @@ class AIQueryResponse {
       return AIQueryResponse(
         queryEngineVersion: queryEngineVersion,
         query: query,
+        translatedQuery: translatedQuery,
         generatedSql: generatedSql,
         generatedModelResponse: generatedModelResponse,
         retrievedTableInformation: tableInfo,
@@ -161,6 +165,7 @@ class AIQueryResponse {
     return {
       'query_engine_version': queryEngineVersion,
       'query': query,
+      'translated_query': translatedQuery,
       'generated_sql': generatedSql,
       'generated_model_response': generatedModelResponse,
       'retrieved_table_information': retrievedTableInformation,
