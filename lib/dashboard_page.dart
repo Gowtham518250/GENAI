@@ -150,6 +150,7 @@ class _DashboardPageState extends State<DashboardPage>
   late final Animation<double> _onlineStorePulse;
   Timer? _refreshTimer;
   Timer? _onlineBusinessRefreshTimer;
+  bool _onlineBusinessRefreshInProgress = false;
 
   // sales + insight state
   static const List<String> _chartLabels = [
@@ -413,6 +414,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   StreamSubscription<dynamic>? _paymentSubscription;
   StreamSubscription? _syncSubscription;
+  StreamSubscription<List<Map<String, dynamic>>>? _durableEventsSubscription;
 
   DateTime _getLocalDate(Map<String, dynamic> sale) {
     final dateStr =
@@ -506,12 +508,12 @@ class _DashboardPageState extends State<DashboardPage>
       (_) => _loadSales(),
     );
 
-    // Online orders are external writes (customer web -> backend), so they
-    // cannot depend on the cashier's local sync stream. Refresh business
-    // state every 30 seconds while the owner dashboard is open.
+    // Durable change-feed events refresh relevant owner widgets within the sync pulse.
+    // Keep a low-frequency full reconciliation for older clients, uninstrumented
+    // writes, or a temporarily unavailable change feed.
     _onlineBusinessRefreshTimer?.cancel();
     _onlineBusinessRefreshTimer = Timer.periodic(
-      const Duration(seconds: 30),
+      const Duration(minutes: 5),
       (_) => _refreshOnlineBusinessData(),
     );
     // FIX BUG 6 — listen for inventory changes and reload analytics
@@ -606,6 +608,9 @@ class _DashboardPageState extends State<DashboardPage>
         _loadSales(); // Auto-refresh UI when clouds sync in background
         _addToActivityFeed('Cloud Sync: UI updated');
       }
+    });
+    _durableEventsSubscription = SyncService.durableEventsStream.listen((events) {
+      if (mounted) unawaited(_handleDurableSyncEvents(events));
     });
 
     RetailGrowthKit.recordAppOpen();
@@ -1467,8 +1472,63 @@ class _DashboardPageState extends State<DashboardPage>
     await _checkPermissions(showReminderIfMissing: false);
   }
 
+  /// Apply only the owner-screen refreshes required by recovered server changes.
+  /// The 5-minute full refresh remains a recovery fallback for event/feed outages.
+  Future<void> _handleDurableSyncEvents(
+    List<Map<String, dynamic>> events,
+  ) async {
+    if (!mounted || events.isEmpty) return;
+
+    final types = events
+        .map((event) => event['type']?.toString() ?? '')
+        .where((type) => type.isNotEmpty)
+        .toSet();
+    final hasInvoiceChange = types.any((type) => {
+          'invoice.created',
+          'invoice.updated',
+          'invoice.deleted',
+          'payment.updated',
+        }.contains(type));
+    final hasOrderChange = types.any((type) =>
+        type == 'order.created' || type == 'order.status_changed');
+    final hasInventoryChange = types.contains('inventory.changed');
+
+    if (hasOrderChange) {
+      await _loadOnlineStoreStats();
+    }
+
+    if (hasInventoryChange) {
+      final result = await InventorySyncService.refreshAllInventory();
+      if (mounted && result['success'] == true) {
+        _checkLowStock();
+        unawaited(_recomputeDailyHealthScore());
+      }
+    }
+
+    if (hasInvoiceChange) {
+      // SyncService has already persisted the canonical invoice snapshot for
+      // these change types. Render the local mirror instead of issuing another
+      // full invoice request from the dashboard callback.
+      final refreshed = await LocalStorageService.loadSales();
+      if (!mounted) return;
+      setState(() {
+        sales = _flattenLocalSales(refreshed);
+        _cachedTodaySales = null;
+        _cachedTodayOrders = null;
+        _cachedTodayOnlineOrders = null;
+        _lastMetricsCacheDate = null;
+        _recalculateAnalytics();
+      });
+    }
+
+    if (types.contains('attendance.changed')) {
+      _addToActivityFeed('Attendance updated from cloud');
+    }
+  }
+
   Future<void> _refreshOnlineBusinessData() async {
-    if (!mounted || !_isOnlineStoreActive) return;
+    if (!mounted || !_isOnlineStoreActive || _onlineBusinessRefreshInProgress) return;
+    _onlineBusinessRefreshInProgress = true;
 
     try {
       // External customer orders are written directly to the backend, so
@@ -1518,6 +1578,8 @@ class _DashboardPageState extends State<DashboardPage>
       if (kDebugMode) {
         debugPrint('⚠️ Online dashboard refresh failed: $e');
       }
+    } finally {
+      _onlineBusinessRefreshInProgress = false;
     }
   }
 
@@ -2322,6 +2384,7 @@ class _DashboardPageState extends State<DashboardPage>
     engine.sales.clear();
     _paymentSubscription?.cancel();
     _syncSubscription?.cancel();
+    _durableEventsSubscription?.cancel();
     _connectivitySubscription?.cancel();
     super.dispose();
   }
