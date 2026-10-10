@@ -115,6 +115,7 @@ class ApiClient {
   static const String askQueryEndpoint = '/askquery';
   static const String askQueryVoiceEndpoint = '/askquery/voice';
   static const String askQueryTranscribeEndpoint = '/askquery/transcribe';
+  static const String askQueryTranslateAnswerEndpoint = '/askquery/translate-answer';
 
   // Inventory
   static const String inventoryPrefix = '/api/inventory';

@@ -41,7 +41,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   bool _isLoading = false;
   bool _isRecording = false;
   bool _isVoiceProcessing = false;
-  String _inputLanguageCode = 'en';
+  String _inputLanguageCode = 'te';
   AIQueryResponse? _currentResponse;
   String? _errorMessage;
   String? _originalTranscript;
@@ -85,11 +85,12 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
 
   Future<void> _executeQuery(
     String query, {
-    String languageCode = 'en',
+    String? languageCode,
     bool preserveVoiceTranscript = false,
-    bool speakAnswerOnSuccess = false,
+    bool speakAnswerOnSuccess = true,
   }) async {
     final cleanQuery = query.trim();
+    final requestLanguageCode = languageCode ?? _selectedLanguage.code;
     if (cleanQuery.isEmpty || _isLoading || _isVoiceProcessing) return;
 
     _inputFocusNode.unfocus();
@@ -107,7 +108,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     try {
       final response = await AiQueryService.askQuery(
         cleanQuery,
-        languageCode: languageCode,
+        languageCode: requestLanguageCode,
       );
       if (!mounted) return;
       setState(() {
@@ -294,7 +295,6 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     });
 
     try {
-      await _answerTts.setLanguage('en-US');
       await _answerTts.setSpeechRate(0.46);
       await _answerTts.setPitch(1.0);
       await _answerTts.awaitSpeakCompletion(true);
@@ -309,15 +309,78 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
 
     final answer = answerResponse.displayAnswer.trim();
     if (answer.isEmpty) return;
-    final resultCount = answerResponse.results.length;
-    final resultLabel = resultCount == 1 ? 'row' : 'rows';
-    final spokenText = resultCount > 0
-        ? '$answer. I found $resultCount result $resultLabel.'
-        : answer;
+
+    final language = _selectedLanguage;
+    var spokenText = answer;
+    if (language.code != 'en') {
+      try {
+        // TTS speaks text; translate the answer first so it is not merely
+        // English pronounced with a non-English voice.
+        spokenText = await AiQueryService.translateAnswerForSpeech(
+          answer,
+          languageCode: language.code,
+        );
+      } catch (error) {
+        if (kDebugMode) debugPrint('Ask Retail Mind answer translation failed: $error');
+        if (mounted) {
+          _showMessage('Could not translate the answer to ${language.name}. Please try again.');
+        }
+        return;
+      }
+    }
+
+    var locale = ttsLocaleForLanguageCode(language.code);
+    var available = false;
+    try {
+      available = await _answerTts.isLanguageAvailable(locale) == true;
+    } catch (_) {
+      // Some TTS engines/platforms do not implement the availability probe.
+    }
+    if (!available) {
+      try {
+        final languages = await _answerTts.getLanguages;
+        if (languages is List) {
+          final installed = languages.map((value) => value.toString()).toList();
+          final exact = installed.where(
+            (value) => value.toLowerCase() == locale.toLowerCase(),
+          );
+          if (exact.isNotEmpty) {
+            locale = exact.first;
+            available = true;
+          } else {
+            final prefix = '${language.code.toLowerCase()}-';
+            final regional = installed.where(
+              (value) => value.toLowerCase().startsWith(prefix),
+            );
+            if (regional.isNotEmpty) {
+              locale = regional.first;
+              available = true;
+            } else if (installed.any(
+              (value) => value.toLowerCase() == language.code.toLowerCase(),
+            )) {
+              locale = language.code;
+              available = true;
+            }
+          }
+        }
+      } catch (_) {
+        // Fall through to a clear, user-facing unavailable-voice message.
+      }
+    }
+
+    if (!available) {
+      if (mounted) {
+        _showMessage(
+          'No ${language.name} text-to-speech voice is available on this device. '
+          'Install the ${language.name} voice in your phone Text-to-speech settings.',
+        );
+      }
+      return;
+    }
 
     try {
       await _answerTts.stop();
-      await _answerTts.setLanguage('en-US');
+      await _answerTts.setLanguage(locale);
       if (mounted) setState(() => _isSpeakingAnswer = true);
       await _answerTts.speak(spokenText);
     } catch (error) {
@@ -518,7 +581,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                   size: 18,
                 ),
                 label: Text(
-                  _isSpeakingAnswer ? 'Stop speaking' : 'Listen to answer (English)',
+                  _isSpeakingAnswer ? 'Stop speaking' : 'Listen in ${_selectedLanguage.name}',
                   style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700),
                 ),
               ),
@@ -942,14 +1005,17 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                         ? null
                         : (language) {
                             if (language != null) {
-                              setState(() => _selectedLanguage = language);
+                              setState(() {
+                                _selectedLanguage = language;
+                                _inputLanguageCode = language.code;
+                              });
                             }
                           },
                   ),
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  'Server speech recognition · 22 Indian languages + English',
+                  'Voice input and spoken answers use this language. Device voice support may vary.',
                   maxLines: 2,
                   style: GoogleFonts.inter(
                     fontSize: 10,
