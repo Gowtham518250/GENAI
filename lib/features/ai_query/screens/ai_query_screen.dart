@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:speech_to_text/speech_to_text.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 
 import '../../../visual_widgets.dart';
 import '../models/ai_query_response.dart';
@@ -30,11 +33,11 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   final TextEditingController _queryController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _inputFocusNode = FocusNode();
-  final SpeechToText _speech = SpeechToText();
+  final Record _audioRecorder = Record();
+  final FlutterTts _answerTts = FlutterTts();
 
-  bool _speechInitialized = false;
-  bool _speechAvailable = false;
   bool _finalizingSpeech = false;
+  bool _isSpeakingAnswer = false;
   bool _isLoading = false;
   bool _isRecording = false;
   bool _isVoiceProcessing = false;
@@ -51,6 +54,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   @override
   void initState() {
     super.initState();
+    _configureAnswerTts();
     if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
       _queryController.text = widget.initialQuery!.trim();
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -65,7 +69,8 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     _queryController.dispose();
     _scrollController.dispose();
     _inputFocusNode.dispose();
-    unawaited(_speech.cancel());
+    unawaited(_audioRecorder.dispose());
+    unawaited(_answerTts.stop());
     super.dispose();
   }
 
@@ -112,126 +117,62 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   }
 
   Future<void> _startRecording() async {
-    if (_isLoading || _isVoiceProcessing || _isRecording) return;
+    if (_isLoading || _isVoiceProcessing || _isRecording || _finalizingSpeech) return;
 
     try {
-      if (!_speechInitialized) {
-        _speechAvailable = await _speech.initialize(
-          onStatus: _handleSpeechStatus,
-          onError: (error) => _handleSpeechError(error),
-          debugLogging: false,
-        );
-        // Retry initialization on the next tap if no system recognizer was found.
-        _speechInitialized = _speechAvailable;
-      }
-
-      if (!_speechAvailable) {
-        _showMessage(
-          'Speech recognition is unavailable on this device. Check its speech service and microphone permission.',
-        );
+      final hasPermission = await _audioRecorder.hasPermission();
+      if (!hasPermission) {
+        _showMessage('Microphone permission is required to record your question.');
         return;
       }
 
-      final locales = await _speech.locales();
-      final languagePrefix = _selectedLanguage.code.toLowerCase();
-      final candidates = locales.where((locale) {
-        final normalized = locale.localeId.toLowerCase().replaceAll('-', '_');
-        return normalized == languagePrefix ||
-            normalized.startsWith('${languagePrefix}_');
-      }).toList();
+      final directory = await getTemporaryDirectory();
+      final audioPath = '${directory.path}${Platform.pathSeparator}retail_mind_voice_${DateTime.now().microsecondsSinceEpoch}.wav';
+      await _audioRecorder.start(
+        path: audioPath,
+        encoder: AudioEncoder.wav,
+        samplingRate: 16000,
+      );
 
-      if (candidates.isEmpty) {
-        _showMessage(
-          'The device speech service does not support ${_selectedLanguage.name}. Choose another language or type your question.',
-        );
+      if (!mounted) {
+        await _audioRecorder.stop();
         return;
       }
-
-      final preferredLocale = candidates.where((locale) =>
-          locale.localeId.toLowerCase().replaceAll('-', '_') ==
-          '${languagePrefix}_in');
-      final localeId = preferredLocale.isNotEmpty
-          ? preferredLocale.first.localeId
-          : candidates.first.localeId;
-
-      if (!mounted) return;
       setState(() {
         _isRecording = true;
         _recordSeconds = 0;
         _errorMessage = null;
         _originalTranscript = null;
         _translatedEnglish = null;
+        _currentResponse = null;
         _queryController.clear();
       });
 
+      // Keep recording through natural pauses. No silence timer is allowed to
+      // clear the transcript because transcription runs on the recorded audio
+      // only after the user taps Stop.
       _recordTimer?.cancel();
       _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (!mounted || !_isRecording) {
           timer.cancel();
           return;
         }
-        _recordSeconds++;
-        if (_recordSeconds >= 60) {
+        if (_recordSeconds >= 59) {
           unawaited(_stopRecordingAndAsk());
           return;
         }
-        // Avoid rebuilding the whole query screen every second while listening.
-        if (_recordSeconds % 5 == 0) setState(() {});
+        setState(() => _recordSeconds++);
       });
-
-      await _speech.listen(
-        localeId: localeId,
-        listenFor: const Duration(seconds: 60),
-        pauseFor: const Duration(seconds: 5),
-        partialResults: true,
-        cancelOnError: true,
-        listenMode: ListenMode.dictation,
-        onResult: (result) {
-          if (!mounted || !_isRecording) return;
-          setState(() {
-            _queryController.value = TextEditingValue(
-              text: result.recognizedWords,
-              selection: TextSelection.collapsed(
-                offset: result.recognizedWords.length,
-              ),
-            );
-          });
-        },
-      );
     } catch (error) {
       _recordTimer?.cancel();
       if (!mounted) return;
       setState(() {
         _isRecording = false;
         _isVoiceProcessing = false;
-        _errorMessage = 'Could not start speech recognition. Check microphone permission and try again.';
+        _errorMessage = 'Could not start voice recording. Check microphone permission and try again.';
       });
-      if (kDebugMode) debugPrint('Ask Retail Mind speech start failed: $error');
+      if (kDebugMode) debugPrint('Ask Retail Mind recording start failed: $error');
     }
-  }
-
-  void _handleSpeechStatus(String status) {
-    if (!mounted) return;
-    if ((status == 'done' || status == 'notListening') &&
-        _isRecording &&
-        !_finalizingSpeech &&
-        !_isVoiceProcessing) {
-      unawaited(_stopRecordingAndAsk());
-    }
-  }
-
-  void _handleSpeechError(dynamic error) {
-    if (!mounted) return;
-    if (kDebugMode) debugPrint('Ask Retail Mind speech error: $error');
-    if (!_isRecording || _finalizingSpeech) return;
-
-    _recordTimer?.cancel();
-    setState(() {
-      _isRecording = false;
-      _isVoiceProcessing = false;
-      _errorMessage =
-          'Speech recognition stopped. Please try again or type your question.';
-    });
   }
 
   Future<void> _stopRecordingAndAsk() async {
@@ -239,24 +180,17 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     _finalizingSpeech = true;
     _recordTimer?.cancel();
     _recordTimer = null;
+    String? audioPath;
 
     try {
-      // Wait for the recognizer to return its final partial transcript before
-      // sending anything to the Retail Mind backend.
-      try {
-        await _speech.stop();
-      } catch (_) {
-        // The recognizer may already have stopped itself.
-      }
-
-      final transcript = _queryController.text.trim();
+      audioPath = await _audioRecorder.stop();
       if (!mounted) return;
 
-      if (transcript.isEmpty) {
+      if (audioPath == null || audioPath.trim().isEmpty || !await File(audioPath).exists()) {
         setState(() {
           _isRecording = false;
           _isVoiceProcessing = false;
-          _errorMessage = 'No speech was recognized. Please try again or type your question.';
+          _errorMessage = 'No audio recording was saved. Please try again.';
         });
         return;
       }
@@ -265,36 +199,112 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         _isRecording = false;
         _isVoiceProcessing = true;
         _errorMessage = null;
-        _originalTranscript = transcript;
-        _translatedEnglish = null;
       });
 
-      final response = await AiQueryService.askQuery(
-        transcript,
+      final voiceResult = await AiQueryService.askVoiceQuery(
+        audioPath: audioPath,
         languageCode: _selectedLanguage.code,
       );
       if (!mounted) return;
 
+      final response = voiceResult.response;
       setState(() {
         _isVoiceProcessing = false;
         _currentResponse = response;
-        _translatedEnglish = response.translatedQuery;
+        _originalTranscript = voiceResult.transcript.isNotEmpty
+            ? voiceResult.transcript
+            : null;
+        _translatedEnglish = voiceResult.englishQuery.isNotEmpty
+            ? voiceResult.englishQuery
+            : null;
+        if (voiceResult.transcript.isNotEmpty) {
+          _queryController.text = voiceResult.transcript;
+        }
         _errorMessage = response.isSuccess
             ? null
             : (response.errorMessage ?? 'Unable to answer this voice query.');
       });
       _scrollToBottom();
+
+      // Voice-first interactions receive an audible answer automatically.
+      // Text questions can use the explicit Listen to answer control instead.
+      if (response.isSuccess) {
+        unawaited(_speakAnswer(response));
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _isRecording = false;
         _isVoiceProcessing = false;
-        _errorMessage = 'Could not process the recognized speech. Please try again.';
+        _errorMessage = 'Could not process the voice recording. Please retry.';
       });
       if (kDebugMode) debugPrint('Ask Retail Mind voice query failed: $error');
     } finally {
+      if (audioPath != null) {
+        try {
+          final recordingFile = File(audioPath);
+          if (await recordingFile.exists()) await recordingFile.delete();
+        } catch (_) {
+          // Temporary-file cleanup must never hide the query result.
+        }
+      }
       _finalizingSpeech = false;
     }
+  }
+
+  Future<void> _configureAnswerTts() async {
+    _answerTts.setCompletionHandler(() {
+      if (mounted) setState(() => _isSpeakingAnswer = false);
+    });
+    _answerTts.setCancelHandler(() {
+      if (mounted) setState(() => _isSpeakingAnswer = false);
+    });
+    _answerTts.setErrorHandler((message) {
+      if (mounted) setState(() => _isSpeakingAnswer = false);
+      if (kDebugMode) debugPrint('Ask Retail Mind TTS error: $message');
+    });
+
+    try {
+      await _answerTts.setLanguage('en-US');
+      await _answerTts.setSpeechRate(0.46);
+      await _answerTts.setPitch(1.0);
+      await _answerTts.awaitSpeakCompletion(true);
+    } catch (error) {
+      if (kDebugMode) debugPrint('Ask Retail Mind TTS setup failed: $error');
+    }
+  }
+
+  Future<void> _speakAnswer([AIQueryResponse? response]) async {
+    final answerResponse = response ?? _currentResponse;
+    if (answerResponse == null || !answerResponse.isSuccess) return;
+
+    final answer = answerResponse.displayAnswer.trim();
+    if (answer.isEmpty) return;
+    final resultCount = answerResponse.results.length;
+    final resultLabel = resultCount == 1 ? 'row' : 'rows';
+    final spokenText = resultCount > 0
+        ? '$answer. I found $resultCount result $resultLabel.'
+        : answer;
+
+    try {
+      await _answerTts.stop();
+      await _answerTts.setLanguage('en-US');
+      if (mounted) setState(() => _isSpeakingAnswer = true);
+      await _answerTts.speak(spokenText);
+    } catch (error) {
+      if (mounted) setState(() => _isSpeakingAnswer = false);
+      if (kDebugMode) debugPrint('Ask Retail Mind answer speech failed: $error');
+      if (mounted) _showMessage('Text-to-speech is unavailable on this device.');
+    }
+  }
+
+  Future<void> _stopAnswerSpeech() async {
+    try {
+      await _answerTts.stop();
+    } catch (_) {
+      // Best-effort stop; preserve the visible answer.
+    }
+    if (mounted) setState(() => _isSpeakingAnswer = false);
   }
 
   void _showMessage(String message) {
@@ -466,6 +476,25 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         if (_currentResponse != null && !busy && _currentResponse!.isSuccess) ...[
           const SizedBox(height: 18),
           AIAnswerCard(response: _currentResponse!),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: OutlinedButton.icon(
+                onPressed: _isSpeakingAnswer
+                    ? _stopAnswerSpeech
+                    : () => _speakAnswer(_currentResponse),
+                icon: Icon(
+                  _isSpeakingAnswer ? Icons.stop_circle_rounded : Icons.volume_up_rounded,
+                  size: 18,
+                ),
+                label: Text(
+                  _isSpeakingAnswer ? 'Stop speaking' : 'Listen to answer (English)',
+                  style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ),
           if (_currentResponse!.hasResults) ...[
             const SizedBox(height: 14),
             ResultCard(results: _currentResponse!.results, queryContext: _currentResponse!.query),
@@ -1045,7 +1074,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         children: [
           const Icon(Icons.fiber_manual_record_rounded, color: Color(0xFFDC2626), size: 16),
           const SizedBox(width: 10),
-          Expanded(child: Text('Listening in ${_selectedLanguage.nativeName}. Speak clearly, then tap Stop.', style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF991B1B), fontWeight: FontWeight.w600))),
+          Expanded(child: Text('Recording in ${_selectedLanguage.nativeName}. Pause as needed; the recording is kept until you tap Stop.', style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF991B1B), fontWeight: FontWeight.w600))),
           Text('${_recordSeconds}s', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF991B1B))),
         ],
       ),
