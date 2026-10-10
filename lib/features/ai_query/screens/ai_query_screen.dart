@@ -418,7 +418,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                     child: const Icon(Icons.track_changes_rounded, color: Color(0xFF2563EB), size: 21),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(child: Text('Try asking', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF17264A))),
+                  Expanded(child: Text('Try asking', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF17264A)))),
                 ],
               ),
               const SizedBox(height: 14),
@@ -451,7 +451,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                     child: const Icon(Icons.settings_suggest_rounded, color: Color(0xFF6366F1), size: 21),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(child: Text('How it works', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF17264A))),
+                  Expanded(child: Text('How it works', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF17264A)))),
                 ],
               ),
               const SizedBox(height: 17),
@@ -475,9 +475,9 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Your data stays private', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF14532D)),
+                          Text('Your data stays private', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF14532D))),
                           const SizedBox(height: 3),
-                          Text('Your question is sent through your authenticated Retail Mind session.', style: GoogleFonts.inter(fontSize: 10.5, height: 1.45, color: const Color(0xFF47705A)),
+                          Text('Your question is sent through your authenticated Retail Mind session.', style: GoogleFonts.inter(fontSize: 10.5, height: 1.45, color: const Color(0xFF47705A))),
                         ],
                       ),
                     ),
@@ -542,9 +542,9 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF17264A)),
+              Text(title, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF17264A))),
               const SizedBox(height: 3),
-              Text(subtitle, style: GoogleFonts.inter(fontSize: 10.5, height: 1.35, color: const Color(0xFF64748B)),
+              Text(subtitle, style: GoogleFonts.inter(fontSize: 10.5, height: 1.35, color: const Color(0xFF64748B))),
             ],
           ),
         ),
@@ -587,7 +587,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                       children: [
                         const Icon(Icons.auto_awesome_rounded, size: 15, color: Color(0xFF6D45E8)),
                         const SizedBox(width: 6),
-                        Text('AI BUSINESS ASSISTANT', style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 0.55, color: const Color(0xFF5538C9)),
+                        Text('AI BUSINESS ASSISTANT', style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 0.55, color: const Color(0xFF5538C9))),
                       ],
                     ),
                   ),
@@ -600,7 +600,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                       children: [
                         const Icon(Icons.circle, size: 7, color: Color(0xFF16A34A)),
                         const SizedBox(width: 6),
-                        Text('Ready to help', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF167342)),
+                        Text('Ready to help', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF167342))),
                       ],
                     ),
                   ),
@@ -624,7 +624,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                           ),
                         ),
                         const SizedBox(height: 9),
-                        Text('Sales, stock, customers and invoices — in the language you speak.', style: GoogleFonts.inter(fontSize: compact ? 12 : 13.5, height: 1.5, fontWeight: FontWeight.w500, color: const Color(0xFF536584)),
+                        Text('Sales, stock, customers and invoices — in the language you speak.', style: GoogleFonts.inter(fontSize: compact ? 12 : 13.5, height: 1.5, fontWeight: FontWeight.w500, color: const Color(0xFF536584))),
                       ],
                     ),
                   ),
@@ -681,7 +681,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         children: [
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 5),
-          Text(label, style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w700, color: const Color(0xFF435574)),
+          Text(label, style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w700, color: const Color(0xFF435574))),
         ],
       ),
     );
@@ -778,7 +778,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
       final button = OutlinedButton.icon(
         onPressed: busy ? null : (_isRecording ? _stopRecordingAndAsk : _startRecording),
         icon: Icon(_isRecording ? Icons.stop_circle_rounded : Icons.mic_rounded, size: 20),
-        label: Text(_isRecording ? 'Stop recording · \${_recordSeconds}s' : 'Tap to speak', maxLines: 1, overflow: TextOverflow.ellipsis),
+        label: Text(_isRecording ? 'Stop recording · ${_recordSeconds}s' : 'Tap to speak', maxLines: 1, overflow: TextOverflow.ellipsis),
         style: OutlinedButton.styleFrom(
           foregroundColor: _isRecording ? const Color(0xFFDC2626) : const Color(0xFF5546D8),
           backgroundColor: _isRecording ? const Color(0xFFFFF1F2) : const Color(0xFFF1EEFF),
@@ -833,9 +833,9 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
               ),
               const SizedBox(width: 9),
               Expanded(
-                child: Text('Ask a business question', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF17264A)),
+                child: Text('Ask a business question', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF17264A))),
               ),
-              Text('TEXT OR VOICE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.55, color: const Color(0xFF8592AB)),
+              Text('TEXT OR VOICE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.55, color: const Color(0xFF8592AB))),
             ],
           ),
           const SizedBox(height: 12),
@@ -891,10 +891,10 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
               const Icon(Icons.lock_outline_rounded, size: 14, color: Color(0xFF71809B)),
               const SizedBox(width: 6),
               Expanded(
-                child: Text('Your question is translated to English before your shop data is queried.', style: GoogleFonts.inter(fontSize: 10, height: 1.4, color: const Color(0xFF71809B)),
+                child: Text('Your question is translated to English before your shop data is queried.', style: GoogleFonts.inter(fontSize: 10, height: 1.4, color: const Color(0xFF71809B))),
               ),
               const SizedBox(width: 8),
-              Text('\${_queryController.text.length}/500', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF71809B)),
+              Text('${_queryController.text.length}/500', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF71809B))),
             ],
           ),
         ],
