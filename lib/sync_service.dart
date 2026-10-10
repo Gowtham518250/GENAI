@@ -135,6 +135,10 @@ class SyncService {
       if (userId == null || userId <= 0) return;
 
       final cursorKey = 'durable_sync_cursor_v1_$userId';
+      final unsupportedProbeKey = 'durable_sync_next_probe_ms_v1_$userId';
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      final nextProbeMs = prefs.getInt(unsupportedProbeKey) ?? 0;
+      if (nowMs < nextProbeMs) return;
       var cursor = prefs.getInt(cursorKey) ?? 0;
       var nextCursor = cursor;
       var needsRefresh = false;
@@ -155,6 +159,15 @@ class SyncService {
           headers: {'Authorization': 'Bearer $token'},
         ).timeout(const Duration(seconds: 8));
 
+        if (response.statusCode == 404) {
+          // Backend code may be deployed before its API is available. Back off
+          // probes for five minutes instead of logging a 404 on every 30s pulse.
+          await prefs.setInt(
+            unsupportedProbeKey,
+            DateTime.now().add(const Duration(minutes: 5)).millisecondsSinceEpoch,
+          );
+          return;
+        }
         if (response.statusCode == 409) {
           // The server log was restored/reset or the local cursor belongs to a
           // newer server state. Rebuild from the start rather than skipping data.
@@ -164,6 +177,7 @@ class SyncService {
         if (response.statusCode != 200) {
           throw Exception('Durable sync feed returned ${response.statusCode}');
         }
+        await prefs.remove(unsupportedProbeKey);
 
         final decoded = jsonDecode(response.body);
         if (decoded is! Map) {
