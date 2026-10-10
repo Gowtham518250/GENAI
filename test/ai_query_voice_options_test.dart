@@ -22,3 +22,21 @@ void main() {
     });
   });
 }
+
+
+  group('TTS locale mapping', () {
+    test('uses a language-specific locale for every selectable language', () {
+      for (final language in kVoiceLanguages) {
+        expect(ttsLocaleForLanguageCode(language.code), isNotEmpty);
+        expect(ttsLocaleForLanguageCode(language.code), contains('-'));
+      }
+    });
+
+    test('uses expected regional voices for common languages', () {
+      expect(ttsLocaleForLanguageCode('te'), 'te-IN');
+      expect(ttsLocaleForLanguageCode('hi'), 'hi-IN');
+      expect(ttsLocaleForLanguageCode('ta'), 'ta-IN');
+      expect(ttsLocaleForLanguageCode('en'), 'en-IN');
+      expect(ttsLocaleForLanguageCode('ne'), 'ne-NP');
+    });
+  });
