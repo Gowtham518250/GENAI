@@ -38,6 +38,10 @@ class SyncService {
   static Timer? _pulseTimer;
   static bool _initialized = false;
   static StreamSubscription<ConnectivityResult>? _connectivitySub;
+  static const Duration _automaticUserDataRefreshInterval = Duration(minutes: 5);
+  static DateTime? _lastUserDataDownloadAt;
+  static bool _userDataDownloadInProgress = false;
+  static bool _pulseInProgress = false;
 
   /// Initialize and start periodic sync workers
   static Future<void> init() async {
@@ -50,16 +54,21 @@ class SyncService {
     try {
       // Listen for connectivity changes
       _connectivitySub?.cancel();
+      bool? previousOfflineState;
       _connectivitySub = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-        final bool isOffline = result == ConnectivityResult.none;
-        
-        if (!isOffline) {
-          processQueueSafe();
-          downloadUserDataSafe();
+        final isOffline = result == ConnectivityResult.none;
+        final justReconnected = previousOfflineState == true && !isOffline;
+        previousOfflineState = isOffline;
+
+        // Reconnects should flush queued writes immediately, but a network
+        // type change (Wi-Fi <-> mobile) must not force another full invoice pull.
+        if (justReconnected) {
+          unawaited(processQueueSafe());
+          unawaited(_downloadUserDataIfDue());
         }
       });
 
-      // 🚀 Start LivePulseTimer (Runs every 60 seconds)
+      // Start the throttled queue/data refresh pulse.
       _startPulseTimer();
       
       // Initial sync
@@ -72,32 +81,41 @@ class SyncService {
     }
   }
   
-  /// Start or restart the pulse timer
+  /// Keep queued writes responsive without repeatedly downloading the full
+  /// invoice dataset. Queue flushing is lightweight when empty; cloud data pulls
+  /// are throttled to one automatic refresh every five minutes.
   static void _startPulseTimer() {
     _pulseTimer?.cancel();
-    // 🚨 DATA-LOSS-PREVENTION FIX: shortened 60s -> 20s AND now also drives the
-    // pending sync queue (sales, purchase orders, stock updates, etc). Previously
-    // this timer only re-downloaded data; the queue itself only re-ran on a
-    // connectivity-change EVENT, which frequently never fires on flaky mobile/5G
-    // networks (tower handoffs, weak-signal "still connected" states). That gap is
-    // exactly why a sale could sit unsynced for a long time despite having signal.
-    _pulseTimer = Timer.periodic(const Duration(seconds: 20), (timer) async {
-      if (!_initialized) return;
+    _pulseTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      if (!_initialized || _pulseInProgress) return;
+      _pulseInProgress = true;
 
       try {
         final connection = await Connectivity().checkConnectivity();
         if (connection != ConnectivityResult.none) {
-          // Always try to flush the pending queue first — this is the data that
-          // must not be lost (sales, purchase orders, stock decrements, etc).
           await processQueueSafe();
-          await downloadUserDataSafe();
-          _refreshNotifier.add(null); // Notify UI to rebuild
+          await _downloadUserDataIfDue();
         }
       } catch (e) {
         if (kDebugMode) debugPrint('⚠️ Pulse timer error: $e');
         await ErrorLogHelper.logException(e, StackTrace.current, context: 'SyncService.pulseTimer');
+      } finally {
+        _pulseInProgress = false;
       }
     });
+  }
+
+  static Future<void> _downloadUserDataIfDue() async {
+    if (!_initialized || _userDataDownloadInProgress) return;
+
+    final lastDownload = _lastUserDataDownloadAt;
+    if (lastDownload != null &&
+        DateTime.now().difference(lastDownload) <
+            _automaticUserDataRefreshInterval) {
+      return;
+    }
+
+    await downloadUserDataSafe();
   }
   
   /// Dispose all resources
@@ -105,6 +123,7 @@ class SyncService {
     if (kDebugMode) debugPrint('🛑 Disposing SyncService...');
     _pulseTimer?.cancel();
     _pulseTimer = null;
+    _pulseInProgress = false;
     await _connectivitySub?.cancel();
     _connectivitySub = null;
     _initialized = false;
@@ -473,15 +492,28 @@ class SyncService {
     }
   }
 
-  /// Downloads user data (workers, shop details) from backend - Thread-safe
+  /// Downloads user data (workers, sales, shop details) from backend.
+  /// Concurrent calls are coalesced so overlapping refresh triggers do not queue
+  /// multiple full-data reads behind the same lock.
   static Future<void> downloadUserDataSafe() async {
-    await _syncLock.synchronized(() async {
-      try {
-        await _downloadUserDataImpl();
-      } catch (e) {
-        await ErrorLogHelper.logException(e, StackTrace.current, context: 'SyncService.downloadUserData');
-      }
-    });
+    if (_userDataDownloadInProgress) return;
+    _userDataDownloadInProgress = true;
+    try {
+      await _syncLock.synchronized(() async {
+        try {
+          await _downloadUserDataImpl();
+        } catch (e) {
+          await ErrorLogHelper.logException(
+            e,
+            StackTrace.current,
+            context: 'SyncService.downloadUserData',
+          );
+        }
+      });
+      _lastUserDataDownloadAt = DateTime.now();
+    } finally {
+      _userDataDownloadInProgress = false;
+    }
   }
 
   /// Internal implementation - calls Synchronized

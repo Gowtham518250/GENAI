@@ -20,7 +20,10 @@ class AiQueryService {
   ///
   /// The user question is sent as-is without manual date conversion or SQL generation.
   /// Returns a structured [AIQueryResponse].
-  static Future<AIQueryResponse> askQuery(String userQuery) async {
+  static Future<AIQueryResponse> askQuery(
+    String userQuery, {
+    String languageCode = 'en',
+  }) async {
     final trimmedQuery = userQuery.trim();
     if (trimmedQuery.isEmpty) {
       return AIQueryResponse.error(
@@ -41,43 +44,16 @@ class AiQueryService {
       // A pre-check would bypass that flow and give a false "session expired" error
       // even when the refresh token is perfectly valid.
 
-      // The backend /askquery endpoint accepts form data. Send the
-      // correct payload first instead of intentionally triggering a 422 and
-      // then retrying, which made simple queries feel unnecessarily slow.
-      http.Response response;
-      try {
-        response = await ApiClient.postForm(
-          ApiClient.askQueryEndpoint,
-          {'query': trimmedQuery},
-        ).timeout(_requestTimeout);
-      } catch (formErr) {
-        if (formErr is SocketException ||
-            formErr.toString().contains('No network connectivity') ||
-            formErr is TimeoutException) {
-          rethrow;
-        }
-        // Compatibility fallback for a backend build that expects JSON.
-        response = await ApiClient.postJson(
-          ApiClient.askQueryEndpoint,
-          {'query': trimmedQuery},
-        ).timeout(_requestTimeout);
-      }
-
-      // Compatibility retry for older deployments that still advertise the
-      // opposite content type.
-      if (response.statusCode == 422) {
-        try {
-          final jsonResp = await ApiClient.postJson(
-            ApiClient.askQueryEndpoint,
-            {'query': trimmedQuery},
-          ).timeout(_requestTimeout);
-          if (jsonResp.statusCode != 422) {
-            response = jsonResp;
-          }
-        } catch (_) {
-          // Keep the original response.
-        }
-      }
+      // /askquery has a form-data contract. Send exactly one request per
+      // user action; retrying the same query as JSON after a 422 caused duplicate
+      // backend hits on validation errors and older deployments.
+      final response = await ApiClient.postForm(
+        ApiClient.askQueryEndpoint,
+        {
+          'query': trimmedQuery,
+          'language_code': languageCode,
+        },
+      ).timeout(_requestTimeout);
 
       stopwatch.stop();
       statusCode = response.statusCode;

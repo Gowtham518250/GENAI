@@ -1,10 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:record/record.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../visual_widgets.dart';
 import '../models/ai_query_response.dart';
@@ -31,8 +30,11 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   final TextEditingController _queryController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _inputFocusNode = FocusNode();
-  final Record _recorder = Record();
+  final SpeechToText _speech = SpeechToText();
 
+  bool _speechInitialized = false;
+  bool _speechAvailable = false;
+  bool _finalizingSpeech = false;
   bool _isLoading = false;
   bool _isRecording = false;
   bool _isVoiceProcessing = false;
@@ -63,7 +65,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     _queryController.dispose();
     _scrollController.dispose();
     _inputFocusNode.dispose();
-    unawaited(_recorder.dispose());
+    unawaited(_speech.cancel());
     super.dispose();
   }
 
@@ -111,20 +113,47 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
 
   Future<void> _startRecording() async {
     if (_isLoading || _isVoiceProcessing || _isRecording) return;
+
     try {
-      final allowed = await _recorder.hasPermission();
-      if (!allowed) {
-        _showMessage('Allow microphone access to ask a voice question.');
+      if (!_speechInitialized) {
+        _speechAvailable = await _speech.initialize(
+          onStatus: _handleSpeechStatus,
+          onError: (error) => _handleSpeechError(error),
+          debugLogging: false,
+        );
+        // Retry initialization on the next tap if no system recognizer was found.
+        _speechInitialized = _speechAvailable;
+      }
+
+      if (!_speechAvailable) {
+        _showMessage(
+          'Speech recognition is unavailable on this device. Check its speech service and microphone permission.',
+        );
         return;
       }
-      final directory = await getTemporaryDirectory();
-      final path = '${directory.path}/retail_mind_query_${DateTime.now().millisecondsSinceEpoch}.wav';
-      await _recorder.start(
-        path: path,
-        encoder: AudioEncoder.wav,
-        samplingRate: 16000,
-        bitRate: 256000,
-      );
+
+      final locales = await _speech.locales();
+      final languagePrefix = _selectedLanguage.code.toLowerCase();
+      final candidates = locales.where((locale) {
+        final normalized = locale.localeId.toLowerCase().replaceAll('-', '_');
+        return normalized == languagePrefix ||
+            normalized.startsWith('${languagePrefix}_');
+      }).toList();
+
+      if (candidates.isEmpty) {
+        _showMessage(
+          'The device speech service does not support ${_selectedLanguage.name}. Choose another language or type your question.',
+        );
+        return;
+      }
+
+      final preferredLocale = candidates.where((locale) =>
+          locale.localeId.toLowerCase().replaceAll('-', '_') ==
+          '${languagePrefix}_in');
+      final localeId = preferredLocale.isNotEmpty
+          ? preferredLocale.first.localeId
+          : candidates.first.localeId;
+
       if (!mounted) return;
       setState(() {
         _isRecording = true;
@@ -132,93 +161,140 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         _errorMessage = null;
         _originalTranscript = null;
         _translatedEnglish = null;
+        _queryController.clear();
       });
+
       _recordTimer?.cancel();
       _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (!mounted || !_isRecording) {
           timer.cancel();
           return;
         }
-        setState(() => _recordSeconds++);
+        _recordSeconds++;
         if (_recordSeconds >= 60) {
-          _stopRecordingAndAsk();
+          unawaited(_stopRecordingAndAsk());
+          return;
         }
+        // Avoid rebuilding the whole query screen every second while listening.
+        if (_recordSeconds % 5 == 0) setState(() {});
       });
+
+      await _speech.listen(
+        localeId: localeId,
+        listenFor: const Duration(seconds: 60),
+        pauseFor: const Duration(seconds: 5),
+        partialResults: true,
+        cancelOnError: true,
+        listenMode: ListenMode.dictation,
+        onResult: (result) {
+          if (!mounted || !_isRecording) return;
+          setState(() {
+            _queryController.value = TextEditingValue(
+              text: result.recognizedWords,
+              selection: TextSelection.collapsed(
+                offset: result.recognizedWords.length,
+              ),
+            );
+          });
+        },
+      );
     } catch (error) {
-      if (mounted) _showMessage('Could not start recording. Check microphone permissions and try again.');
+      _recordTimer?.cancel();
+      if (!mounted) return;
+      setState(() {
+        _isRecording = false;
+        _isVoiceProcessing = false;
+        _errorMessage = 'Could not start speech recognition. Check microphone permission and try again.';
+      });
+      if (kDebugMode) debugPrint('Ask Retail Mind speech start failed: $error');
     }
   }
 
+  void _handleSpeechStatus(String status) {
+    if (!mounted) return;
+    if ((status == 'done' || status == 'notListening') &&
+        _isRecording &&
+        !_finalizingSpeech &&
+        !_isVoiceProcessing) {
+      unawaited(_stopRecordingAndAsk());
+    }
+  }
+
+  void _handleSpeechError(dynamic error) {
+    if (!mounted) return;
+    if (kDebugMode) debugPrint('Ask Retail Mind speech error: $error');
+    if (!_isRecording || _finalizingSpeech) return;
+
+    _recordTimer?.cancel();
+    setState(() {
+      _isRecording = false;
+      _isVoiceProcessing = false;
+      _errorMessage =
+          'Speech recognition stopped. Please try again or type your question.';
+    });
+  }
+
   Future<void> _stopRecordingAndAsk() async {
-    if (!_isRecording || _isVoiceProcessing) return;
+    if (!_isRecording || _isVoiceProcessing || _finalizingSpeech) return;
+    _finalizingSpeech = true;
     _recordTimer?.cancel();
     _recordTimer = null;
 
-    String? path;
     try {
-      path = await _recorder.stop();
-    } catch (_) {
-      path = null;
-    }
+      // Wait for the recognizer to return its final partial transcript before
+      // sending anything to the Retail Mind backend.
+      try {
+        await _speech.stop();
+      } catch (_) {
+        // The recognizer may already have stopped itself.
+      }
 
-    if (!mounted) return;
-    setState(() {
-      _isRecording = false;
-      _isVoiceProcessing = true;
-      _errorMessage = null;
-    });
-
-    if (path == null || path.isEmpty || !await File(path).exists()) {
+      final transcript = _queryController.text.trim();
       if (!mounted) return;
-      setState(() {
-        _isVoiceProcessing = false;
-        _errorMessage = 'No audio was captured. Please try recording again.';
-      });
-      return;
-    }
 
-    try {
-      final voiceResult = await AiQueryService.askQueryFromAudio(
-        File(path),
+      if (transcript.isEmpty) {
+        setState(() {
+          _isRecording = false;
+          _isVoiceProcessing = false;
+          _errorMessage = 'No speech was recognized. Please try again or type your question.';
+        });
+        return;
+      }
+
+      setState(() {
+        _isRecording = false;
+        _isVoiceProcessing = true;
+        _errorMessage = null;
+        _originalTranscript = transcript;
+        _translatedEnglish = null;
+      });
+
+      final response = await AiQueryService.askQuery(
+        transcript,
         languageCode: _selectedLanguage.code,
       );
       if (!mounted) return;
 
       setState(() {
         _isVoiceProcessing = false;
-        _originalTranscript = voiceResult.transcript;
-        _translatedEnglish = voiceResult.englishQuery;
-        _queryController.text = voiceResult.englishQuery;
-        _currentResponse = voiceResult.response;
-        if (!voiceResult.response.isSuccess) {
-          _errorMessage = voiceResult.response.errorMessage ?? 'Unable to answer this voice query.';
-        }
+        _currentResponse = response;
+        _translatedEnglish = response.translatedQuery;
+        _errorMessage = response.isSuccess
+            ? null
+            : (response.errorMessage ?? 'Unable to answer this voice query.');
       });
       _scrollToBottom();
     } catch (error) {
       if (!mounted) return;
       setState(() {
+        _isRecording = false;
         _isVoiceProcessing = false;
-        _errorMessage = _friendlyVoiceError(error);
+        _errorMessage = 'Could not process the recognized speech. Please try again.';
       });
+      if (kDebugMode) debugPrint('Ask Retail Mind voice query failed: $error');
     } finally {
-      try {
-        await File(path).delete();
-      } catch (_) {
-        // Temporary file cleanup is best-effort.
-      }
+      _finalizingSpeech = false;
     }
-  }
-
-  String _friendlyVoiceError(Object error) {
-    final message = error.toString().replaceFirst('Exception: ', '');
-    if (message.contains('503') || message.toLowerCase().contains('speech service')) {
-      return 'The open-source voice model service is not configured or is offline. Start the Retail Mind voice service and set INDIC_SPEECH_SERVICE_URL on the backend, then retry.';
-    }
-    if (message.toLowerCase().contains('timeout')) {
-      return 'Voice processing took too long. Try a shorter recording or retry when the model service is ready.';
-    }
-    return message.length > 220 ? '${message.substring(0, 220)}…' : message;
   }
 
   void _showMessage(String message) {

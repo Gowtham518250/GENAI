@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'api_client.dart';
 import 'operation_queue_service.dart';
-import 'sync_service.dart';
 import 'sync_queue_manager.dart';
 import 'session_management.dart';
 import 'uuid_service.dart';
@@ -17,11 +16,13 @@ import 'local_storage_service.dart';
 class BackgroundSyncWorker {
   static BackgroundSyncWorker? _instance;
   Timer? _syncTimer;
+  Timer? _highPriorityTimer;
   bool _isRunning = false;
   bool _isProcessing = false;
-  
-  static const Duration _syncInterval = Duration(minutes: 5); // Sync every 5 minutes
-  static const Duration _highPriorityInterval = Duration(seconds: 30); // High priority every 30 seconds
+  bool _isHighPriorityProcessing = false;
+
+  static const Duration _syncInterval = Duration(minutes: 5);
+  static const Duration _highPriorityInterval = Duration(minutes: 1);
   
   BackgroundSyncWorker._();
   
@@ -60,14 +61,17 @@ class BackgroundSyncWorker {
     _isRunning = false;
     _syncTimer?.cancel();
     _syncTimer = null;
-    
+    _highPriorityTimer?.cancel();
+    _highPriorityTimer = null;
+
     if (kDebugMode) debugPrint('🛑 Background sync worker stopped');
   }
   
   /// Start high-priority sync timer
   void _startHighPrioritySync() {
-    Timer.periodic(_highPriorityInterval, (_) async {
-      await _syncHighPriorityOperations();
+    _highPriorityTimer?.cancel();
+    _highPriorityTimer = Timer.periodic(_highPriorityInterval, (_) async {
+      if (_isRunning) await _syncHighPriorityOperations();
     });
   }
   
@@ -97,10 +101,8 @@ class BackgroundSyncWorker {
         return;
       }
       
-      // Canonical durable outbox is processed first. Legacy OperationQueueService
-      // remains available for operation types that have not yet migrated.
-      await _processDurableOutbox();
-
+      // SyncService owns the canonical durable outbox and already dispatches it
+      // on demand / on its throttled pulse. This worker only adapts legacy items.
       // Get legacy queue stats
       final stats = await OperationQueueService.instance.getQueueStats();
       
@@ -127,38 +129,31 @@ class BackgroundSyncWorker {
     }
   }
   
-  /// Sync high-priority operations only
+  /// Process legacy high-priority work only when there is something pending.
+  /// Canonical queued writes belong exclusively to SyncService.
   Future<void> _syncHighPriorityOperations() async {
-    if (_isProcessing) return;
+    if (_isProcessing || _isHighPriorityProcessing || !_isRunning) return;
+    _isHighPriorityProcessing = true;
 
     try {
-      final connectivityResult = await Connectivity().checkConnectivity();
-      final hasNetwork = connectivityResult != ConnectivityResult.none;
-
-      if (!hasNetwork) return;
-
-      // Process the canonical durable queue first. This includes worker
-      // attendance check-in/check-out operations.
-      try {
-        await SyncService.processQueueSafe();
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('❌ Durable high-priority sync failed: $e');
-        }
-      }
-
       final stats = await OperationQueueService.instance.getQueueStats();
       if (stats.highPriorityPending == 0) return;
+
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult == ConnectivityResult.none) return;
+
+      if (!await SessionManagementService.isTokenValid()) return;
 
       if (kDebugMode) {
         debugPrint(
           '🔥 Syncing legacy high-priority operations: ${stats.highPriorityPending}',
         );
       }
-
       await _processOperations(priorityOnly: OperationPriority.high);
     } catch (e) {
       if (kDebugMode) debugPrint('❌ High-priority sync error: $e');
+    } finally {
+      _isHighPriorityProcessing = false;
     }
   }
   /// 🔒 DATA VALIDATION: Validate operation data before sending to backend
@@ -213,24 +208,6 @@ class BackgroundSyncWorker {
     }
   }
 
-  /// Process the canonical encrypted user-scoped SyncQueueManager outbox.
-  ///
-  /// SyncService is the single dispatcher for SyncQueueManager actions. Keeping
-  /// dispatch in one place is critical for attendance, where the queued
-  /// checkout must call /api/attendance/check-out instead of being ignored
-  /// by this background worker.
-  Future<void> _processDurableOutbox() async {
-    try {
-      await SyncService.processQueueSafe();
-      if (kDebugMode) {
-        debugPrint('✅ Canonical SyncQueueManager dispatch completed');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Canonical outbox dispatch failed: $e');
-      }
-    }
-  }
   Future<void> _recordDurableRetry(
     Map<String, dynamic> raw,
     String error,
