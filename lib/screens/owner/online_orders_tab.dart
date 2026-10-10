@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
 import '../../visual_widgets.dart';
+import '../../sync_service.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher_string.dart';
 class OnlineOrdersTab extends StatefulWidget {
@@ -42,16 +43,28 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
   // failing if the network drops mid-action.
   final Set<String> _pendingSync = {};
   late TabController _tabController;
+  StreamSubscription<List<Map<String, dynamic>>>? _durableEventsSubscription;
+  bool _ordersFetchInProgress = false;
+  bool _ordersRefreshPending = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 7, vsync: this);
     _loadShopIdAndOrders();
+    _durableEventsSubscription = SyncService.durableEventsStream.listen((events) {
+      if (!mounted) return;
+      final hasOrderChange = events.any((event) {
+        final type = event['type']?.toString();
+        return type == 'order.created' || type == 'order.status_changed';
+      });
+      if (hasOrderChange) unawaited(_fetchAllOrders(showLoading: false));
+    });
   }
 
   @override
   void dispose() {
+    _durableEventsSubscription?.cancel();
     _tabController.dispose();
     super.dispose();
   }
@@ -137,6 +150,14 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
   }
 
   Future<void> _fetchAllOrders({bool showLoading = true}) async {
+    // WebSocket events, durable recovery, and manual refresh may coincide.
+    // Coalesce concurrent reads but guarantee a follow-up if a newer event
+    // arrived after the current request started.
+    if (_ordersFetchInProgress) {
+      _ordersRefreshPending = true;
+      return;
+    }
+    _ordersFetchInProgress = true;
     if (showLoading && mounted) {
       setState(() => _isLoading = true);
     }
@@ -235,7 +256,12 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
       debugPrint('Failed to fetch online orders: ' + e.toString());
       // Preserve locally cached data when a refresh fails.
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      _ordersFetchInProgress = false;
+      if (mounted && showLoading) setState(() => _isLoading = false);
+      if (_ordersRefreshPending && mounted) {
+        _ordersRefreshPending = false;
+        unawaited(_fetchAllOrders(showLoading: false));
+      }
     }
   }
 
