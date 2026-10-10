@@ -41,6 +41,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   bool _isLoading = false;
   bool _isRecording = false;
   bool _isVoiceProcessing = false;
+  String _inputLanguageCode = 'en';
   AIQueryResponse? _currentResponse;
   String? _errorMessage;
   String? _originalTranscript;
@@ -82,7 +83,12 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     _executeQuery(selectedQuery);
   }
 
-  Future<void> _executeQuery(String query) async {
+  Future<void> _executeQuery(
+    String query, {
+    String languageCode = 'en',
+    bool preserveVoiceTranscript = false,
+    bool speakAnswerOnSuccess = false,
+  }) async {
     final cleanQuery = query.trim();
     if (cleanQuery.isEmpty || _isLoading || _isVoiceProcessing) return;
 
@@ -90,23 +96,36 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _originalTranscript = null;
-      _translatedEnglish = null;
+      if (!preserveVoiceTranscript) {
+        _originalTranscript = null;
+        _translatedEnglish = null;
+      }
       _queryController.text = cleanQuery;
     });
     _scrollToBottom();
 
     try {
-      final response = await AiQueryService.askQuery(cleanQuery);
+      final response = await AiQueryService.askQuery(
+        cleanQuery,
+        languageCode: languageCode,
+      );
       if (!mounted) return;
       setState(() {
         _isLoading = false;
         _currentResponse = response;
+        if (preserveVoiceTranscript &&
+            response.translatedQuery != null &&
+            response.translatedQuery!.trim().isNotEmpty) {
+          _translatedEnglish = response.translatedQuery!.trim();
+        }
         if (!response.isSuccess) {
           _errorMessage = response.errorMessage ?? 'Unable to process this question.';
         }
       });
       _scrollToBottom();
+      if (speakAnswerOnSuccess && response.isSuccess) {
+        unawaited(_speakAnswer(response));
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -201,36 +220,40 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         _errorMessage = null;
       });
 
-      final voiceResult = await AiQueryService.askVoiceQuery(
+      final spokenLanguageCode = _selectedLanguage.code;
+      final transcript = await AiQueryService.transcribeVoiceQuery(
         audioPath: audioPath,
-        languageCode: _selectedLanguage.code,
+        languageCode: spokenLanguageCode,
       );
       if (!mounted) return;
 
-      final response = voiceResult.response;
+      // Show the recognized words in the same editable query field before any
+      // business-data query starts. The next request uses the selected language,
+      // so /askquery translates this text with the existing Groq text model.
       setState(() {
         _isVoiceProcessing = false;
-        _currentResponse = response;
-        _originalTranscript = voiceResult.transcript.isNotEmpty
-            ? voiceResult.transcript
-            : null;
-        _translatedEnglish = voiceResult.englishQuery.isNotEmpty
-            ? voiceResult.englishQuery
-            : null;
-        if (voiceResult.transcript.isNotEmpty) {
-          _queryController.text = voiceResult.transcript;
-        }
-        _errorMessage = response.isSuccess
-            ? null
-            : (response.errorMessage ?? 'Unable to answer this voice query.');
+        _inputLanguageCode = spokenLanguageCode;
+        _currentResponse = null;
+        _originalTranscript = transcript;
+        _translatedEnglish = null;
+        _queryController.value = TextEditingValue(
+          text: transcript,
+          selection: TextSelection.collapsed(offset: transcript.length),
+        );
+        _errorMessage = null;
       });
       _scrollToBottom();
 
-      // Voice-first interactions receive an audible answer automatically.
-      // Text questions can use the explicit Listen to answer control instead.
-      if (response.isSuccess) {
-        unawaited(_speakAnswer(response));
-      }
+      // Wait for a frame so the transcript is visible in the text box before
+      // automatically executing it through the normal /askquery endpoint.
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      await _executeQuery(
+        transcript,
+        languageCode: spokenLanguageCode,
+        preserveVoiceTranscript: true,
+        speakAnswerOnSuccess: true,
+      );
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -1045,7 +1068,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
 
     Widget askButton({required bool fullWidth}) {
       final button = ElevatedButton.icon(
-        onPressed: canAsk ? () => _executeQuery(_queryController.text) : null,
+        onPressed: canAsk ? () => _executeQuery(_queryController.text, languageCode: _inputLanguageCode) : null,
         icon: const Icon(Icons.auto_awesome_rounded, size: 19),
         label: const Text('Ask Retail Mind'),
         style: ElevatedButton.styleFrom(
@@ -1099,7 +1122,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
             maxLines: 5,
             textInputAction: TextInputAction.newline,
             onChanged: (_) => setState(() {}),
-            onSubmitted: (_) => _executeQuery(_queryController.text),
+            onSubmitted: (_) => _executeQuery(_queryController.text, languageCode: _inputLanguageCode),
             style: GoogleFonts.inter(fontSize: 14, height: 1.5, color: const Color(0xFF17264A), fontWeight: FontWeight.w500),
             decoration: InputDecoration(
               hintText: 'Ask about sales, revenue, customers, stock…',
@@ -1231,7 +1254,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
       children: [
         const Icon(Icons.verified_user_outlined, color: Color(0xFF94A3B8), size: 14),
         const SizedBox(width: 6),
-        Flexible(child: Text('Open-source speech models · no paid translation API', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10.5, color: AppColors.textTertiary, fontWeight: FontWeight.w500))),
+        Flexible(child: Text('Groq speech recognition + English question translation', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10.5, color: AppColors.textTertiary, fontWeight: FontWeight.w500))),
       ],
     );
   }
