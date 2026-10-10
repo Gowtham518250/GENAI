@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,31 +8,34 @@ plugins {
     id("com.google.gms.google-services")  // Google Services plugin for Firebase
 }
 
+// Keep signing inputs at script scope so they are available both to the
+// Android signing configuration and to the release-task validation below.
+val signingProperties = Properties().apply {
+    val propertiesFile = rootProject.file("key.properties")
+    if (propertiesFile.exists()) {
+        propertiesFile.inputStream().use { input -> this.load(input) }
+    }
+}
+
+fun signingValue(propertyName: String, environmentName: String): String? {
+    return System.getenv(environmentName)?.takeIf { it.isNotBlank() }
+        ?: signingProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
+}
+
+val releaseKeystorePath = signingValue("storeFile", "ANDROID_KEYSTORE_PATH")
+val releaseStorePassword = signingValue("storePassword", "ANDROID_KEYSTORE_PASSWORD")
+val releaseKeyAlias = signingValue("keyAlias", "ANDROID_KEY_ALIAS")
+val releaseKeyPassword = signingValue("keyPassword", "ANDROID_KEY_PASSWORD")
+val hasReleaseSigning =
+    !releaseKeystorePath.isNullOrBlank() &&
+    !releaseStorePassword.isNullOrBlank() &&
+    !releaseKeyAlias.isNullOrBlank() &&
+    !releaseKeyPassword.isNullOrBlank()
+
 android {
     namespace = "com.retailmind.app"
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
-    val signingProperties = java.util.Properties().apply {
-        val propertiesFile = rootProject.file("key.properties")
-        if (propertiesFile.exists()) {
-            propertiesFile.inputStream().use { load(it) }
-        }
-    }
-
-    fun signingValue(propertyName: String, environmentName: String): String? {
-        return System.getenv(environmentName)?.takeIf { it.isNotBlank() }
-            ?: signingProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
-    }
-
-    val releaseKeystorePath = signingValue("storeFile", "ANDROID_KEYSTORE_PATH")
-    val releaseStorePassword = signingValue("storePassword", "ANDROID_KEYSTORE_PASSWORD")
-    val releaseKeyAlias = signingValue("keyAlias", "ANDROID_KEY_ALIAS")
-    val releaseKeyPassword = signingValue("keyPassword", "ANDROID_KEY_PASSWORD")
-    val hasReleaseSigning =
-        !releaseKeystorePath.isNullOrBlank() &&
-        !releaseStorePassword.isNullOrBlank() &&
-        !releaseKeyAlias.isNullOrBlank() &&
-        !releaseKeyPassword.isNullOrBlank()
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -41,10 +46,9 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.retailmind.app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // You can update these values to match your application needs.
         // Google Play requires API 36+ for new apps and updates after Aug 31, 2026.
+        minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -63,14 +67,11 @@ android {
 
     buildTypes {
         release {
-            // 🔧 CRITICAL: Set your own signing config before publishing to Play Store.
+            // Set your own signing config before publishing to Play Store.
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            // 🔧 FIX: this was missing entirely — the release build runs R8
-            // minification (Flutter's default) with zero app-level keep
-            // rules, which is what caused the WorkDatabase crash. See
-            // proguard-rules.pro for the full explanation.
+            // R8 minification uses app-level keep rules to protect WorkManager classes.
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
