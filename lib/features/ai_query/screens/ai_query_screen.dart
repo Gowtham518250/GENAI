@@ -278,12 +278,19 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
           ],
         ),
         actions: [
-          TextButton.icon(
-            onPressed: _openHistory,
-            icon: const Icon(Icons.history_rounded, size: 19),
-            label: Text('Query History', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
-            style: TextButton.styleFrom(foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10)),
-          ),
+          if (MediaQuery.sizeOf(context).width >= 480)
+            TextButton.icon(
+              onPressed: _openHistory,
+              icon: const Icon(Icons.history_rounded, size: 19),
+              label: Text('Query History', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
+              style: TextButton.styleFrom(foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10)),
+            )
+          else
+            IconButton(
+              onPressed: _openHistory,
+              tooltip: 'Query History',
+              icon: const Icon(Icons.history_rounded, color: Colors.white),
+            ),
           const SizedBox(width: 8),
         ],
       ),
