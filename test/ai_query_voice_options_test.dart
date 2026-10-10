@@ -21,7 +21,8 @@ void main() {
       expect(telugu.nativeName, 'తెలుగు');
     });
   });
-group('TTS locale mapping', () {
+
+  group('TTS locale mapping', () {
     test('uses a language-specific locale for every selectable language', () {
       for (final language in kVoiceLanguages) {
         expect(ttsLocaleForLanguageCode(language.code), isNotEmpty);
@@ -37,3 +38,4 @@ group('TTS locale mapping', () {
       expect(ttsLocaleForLanguageCode('ne'), 'ne-NP');
     });
   });
+}
