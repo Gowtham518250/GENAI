@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -117,7 +118,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
       if (!_speechInitialized) {
         _speechAvailable = await _speech.initialize(
           onStatus: _handleSpeechStatus,
-          onError: _handleSpeechError,
+          onError: (error) => _handleSpeechError(error),
           debugLogging: false,
         );
         // Retry initialization on the next tap if no system recognizer was found.
@@ -219,9 +220,9 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     }
   }
 
-  void _handleSpeechError(SpeechRecognitionError error) {
+  void _handleSpeechError(dynamic error) {
     if (!mounted) return;
-    if (kDebugMode) debugPrint('Ask Retail Mind speech error: ${error.errorMsg}');
+    if (kDebugMode) debugPrint('Ask Retail Mind speech error: $error');
     if (!_isRecording || _finalizingSpeech) return;
 
     _recordTimer?.cancel();
