@@ -281,8 +281,9 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     final answer = answerResponse.displayAnswer.trim();
     if (answer.isEmpty) return;
     final resultCount = answerResponse.results.length;
+    final resultLabel = resultCount == 1 ? 'row' : 'rows';
     final spokenText = resultCount > 0
-        ? '$answer. I found $resultCount result ${resultCount == 1 ? 'row' : 'rows'}.'
+        ? '$answer. I found $resultCount result $resultLabel.'
         : answer;
 
     try {
@@ -293,7 +294,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     } catch (error) {
       if (mounted) setState(() => _isSpeakingAnswer = false);
       if (kDebugMode) debugPrint('Ask Retail Mind answer speech failed: $error');
-      _showMessage('Text-to-speech is unavailable on this device.');
+      if (mounted) _showMessage('Text-to-speech is unavailable on this device.');
     }
   }
 
