@@ -1506,10 +1506,9 @@ class _DashboardPageState extends State<DashboardPage>
     }
 
     if (hasInvoiceChange) {
-      // Download into local persistence first, then render the local mirror.
-      // This path runs only after invoice/payment changes, not on a timer.
-      await _fetchInvoicesFromBackend();
-      if (!mounted) return;
+      // SyncService has already persisted the canonical invoice snapshot for
+      // these change types. Render the local mirror instead of issuing another
+      // full invoice request from the dashboard callback.
       final refreshed = await LocalStorageService.loadSales();
       if (!mounted) return;
       setState(() {
