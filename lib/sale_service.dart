@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'api_client.dart';
 import 'stock_alert_service.dart';
 import 'inventory_management_service.dart';
@@ -33,69 +32,6 @@ class SaleService {
     if (paidPaise > 0) return 'PARTIAL';
     return 'UNPAID';
 }
-
-  /// Returns true only when the device currently has a network transport.
-  /// This is NOT a server-success check; the caller still requires a 2xx ACK.
-  static Future<bool> _hasNetworkTransport() async {
-    try {
-      final dynamic connection = await Connectivity().checkConnectivity();
-      if (connection is List) {
-        if (connection.isEmpty) return false;
-        return connection.any((item) => item != ConnectivityResult.none);
-      }
-      return connection != ConnectivityResult.none;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  static Future<bool> _postInvoiceWithRetry(
-    Map<String, dynamic> invoicePayload,
-  ) async {
-    final token = await SecureTokenStorage.getToken() ?? '';
-    if (token.isEmpty) return false;
-
-    // The sale is already durable in the encrypted outbox before this
-    // foreground request starts. Retrying here blocks the cashier for 2+4
-    // seconds on transient Render/network problems and competes with the same
-    // durable queue that will retry safely in the background.
-    // Keep checkout fast: one bounded foreground attempt, then let the
-    // outbox handle retries.
-    const maxAttempts = 1;
-    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        final response = await ApiClient.postJson(
-          ApiClient.invoicesSync,
-          invoicePayload,
-          headers: {'Authorization': 'Bearer $token'},
-        ).timeout(const Duration(seconds: 6));
-
-        AgentDebugLog.log(
-          location: 'sale_service.dart:_postInvoiceWithRetry',
-          message: 'INVOICE SYNC ATTEMPT',
-          hypothesisId: 'H2_RETRY',
-          data: {
-            'attempt': attempt,
-            'statusCode': response.statusCode,
-            'invoiceNumber': invoicePayload['invoice_number'],
-          },
-        );
-
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          return true;
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('⚠️ Invoice sync attempt $attempt/$maxAttempts failed: $e');
-        }
-      }
-
-      if (attempt < maxAttempts) {
-        await Future<void>.delayed(Duration(seconds: attempt * 2));
-      }
-    }
-    return false;
-  }
 
   static Future<Map<String, dynamic>> submitSale({
     required String saleId,
@@ -286,8 +222,6 @@ try {
     if (kDebugMode) debugPrint('⚠️ Failed to register incomplete-transaction safety net: $e');
   }
 
-  bool backendSuccess = false;
-
   // OFFLINE-FIRST: persist the sale and enqueue it BEFORE attempting any network call.
   // Capture the exact transaction timestamp once. The same value is used by
   // local history and the backend so a later sync cannot rewrite the sale time.
@@ -326,7 +260,7 @@ try {
     invoiceNumber: canonicalInvoiceNumber,
   );
 
-  await SyncQueueManager.enqueue('save_sale', {
+  final bool queueEnqueued = await SyncQueueManager.enqueue('save_sale', {
     'is_borrow': isBorrow,
     'endpoint': ApiClient.invoicesSync,
     'payload': invoicePayload,
@@ -335,99 +269,52 @@ try {
     'invoice_number': canonicalInvoiceNumber,
     'retry_priority': 'high',
   });
+  if (!queueEnqueued) {
+    // Do not fall back to a second, competing network writer. The sale is
+    // already in local history; make the outbox failure explicit for recovery.
+    throw StateError(
+      'SALE_OUTBOX_PERSIST_FAILED: sale is locally saved but was not queued',
+    );
+  }
 
   // Local inventory is updated once. Backend inventory is updated only by /invoices/sync.
   await InventoryManagementService.deductStockLocally(items, saleId: saleId);
   SyncService.triggerDashboardRefresh();
 
-  final networkAvailableAtCheckout = await _hasNetworkTransport();
-  
-
-  if (networkAvailableAtCheckout) {
-    backendSuccess = await _postInvoiceWithRetry(invoicePayload);
-    if (backendSuccess) {
-      await _markSaleAsSynced(saleId);
-    }
-  } else {
-    if (kDebugMode) {
-      debugPrint('🌐 Device is offline; sale remains durable + queued.');
-    }
-  }
-
+  // Single upload path: the encrypted durable queue owns the request. The
+  // local sale was saved and stock adjusted before returning to the cashier;
+  // one queue worker uploads it, marks it synced, then removes the queue item.
   _pendingSales.remove(saleId);
   InventoryManagementService.suppressInventoryCallback = false;
 
-  // Kick the durable queue after the foreground attempt. The queue is the source of truth.
   unawaited(SyncService.processQueueSafe());
-
-  if (backendSuccess) {
-    await _persistToLocalHistory(
-      prefs: prefs,
-      saleId: saleId,
-      customerName: customerName,
-      customerPhone: customerPhone,
-      items: lineItems,
-      grandTotal: grandTotal,
-      paidAmount: paidAmount,
-      withTax: withTax,
-      totals: totals,
-      paymentMethod: paymentMethod,
-      syncStatus: 'synced',
-      invoiceNumber: canonicalInvoiceNumber,
-    );
-    await RetailGrowthKit.recordBillCompleted();
-    SyncService.triggerDashboardRefresh();
-    unawaited(SyncService.downloadUserDataSafe());
-  } else {
-    await RetailGrowthKit.recordBillCompleted();
-  }
-
-  final bool cloudConfirmed = backendSuccess;
+  await RetailGrowthKit.recordBillCompleted();
 
   AgentDebugLog.log(
     location: 'sale_service.dart:submitSale:final_result',
-    message: 'FINAL RESULT',
+    message: 'SALE SAVED TO DURABLE OUTBOX',
     hypothesisId: 'H5',
     data: {
-      'saleUploadedToBackend': backendSuccess,
-      'backendSuccess': backendSuccess,
-      'success': cloudConfirmed || !networkAvailableAtCheckout,
       'saleId': saleId,
       'invoiceNumber': canonicalInvoiceNumber,
-      'syncStatus': backendSuccess ? 'synced' : 'pending',
-      'cloudConfirmed': cloudConfirmed,
-      'networkAvailableAtCheckout': networkAvailableAtCheckout,
-    },
-  );
-
-  if (networkAvailableAtCheckout && !backendSuccess) {
-    // IMPORTANT: internet presence is not server acknowledgement.
-    // Keep the sale in the durable outbox, but do not tell checkout that the
-    // cloud committed it. The UI keeps the transaction visible so the owner
-    // does not accidentally create a second sale.
-    return {
-      'success': false,
-      'error': 'SYNC_NOT_CONFIRMED',
-      'message': 'Sale saved on this device, but the server did not confirm it yet. Do not create another bill; automatic sync will retry.',
-      'saleId': saleId,
-      'invoiceNumber': canonicalInvoiceNumber,
+      'success': true,
       'syncStatus': 'pending',
       'cloudConfirmed': false,
       'localSaved': true,
       'retryQueued': true,
-      'syncCount': 0,
-    };
-  }
+    },
+  );
 
   return {
     'success': true,
-    'syncCount': backendSuccess ? items.length : 0,
+    'syncCount': 0,
     'saleId': saleId,
     'invoiceNumber': canonicalInvoiceNumber,
-    'syncStatus': backendSuccess ? 'synced' : 'pending',
-    'cloudConfirmed': cloudConfirmed,
+    'syncStatus': 'pending',
+    'cloudConfirmed': false,
     'localSaved': true,
-    'retryQueued': !backendSuccess,
+    'retryQueued': true,
+    'message': 'Sale saved on this device. Cloud sync is queued and will retry automatically.',
   };
 
 } catch (e, st) {
