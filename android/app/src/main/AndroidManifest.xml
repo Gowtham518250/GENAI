@@ -19,7 +19,7 @@
     <application
         android:label="Retail Mind"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@drawable/ic_retail_mind_launcher">
         <activity
             android:name=".MainActivity"
             android:exported="true"
