@@ -31,6 +31,10 @@ class SyncService {
   
   static final _refreshNotifier = StreamController<void>.broadcast();
   static Stream<void> get refreshStream => _refreshNotifier.stream;
+  static final _durableEventsController =
+      StreamController<List<Map<String, dynamic>>>.broadcast();
+  static Stream<List<Map<String, dynamic>>> get durableEventsStream =>
+      _durableEventsController.stream;
   /// Public method: call after saving to Hive to force Dashboard to reload.
   static void triggerDashboardRefresh() {
     try { _refreshNotifier.add(null); } catch (_) {}
@@ -228,10 +232,12 @@ class SyncService {
       var cursor = prefs.getInt(cursorKey) ?? 0;
       var nextCursor = cursor;
       var needsRefresh = false;
+      final observedEvents = <Map<String, dynamic>>[];
       var hasMore = true;
       final refreshTypes = <String>{
         'invoice.created',
         'invoice.updated',
+        'invoice.deleted',
         'payment.updated',
         'inventory.changed',
         'attendance.changed',
@@ -274,6 +280,7 @@ class SyncService {
           for (final rawEvent in rawEvents) {
             if (rawEvent is! Map) continue;
             final event = Map<String, dynamic>.from(rawEvent);
+            observedEvents.add(event);
             final type = event['type']?.toString() ?? '';
             if (refreshTypes.contains(type)) needsRefresh = true;
           }
@@ -292,6 +299,9 @@ class SyncService {
         await downloadUserDataSafe();
       }
 
+      if (observedEvents.isNotEmpty && !_durableEventsController.isClosed) {
+        _durableEventsController.add(List<Map<String, dynamic>>.unmodifiable(observedEvents));
+      }
       await prefs.setInt(cursorKey, nextCursor);
     } catch (e) {
       // Leave the previous cursor in place on transport/parse failure. The next
