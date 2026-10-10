@@ -804,7 +804,9 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   Widget _buildLanguagePicker() {
     const primaryText = Color(0xFF142B52);
     const secondaryText = Color(0xFF64748B);
-    final menuHeight = (MediaQuery.sizeOf(context).height * 0.68).clamp(320.0, 560.0);
+    final menuHeight = (MediaQuery.sizeOf(context).height * 0.68)
+        .clamp(320.0, 560.0)
+        .toDouble();
 
     String languageLabel(VoiceLanguageOption language) =>
         '${language.nativeName}  ·  ${language.name}';
