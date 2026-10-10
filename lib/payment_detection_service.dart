@@ -2889,7 +2889,7 @@ class PaymentDetectionService {
     } catch (_) {}
   }
 
-  static String _collectAccessibilityText(AccessibilityEvent event) {
+  String _collectAccessibilityText(AccessibilityEvent event) {
     // Some payment apps expose the useful label as a content description,
     // hint, or state description instead of AccessibilityEvent.text.
     final chunks = <Object?>[
