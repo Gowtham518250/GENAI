@@ -150,6 +150,7 @@ class _DashboardPageState extends State<DashboardPage>
   late final Animation<double> _onlineStorePulse;
   Timer? _refreshTimer;
   Timer? _onlineBusinessRefreshTimer;
+  bool _onlineBusinessRefreshInProgress = false;
 
   // sales + insight state
   static const List<String> _chartLabels = [
@@ -1468,7 +1469,8 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Future<void> _refreshOnlineBusinessData() async {
-    if (!mounted || !_isOnlineStoreActive) return;
+    if (!mounted || !_isOnlineStoreActive || _onlineBusinessRefreshInProgress) return;
+    _onlineBusinessRefreshInProgress = true;
 
     try {
       // External customer orders are written directly to the backend, so
@@ -1518,6 +1520,8 @@ class _DashboardPageState extends State<DashboardPage>
       if (kDebugMode) {
         debugPrint('⚠️ Online dashboard refresh failed: $e');
       }
+    } finally {
+      _onlineBusinessRefreshInProgress = false;
     }
   }
 
