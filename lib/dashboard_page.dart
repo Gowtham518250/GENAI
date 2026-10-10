@@ -508,12 +508,12 @@ class _DashboardPageState extends State<DashboardPage>
       (_) => _loadSales(),
     );
 
-    // Online orders are external writes (customer web -> backend), so they
-    // cannot depend on the cashier's local sync stream. Refresh business
-    // state every 30 seconds while the owner dashboard is open.
+    // Durable change-feed events refresh relevant owner widgets within the sync pulse.
+    // Keep a low-frequency full reconciliation for older clients, uninstrumented
+    // writes, or a temporarily unavailable change feed.
     _onlineBusinessRefreshTimer?.cancel();
     _onlineBusinessRefreshTimer = Timer.periodic(
-      const Duration(seconds: 30),
+      const Duration(minutes: 5),
       (_) => _refreshOnlineBusinessData(),
     );
     // FIX BUG 6 — listen for inventory changes and reload analytics
