@@ -17,9 +17,9 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
     <application
-        android:label="retail_mind"
+        android:label="Retail Mind"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@drawable/ic_retail_mind_launcher">
         <activity
             android:name=".MainActivity"
             android:exported="true"
