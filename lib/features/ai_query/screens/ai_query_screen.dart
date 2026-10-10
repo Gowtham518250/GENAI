@@ -120,6 +120,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
           onError: _handleSpeechError,
           debugLogging: false,
         );
+        // Retry initialization on the next tap if no system recognizer was found.
         _speechInitialized = _speechAvailable;
       }
 
