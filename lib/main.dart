@@ -809,6 +809,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   late Future<bool> _loggedInFuture;
   bool _hasSeenOnboarding = false;
   DateTime? _lastBackgroundTime;
+  DateTime? _lastFullCloudRefreshAt;
+  static const Duration _fullCloudRefreshCooldown = Duration(minutes: 5);
   CancelToken? _syncCancelToken; // Add cancellation token for sync operations
 
   @override
@@ -997,8 +999,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // Check network and sync latest data
       final connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult != ConnectivityResult.none) {
-        if (kDebugMode)
+        final lastRefresh = _lastFullCloudRefreshAt;
+        if (lastRefresh != null &&
+            DateTime.now().difference(lastRefresh) < _fullCloudRefreshCooldown) {
+          if (kDebugMode) {
+            debugPrint(
+              '⏭️ Skipping duplicate full cloud refresh; fresh data already pulled recently',
+            );
+          }
+          return; // Pending queues were already processed above.
+        }
+
+        if (kDebugMode) {
           debugPrint('🌐 Network available - syncing latest data');
+        }
 
         await _syncSalesData();
 
@@ -1022,6 +1036,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         }
 
         await _syncShopData();
+        _lastFullCloudRefreshAt = DateTime.now();
 
         if (kDebugMode) debugPrint('✅ Full sync completed');
       } else {
