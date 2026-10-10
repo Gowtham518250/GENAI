@@ -46,7 +46,7 @@ class AiQueryService {
     }
 
     try {
-      final fileName = audioPath.split(RegExp(r'[/\\\\]')).last;
+      final fileName = audioPath.split(Platform.pathSeparator).last;
       final audioFile = await http.MultipartFile.fromPath(
         'audio',
         audioPath,
