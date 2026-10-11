@@ -182,6 +182,8 @@ class OnlineOrderService {
           'amount': event.amount,
           'payment_reference': event.referenceId!.trim(),
           'idempotency_key': event.fingerprint,
+          if (event.saleId != null && event.saleId!.trim().isNotEmpty)
+            'invoice_number': event.saleId!.trim(),
           'confidence_score': event.confidenceScore,
           'decision': event.decision.name.toUpperCase(),
           'source': event.detectionSource,
