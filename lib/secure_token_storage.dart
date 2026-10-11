@@ -250,15 +250,38 @@ class SecureTokenStorage {
   }
 
   static Future<String?> getToken() async {
+    // Owner and customer accounts can have the same numeric ID because they
+    // belong to different identity tables. Never read an owner JWT while a
+    // customer session is active.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final role = (prefs.getString('role') ??
+              prefs.getString('user_role') ??
+              prefs.getString('user_type') ??
+              '')
+          .trim()
+          .toLowerCase();
+      if (role == 'customer') {
+        final customerToken = await getCustomerToken();
+        if (customerToken != null && customerToken.isNotEmpty) {
+          return customerToken;
+        }
+        // Compatibility for existing customer sessions that have not yet
+        // migrated their JWT into the dedicated encrypted customer-token slot.
+        final legacyCustomerToken = prefs.getString('auth_token');
+        if (legacyCustomerToken != null && legacyCustomerToken.isNotEmpty) {
+          return legacyCustomerToken;
+        }
+        return null;
+      }
+    } catch (_) {}
+
     final secureToken = await _readDecrypted(_kToken);
     if (secureToken != null && secureToken.isNotEmpty) {
       return secureToken;
     }
 
-    // Customer storefront authentication historically stores its token in
-    // SharedPreferences under auth_token. Keep this as a compatibility
-    // fallback so the canonical SyncService can process customer outbox
-    // operations too.
+    // Compatibility fallback for older owner/customer sessions.
     try {
       final prefs = await SharedPreferences.getInstance();
       final legacyToken = prefs.getString('auth_token');
