@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
+import '../../secure_token_storage.dart';
 import 'customer_marketplace_page.dart';
 
 class CustomerLoginPage extends StatefulWidget {
@@ -47,18 +48,37 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
         if (_isLogin) {
           final tokenValue = data['access_token'] ?? data['token'];
           final refreshTokenValue = data['refresh_token'];
-          final prefs = await SharedPreferences.getInstance();
-          if (tokenValue != null) {
-            await prefs.setString('auth_token', tokenValue.toString());
+          final customerId = int.tryParse(data['customer_id']?.toString() ?? '');
+          if (tokenValue == null || tokenValue.toString().trim().isEmpty ||
+              customerId == null || customerId <= 0) {
+            throw Exception('Customer login returned an invalid session.');
           }
+
+          // Keep customer credentials separate from the owner's JWT. Offline
+          // customer orders are synced later by SyncService, so they must use
+          // the customer role token when calling /store/order.
+          await SecureTokenStorage.saveUserId(customerId);
+          await SecureTokenStorage.saveCustomerToken(tokenValue.toString());
+
+          final prefs = await SharedPreferences.getInstance();
+          // Keep legacy values for older screens, but also set the canonical
+          // role/profile keys consumed by cart and background listeners.
+          await prefs.setString('auth_token', tokenValue.toString());
           if (refreshTokenValue != null) {
             await prefs.setString('refresh_token', refreshTokenValue.toString());
           }
-          await prefs.setString('user_id', data['customer_id'].toString());
+          await prefs.setString('user_id', customerId.toString());
+          await prefs.setString('customer_id', customerId.toString());
+          await prefs.setString('role', 'customer');
           await prefs.setString('user_type', 'CUSTOMER');
           await prefs.setString('user_role', 'CUSTOMER');
           await prefs.setString('user_name', data['name'] ?? data['user_name'] ?? '');
-          await prefs.setString('user_email', _emailController.text.trim());
+          await prefs.setString('customer_name', data['name'] ?? data['user_name'] ?? '');
+          await prefs.setString('user_email', data['email'] ?? _emailController.text.trim());
+          await prefs.setString('customer_email', data['email'] ?? _emailController.text.trim());
+          if (data['phone'] != null) {
+            await prefs.setString('customer_phone', data['phone'].toString());
+          }
           
           if (mounted) {
             Navigator.pushReplacement(
