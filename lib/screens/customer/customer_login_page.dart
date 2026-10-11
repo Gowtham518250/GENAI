@@ -64,6 +64,8 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           // Keep legacy values for older screens, but also set the canonical
           // role/profile keys consumed by cart and background listeners.
           await prefs.setString('auth_token', tokenValue.toString());
+          // Older customer dashboard/profile widgets still read this key.
+          await prefs.setString('customer_token', tokenValue.toString());
           if (refreshTokenValue != null) {
             await prefs.setString('refresh_token', refreshTokenValue.toString());
           }
