@@ -207,6 +207,12 @@ class OnlineOrderService {
             'Online order payment not auto-matched: ${decoded['reason'] ?? 'manual review required'}',
           );
         }
+        if (decoded is Map && decoded['requires_manual_review'] == true) {
+          await NotificationService.show(
+            'Payment needs review',
+            '₹${event.amount.toStringAsFixed(2)} could not be safely matched to one online order. Verify it before marking the order paid.',
+          );
+        }
         return null;
       }
 
