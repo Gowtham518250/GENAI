@@ -12,10 +12,45 @@ import 'retail_growth_kit.dart';
 import 'sync_service.dart';
 import 'agent_debug_log.dart';
 import 'crash_recovery_service.dart';
+import 'smart_reorder_ai.dart';
 
 /// PRODUCTION-READY SALE SERVICE: Integrated Idempotency, Encryption, and Error Handling
 class SaleService {
   static final Set<String> _pendingSales = {};
+
+  /// Best-effort local demand history for the Smart Reorder screen. Only
+  /// product rows with stable backend IDs are recorded, and the sale ID makes
+  /// this idempotent across retries. Forecast history never blocks billing.
+  static Future<void> _recordLocalSalesVelocity({
+    required String saleId,
+    required List<Map<String, dynamic>> lineItems,
+  }) async {
+    try {
+      final quantities = <int, double>{};
+      final names = <int, String>{};
+      for (final item in lineItems) {
+        final productId = int.tryParse(item['product_id']?.toString() ?? '') ?? 0;
+        final rawQuantity = item['quantity'] ?? item['qty'] ?? 0;
+        final quantity = rawQuantity is num
+            ? rawQuantity.toDouble()
+            : double.tryParse(rawQuantity.toString()) ?? 0;
+        if (productId <= 0 || quantity <= 0) continue;
+        quantities[productId] = (quantities[productId] ?? 0) + quantity;
+        names[productId] = (item['product_name'] ?? 'Product $productId').toString();
+      }
+
+      for (final entry in quantities.entries) {
+        await SmartReorderAIService.recordSale(
+          saleId: saleId,
+          productId: entry.key,
+          productName: names[entry.key] ?? 'Product ${entry.key}',
+          quantity: entry.value,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('Smart reorder history was skipped: $e');
+    }
+  }
 
   /// FIX: the three call sites below used to each inline
   /// `paidAmount >= grandTotal - 0.5 ? 'PAID' : ...` — a flat 50-paise
@@ -283,6 +318,7 @@ try {
 
   // Local inventory is updated once. Backend inventory is updated only by /invoices/sync.
   await InventoryManagementService.deductStockLocally(items, saleId: saleId);
+  unawaited(_recordLocalSalesVelocity(saleId: saleId, lineItems: lineItems));
   SyncService.triggerDashboardRefresh();
   recoveryCanBeCleared = true;
 

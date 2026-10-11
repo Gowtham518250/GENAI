@@ -56,7 +56,9 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
       if (!mounted) return;
       final hasOrderChange = events.any((event) {
         final type = event['type']?.toString();
-        return type == 'order.created' || type == 'order.status_changed';
+        return type == 'order.created' ||
+            type == 'order.status_changed' ||
+            type == 'order.payment_confirmed';
       });
       if (hasOrderChange) unawaited(_fetchAllOrders(showLoading: false));
     });
@@ -1067,6 +1069,21 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                 final orderId = order['order_id']?.toString() ?? '0';
                 final items = order['items'] as List<dynamic>? ?? [];
                 final syncing = _pendingSync.contains(orderId);
+                final paymentStatus = (order['payment_status'] ?? '').toString().toUpperCase();
+                final paymentMethod = (order['payment_method'] ?? '').toString().toUpperCase();
+                final paymentLabel = paymentStatus == 'REFUND_REQUIRED'
+                    ? 'REFUND REQUIRED — owner follow-up needed'
+                    : paymentStatus == 'REVIEW_REQUIRED'
+                        ? 'PAYMENT NEEDS REVIEW'
+                        : paymentStatus == 'PAID'
+                            ? (paymentMethod == 'UPI' ? 'UPI PAYMENT CONFIRMED' : 'PAID')
+                            : paymentStatus == 'PENDING'
+                                ? 'UPI PAYMENT PENDING'
+                                : paymentStatus == 'COD_DUE'
+                                    ? 'CASH ON DELIVERY'
+                                    : paymentStatus == 'UNPAID'
+                                        ? 'PAYMENT DUE'
+                                        : '';
 
                 return GlassContainer(
                   padding: const EdgeInsets.all(16),
@@ -1149,6 +1166,23 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                                   color: Colors.green, fontSize: 20, fontWeight: FontWeight.bold)),
                         ],
                       ),
+                      if (paymentLabel.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            paymentLabel,
+                            style: TextStyle(
+                              color: paymentStatus == 'REFUND_REQUIRED' ||
+                                      paymentStatus == 'REVIEW_REQUIRED'
+                                  ? Colors.redAccent
+                                  : paymentStatus == 'PAID'
+                                      ? Colors.green.shade700
+                                      : Colors.black54,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                       if (nextAction == 'ACCEPT') ...[
                         const SizedBox(height: 24),
                         Row(

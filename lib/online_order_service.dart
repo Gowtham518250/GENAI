@@ -113,7 +113,8 @@ class OnlineOrderService {
 
         final paymentStatus =
             (order['payment_status'] ?? '').toString().toUpperCase();
-        final isPaid = paymentStatus == 'PAID' || status == 'DELIVERED';
+        // Fulfilment does not prove payment, especially for UPI orders.
+        final isPaid = paymentStatus == 'PAID';
         if (isPaid) totalPaidCount++;
 
         final rawDate =
@@ -152,39 +153,76 @@ class OnlineOrderService {
     }
   }
 
-  /// Match incoming UPI to a pending online order (owner device).
+  /// Match an owner-device notification to a UPI order in PostgreSQL.
+  ///
+  /// This does not call a payment gateway or rely on a webhook. The backend
+  /// only records an automatic match for a high-confidence confirmed event
+  /// with a transaction reference and exactly one matching pending order.
   static Future<String?> tryMatchOnlineOrderPayment(
     PaymentEvent event,
     String shopId,
   ) async {
-    if (shopId.isEmpty || event.isFailed || event.amount <= 0) return null;
+    if (shopId.isEmpty ||
+        event.isFailed ||
+        event.isDuplicate ||
+        event.amount <= 0 ||
+        event.decision != PaymentDecision.confirmed ||
+        event.confidenceScore < 0.70 ||
+        (event.referenceId ?? '').trim().length < 4) {
+      return null;
+    }
 
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection(_orders)
-          .where('shop_id', isEqualTo: shopId)
-          .where('payment_status', isEqualTo: 'pending')
-          .where('payment_method', isEqualTo: 'upi')
-          .limit(20)
-          .get();
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return null;
 
-      for (final doc in snap.docs) {
-        final expected = (doc.data()['total_amount'] as num?)?.toDouble() ?? 0;
-        if ((event.amount - expected).abs() > 1.0) continue;
+      final response = await ApiClient.postJson(
+        '/store/owner/orders/match-notification-payment',
+        {
+          'amount': event.amount,
+          'payment_reference': event.referenceId!.trim(),
+          'idempotency_key': event.fingerprint,
+          if (event.saleId != null && event.saleId!.trim().isNotEmpty)
+            'invoice_number': event.saleId!.trim(),
+          'confidence_score': event.confidenceScore,
+          'decision': event.decision.name.toUpperCase(),
+          'source': event.detectionSource,
+          'payer_name': event.payerName,
+          'timestamp': event.timestamp.toIso8601String(),
+        },
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 15));
 
-        await doc.reference.update({
-          'payment_status': 'paid',
-          'paid_at': FieldValue.serverTimestamp(),
-          'payment_reference': event.referenceId ?? event.id,
-          'payment_amount': event.amount,
-        });
-
-        await NotificationService.show(
-          'Online payment received',
-          '₹${event.amount.toStringAsFixed(0)} matched to order #${doc.id.substring(0, 8)}',
-        );
-        return doc.id;
+      if (response.statusCode != 200) {
+        if (kDebugMode) {
+          debugPrint('Online order payment match HTTP ${response.statusCode}');
+        }
+        return null;
       }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map || decoded['matched'] != true) {
+        if (kDebugMode && decoded is Map) {
+          debugPrint(
+            'Online order payment not auto-matched: ${decoded['reason'] ?? 'manual review required'}',
+          );
+        }
+        if (decoded is Map && decoded['requires_manual_review'] == true) {
+          await NotificationService.show(
+            'Payment needs review',
+            '₹${event.amount.toStringAsFixed(2)} could not be safely matched to one online order. Verify it before marking the order paid.',
+          );
+        }
+        return null;
+      }
+
+      final orderId = decoded['order_id']?.toString();
+      if (orderId == null || orderId.isEmpty) return null;
+      await NotificationService.show(
+        'Online payment confirmed',
+        '₹${event.amount.toStringAsFixed(2)} matched to order #${orderId.substring(0, orderId.length > 8 ? 8 : orderId.length)}',
+      );
+      return orderId;
     } catch (e) {
       if (kDebugMode) debugPrint('tryMatchOnlineOrderPayment: $e');
     }

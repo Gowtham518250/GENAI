@@ -151,6 +151,8 @@ class CustomerShopService {
       'items': apiItems,
       'delivery_address': 'Store Pickup',
       'customer_email': customerEmail,
+      'payment_method': paymentMethod.toUpperCase() == 'UPI' ? 'UPI' : 'COD',
+      'payment_status': paymentStatus.toUpperCase(),
     });
     if (!queued) {
       throw StateError('Unable to save customer order to the offline outbox');

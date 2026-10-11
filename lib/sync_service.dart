@@ -1779,14 +1779,34 @@ static Future<bool> _deleteProductItem(Map<String, dynamic> data) async {
 
 static Future<bool> _customerPlaceOrderItem(Map<String, dynamic> data) async {
     try {
-      final token = await SecureTokenStorage.getToken() ?? '';
-      if (token.isEmpty) return false;
+      final prefs = await SharedPreferences.getInstance();
+      final role = (prefs.getString('role') ??
+              prefs.getString('user_role') ??
+              prefs.getString('user_type') ??
+              '')
+          .trim()
+          .toLowerCase();
+      if (role != 'customer') {
+        if (kDebugMode) {
+          debugPrint('Customer order sync deferred: active session is not a customer.');
+        }
+        return false;
+      }
+
+      // Customer order writes must never use the owner's auth_token_enc.
+      // Only fall back to the legacy plaintext customer token for existing
+      // installations that have not yet stored customer_token_enc.
+      final token = await SecureTokenStorage.getCustomerToken() ??
+          prefs.getString('auth_token') ??
+          '';
+      if (token.trim().isEmpty) return false;
 
       final payload = {
         'shop_id': data['shop_id'],
         'items': data['items'],
         'delivery_address': data['delivery_address'] ?? 'Store Pickup',
         'idempotency_key': data['idempotency_key'] ?? data['operation_id'],
+        'payment_method': (data['payment_method']?.toString().toUpperCase() == 'UPI') ? 'UPI' : 'COD',
       };
 
       final res = await ApiClient.postJson(
