@@ -24,10 +24,20 @@ class SmartReorderAIService {
         .toLowerCase();
     if (role == 'customer') return null;
 
-    final intId = prefs.getInt('user_id') ?? prefs.getInt('userId');
+    int? intId;
+    try {
+      intId = prefs.getInt('user_id') ?? prefs.getInt('userId');
+    } catch (_) {
+      // Some older login paths stored the identifier as a string.
+    }
     if (intId != null && intId > 0) return intId;
 
-    final stringId = prefs.getString('user_id') ?? prefs.getString('userId');
+    String? stringId;
+    try {
+      stringId = prefs.getString('user_id') ?? prefs.getString('userId');
+    } catch (_) {
+      // Ignore non-string legacy values.
+    }
     final parsed = int.tryParse(stringId ?? '');
     return parsed != null && parsed > 0 ? parsed : null;
   }
@@ -51,7 +61,6 @@ class SmartReorderAIService {
   static Future<void> recordSale({
     required String saleId,
     required int productId,
-    required String productName,
     required double quantity,
   }) async {
     if (saleId.trim().isEmpty || productId <= 0 || quantity <= 0) return;
