@@ -74,18 +74,13 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
     } catch (error) {
       // The screen remains useful offline by using the owner's local cache.
       try {
+        // loadLocalProducts() returns Map<String, dynamic>, so iterate the
+        // cached product values rather than checking an impossible List branch.
         final local = await LocalStorageService.loadLocalProducts();
-        if (local is List) {
-          inventory = local
-              .whereType<Map>()
-              .map((item) => Map<String, dynamic>.from(item))
-              .toList();
-        } else if (local is Map) {
-          inventory = local.values
-              .whereType<Map>()
-              .map((item) => Map<String, dynamic>.from(item))
-              .toList();
-        }
+        inventory = local.values
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
         usingLocalCache = inventory.isNotEmpty;
         if (!usingLocalCache) {
           _error = 'Could not load inventory. Check the connection and try again.';
