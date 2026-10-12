@@ -532,15 +532,46 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     required double gstPercent,
     String? customerName,
   }) async {
-    // Print the exact immutable snapshot shown in Bill Preview. The checkout
-    // flow clears the entry form before this dialog is opened.
+    // The bill preview uses "item"; the printer service uses "product_name".
+    // Normalize the immutable preview snapshot so print shows actual products,
+    // quantities, prices and per-item GST instead of generic "Item" rows.
+    final isBillPreviewSnapshot = billItems.any((item) => item.containsKey('item'));
+    final normalizedItems = billItems.map((item) {
+      final qtyRaw = item['qty'] ?? item['quantity'] ?? 1;
+      final qty = qtyRaw is num ? qtyRaw.toDouble() : (double.tryParse(qtyRaw.toString()) ?? 1.0);
+      final priceRaw = item['price'] ?? item['unit_price'] ?? 0;
+      final price = priceRaw is num ? priceRaw.toDouble() : (double.tryParse(priceRaw.toString()) ?? 0.0);
+      final name = (item['product_name'] ?? item['item'] ?? item['itemName'] ?? item['name'] ?? 'Item').toString();
+      final rawRate = item['gstPercent'] ?? item['gst_percent'] ?? item['gst'];
+      final parsedRate = rawRate is num ? rawRate.toDouble() : double.tryParse(rawRate?.toString() ?? '');
+      final itemRate = gstPercent <= 0 ? 0.0 : (parsedRate ?? gstPercent);
+      return <String, dynamic>{
+        ...item,
+        'product_name': name,
+        'qty': qty,
+        'price': price,
+        'gstPercent': itemRate,
+      };
+    }).toList();
+
+    var previewTotal = 0.0;
+    for (final item in normalizedItems) {
+      final qty = (item['qty'] as num).toDouble();
+      final price = (item['price'] as num).toDouble();
+      final rate = (item['gstPercent'] as num).toDouble();
+      previewTotal += qty * price;
+      if (rate > 0) previewTotal += qty * price * rate / 100;
+    }
+
+    // The screenshot preview must print the same computed total as the paper.
+    final totalToPrint = isBillPreviewSnapshot ? previewTotal : billTotal;
     await _printOrOpenPrinterSetup(
       billNumber: billNumber,
       customerName: (customerName ?? customerNameController.text).trim().isEmpty
           ? 'Cash Customer'
           : (customerName ?? customerNameController.text).trim(),
-      items: billItems,
-      totalAmount: billTotal,
+      items: normalizedItems,
+      totalAmount: totalToPrint,
       gstPercent: gstPercent,
     );
   }
