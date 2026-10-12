@@ -120,8 +120,8 @@ class SalesEntryProvider extends ChangeNotifier {
 
         final rawItems = decoded['items'];
         final parsedItems = <SalesItem>[];
-        var priceWarningCount = 0;
-        var stockWarningCount = 0;
+        final priceWarningProducts = <String>[];
+        final stockWarningProducts = <String>[];
         if (rawItems is List) {
           for (final raw in rawItems) {
             if (raw is! Map) continue;
@@ -141,10 +141,10 @@ class SalesEntryProvider extends ChangeNotifier {
               continue;
             }
             if ((raw['price_warning'] ?? '').toString().trim().isNotEmpty) {
-              priceWarningCount++;
+              priceWarningProducts.add(name);
             }
             if (raw['stock_warning'] == true) {
-              stockWarningCount++;
+              stockWarningProducts.add(name);
             }
             parsedItems.add(
               SalesItem(
@@ -166,8 +166,10 @@ class SalesEntryProvider extends ChangeNotifier {
         final needsClarification = decoded['needs_clarification'] == true;
         if (parsedItems.isNotEmpty) {
           final reviewNotes = <String>[
-            if (priceWarningCount > 0) '$priceWarningCount price warning(s): verify the spoken price against the catalog.',
-            if (stockWarningCount > 0) '$stockWarningCount item(s) exceed recorded inventory stock.',
+            if (priceWarningProducts.isNotEmpty)
+              'Verify spoken/catalog price for: ${priceWarningProducts.take(3).join(', ')}.',
+            if (stockWarningProducts.isNotEmpty)
+              'Quantity exceeds recorded stock for: ${stockWarningProducts.take(3).join(', ')}.',
           ].join(' ');
           final confirmation = 'Added ${parsedItems.length} item(s) to the sale draft. Check each product, quantity and price before saving. $reviewNotes'.trim();
           lastVoiceMessage = needsClarification && clarification.isNotEmpty
