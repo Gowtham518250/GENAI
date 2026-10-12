@@ -9,6 +9,7 @@ import '../../../inventory_sync_service.dart';
 import '../../../local_storage_service.dart';
 import '../../../native_language_service.dart';
 import '../../../sale_service.dart';
+import '../../../api_client.dart';
 
 class SalesEntryProvider extends ChangeNotifier {
   List<SalesItem> entries = [];
@@ -20,6 +21,8 @@ class SalesEntryProvider extends ChangeNotifier {
 
   bool isSaving = false;
   bool isGeneratingBill = false;
+  bool isVoiceProcessing = false;
+  String? lastVoiceMessage;
 
   final TextEditingController customerPhoneController = TextEditingController();
   final TextEditingController customerNameController = TextEditingController();
@@ -84,25 +87,158 @@ class SalesEntryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> processVoiceCommand(String text, {List<Map<String, dynamic>> inventory = const []}) async {
-    final translatedText = await NativeLanguageService.translateToEnglish(text);
-    final parsedItems = VoiceNlpService.parseMultipleItems(translatedText, knownInventory: inventory);
+  /// Parse recognized speech through the authenticated backend Groq extractor.
+  /// The endpoint only returns validated draft line items; it never submits a sale.
+  Future<void> processVoiceCommand(
+    String text, {
+    String languageCode = 'auto',
+  }) async {
+    final transcript = text.trim();
+    if (transcript.isEmpty) {
+      lastVoiceMessage = 'I did not hear a product. Please try again.';
+      notifyListeners();
+      return;
+    }
 
-    if (parsedItems.isNotEmpty) {
-      if (entries.length == 1 && entries.first.itemName.isEmpty) {
-        entries.clear();
+    isVoiceProcessing = true;
+    lastVoiceMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await ApiClient.postJson(
+        ApiClient.voiceBillingParseEndpoint,
+        {
+          'transcript': transcript,
+          'language_code': languageCode,
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is! Map) {
+          throw const FormatException('Invalid voice billing response');
+        }
+
+        final rawItems = decoded['items'];
+        final parsedItems = <SalesItem>[];
+        if (rawItems is List) {
+          for (final raw in rawItems) {
+            if (raw is! Map) continue;
+            final name = (raw['product_name'] ?? raw['item'] ?? '').toString().trim();
+            final quantity = double.tryParse((raw['quantity'] ?? raw['qty'] ?? '').toString());
+            final price = double.tryParse((raw['unit_price'] ?? raw['price'] ?? '').toString());
+            final confidence = double.tryParse((raw['confidence'] ?? '1').toString()) ?? 0;
+            // Enforce the backend confidence threshold again at the client boundary.
+            if (name.isEmpty ||
+                quantity == null ||
+                !quantity.isFinite ||
+                quantity <= 0 ||
+                price == null ||
+                !price.isFinite ||
+                price <= 0 ||
+                confidence < 0.72) {
+              continue;
+            }
+            parsedItems.add(
+              SalesItem(
+                id: '${DateTime.now().microsecondsSinceEpoch}_${parsedItems.length}',
+                itemName: name,
+                quantity: quantity,
+                price: price,
+              ),
+            );
+          }
+        }
+
+        if (parsedItems.isNotEmpty) {
+          _appendVoiceDraftItems(parsedItems);
+        }
+
+        final clarification = (decoded['clarification_question'] ?? '').toString().trim();
+        final needsClarification = decoded['needs_clarification'] == true;
+        if (parsedItems.isNotEmpty) {
+          final confirmation = 'Added ${parsedItems.length} item(s) to the sale draft. Check each product, quantity and price before saving.';
+          lastVoiceMessage = needsClarification && clarification.isNotEmpty
+              ? '$confirmation $clarification'
+              : confirmation;
+        } else {
+          lastVoiceMessage = clarification.isNotEmpty
+              ? clarification
+              : 'I could not confidently match the spoken product to this shop\'s inventory. Please say the product name again or select it manually.';
+        }
+        notifyListeners();
+        return;
       }
 
-      for (var item in parsedItems) {
-        entries.add(SalesItem(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          itemName: item['item'] ?? '',
-          quantity: double.tryParse(item['qty'].toString()) ?? 1.0,
-          price: double.tryParse(item['price'].toString()) ?? 0.0,
-        ));
+      throw Exception('Voice billing request failed (HTTP ${response.statusCode})');
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('Groq voice billing unavailable; trying catalog-constrained local parsing: $error');
+      }
+
+      // Offline/AI-outage fallback. Only allow entries that the local catalog
+      // matcher maps back to an exact inventory name; never add an unknown item.
+      try {
+        final rawInventory = await LocalStorageService.loadBackendProducts();
+        final inventory = rawInventory.map((product) {
+          final name = (product['name'] ??
+                  product['product_name'] ??
+                  product['itemName'] ??
+                  '')
+              .toString()
+              .trim();
+          final price = product['price'] ?? product['unit_price'] ?? product['selling_price'] ?? 0;
+          return <String, dynamic>{...product, 'name': name, 'price': price};
+        }).where((product) => (product['name'] ?? '').toString().isNotEmpty).toList();
+
+        final localParsed = VoiceNlpService.parseMultipleItems(
+          transcript,
+          knownInventory: inventory,
+        );
+        final safeItems = <SalesItem>[];
+        String normalize(String value) => value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+
+        for (final item in localParsed) {
+          final spokenName = (item['item'] ?? '').toString().trim();
+          final matchedInventory = inventory.where(
+            (product) => normalize((product['name'] ?? '').toString()) == normalize(spokenName),
+          );
+          if (matchedInventory.isEmpty) continue;
+          final quantity = double.tryParse((item['qty'] ?? '').toString()) ?? 1;
+          final price = double.tryParse((item['price'] ?? '').toString()) ?? 0;
+          if (quantity <= 0 || !quantity.isFinite || price <= 0 || !price.isFinite) continue;
+          safeItems.add(
+            SalesItem(
+              id: '${DateTime.now().microsecondsSinceEpoch}_${safeItems.length}',
+              itemName: matchedInventory.first['name'].toString(),
+              quantity: quantity,
+              price: price,
+            ),
+          );
+        }
+
+        if (safeItems.isNotEmpty) {
+          _appendVoiceDraftItems(safeItems);
+          lastVoiceMessage = 'Groq could not be reached. I filled ${safeItems.length} catalog-matched item(s) using local parsing; carefully verify them before saving.';
+        } else {
+          lastVoiceMessage = 'Voice AI is temporarily unavailable, and no reliable local product match was found. Please retry or select the product manually.';
+        }
+      } catch (fallbackError) {
+        if (kDebugMode) debugPrint('Local voice billing fallback failed: $fallbackError');
+        lastVoiceMessage = 'Voice billing could not process this request. Please retry or enter the item manually.';
       }
       notifyListeners();
+    } finally {
+      isVoiceProcessing = false;
+      notifyListeners();
     }
+  }
+
+  void _appendVoiceDraftItems(List<SalesItem> parsedItems) {
+    if (entries.length == 1 && entries.first.itemName.trim().isEmpty) {
+      entries.clear();
+    }
+    entries.addAll(parsedItems);
   }
 
   Future<bool> submitSale() async {
