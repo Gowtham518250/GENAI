@@ -6856,6 +6856,22 @@ class _BillImageDialogState extends State<_BillImageDialog> {
     _withGst = widget.withGstInitial;
   }
 
+  double get _visibleBillTotal {
+    var subtotal = 0.0;
+    var tax = 0.0;
+    for (final item in widget.snapshot) {
+      final qtyRaw = item['qty'] ?? 0;
+      final priceRaw = item['price'] ?? 0;
+      final rateRaw = item['gstPercent'] ?? item['gst_percent'] ?? item['gst'] ?? 0;
+      final qty = qtyRaw is num ? qtyRaw.toDouble() : double.tryParse(qtyRaw.toString()) ?? 0.0;
+      final price = priceRaw is num ? priceRaw.toDouble() : double.tryParse(priceRaw.toString()) ?? 0.0;
+      final rate = rateRaw is num ? rateRaw.toDouble() : double.tryParse(rateRaw.toString()) ?? 0.0;
+      subtotal += qty * price;
+      if (_withGst && rate > 0) tax += qty * price * rate / 100;
+    }
+    return double.parse((subtotal + tax).toStringAsFixed(2));
+  }
+
   Future<Uint8List> _captureBillPng() async {
     await Future.delayed(const Duration(milliseconds: 80));
     final boundary =
@@ -6935,7 +6951,7 @@ class _BillImageDialogState extends State<_BillImageDialog> {
         name: 'bill_${DateTime.now().millisecondsSinceEpoch}.png',
       );
       final message =
-          'Thank you for shopping at ${widget.shopName}\nYour bill total is ₹${widget.totalAmount.toStringAsFixed(2)}.\nBill No: ${widget.billNumber}.';
+          'Thank you for shopping at ${widget.shopName}\nYour bill total is ₹${_visibleBillTotal.toStringAsFixed(2)}.\nBill No: ${widget.billNumber}.';
 
       // Sharing via wa.me allows sending to non-contacts easily
       // Ensure phone is cleaned and has country code
