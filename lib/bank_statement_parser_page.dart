@@ -196,13 +196,13 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
               const SizedBox(height: 12),
               _buildInstructionCard(
                 'PDF Format',
-                'Upload bank statement PDF downloaded from net banking',
+                'Use a text-based bank statement PDF downloaded from net banking. The statement is parsed on this device.',
                 Icons.picture_as_pdf,
               ),
               const SizedBox(height: 12),
               _buildInstructionCard(
-                'UPI Transactions',
-                'Only UPI credit transactions will be extracted and matched',
+                'Transaction History',
+                'Search extracted UPI/NEFT/IMPS entries by name, UPI ID, phone or reference. See money received and money paid separately.',
                 Icons.payment,
               ),
             ],
@@ -511,12 +511,13 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
   }
 
   Future<void> _addAsSale(Map<String, dynamic> txn) async {
-    // Create a sale entry from the unmatched transaction
+    // Reconciliation actions are only offered for incoming credits.
+    if ((txn['direction'] ?? 'CREDIT').toString().toUpperCase() != 'CREDIT') return;
     final sale = {
       'sale_id': 'BANK-${DateTime.now().millisecondsSinceEpoch}',
       'total': txn['amount'],
       'payment_method': 'BANK_TRANSFER',
-      'customer_name': 'Bank Transaction',
+      'customer_name': (txn['counterparty'] ?? txn['description'] ?? 'Bank Transaction').toString(),
       'date': txn['date'],
       'reference': txn['reference'],
       'rawLine': txn['rawLine'],
