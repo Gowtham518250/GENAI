@@ -1,10 +1,74 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
+import '../../../bill_generator_service.dart';
 import '../controllers/sales_entry_provider.dart';
 
 class BillPreviewDialog extends StatelessWidget {
-  const BillPreviewDialog({Key? key}) : super(key: key);
+  final String invoiceNumber;
+
+  const BillPreviewDialog({super.key, required this.invoiceNumber});
+
+  Future<String> _generatePdf(SalesEntryProvider provider) async {
+    final items = provider.entries
+        .where((entry) => entry.itemName.trim().isNotEmpty && entry.quantity > 0 && entry.price >= 0)
+        .map((entry) => <String, dynamic>{
+              'product_name': entry.itemName.trim(),
+              'qty': entry.quantity,
+              'price': entry.price,
+              'discount_amount': entry.discount,
+            })
+        .toList();
+    if (items.isEmpty) throw Exception('Add at least one item before creating a bill.');
+
+    final creditSale = provider.selectedPaymentMethod.toLowerCase() == 'credit';
+    return BillGeneratorService.generateAndSaveBill(
+      invoiceId: invoiceNumber,
+      shopName: provider.shopName,
+      shopPhone: provider.shopPhone,
+      shopAddress: provider.shopLocation,
+      customerName: provider.customerNameController.text.trim(),
+      items: items,
+      totalAmount: provider.totalAmount,
+      paidAmount: creditSale ? 0.0 : provider.totalAmount,
+      withTax: provider.withTax,
+    );
+  }
+
+  Future<void> _printBill(BuildContext context, SalesEntryProvider provider) async {
+    try {
+      final path = await _generatePdf(provider);
+      final file = File(path);
+      final bytes = await file.readAsBytes();
+      await Printing.layoutPdf(
+        name: 'Bill_$invoiceNumber.pdf',
+        onLayout: (_) async => bytes,
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not print bill: ' + error.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
+
+  Future<void> _shareBill(BuildContext context, SalesEntryProvider provider) async {
+    try {
+      final path = await _generatePdf(provider);
+      await BillGeneratorService.shareBill(
+        path,
+        customerName: provider.customerNameController.text.trim(),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not share bill: ' + error.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +119,7 @@ class BillPreviewDialog extends StatelessWidget {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const _ReceiptPaper(),
+                      child: _ReceiptPaper(invoiceNumber: invoiceNumber),
                     ),
                   ),
                 ),
@@ -67,7 +131,7 @@ class BillPreviewDialog extends StatelessWidget {
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {},
+                          onPressed: () => _printBill(context, context.read<SalesEntryProvider>()),
                           icon: const Icon(Icons.print_rounded, size: 18),
                           label: const Text('PRINT'),
                           style: ElevatedButton.styleFrom(
@@ -83,7 +147,7 @@ class BillPreviewDialog extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {},
+                          onPressed: () => _shareBill(context, context.read<SalesEntryProvider>()),
                           icon: const Icon(Icons.share_rounded, size: 18),
                           label: const Text('SHARE'),
                           style: ElevatedButton.styleFrom(
@@ -109,7 +173,9 @@ class BillPreviewDialog extends StatelessWidget {
 }
 
 class _ReceiptPaper extends StatelessWidget {
-  const _ReceiptPaper({Key? key}) : super(key: key);
+  final String invoiceNumber;
+
+  const _ReceiptPaper({super.key, required this.invoiceNumber});
 
   @override
   Widget build(BuildContext context) {
@@ -142,6 +208,20 @@ class _ReceiptPaper extends StatelessWidget {
                     const Divider(color: Colors.black12, thickness: 1),
                   ],
                 ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Bill No: ' + invoiceNumber,
+                style: GoogleFonts.spaceMono(fontSize: 12, fontWeight: FontWeight.w900),
+              ),
+              Text(
+                'Date: ' + DateTime.now().toLocal().toString().split('.').first,
+                style: GoogleFonts.poppins(fontSize: 10, color: Colors.black54),
+              ),
+              Text(
+                'Payment: ' + provider.selectedPaymentMethod +
+                    '  •  ' + (provider.selectedPaymentMethod.toLowerCase() == 'credit' ? 'UNPAID' : 'PAID'),
+                style: GoogleFonts.poppins(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 10),
               // Customer Details
