@@ -60,14 +60,14 @@ void main() {
     });
 
     test('keeps amount positive and separates money flow using direction', () {
-      const credit = BankEntry(
+      final credit = BankEntry(
         date: DateTime(2026, 4, 7),
         amount: 5,
         reference: 'UTR12345678',
         rawLine: 'credit',
         direction: 'CREDIT',
       );
-      const debit = BankEntry(
+      final debit = BankEntry(
         date: DateTime(2026, 4, 7),
         amount: 2,
         reference: 'UTR87654321',
