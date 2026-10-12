@@ -3851,6 +3851,13 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       barrierDismissible: true,
       builder: (ctx) => _BillImageDialog(
         billKey: _billKey,
+        onPrint: (gstPercent) => _printBluetooth(
+          billNumber: nextBillNo,
+          billItems: snapshot,
+          billTotal: freshTotal,
+          gstPercent: gstPercent,
+          customerName: customerNameController.text.trim(),
+        ),
         snapshot: snapshot,
         totalAmount: freshTotal,
         billNumber: nextBillNo,
@@ -6769,6 +6776,7 @@ class _GridLinePainter extends CustomPainter {
 class _BillImageDialog extends StatefulWidget {
   const _BillImageDialog({
     required this.billKey,
+    required this.onPrint,
     required this.snapshot,
     required this.totalAmount,
     required this.billNumber,
@@ -6786,6 +6794,7 @@ class _BillImageDialog extends StatefulWidget {
   });
 
   final GlobalKey billKey;
+  final Future<void> Function(double gstPercent) onPrint;
   final List<Map<String, dynamic>> snapshot;
   final double totalAmount;
   final String billNumber;
@@ -6807,6 +6816,7 @@ class _BillImageDialog extends StatefulWidget {
 
 class _BillImageDialogState extends State<_BillImageDialog> {
   bool _sharing = false;
+  bool _printing = false;
   late bool _withGst;
 
   @override
@@ -6894,7 +6904,7 @@ class _BillImageDialogState extends State<_BillImageDialog> {
         name: 'bill_${DateTime.now().millisecondsSinceEpoch}.png',
       );
       final message =
-          'Thank you for shopping at ${widget.shopName}\\nYour bill total is ₹${widget.totalAmount.toStringAsFixed(2)}.\\nInvoice generated via AI Shop App.';
+          'Thank you for shopping at ${widget.shopName}\nYour bill total is ₹${widget.totalAmount.toStringAsFixed(2)}.\nBill No: ${widget.billNumber}.';
 
       // Sharing via wa.me allows sending to non-contacts easily
       // Ensure phone is cleaned and has country code
@@ -6970,18 +6980,21 @@ class _BillImageDialogState extends State<_BillImageDialog> {
                           child: Icon(_withGst ? Icons.check_circle_rounded : Icons.circle_outlined, color: _withGst ? AppColors.brandSubtle : Colors.white38, size: 18),
                         ),
                       ),
-                      // 2. BT PRINT BUTTON
+                      // 2. BT PRINT BUTTON: invoke the owning page explicitly;
+                      // a dialog route is not a descendant of the page State.
                       GestureDetector(
-                        onTap: () {
-                          final state = widget.billKey.currentContext
-                              ?.findAncestorStateOfType<_SalesEntryPageState>();
-                          if (state != null) {
-                            state._printBluetooth(
-                              billNumber: widget.billNumber,
-                              billItems: widget.snapshot,
-                              billTotal: widget.totalAmount,
-                              gstPercent: widget.withGstInitial ? 18.0 : 0.0,
-                            );
+                        onTap: _printing ? null : () async {
+                          setState(() => _printing = true);
+                          try {
+                            await widget.onPrint(_withGst ? 18.0 : 0.0);
+                          } catch (error) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Print failed: ' + error.toString())),
+                              );
+                            }
+                          } finally {
+                            if (mounted) setState(() => _printing = false);
                           }
                         },
                         child: Container(
@@ -6992,7 +7005,9 @@ class _BillImageDialogState extends State<_BillImageDialog> {
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5)),
                           ),
-                          child: const Icon(Icons.print_rounded, color: Colors.white, size: 18),
+                          child: _printing
+                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.print_rounded, color: Colors.white, size: 18),
                         ),
                       ),
                       // 3. WHATSAPP BUTTON
@@ -7303,7 +7318,7 @@ class _BillCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('E & O.E., #Incl Gst', style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black)),
-              Text('${l.translate('total')} : ${totalAmount.toStringAsFixed(1)}', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black)),
+              Text('${l.translate('total')} : ${finalGrandTotal.toStringAsFixed(1)}', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black)),
             ],
           ),
           const SizedBox(height: 4),
@@ -7320,7 +7335,7 @@ class _BillCard extends StatelessWidget {
               ),
               Expanded(
                 child: Text(
-                  '${l.translate('total')} : ${totalAmount.toStringAsFixed(2)}',
+                  '${l.translate('total')} : ${finalGrandTotal.toStringAsFixed(2)}',
                   textAlign: TextAlign.right,
                   style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black),
                 ),
