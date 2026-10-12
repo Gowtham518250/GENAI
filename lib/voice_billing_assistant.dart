@@ -869,6 +869,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
   bool _finalResultHandled = false;
   Future<void>? _catalogLoadFuture;
   List<String> _parseWarnings = [];
+  String _interpretedText = '';
 
   _LangConfig _languageForCode(String? code) {
     if (code == null || code.trim().isEmpty) return _languages.first;
@@ -926,7 +927,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
     return null;
   }
 
-  Future<({List<ParsedItem> items, List<String> warnings})>
+  Future<({List<ParsedItem> items, List<String> warnings, String interpretedText})>
       _parseWithGroq(String transcript) async {
     final response = await ApiClient.postJson(
       ApiClient.voiceBillingParseEndpoint,
@@ -957,6 +958,8 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
     }
 
     final payload = Map<String, dynamic>.from(responseBody);
+    final interpretedText =
+        (payload['interpreted_text_en'] ?? '').toString().trim();
     final items = <ParsedItem>[];
     final warnings = <String>[];
     final rawItems = payload['items'];
@@ -1053,7 +1056,11 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
       );
     }
 
-    return (items: items, warnings: warnings);
+    return (
+      items: items,
+      warnings: warnings,
+      interpretedText: interpretedText,
+    );
   }
 
   @override
@@ -1203,6 +1210,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
       _lastCommittedText = '';
       _transcriptCtrl.clear();
       _parseWarnings = [];
+      _interpretedText = '';
       ParsedItems = List.from(_committedItems);
     });
 
@@ -1286,6 +1294,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
 
       List<ParsedItem> items;
       List<String> warnings;
+      var interpretedText = '';
       try {
         // Groq translates/interprets the selected Indian language and resolves
         // each item only against this shop's authenticated product catalog.
@@ -1293,49 +1302,67 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
         final groqResult = await _parseWithGroq(clean);
         items = groqResult.items;
         warnings = groqResult.warnings;
+        interpretedText = groqResult.interpretedText;
       } catch (error) {
-        if (kDebugMode) {
-          debugPrint('🎙️ [VoiceBilling] Groq parse failed; using safe local fallback: $error');
+        // HTTP/API failures and malformed responses are not treated as a valid
+        // local AI parse: that fallback can mistake untranslated words for items.
+        if (error is StateError ||
+            error is FormatException ||
+            error.toString().toLowerCase().contains('not configured')) {
+          items = <ParsedItem>[];
+          final detail = error.toString().toLowerCase();
+          warnings = <String>[
+            detail.contains('groq_api_key') || detail.contains('not configured')
+                ? 'Groq voice billing is not configured on the backend. Set GROQ_API_KEY in Render → Environment, then retry. No items were added.'
+                : 'Groq could not verify this voice request. No items were auto-added; retry or enter the sale manually.',
+          ];
+          if (kDebugMode) {
+            debugPrint('🎙️ [VoiceBilling] Groq API rejected this request; refusing local auto-add: $error');
+          }
+        } else {
+          // Actual offline/network failures may use the conservative local parser.
+          if (kDebugMode) {
+            debugPrint('🎙️ [VoiceBilling] Network failure; trying local fallback: $error');
+          }
+          final fallback = await ProductionVoiceBillingService.parse(
+            transcript: clean,
+            localeCode: _selectedLang.code,
+            catalogService: _catalog,
+            knownProducts: widget.knownProducts ?? const [],
+          );
+          items = fallback.lines
+              .where((line) =>
+                  line.catalogMatched &&
+                  line.name.trim().isNotEmpty &&
+                  line.quantity.isFinite &&
+                  line.quantity > 0 &&
+                  line.price.isFinite &&
+                  line.price > 0)
+              .map(
+                (line) => ParsedItem(
+                  name: line.name,
+                  qty: line.quantity,
+                  unit: line.unit,
+                  price: line.price,
+                  confidence: line.confidence,
+                  catalogMatched: true,
+                  priceSource: line.priceSource,
+                  barcode: line.barcode,
+                  gst: line.gst,
+                  priceWarning: line.priceWarning,
+                  isConfirmed: true,
+                ),
+              )
+              .toList();
+          warnings = <String>[
+            ...fallback.warnings,
+            'Groq is unreachable. Only locally matched products with a valid price were kept; review them before billing.',
+          ];
         }
-        // Offline/API-outage fallback is deliberately conservative. Local NLP
-        // can suggest names, but only catalog-matched, priced lines are eligible.
-        final fallback = await ProductionVoiceBillingService.parse(
-          transcript: clean,
-          localeCode: _selectedLang.code,
-          catalogService: _catalog,
-          knownProducts: widget.knownProducts ?? const [],
-        );
-        items = fallback.lines
-            .where((line) =>
-                line.catalogMatched &&
-                line.name.trim().isNotEmpty &&
-                line.quantity.isFinite &&
-                line.quantity > 0 &&
-                line.price.isFinite &&
-                line.price > 0)
-            .map(
-              (line) => ParsedItem(
-                name: line.name,
-                qty: line.quantity,
-                unit: line.unit,
-                price: line.price,
-                confidence: line.confidence,
-                catalogMatched: true,
-                priceSource: line.priceSource,
-                barcode: line.barcode,
-                gst: line.gst,
-                priceWarning: line.priceWarning,
-                isConfirmed: true,
-              ),
-            )
-            .toList();
-        warnings = <String>[
-          ...fallback.warnings,
-          'Groq is unavailable. Only locally matched products with a valid price were kept; review them before billing.',
-        ];
       }
 
       _parseWarnings = warnings;
+      _interpretedText = interpretedText;
       _lastPreviewItems = List<ParsedItem>.from(items);
       _clearEditControllers();
 
@@ -1556,6 +1583,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
         _committedItems = [];
         _lastPreviewItems = [];
         _parseWarnings = [];
+        _interpretedText = '';
         _transcript = '';
         _transcriptCtrl.clear();
         _clearEditControllers();
@@ -1941,6 +1969,40 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
                         fontSize: 11,
                         color: const Color(0xFF92400E),
                       ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (_interpretedText.trim().isNotEmpty)
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            padding: const EdgeInsets.all(11),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEEF2FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF6366F1).withValues(alpha: 0.24),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.translate_rounded,
+                  size: 17,
+                  color: Color(0xFF4F46E5),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'AI understood: $_interpretedText',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFF3730A3),
+                      fontSize: 11,
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
