@@ -6,6 +6,7 @@ import '../../theme/spacing_utils.dart';
 import '../../widgets/accessibility_helper.dart';
 import '../../widgets/premium_animations.dart';
 import 'controllers/sales_entry_provider.dart';
+import 'widgets/bill_preview_dialog.dart';
 
 /// ⌨️ Enhanced Billing Page with Keyboard Shortcuts and Partial Payments
 class EnhancedBillingScreen extends StatefulWidget {
@@ -116,43 +117,49 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
 
   KeyEventResult _handleKeyPress(FocusNode node, RawKeyEvent event) {
     if (event is! RawKeyDownEvent) return KeyEventResult.ignored;
-    
-    // Ctrl+G - Generate Bill
-    if (event.logicalKey == LogicalKeyboardKey.keyG && 
-        (event.logicalKey == LogicalKeyboardKey.controlLeft || 
-         event.logicalKey == LogicalKeyboardKey.controlRight)) {
+
+    if (event.isControlPressed && event.logicalKey == LogicalKeyboardKey.keyG) {
       HapticFeedback.mediumImpact();
-      // Trigger generate bill
+      _showBillPreview();
       return KeyEventResult.handled;
     }
-    
-    // Ctrl+S - Save Sale
-    if (event.logicalKey == LogicalKeyboardKey.keyS && 
-        (event.logicalKey == LogicalKeyboardKey.controlLeft || 
-         event.logicalKey == LogicalKeyboardKey.controlRight)) {
+
+    if (event.isControlPressed && event.logicalKey == LogicalKeyboardKey.keyS) {
       HapticFeedback.mediumImpact();
-      // Trigger save sale
       _saveSale();
       return KeyEventResult.handled;
     }
-    
-    // Ctrl+P - Print
-    if (event.logicalKey == LogicalKeyboardKey.keyP && 
-        (event.logicalKey == LogicalKeyboardKey.controlLeft || 
-         event.logicalKey == LogicalKeyboardKey.controlRight)) {
+
+    if (event.isControlPressed && event.logicalKey == LogicalKeyboardKey.keyP) {
       HapticFeedback.mediumImpact();
-      // Trigger print
+      _showBillPreview();
       return KeyEventResult.handled;
     }
-    
-    // Escape - Cancel
+
     if (event.logicalKey == LogicalKeyboardKey.escape) {
       HapticFeedback.lightImpact();
       Navigator.pop(context);
       return KeyEventResult.handled;
     }
-    
+
     return KeyEventResult.ignored;
+  }
+
+  Future<void> _showBillPreview() async {
+    final provider = context.read<SalesEntryProvider>();
+    await provider.generateBillPreview();
+    if (!mounted) return;
+    final number = provider.draftBillNumber;
+    if (number == null || number.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not allocate a bill number. Please try again.')),
+      );
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (_) => BillPreviewDialog(invoiceNumber: number),
+    );
   }
 
   Future<void> _saveSale() async {
@@ -451,8 +458,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                 isLoading: provider.isGeneratingBill,
                 onPressed: () async {
                   HapticFeedback.lightImpact();
-                  await provider.generateBillPreview();
-                  // Show bill preview dialog
+                  await _showBillPreview();
                 },
                 shortcut: 'Ctrl+G',
               ),
