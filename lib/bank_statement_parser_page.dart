@@ -48,47 +48,8 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
     });
   }
 
-  bool _entryMatchesSearch(BankEntry entry, String query) {
-    final value = query.trim();
-    if (value.isEmpty) return true;
-
-    final digits = value.replaceAll(RegExp(r'\D'), '');
-    final numericPhoneQuery =
-        RegExp(r'^[+\d\s()\-]+$').hasMatch(value) && digits.length >= 7;
-    if (numericPhoneQuery) {
-      var target = digits;
-      if (target.length == 12 && target.startsWith('91')) {
-        target = target.substring(2);
-      }
-
-      final source = entry.counterparty + ' ' + entry.description + ' ' + entry.rawLine;
-      final phonePattern = RegExp(
-        r'(?<!\d)(?:\+?91[\s-]?)?[6-9](?:[\s()-]*\d){9}(?!\d)',
-      );
-      for (final match in phonePattern.allMatches(source)) {
-        var phone = (match.group(0) ?? '').replaceAll(RegExp(r'\D'), '');
-        if (phone.length == 12 && phone.startsWith('91')) {
-          phone = phone.substring(2);
-        }
-        if (target.length >= 10 ? phone == target : phone.contains(target)) {
-          return true;
-        }
-      }
-
-      // Numeric UTR/reference searches must not match substrings inside longer IDs.
-      final exactNumber = RegExp(r'(?<!\d)' + RegExp.escape(digits) + r'(?!\d)');
-      return exactNumber.hasMatch(entry.reference) ||
-          exactNumber.hasMatch(entry.description) ||
-          exactNumber.hasMatch(entry.rawLine);
-    }
-
-    final normalized = value.toLowerCase();
-    return entry.counterparty.toLowerCase().contains(normalized) ||
-        entry.description.toLowerCase().contains(normalized) ||
-        entry.reference.toLowerCase().contains(normalized) ||
-        entry.rawLine.toLowerCase().contains(normalized) ||
-        entry.bankName.toLowerCase().contains(normalized);
-  }
+  bool _entryMatchesSearch(BankEntry entry, String query) =>
+      BankStatementSearchMatcher.matches(entry, query);
 
   List<BankEntry> get _filteredEntries {
     final items = _parsedEntries
