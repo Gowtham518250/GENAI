@@ -118,6 +118,24 @@ void main() {
       expect(AiQueryService.isProductShoppingRequest('How much sales did I make today?'), isFalse);
       expect(AiQueryService.isProductShoppingRequest('Show my low stock inventory'), isFalse);
       expect(AiQueryService.isProductShoppingRequest('Which customers owe money?'), isFalse);
+      expect(
+        AiQueryService.isProductShoppingRequest(
+          'I need yesterday sales. Which items were sold yesterday?',
+        ),
+        isFalse,
+      );
+      expect(
+        AiQueryService.isProductShoppingRequest(
+          'నాకు నిన్న సేల్స్ కావాలి నిన్న సేల్స్ ఏవేవే అమ్ముడు పోయాయో చెప్పగలవా',
+        ),
+        isFalse,
+      );
+      expect(
+        AiQueryService.isProductShoppingRequest(
+          'नमस्ते नहीं, कल कौन से सामान बिके?',
+        ),
+        isFalse,
+      );
     });
 
     test('parses online offers and nearby shops as structured discovery data', () {
