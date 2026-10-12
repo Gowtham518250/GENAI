@@ -113,6 +113,7 @@ class ApiClient {
   static const String billQrEndpoint = '/bill/qr/';
   static const String todayInsightEndpoint = '/today_insight/';
   static const String askQueryEndpoint = '/askquery';
+  static const String askQueryProductDiscoveryEndpoint = '/askquery/product-discovery';
   static const String askQueryVoiceEndpoint = '/askquery/voice';
   static const String askQueryTranscribeEndpoint = '/askquery/transcribe';
   static const String askQueryTranslateAnswerEndpoint = '/askquery/translate-answer';
