@@ -272,7 +272,7 @@ class AiQueryService {
     if (businessQuery && !explicitShoppingContext) return false;
 
     final englishIntent = RegExp(
-      r'\b(?:i\s+need|i\s+want|i would like|i\'d like|need to buy|want to buy|looking for|find me|get me|buy me|where can i buy|where can i get|search for|buy|purchase)\s+.{2,}',
+      r'\b(?:i\s+need|i\s+want|i would like|need to buy|want to buy|looking for|find me|get me|buy me|where can i buy|where can i get|search for|buy|purchase)\s+.{2,}',
     ).hasMatch(value) ||
         RegExp(r'\b(?:near me|around me|compare prices?|price of|online price|shops? near me)\b').hasMatch(value);
 
