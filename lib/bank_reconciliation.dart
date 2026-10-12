@@ -99,14 +99,18 @@ class BankStatementParser {
         .toList();
     final headerText = sourceLines.take(40).join(' ').toLowerCase();
     final debitHeader = RegExp(
-      r'\\b(?:debit|withdrawal)(?:\\s+(?:amount|amt))?\\b',
+      r'\b(?:debit|withdrawal)(?:\s+(?:amount|amt))?\b',
     ).firstMatch(headerText);
     final creditHeader = RegExp(
-      r'\\b(?:credit|deposit)(?:\\s+(?:amount|amt))?\\b',
+      r'\b(?:credit|deposit)(?:\s+(?:amount|amt))?\b',
     ).firstMatch(headerText);
+    final hasBalanceHeader = RegExp(
+      r'\b(?:balance|closing balance|running balance)\b',
+    ).hasMatch(headerText);
     final hasDebitCreditColumns = debitHeader != null &&
         creditHeader != null &&
-        (debitHeader.start - creditHeader.start).abs() < 180;
+        (debitHeader.start - creditHeader.start).abs() < 180 &&
+        hasBalanceHeader;
     final debitColumnFirst = !hasDebitCreditColumns ||
         debitHeader!.start < creditHeader!.start;
 
