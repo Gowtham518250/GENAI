@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,7 @@ import 'api_client.dart';
 import 'local_storage_service.dart';
 import 'sync_queue_manager.dart';
 import 'sync_service.dart';
+import 'features/ai_query/widgets/product_discovery_card.dart';
 
 class PurchaseOrdersPage extends StatefulWidget {
   const PurchaseOrdersPage({super.key});
@@ -21,6 +23,10 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   bool _reorderLoading = false;
   List<Map<String, dynamic>> _reorderSuggestions = [];
   String _reorderNotice = 'Checking products against their reorder levels…';
+  final TextEditingController _shoppingChatController = TextEditingController();
+  final ScrollController _shoppingChatScrollController = ScrollController();
+  final List<Map<String, dynamic>> _shoppingChatMessages = [];
+  bool _shoppingSearchLoading = false;
 
   static const _bg = Color(0xFF1A1A2E);
   static const _card = Color(0xFF16213E);
@@ -84,6 +90,343 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     final opened = await launchUrl(url, mode: LaunchMode.externalApplication);
     if (!opened && mounted) ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Could not open the seller link.')),
+    );
+  }
+
+  @override
+  void dispose() {
+    _shoppingChatController.dispose();
+    _shoppingChatScrollController.dispose();
+    super.dispose();
+  }
+
+  Future<Position?> _requestPurchaseSearchLocation() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) return null;
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+      ).timeout(const Duration(seconds: 8));
+    } catch (error) {
+      debugPrint('Purchase product search location unavailable: $error');
+      return null;
+    }
+  }
+
+  void _scrollShoppingChatToEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_shoppingChatScrollController.hasClients) return;
+      _shoppingChatScrollController.animateTo(
+        _shoppingChatScrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  List<Map<String, dynamic>> _mapList(dynamic value) {
+    if (value is! List) return <Map<String, dynamic>>[];
+    return value.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
+  }
+
+  Future<void> _sendPurchaseShoppingQuery({String? query}) async {
+    final question = (query ?? _shoppingChatController.text).trim();
+    if (question.isEmpty || _shoppingSearchLoading) return;
+
+    _shoppingChatController.clear();
+    setState(() {
+      _shoppingSearchLoading = true;
+      _shoppingChatMessages.add({'role': 'user', 'text': question});
+    });
+    _scrollShoppingChatToEnd();
+
+    try {
+      // This search is launched from Purchase Orders, not the Ask Retail Mind
+      // chat. Location is requested only after the user submits a product query.
+      final position = await _requestPurchaseSearchLocation();
+      final fields = <String, String>{
+        'query': question,
+        'language_code': 'en',
+        'radius_km': '10',
+      };
+      if (position != null) {
+        fields['latitude'] = position.latitude.toStringAsFixed(6);
+        fields['longitude'] = position.longitude.toStringAsFixed(6);
+      }
+
+      final response = await ApiClient.postForm(
+        ApiClient.askQueryProductDiscoveryEndpoint,
+        fields,
+      ).timeout(const Duration(seconds: 55));
+
+      dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {
+        decoded = null;
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (decoded is! Map) {
+          throw Exception('The product search returned an invalid response.');
+        }
+        final payload = Map<String, dynamic>.from(decoded);
+        final rawDiscovery = payload['product_discovery'];
+        if (rawDiscovery is! Map) {
+          throw Exception('No product-comparison data was returned. Please try a product name and pack size.');
+        }
+
+        final discovery = Map<String, dynamic>.from(rawDiscovery);
+        final offers = _mapList(discovery['online_offers']);
+        offers.removeWhere((offer) {
+          final value = offer['price'];
+          final price = value is num ? value.toDouble() : double.tryParse(value?.toString() ?? '');
+          return price == null || !price.isFinite || price <= 0;
+        });
+        offers.sort((a, b) {
+          final ap = _number(a['price'], double.maxFinite);
+          final bp = _number(b['price'], double.maxFinite);
+          return ap.compareTo(bp);
+        });
+        discovery['online_offers'] = offers;
+
+        var answer = (payload['answer'] ?? 'Here are the available product listings.').toString();
+        if (offers.isNotEmpty) {
+          final best = offers.first;
+          final source = (best['source'] ?? 'online seller').toString();
+          answer = 'Best listed price: \${_money(best['price'])} from $source. '
+              'This is the lowest returned listing, not a guaranteed best-value deal; confirm the brand, exact pack size, delivery fees and checkout price. '
+              '$answer';
+        } else {
+          answer = 'I could not find a priced online listing for this product. Try adding a brand or pack size. $answer';
+        }
+
+        if (mounted) {
+          setState(() {
+            _shoppingChatMessages.add({
+              'role': 'assistant',
+              'text': answer,
+              'product_discovery': discovery,
+            });
+          });
+        }
+      } else {
+        final detail = decoded is Map
+            ? (decoded['detail'] ?? decoded['message'] ?? decoded['error'])?.toString()
+            : null;
+        throw Exception(
+          detail != null && detail.trim().isNotEmpty
+              ? detail.trim()
+              : 'Online product search is temporarily unavailable. Please try again.',
+        );
+      }
+    } on TimeoutException {
+      if (mounted) {
+        setState(() => _shoppingChatMessages.add({
+          'role': 'assistant',
+          'text': 'The product search took too long. Please try again.',
+        }));
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _shoppingChatMessages.add({
+          'role': 'assistant',
+          'text': error.toString().replaceFirst('Exception: ', ''),
+        }));
+      }
+      debugPrint('Purchase-order product search failed: $error');
+    } finally {
+      if (mounted) setState(() => _shoppingSearchLoading = false);
+      _scrollShoppingChatToEnd();
+    }
+  }
+
+  Widget _buildPurchaseShoppingChat() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 22),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.tealAccent.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.tealAccent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.shopping_cart_checkout_rounded, color: Colors.tealAccent),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Purchase Shopping Assistant',
+                      style: GoogleFonts.poppins(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                    Text('Compare online prices and find nearby shops',
+                      style: GoogleFonts.poppins(color: Colors.white60, fontSize: 10.5)),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Clear shopping chat',
+                onPressed: _shoppingSearchLoading ? null : () => setState(() => _shoppingChatMessages.clear()),
+                icon: const Icon(Icons.delete_outline, color: Colors.white54, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try “Find ghee”, “Amul ghee 1 kg”, or “Compare rice prices”. Nearby store stock and shelf prices must be confirmed with the shop.',
+            style: GoogleFonts.poppins(color: Colors.white54, fontSize: 10.5, height: 1.45),
+          ),
+          if (_shoppingChatMessages.isEmpty) ...[
+            const SizedBox(height: 11),
+            Wrap(
+              spacing: 7,
+              runSpacing: 7,
+              children: [
+                _shoppingPromptChip('Find ghee'),
+                _shoppingPromptChip('Amul ghee 1 kg'),
+                _shoppingPromptChip('Rice 5 kg'),
+                _shoppingPromptChip('Cooking oil 1 L'),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 420,
+            child: _shoppingChatMessages.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.search_rounded, size: 39, color: Colors.white24),
+                        const SizedBox(height: 8),
+                        Text('What product do you need?',
+                          style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12)),
+                        const SizedBox(height: 4),
+                        Text('Online listings • Best listed price • Nearby shops',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(color: Colors.white38, fontSize: 10)),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _shoppingChatScrollController,
+                    itemCount: _shoppingChatMessages.length + (_shoppingSearchLoading ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index >= _shoppingChatMessages.length) {
+                        return Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(11),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.07), borderRadius: BorderRadius.circular(12)),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                                const SizedBox(width: 9),
+                                Text('Comparing online prices and nearby shops…',
+                                  style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10.5)),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      final message = _shoppingChatMessages[index];
+                      final isUser = message['role'] == 'user';
+                      final data = message['product_discovery'];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Column(
+                          crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              constraints: const BoxConstraints(maxWidth: 300),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isUser ? Colors.indigoAccent.withValues(alpha: 0.24) : Colors.white.withValues(alpha: 0.07),
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                              child: Text(
+                                (message['text'] ?? '').toString(),
+                                style: GoogleFonts.poppins(color: Colors.white, fontSize: 11, height: 1.45),
+                              ),
+                            ),
+                            if (!isUser && data is Map) ...[
+                              const SizedBox(height: 8),
+                              ProductDiscoveryCard(data: Map<String, dynamic>.from(data)),
+                            ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 11),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _shoppingChatController,
+                  minLines: 1,
+                  maxLines: 3,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _sendPurchaseShoppingQuery(),
+                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
+                  decoration: InputDecoration(
+                    hintText: 'Search a product, brand or pack size…',
+                    hintStyle: GoogleFonts.poppins(color: Colors.white38, fontSize: 11),
+                    filled: true,
+                    fillColor: Colors.black.withValues(alpha: 0.15),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(13), borderSide: BorderSide.none),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 7),
+              SizedBox(
+                height: 46,
+                width: 46,
+                child: IconButton.filled(
+                  tooltip: 'Search online and nearby',
+                  onPressed: _shoppingSearchLoading ? null : () => _sendPurchaseShoppingQuery(),
+                  style: IconButton.styleFrom(backgroundColor: Colors.teal.shade700, foregroundColor: Colors.white),
+                  icon: const Icon(Icons.search_rounded),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _shoppingPromptChip(String label) {
+    return ActionChip(
+      label: Text(label, style: GoogleFonts.poppins(fontSize: 10, color: Colors.white)),
+      backgroundColor: Colors.white.withValues(alpha: 0.07),
+      side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+      onPressed: _shoppingSearchLoading ? null : () => _sendPurchaseShoppingQuery(query: 'Find $label'),
     );
   }
 
@@ -659,6 +1002,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: [
+                  _buildPurchaseShoppingChat(),
                   _buildReorderSuggestions(),
                   Text('Purchase Orders', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
                   const SizedBox(height: 12),
