@@ -628,7 +628,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   }
 
   Widget _shoppingPromptChip(String label) {
-    final width = ((MediaQuery.sizeOf(context).width - 72) / 3).clamp(82.0, 132.0).toDouble();
+    final width = ((MediaQuery.sizeOf(context).width - 92) / 3).clamp(72.0, 132.0).toDouble();
     final icon = label.contains('ghee')
         ? Icons.breakfast_dining_rounded
         : label.contains('rice')
@@ -1284,9 +1284,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         onPressed: _showCreatePO,
         child: const Icon(Icons.add_rounded),
       ),
-      body: _loading && _orders.isEmpty
-          ? const Center(child: CircularProgressIndicator(color: Colors.indigoAccent))
-          : RefreshIndicator(
+      // Keep product search available immediately even when purchase orders
+      // are still loading or the shop has no saved orders yet.
+      body: RefreshIndicator(
               onRefresh: _refreshAll,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -1315,7 +1315,33 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  if (_orders.isEmpty)
+                  if (_loading && _orders.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _surface,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: _border),
+                      ),
+                      child: const Row(
+                        children: [
+                          SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: _primary),
+                          ),
+                          SizedBox(width: 11),
+                          Expanded(
+                            child: Text(
+                              'Loading saved purchase orders…',
+                              style: TextStyle(color: _muted, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (_orders.isEmpty)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 18),
