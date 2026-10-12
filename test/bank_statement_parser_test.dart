@@ -175,3 +175,57 @@ void main() {
     });
   });
 }
+
+
+    test('parses PhonePe month-first dates, explicit CREDIT/DEBIT and transaction metadata', () {
+      final entries = BankStatementParser.parseText(
+        'Transaction Statement for 8125436350\n'
+        '14 Jul, 2026 - 12 Oct, 2026\n'
+        'Date Transaction Details Type Amount\n'
+        'Oct 12, 2026 Mobile recharged 8125436350 DEBIT ₹49\n'
+        '10 39 am Transaction ID NB26101210391532161141112\n'
+        'UTR No. 276804138067\n'
+        'Airtel Prepaid Reference ID 287929889\n'
+        'Paid by XXXXXXXXX984222\n'
+        'Oct 11, 2026 Received from Akka CREDIT ₹2,000\n'
+        '07 18 pm Transaction ID T2610111918101073131414\n'
+        'UTR No. 692220225846\n'
+        'Credited to XXXXXXXXX984222\n'
+        'Oct 10, 2026 Paid to SHAIK AMEER DEBIT ₹25\n'
+        '08 38 am Transaction ID T2610100838177414329965\n'
+        'UTR No. 200702873751\n'
+        'Paid by XXXXXXXXX984222\n',
+      );
+
+      expect(entries, hasLength(3));
+      final recharge = entries.singleWhere((entry) => entry.amount == 49);
+      final received = entries.singleWhere((entry) => entry.amount == 2000);
+      final paid = entries.singleWhere((entry) => entry.amount == 25);
+
+      expect(recharge.date, DateTime(2026, 10, 12));
+      expect(recharge.direction, 'DEBIT');
+      expect(recharge.bankName, 'PhonePe');
+      expect(recharge.reference, 'NB26101210391532161141112');
+
+      expect(received.date, DateTime(2026, 10, 11));
+      expect(received.direction, 'CREDIT');
+      expect(received.counterparty, 'Akka');
+      expect(received.reference, 'T2610111918101073131414');
+
+      expect(paid.date, DateTime(2026, 10, 10));
+      expect(paid.direction, 'DEBIT');
+      expect(paid.counterparty, 'SHAIK AMEER');
+      expect(paid.reference, 'T2610100838177414329965');
+    });
+
+    test('supports comma punctuation in day-first statement dates', () {
+      final entries = BankStatementParser.parseText(
+        'PhonePe statement\n'
+        '14 Jul, 2026 Paid to Test Shop DEBIT ₹12\n'
+        '11 20 am Transaction ID T2607141120001234567890\n'
+        'UTR No. 123456789012\n',
+      );
+      expect(entries, hasLength(1));
+      expect(entries.single.date, DateTime(2026, 7, 14));
+      expect(entries.single.amount, 12);
+    });
