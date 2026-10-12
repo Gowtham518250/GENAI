@@ -157,7 +157,7 @@ class BankStatementParser {
 
   static BankEntry? _parseTransactionLine(String line, String bankName) {
     final hasMovement = RegExp(
-      r'\bUPI\b|\bNEFT\b|\bIMPS\b|\bRTGS\b|\bCR(?:EDIT(?:ED)?)?\b|\bDR(?:EBIT(?:ED)?)?\b|\bRECEIVED\b|\bWITHDRAW(?:AL|N)?\b|\bDEPOSIT\b|\bTRANSFER\b',
+      r'\bUPI\b|\bNEFT\b|\bIMPS\b|\bRTGS\b|\bPOS\b|\bATM\b|\bECS\b|\bNACH\b|\bCHQ\b|\bCHEQUE\b|\bCARD\b|\bBILLPAY\b|\bCR(?:EDIT(?:ED)?)?\b|\bDR(?:EBIT(?:ED)?)?\b|\bRECEIVED\b|\bWITHDRAW(?:AL|N)?\b|\bDEPOSIT\b|\bTRANSFER\b|\bPAYMENT\b|\bCHARGE\b|\bSALARY\b|\bINTEREST\b',
       caseSensitive: false,
     ).hasMatch(line);
     if (!hasMovement) return null;
@@ -352,7 +352,7 @@ class BankStatementQueryHelper {
       r'\b(credit|credited|received|deposit(?:ed)?|inward|incoming|paid me|paid into)\b',
     ).hasMatch(query);
     final wantsDebit = RegExp(
-      r'\b(debit|debited|spent|withdraw(?:al|n)?|outward|outgoing|paid to|payment to|i paid)\b',
+      r'\b(debit|debited|spent|withdraw(?:al|n)?|outward|outgoing|paid to|pay to|payment to|i paid|i pay)\b',
     ).hasMatch(query);
     final filterDirection = wantsCredit == wantsDebit
         ? null
