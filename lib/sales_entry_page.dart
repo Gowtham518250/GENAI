@@ -7171,6 +7171,17 @@ class _BillCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final normalizedPayment = paymentMode.toLowerCase();
+    final paymentLabel = normalizedPayment.contains('credit')
+        ? 'Credit'
+        : (normalizedPayment.contains('upi') || normalizedPayment.contains('online'))
+            ? 'UPI'
+            : l.translate('cash');
+    final billLabel = normalizedPayment.contains('credit')
+        ? 'CREDIT BILL'
+        : (normalizedPayment.contains('upi') || normalizedPayment.contains('online'))
+            ? 'UPI BILL'
+            : l.translate('cashBill').toUpperCase();
     // ── Per-GST-slab aggregation for proper CGST/SGST breakdown ──
     double billSubtotal = 0;
     // Map of gstPercent -> { subtotal, gstAmount }
@@ -7252,7 +7263,7 @@ class _BillCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(4)),
                 child: Text(
-                  l.translate('cashBill').toUpperCase(),
+                  billLabel,
                   style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
                 ),
               ),
@@ -7348,7 +7359,7 @@ class _BillCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('E & O.E., #Incl Gst', style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black)),
+              Text('E & O.E., ${withGst ? '#Incl Gst' : '#Excl Gst'}', style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black)),
               Text('${l.translate('total')} : ${finalGrandTotal.toStringAsFixed(1)}', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black)),
             ],
           ),
@@ -7376,7 +7387,7 @@ class _BillCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Text('${l.translate('cash')}     :', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black)),
+              Text('${paymentLabel}     :', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black)),
               const SizedBox(width: 20),
               Text(totalAmount.toStringAsFixed(2), style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black)),
             ],
