@@ -251,7 +251,6 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         transcript,
         languageCode: spokenLanguageCode,
         preserveVoiceTranscript: true,
-        speakAnswerOnSuccess: true,
       );
     } catch (error) {
       if (!mounted) return;
