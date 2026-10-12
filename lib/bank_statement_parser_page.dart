@@ -204,13 +204,13 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
               const SizedBox(height: 16),
               _buildInstructionCard(
                 'Supported Banks',
-                'HDFC, SBI, ICICI, AXIS, KOTAK Mahindra Bank statements',
+                'HDFC, SBI, ICICI, AXIS, KOTAK Mahindra and PhonePe transaction statements',
                 Icons.account_balance,
               ),
               const SizedBox(height: 12),
               _buildInstructionCard(
                 'PDF Format',
-                'Use a text-based bank statement PDF downloaded from net banking. The statement is parsed on this device.',
+                'Use a text-based PDF downloaded from bank net banking or your UPI app. PhonePe transaction statement PDFs are supported and parsed on this device.',
                 Icons.picture_as_pdf,
               ),
               const SizedBox(height: 12),
