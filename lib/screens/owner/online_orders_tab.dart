@@ -17,6 +17,13 @@ class OnlineOrdersTab extends StatefulWidget {
 class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     with SingleTickerProviderStateMixin {
   String _shopId = '';
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  List<Map<String, dynamic>> _searchedOrders = [];
+  bool _isSearchingHistory = false;
+  String _searchError = '';
+  int _searchTotal = 0;
+  int _historySearchVersion = 0;
   List<Map<String, dynamic>> _pendingOrders = [];
   // 🚨 FIX: Accepted orders are now kept in their own list instead of just
   // vanishing once ACCEPT succeeds. Previously _fetchOrders() only ever asked
@@ -50,7 +57,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     _loadShopIdAndOrders();
     _durableEventsSubscription = SyncService.durableEventsStream.listen((events) {
       if (!mounted) return;
@@ -67,6 +74,8 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
   @override
   void dispose() {
     _durableEventsSubscription?.cancel();
+    _searchDebounce?.cancel();
+    _searchController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -169,7 +178,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
       // this response to the authenticated shop. Grouping locally avoids the
       // old four-request status/filter path that could show zero orders even
       // while the dashboard correctly reported existing online orders.
-      final res = await ApiClient.getJson('/store/owner/orders');
+      final res = await ApiClient.getJson('/store/owner/orders?limit=200');
 
       if (res.statusCode != 200) {
         throw Exception('Online orders request failed (status ' + res.statusCode.toString() + ').');
@@ -263,6 +272,135 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
       if (_ordersRefreshPending && mounted) {
         _ordersRefreshPending = false;
         unawaited(_fetchAllOrders(showLoading: false));
+      }
+    }
+  }
+
+  List<Map<String, dynamic>> _allLoadedOrders() {
+    final byId = <String, Map<String, dynamic>>{};
+    for (final order in <Map<String, dynamic>>[
+      ..._pendingOrders,
+      ..._acceptedOrders,
+      ..._dispatchedOrders,
+      ..._deliveredOrders,
+      ..._returnedOrders,
+      ..._cancelledOrders,
+    ]) {
+      final id = (order['order_id'] ?? '').toString();
+      final key = id.isEmpty
+          ? (order['customer_name'] ?? '').toString() + '_' +
+              (order['created_at'] ?? '').toString() + '_' + byId.length.toString()
+          : id;
+      byId[key] = order;
+    }
+
+    final orders = byId.values.toList();
+    DateTime dateOf(Map<String, dynamic> order) =>
+        DateTime.tryParse((order['created_at'] ?? '').toString()) ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+    orders.sort((a, b) => dateOf(b).compareTo(dateOf(a)));
+    return orders;
+  }
+
+  String _statusOf(Map<String, dynamic> order) =>
+      (order['status'] ?? order['order_status'] ?? '')
+          .toString()
+          .trim()
+          .toUpperCase();
+
+  List<Map<String, dynamic>> _ordersForStatus(String? status) {
+    final searching = _searchController.text.trim().isNotEmpty;
+    final source = searching ? _searchedOrders : _allLoadedOrders();
+    if (status == null) return source;
+
+    return source.where((order) {
+      final actual = _statusOf(order);
+      if (status == 'CANCELLED') {
+        return actual == 'CANCELLED' || actual == 'REJECTED';
+      }
+      return actual == status;
+    }).toList();
+  }
+
+  void _onOrderSearchChanged(String rawValue) {
+    _searchDebounce?.cancel();
+    final requestVersion = ++_historySearchVersion;
+    final query = rawValue.trim();
+
+    if (query.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _searchedOrders = [];
+        _searchTotal = 0;
+        _searchError = '';
+        _isSearchingHistory = false;
+      });
+      return;
+    }
+
+    if (_tabController.index != 0) {
+      _tabController.animateTo(0);
+    }
+    setState(() {
+      _searchedOrders = [];
+      _searchTotal = 0;
+      _searchError = '';
+      _isSearchingHistory = true;
+    });
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 350),
+      () => unawaited(_searchOnlineHistory(query, requestVersion)),
+    );
+  }
+
+  Future<void> _searchOnlineHistory(String query, int requestVersion) async {
+    try {
+      final res = await ApiClient.getJson(
+        '/store/owner/orders?search=' + Uri.encodeQueryComponent(query) + '&limit=200',
+      ).timeout(const Duration(seconds: 15));
+
+      if (res.statusCode != 200) {
+        throw Exception('Order history search failed (' + res.statusCode.toString() + ').');
+      }
+
+      final decoded = json.decode(res.body);
+      final rawOrders = decoded is Map ? decoded['orders'] : decoded;
+      final orders = rawOrders is List
+          ? rawOrders
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList()
+          : <Map<String, dynamic>>[];
+      final total = decoded is Map
+          ? (int.tryParse(decoded['total']?.toString() ?? '') ?? orders.length)
+          : orders.length;
+
+      if (!mounted ||
+          requestVersion != _historySearchVersion ||
+          query != _searchController.text.trim()) {
+        return;
+      }
+
+      setState(() {
+        _searchedOrders = orders;
+        _searchTotal = total;
+        _searchError = '';
+        _isSearchingHistory = false;
+      });
+    } catch (error) {
+      if (!mounted ||
+          requestVersion != _historySearchVersion ||
+          query != _searchController.text.trim()) {
+        return;
+      }
+      setState(() {
+        _searchedOrders = [];
+        _searchTotal = 0;
+        _searchError = 'Could not search order history. Pull down to retry.';
+        _isSearchingHistory = false;
+      });
+      if (kDebugMode) {
+        debugPrint('Online order history search failed: $error');
       }
     }
   }
@@ -926,6 +1064,348 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     );
   }
 
+  Widget _buildOrdersHero() {
+    final all = _allLoadedOrders();
+    final count = _searchController.text.trim().isNotEmpty
+        ? _searchTotal
+        : all.length;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF312E81), Color(0xFF635BFF), Color(0xFF8B5CF6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF635BFF).withValues(alpha: 0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'ORDER CONTROL CENTRE',
+                  style: TextStyle(
+                    color: Color(0xFFDAD7FF),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Every order, in control.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 21,
+                    height: 1.2,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _searchController.text.trim().isEmpty
+                      ? 'Track orders from acceptance to delivery.'
+                      : 'Searching the full order history.',
+                  style: const TextStyle(
+                    color: Color(0xFFE7E5FF),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+            ),
+            child: const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 32),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderSearch() {
+    final query = _searchController.text.trim();
+    String helperText;
+    if (query.isEmpty) {
+      helperText = 'Search by customer name, phone number, or order ID';
+    } else if (_isSearchingHistory) {
+      helperText = 'Searching all order statuses…';
+    } else if (_searchError.isNotEmpty) {
+      helperText = _searchError;
+    } else if (_searchTotal > _searchedOrders.length) {
+      helperText = 'Showing ' + _searchedOrders.length.toString() +
+          ' of ' + _searchTotal.toString() + ' matching orders';
+    } else {
+      helperText = _searchTotal.toString() + ' matching order' +
+          (_searchTotal == 1 ? '' : 's') + ' found';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _searchController,
+          onChanged: _onOrderSearchChanged,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: 'Find an order or customer…',
+            hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+            prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
+            suffixIcon: query.isEmpty
+                ? const Icon(Icons.manage_search_rounded, color: Colors.black38)
+                : IconButton(
+                    tooltip: 'Clear search',
+                    onPressed: () {
+                      _searchController.clear();
+                      _onOrderSearchChanged('');
+                    },
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: const BorderSide(color: Color(0xFFE7EAF3)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: const BorderSide(color: Color(0xFFE7EAF3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              if (_isSearchingHistory)
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(strokeWidth: 1.6),
+                )
+              else
+                Icon(
+                  query.isEmpty ? Icons.tips_and_updates_outlined : Icons.check_circle_outline,
+                  size: 14,
+                  color: query.isEmpty ? Colors.black45 : AppColors.primary,
+                ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  helperText,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _searchError.isNotEmpty ? Colors.redAccent : Colors.black54,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOrderStat({
+    required String label,
+    required int value,
+    required IconData icon,
+    required Color tint,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE9ECF5)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Icon(icon, size: 18, color: tint),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value.toString(),
+                    style: const TextStyle(
+                      color: Color(0xFF17172A),
+                      fontSize: 18,
+                      height: 1.15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderStats() {
+    final pending = _ordersForStatus('PENDING').length;
+    final processing =
+        _ordersForStatus('ACCEPTED').length + _ordersForStatus('DISPATCHED').length;
+    final delivered = _ordersForStatus('DELIVERED').length;
+    return Row(
+      children: [
+        _buildOrderStat(
+          label: 'Pending',
+          value: pending,
+          icon: Icons.notifications_active_outlined,
+          tint: const Color(0xFFF59E0B),
+        ),
+        const SizedBox(width: 8),
+        _buildOrderStat(
+          label: 'In progress',
+          value: processing,
+          icon: Icons.local_shipping_outlined,
+          tint: const Color(0xFF3B82F6),
+        ),
+        const SizedBox(width: 8),
+        _buildOrderStat(
+          label: 'Delivered',
+          value: delivered,
+          icon: Icons.check_circle_outline_rounded,
+          tint: const Color(0xFF16A34A),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOrderTabs() {
+    final allCount = _searchController.text.trim().isNotEmpty
+        ? _searchTotal
+        : _allLoadedOrders().length;
+    final returnsCount = _returnRequests.where(
+      (r) => (r['status'] ?? '').toString().toUpperCase() == 'REQUESTED',
+    ).length;
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: const Color(0xFFE9ECF5)),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        isScrollable: true,
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.black54,
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        indicator: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(13),
+        ),
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        tabs: [
+          Tab(text: 'All (' + allCount.toString() + ')'),
+          Tab(text: 'Pending (' + _ordersForStatus('PENDING').length.toString() + ')'),
+          Tab(text: 'Accepted (' + _ordersForStatus('ACCEPTED').length.toString() + ')'),
+          Tab(text: 'Dispatched (' + _ordersForStatus('DISPATCHED').length.toString() + ')'),
+          Tab(text: 'Delivered (' + _ordersForStatus('DELIVERED').length.toString() + ')'),
+          Tab(text: 'Returns (' + returnsCount.toString() + ')'),
+          Tab(text: 'Cancelled (' + _ordersForStatus('CANCELLED').length.toString() + ')'),
+          Tab(text: 'Reviews (' + _reviews.length.toString() + ')'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderStatusBadge({
+    required String status,
+    required bool syncing,
+  }) {
+    final normalized = status.trim().toUpperCase();
+    final label = syncing
+        ? 'SYNCING'
+        : normalized == 'PENDING'
+            ? 'NEW'
+            : normalized.isEmpty
+                ? 'ORDER'
+                : normalized.replaceAll('_', ' ');
+    final Color color = syncing
+        ? Colors.orange
+        : normalized == 'PENDING'
+            ? const Color(0xFFD97706)
+            : normalized == 'ACCEPTED'
+                ? AppColors.primary
+                : normalized == 'DISPATCHED'
+                    ? const Color(0xFF2563EB)
+                    : normalized == 'DELIVERED'
+                        ? const Color(0xFF15803D)
+                        : normalized == 'RETURNED'
+                            ? const Color(0xFF7C3AED)
+                            : normalized == 'CANCELLED' || normalized == 'REJECTED'
+                                ? const Color(0xFFDC2626)
+                                : Colors.blueGrey;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          letterSpacing: 0.3,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_shopId.isEmpty || _shopId == '0') {
@@ -933,65 +1413,128 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF6F7FB),
       appBar: AppBar(
-        title: const Text('Online Orders', style: TextStyle(color: Colors.black87)),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.black54,
-          indicatorColor: AppColors.primary,
-          isScrollable: true,
-          tabs: [
-            Tab(text: 'Pending (${_pendingOrders.length})'),
-            Tab(text: 'Accepted (${_acceptedOrders.length})'),
-            Tab(text: 'Dispatched (${_dispatchedOrders.length})'),
-            Tab(text: 'Delivered (${_deliveredOrders.length})'),
-            Tab(text: 'Returns (${_returnRequests.where((r) => (r['status'] ?? '').toString().toUpperCase() == 'REQUESTED').length})'),
-            Tab(text: 'Cancelled (${_cancelledOrders.length})'),
-            Tab(text: 'Reviews (${_reviews.length})'),
+        toolbarHeight: 70,
+        iconTheme: const IconThemeData(color: Color(0xFF17172A)),
+        title: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, Color(0xFF8B5CF6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 23),
+            ),
+            const SizedBox(width: 11),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Online Orders',
+                    style: TextStyle(color: Color(0xFF17172A), fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Fulfilment dashboard',
+                    style: TextStyle(color: Colors.black54, fontSize: 11, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh orders',
+            onPressed: () {
+              final query = _searchController.text.trim();
+              if (query.isNotEmpty) {
+                _onOrderSearchChanged(query);
+              } else {
+                unawaited(_fetchAllOrders(showLoading: false));
+              }
+            },
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildOrderList(
-                  orders: _pendingOrders,
-                  emptyText: 'No incoming orders',
-                  nextAction: 'ACCEPT',
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                  child: _buildOrdersHero(),
                 ),
-                _buildOrderList(
-                  orders: _acceptedOrders,
-                  emptyText: 'No accepted orders yet',
-                  nextAction: 'DISPATCH',
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: _buildOrderSearch(),
                 ),
-                _buildOrderList(
-                  orders: _dispatchedOrders,
-                  emptyText: 'No dispatched orders yet',
-                  nextAction: 'DELIVER',
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  child: _buildOrderStats(),
                 ),
-                _buildOrderList(
-                  orders: _deliveredOrders,
-                  emptyText: 'No delivered orders yet',
-                  nextAction: null,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: _buildOrderTabs(),
                 ),
-                _buildReturnRequestsTab(),
-                _buildOrderList(
-                  orders: _cancelledOrders,
-                  emptyText: 'No cancelled orders yet',
-                  nextAction: null,
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildOrderList(
+                        orders: _ordersForStatus(null),
+                        emptyText: 'No online orders yet',
+                        nextAction: null,
+                      ),
+                      _buildOrderList(
+                        orders: _ordersForStatus('PENDING'),
+                        emptyText: 'No incoming orders',
+                        nextAction: 'ACCEPT',
+                      ),
+                      _buildOrderList(
+                        orders: _ordersForStatus('ACCEPTED'),
+                        emptyText: 'No accepted orders yet',
+                        nextAction: 'DISPATCH',
+                      ),
+                      _buildOrderList(
+                        orders: _ordersForStatus('DISPATCHED'),
+                        emptyText: 'No dispatched orders yet',
+                        nextAction: 'DELIVER',
+                      ),
+                      _buildOrderList(
+                        orders: _ordersForStatus('DELIVERED'),
+                        emptyText: 'No delivered orders yet',
+                        nextAction: null,
+                      ),
+                      _buildReturnRequestsTab(),
+                      _buildOrderList(
+                        orders: _ordersForStatus('CANCELLED'),
+                        emptyText: 'No cancelled orders yet',
+                        nextAction: null,
+                      ),
+                      _buildReviewsTab(),
+                    ],
+                  ),
                 ),
-                _buildReviewsTab(),
               ],
             ),
     );
   }
+
 
   Widget _buildCustomerActions(Map<String, dynamic> order) {
     final phone = (order['customer_phone'] ?? '').toString().replaceAll(RegExp(r'[^0-9+]'), '');
@@ -1052,21 +1595,65 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
     required String emptyText,
     required String? nextAction, // 'ACCEPT' | 'DISPATCH' | 'DELIVER' | null (no next stage from here)
   }) {
+    final query = _searchController.text.trim();
     return RefreshIndicator(
-      onRefresh: _fetchAllOrders,
-      child: orders.isEmpty
+      onRefresh: () async {
+        if (query.isNotEmpty) {
+          await _searchOnlineHistory(query, _historySearchVersion);
+        } else {
+          await _fetchAllOrders();
+        }
+      },
+      child: _isSearchingHistory && query.isNotEmpty
           ? ListView(
-              children: [
-                const SizedBox(height: 100),
-                Center(child: Text(emptyText, style: const TextStyle(color: Colors.black54))),
+              children: const [
+                SizedBox(height: 110),
+                Center(child: CircularProgressIndicator()),
+                SizedBox(height: 14),
+                Center(child: Text('Searching full order history…')),
               ],
             )
-          : ListView.builder(
+          : orders.isEmpty
+              ? ListView(
+                  children: [
+                    const SizedBox(height: 85),
+                    Icon(
+                      query.isNotEmpty ? Icons.search_off_rounded : Icons.inbox_outlined,
+                      size: 48,
+                      color: Colors.black26,
+                    ),
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 30),
+                        child: Text(
+                          query.isNotEmpty
+                              ? (_searchError.isNotEmpty
+                                  ? _searchError
+                                  : 'No orders found for "' + query + '"')
+                              : emptyText,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.black54),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: orders.length,
               itemBuilder: (context, index) {
                 final order = orders[index];
                 final orderId = order['order_id']?.toString() ?? '0';
+                final orderStatus = _statusOf(order);
+                final effectiveAction = nextAction ??
+                    (orderStatus == 'PENDING'
+                        ? 'ACCEPT'
+                        : orderStatus == 'ACCEPTED'
+                            ? 'DISPATCH'
+                            : orderStatus == 'DISPATCHED'
+                                ? 'DELIVER'
+                                : null);
                 final items = order['items'] as List<dynamic>? ?? [];
                 final syncing = _pendingSync.contains(orderId);
                 final paymentStatus = (order['payment_status'] ?? '').toString().toUpperCase();
@@ -1085,8 +1672,20 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                                         ? 'PAYMENT DUE'
                                         : '';
 
-                return GlassContainer(
-                  padding: const EdgeInsets.all(16),
+                return Container(
+                  padding: const EdgeInsets.all(17),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE8EBF4)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1F2A5A).withValues(alpha: 0.035),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1096,22 +1695,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                           Text('Order #$orderId',
                               style: const TextStyle(
                                   color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
-                          if (syncing)
-                            const Badge(label: Text('SYNCING'), backgroundColor: Colors.orange)
-                          else if ((order['status'] ?? '').toString().toUpperCase() == 'RETURNED')
-                            const Badge(label: Text('RETURNED'), backgroundColor: Colors.deepPurple)
-                          else if ((order['status'] ?? '').toString().toUpperCase() == 'CANCELLED')
-                            const Badge(label: Text('CANCELLED'), backgroundColor: Colors.redAccent)
-                          else if ((order['status'] ?? '').toString().toUpperCase() == 'REJECTED')
-                            const Badge(label: Text('REJECTED'), backgroundColor: Colors.redAccent)
-                          else if (nextAction == 'ACCEPT')
-                            const Badge(label: Text('NEW'), backgroundColor: Colors.redAccent)
-                          else if (nextAction == 'DISPATCH')
-                            const Badge(label: Text('ACCEPTED'), backgroundColor: Colors.green)
-                          else if (nextAction == 'DELIVER')
-                            const Badge(label: Text('DISPATCHED'), backgroundColor: Colors.blue)
-                          else
-                            const Badge(label: Text('DELIVERED'), backgroundColor: Colors.green),
+                          _buildOrderStatusBadge(status: orderStatus, syncing: syncing),
                         ],
                       ),
                       const Divider(color: Colors.black12, height: 24),
@@ -1183,7 +1767,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                             ),
                           ),
                         ),
-                      if (nextAction == 'ACCEPT') ...[
+                      if (effectiveAction == 'ACCEPT') ...[
                         const SizedBox(height: 24),
                         Row(
                           children: [
@@ -1210,7 +1794,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                             ),
                           ],
                         ),
-                      ] else if (nextAction == 'DISPATCH') ...[
+                      ] else if (effectiveAction == 'DISPATCH') ...[
                         const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
@@ -1221,7 +1805,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                             label: const Text('Mark as Dispatched'),
                           ),
                         ),
-                      ] else if (nextAction == 'DELIVER') ...[
+                      ] else if (effectiveAction == 'DELIVER') ...[
                         const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
