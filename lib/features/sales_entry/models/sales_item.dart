@@ -1,6 +1,7 @@
 class SalesItem {
   final String id;
   final String itemName;
+  final int? productId;
   final double quantity;
   final double price;
   final double gst;
@@ -9,6 +10,7 @@ class SalesItem {
   const SalesItem({
     required this.id,
     this.itemName = '',
+    this.productId,
     this.quantity = 1.0,
     this.price = 0.0,
     this.gst = 0.0,
@@ -17,6 +19,7 @@ class SalesItem {
 
   SalesItem copyWith({
     String? itemName,
+    int? productId,
     double? quantity,
     double? price,
     double? gst,
@@ -25,6 +28,10 @@ class SalesItem {
     return SalesItem(
       id: id,
       itemName: itemName ?? this.itemName,
+      // If the cashier edits the product name, discard the old catalog ID.
+      productId: itemName != null && itemName != this.itemName
+          ? null
+          : (productId ?? this.productId),
       quantity: quantity ?? this.quantity,
       price: price ?? this.price,
       gst: gst ?? this.gst,
