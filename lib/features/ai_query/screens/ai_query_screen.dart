@@ -14,6 +14,7 @@ import '../services/ai_query_service.dart';
 import '../widgets/ai_answer_card.dart';
 import '../widgets/ai_loading_indicator.dart';
 import '../widgets/result_card.dart';
+import '../widgets/product_discovery_card.dart';
 import '../widgets/suggestion_chip.dart';
 import 'ai_query_history_screen.dart';
 import 'voice_language_option.dart';
@@ -582,6 +583,10 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         if (_currentResponse != null && !busy && _currentResponse!.isSuccess) ...[
           const SizedBox(height: 18),
           AIAnswerCard(response: _currentResponse!),
+          if (_currentResponse!.productDiscovery != null) ...[
+            const SizedBox(height: 14),
+            ProductDiscoveryCard(data: _currentResponse!.productDiscovery!),
+          ],
           Align(
             alignment: Alignment.centerRight,
             child: Padding(
