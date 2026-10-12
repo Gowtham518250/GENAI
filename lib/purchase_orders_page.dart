@@ -201,7 +201,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         if (offers.isNotEmpty) {
           final best = offers.first;
           final source = (best['source'] ?? 'online seller').toString();
-          answer = 'Best listed price: \${_money(best['price'])} from $source. '
+          answer = 'Best listed price: ${_money(best['price'])} from $source. '
               'This is the lowest returned listing, not a guaranteed best-value deal; confirm the brand, exact pack size, delivery fees and checkout price. '
               '$answer';
         } else {
@@ -373,7 +373,10 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                             ),
                             if (!isUser && data is Map) ...[
                               const SizedBox(height: 8),
-                              ProductDiscoveryCard(data: Map<String, dynamic>.from(data)),
+                              ProductDiscoveryCard(
+                                data: Map<String, dynamic>.from(data),
+                                purchaseAssistantMode: true,
+                              ),
                             ],
                           ],
                         ),
@@ -426,7 +429,11 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       label: Text(label, style: GoogleFonts.poppins(fontSize: 10, color: Colors.white)),
       backgroundColor: Colors.white.withValues(alpha: 0.07),
       side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-      onPressed: _shoppingSearchLoading ? null : () => _sendPurchaseShoppingQuery(query: 'Find $label'),
+      onPressed: _shoppingSearchLoading
+          ? null
+          : () => _sendPurchaseShoppingQuery(
+                query: label.toLowerCase().startsWith('find ') ? label : 'Find $label',
+              ),
     );
   }
 
