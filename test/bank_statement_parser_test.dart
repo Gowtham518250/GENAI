@@ -152,5 +152,20 @@ void main() {
       );
       expect(unrelated, isNull);
     });
+
+    test('uses explicit debit and credit columns only when the statement exposes them', () {
+      final entries = BankStatementParser.parseText(
+        'SBI BANK STATEMENT\\n'
+        'Transaction Date Narration Debit Credit Balance\\n'
+        '07-04-2026 UPI/P2A/12345678/Rahul 0.00 1,500.00 20,000.00\\n'
+        '08-04-2026 UPI/P2A/12345679/MarketShop 250.00 0.00 19,750.00\\n',
+      );
+
+      expect(entries, hasLength(2));
+      final credit = entries.singleWhere((entry) => entry.direction == 'CREDIT');
+      final debit = entries.singleWhere((entry) => entry.direction == 'DEBIT');
+      expect(credit.amount, 1500.0);
+      expect(debit.amount, 250.0);
+    });
   });
 }
