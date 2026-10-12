@@ -142,6 +142,7 @@ class SalesEntryProvider extends ChangeNotifier {
               SalesItem(
                 id: '${DateTime.now().microsecondsSinceEpoch}_${parsedItems.length}',
                 itemName: name,
+                productId: int.tryParse((raw['product_id'] ?? '').toString()),
                 quantity: quantity,
                 price: price,
               ),
@@ -210,6 +211,7 @@ class SalesEntryProvider extends ChangeNotifier {
             SalesItem(
               id: '${DateTime.now().microsecondsSinceEpoch}_${safeItems.length}',
               itemName: matchedInventory.first['name'].toString(),
+              productId: int.tryParse((matchedInventory.first['id'] ?? matchedInventory.first['product_id'] ?? '').toString()),
               quantity: quantity,
               price: price,
             ),
@@ -251,7 +253,9 @@ class SalesEntryProvider extends ChangeNotifier {
 
       final itemsPayload = <Map<String, dynamic>>[];
       for (final e in entries.where((e) => e.itemName.isNotEmpty && e.itemName.trim() != 'Unknown' && e.price > 0)) {
-        final actualProductId = await _lookupProductIdByName(e.itemName);
+        final actualProductId = e.productId != null && e.productId! > 0
+            ? e.productId!
+            : await _lookupProductIdByName(e.itemName);
 
         if (actualProductId == 0 && kDebugMode) {
           debugPrint('⚠️ Product lookup failed for: ${e.itemName}, submitting without stock deduction');
