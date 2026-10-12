@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -112,79 +114,16 @@ class SalesEntryProvider extends ChangeNotifier {
         },
       );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final decoded = jsonDecode(response.body);
-        if (decoded is! Map) {
-          throw const FormatException('Invalid voice billing response');
-        }
-
-        final rawItems = decoded['items'];
-        final parsedItems = <SalesItem>[];
-        final priceWarningProducts = <String>[];
-        final stockWarningProducts = <String>[];
-        if (rawItems is List) {
-          for (final raw in rawItems) {
-            if (raw is! Map) continue;
-            final name = (raw['product_name'] ?? raw['item'] ?? '').toString().trim();
-            final quantity = double.tryParse((raw['quantity'] ?? raw['qty'] ?? '').toString());
-            final price = double.tryParse((raw['unit_price'] ?? raw['price'] ?? '').toString());
-            final confidence = double.tryParse((raw['confidence'] ?? '1').toString()) ?? 0;
-            // Enforce the backend confidence threshold again at the client boundary.
-            if (name.isEmpty ||
-                quantity == null ||
-                !quantity.isFinite ||
-                quantity <= 0 ||
-                price == null ||
-                !price.isFinite ||
-                price <= 0 ||
-                confidence < 0.72) {
-              continue;
-            }
-            if ((raw['price_warning'] ?? '').toString().trim().isNotEmpty) {
-              priceWarningProducts.add(name);
-            }
-            if (raw['stock_warning'] == true) {
-              stockWarningProducts.add(name);
-            }
-            parsedItems.add(
-              SalesItem(
-                id: '${DateTime.now().microsecondsSinceEpoch}_${parsedItems.length}',
-                itemName: name,
-                productId: int.tryParse((raw['product_id'] ?? '').toString()),
-                quantity: quantity,
-                price: price,
-              ),
-            );
-          }
-        }
-
-        if (parsedItems.isNotEmpty) {
-          _appendVoiceDraftItems(parsedItems);
-        }
-
-        final clarification = (decoded['clarification_question'] ?? '').toString().trim();
-        final needsClarification = decoded['needs_clarification'] == true;
-        if (parsedItems.isNotEmpty) {
-          final reviewNotes = <String>[
-            if (priceWarningProducts.isNotEmpty)
-              'Verify spoken/catalog price for: ${priceWarningProducts.take(3).join(', ')}.',
-            if (stockWarningProducts.isNotEmpty)
-              'Quantity exceeds recorded stock for: ${stockWarningProducts.take(3).join(', ')}.',
-          ].join(' ');
-          final confirmation = 'Added ${parsedItems.length} item(s) to the sale draft. Check each product, quantity and price before saving. $reviewNotes'.trim();
-          lastVoiceMessage = needsClarification && clarification.isNotEmpty
-              ? '$confirmation $clarification'
-              : confirmation;
-        } else {
-          lastVoiceMessage = clarification.isNotEmpty
-              ? clarification
-              : 'I could not confidently match the spoken product to this shop\'s inventory. Please say the product name again or select it manually.';
-        }
-        notifyListeners();
-        return;
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Voice billing request failed (HTTP ${response.statusCode})');
       }
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map) {
+        throw const FormatException('Invalid voice billing response');
+      }
+      _applyVoiceBillingPayload(Map<String, dynamic>.from(decoded));
+      return;
 
-      throw Exception('Voice billing request failed (HTTP ${response.statusCode})');
     } catch (error) {
       if (kDebugMode) {
         debugPrint('Groq voice billing unavailable; trying catalog-constrained local parsing: $error');
@@ -247,6 +186,136 @@ class SalesEntryProvider extends ChangeNotifier {
       isVoiceProcessing = false;
       notifyListeners();
     }
+  }
+
+  /// Recordings use Groq Whisper before catalog-grounded line-item extraction.
+  /// This is one client upload; the backend performs transcription and parsing.
+  Future<void> processVoiceRecording(
+    String audioPath, {
+    String languageCode = 'auto',
+  }) async {
+    isVoiceProcessing = true;
+    lastVoiceMessage = null;
+    notifyListeners();
+
+    try {
+      if (!await File(audioPath).exists()) {
+        throw Exception('The recording file could not be found. Please record again.');
+      }
+      final filename = audioPath.split(Platform.pathSeparator).last;
+      final multipartFile = await http.MultipartFile.fromPath(
+        'audio',
+        audioPath,
+        filename: filename,
+      );
+      final streamedResponse = await ApiClient.postMultipart(
+        ApiClient.voiceBillingAudioEndpoint,
+        {'language_code': languageCode},
+        files: [multipartFile],
+        timeout: const Duration(seconds: 75),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+      dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {
+        decoded = null;
+      }
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final detail = decoded is Map ? (decoded['detail'] ?? decoded['message']) : null;
+        throw Exception(
+          detail?.toString().trim().isNotEmpty == true
+              ? detail.toString()
+              : 'Voice billing failed (HTTP \${response.statusCode}). Please retry or enter the item manually.',
+        );
+      }
+      if (decoded is! Map) {
+        throw const FormatException('Groq returned an invalid voice billing response.');
+      }
+      _applyVoiceBillingPayload(Map<String, dynamic>.from(decoded));
+    } catch (error) {
+      if (kDebugMode) debugPrint('Groq audio voice billing failed: $error');
+      lastVoiceMessage = error
+          .toString()
+          .replaceFirst(RegExp(r'^Exception:\\s*'), '')
+          .trim();
+      if (lastVoiceMessage == null || lastVoiceMessage!.isEmpty) {
+        lastVoiceMessage = 'Voice billing could not process the recording. Please retry.';
+      }
+      notifyListeners();
+    } finally {
+      isVoiceProcessing = false;
+      notifyListeners();
+    }
+  }
+
+  void _applyVoiceBillingPayload(Map<String, dynamic> decoded) {
+    final rawItems = decoded['items'];
+    final parsedItems = <SalesItem>[];
+    final priceWarningProducts = <String>[];
+    final stockWarningProducts = <String>[];
+
+    if (rawItems is List) {
+      for (final raw in rawItems) {
+        if (raw is! Map) continue;
+        final name = (raw['product_name'] ?? raw['item'] ?? '').toString().trim();
+        final quantity = double.tryParse((raw['quantity'] ?? raw['qty'] ?? '').toString());
+        final price = double.tryParse((raw['unit_price'] ?? raw['price'] ?? '').toString());
+        final confidence = double.tryParse((raw['confidence'] ?? '1').toString()) ?? 0;
+        if (name.isEmpty ||
+            quantity == null ||
+            !quantity.isFinite ||
+            quantity <= 0 ||
+            price == null ||
+            !price.isFinite ||
+            price <= 0 ||
+            confidence < 0.72) {
+          continue;
+        }
+
+        if ((raw['price_warning'] ?? '').toString().trim().isNotEmpty) {
+          priceWarningProducts.add(name);
+        }
+        if (raw['stock_warning'] == true) {
+          stockWarningProducts.add(name);
+        }
+        parsedItems.add(
+          SalesItem(
+            id: '\${DateTime.now().microsecondsSinceEpoch}_\${parsedItems.length}',
+            itemName: name,
+            productId: int.tryParse((raw['product_id'] ?? '').toString()),
+            quantity: quantity,
+            price: price,
+          ),
+        );
+      }
+    }
+
+    if (parsedItems.isNotEmpty) {
+      _appendVoiceDraftItems(parsedItems);
+    }
+
+    final clarification = (decoded['clarification_question'] ?? '').toString().trim();
+    final needsClarification = decoded['needs_clarification'] == true;
+    if (parsedItems.isNotEmpty) {
+      final reviewNotes = <String>[
+        if (priceWarningProducts.isNotEmpty)
+          'Verify spoken/catalog price for: \${priceWarningProducts.take(3).join(', ')}.',
+        if (stockWarningProducts.isNotEmpty)
+          'Quantity exceeds recorded stock for: \${stockWarningProducts.take(3).join(', ')}.',
+      ].join(' ');
+      final transcript = (decoded['transcript'] ?? '').toString().trim();
+      final transcriptionPrefix = transcript.isEmpty ? '' : 'Heard: "$transcript". ';
+      final confirmation = '\${transcriptionPrefix}Added \${parsedItems.length} item(s) to the sale draft. Check each product, quantity and price before saving. \$reviewNotes'.trim();
+      lastVoiceMessage = needsClarification && clarification.isNotEmpty
+          ? '\$confirmation \$clarification'
+          : confirmation;
+    } else {
+      lastVoiceMessage = clarification.isNotEmpty
+          ? clarification
+          : 'I could not confidently match the spoken product to this shop\\'s inventory. Please say the product name again or select it manually.';
+    }
+    notifyListeners();
   }
 
   void _appendVoiceDraftItems(List<SalesItem> parsedItems) {
