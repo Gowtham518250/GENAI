@@ -6,8 +6,15 @@ import 'package:url_launcher/url_launcher.dart';
 /// Local map results are not presented as confirmed inventory or shelf prices.
 class ProductDiscoveryCard extends StatelessWidget {
   final Map<String, dynamic> data;
+  /// When used in Purchase Orders, the cheapest returned listing is labelled as
+  /// the best listed price, with pack-size/fees caveats shown by that screen.
+  final bool purchaseAssistantMode;
 
-  const ProductDiscoveryCard({super.key, required this.data});
+  const ProductDiscoveryCard({
+    super.key,
+    required this.data,
+    this.purchaseAssistantMode = false,
+  });
 
   List<Map<String, dynamic>> _asMaps(dynamic value) {
     if (value is! List) return <Map<String, dynamic>>[];
@@ -211,7 +218,9 @@ class ProductDiscoveryCard extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 3),
                               child: Text(
-                                'LOWEST LISTED PRICE',
+                                purchaseAssistantMode
+                                    ? 'BEST LISTED PRICE · VERIFY PACK'
+                                    : 'LOWEST LISTED PRICE',
                                 style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: const Color(0xFF047857), letterSpacing: 0.3),
                               ),
                             ),
