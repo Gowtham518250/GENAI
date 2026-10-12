@@ -48,16 +48,52 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
     });
   }
 
+  bool _entryMatchesSearch(BankEntry entry, String query) {
+    final value = query.trim();
+    if (value.isEmpty) return true;
+
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    final numericPhoneQuery =
+        RegExp(r'^[+\d\s()\-]+$').hasMatch(value) && digits.length >= 7;
+    if (numericPhoneQuery) {
+      var target = digits;
+      if (target.length == 12 && target.startsWith('91')) {
+        target = target.substring(2);
+      }
+
+      final source = entry.counterparty + ' ' + entry.description + ' ' + entry.rawLine;
+      final phonePattern = RegExp(
+        r'(?<!\d)(?:\+?91[\s-]?)?[6-9](?:[\s()-]*\d){9}(?!\d)',
+      );
+      for (final match in phonePattern.allMatches(source)) {
+        var phone = (match.group(0) ?? '').replaceAll(RegExp(r'\D'), '');
+        if (phone.length == 12 && phone.startsWith('91')) {
+          phone = phone.substring(2);
+        }
+        if (target.length >= 10 ? phone == target : phone.contains(target)) {
+          return true;
+        }
+      }
+
+      // Numeric UTR/reference searches must not match substrings inside longer IDs.
+      final exactNumber = RegExp(r'(?<!\d)' + RegExp.escape(digits) + r'(?!\d)');
+      return exactNumber.hasMatch(entry.reference) ||
+          exactNumber.hasMatch(entry.description) ||
+          exactNumber.hasMatch(entry.rawLine);
+    }
+
+    final normalized = value.toLowerCase();
+    return entry.counterparty.toLowerCase().contains(normalized) ||
+        entry.description.toLowerCase().contains(normalized) ||
+        entry.reference.toLowerCase().contains(normalized) ||
+        entry.rawLine.toLowerCase().contains(normalized) ||
+        entry.bankName.toLowerCase().contains(normalized);
+  }
+
   List<BankEntry> get _filteredEntries {
-    final query = _searchQuery;
-    final items = _parsedEntries.where((entry) {
-      if (query.isEmpty) return true;
-      return entry.counterparty.toLowerCase().contains(query) ||
-          entry.description.toLowerCase().contains(query) ||
-          entry.reference.toLowerCase().contains(query) ||
-          entry.rawLine.toLowerCase().contains(query) ||
-          entry.bankName.toLowerCase().contains(query);
-    }).toList();
+    final items = _parsedEntries
+        .where((entry) => _entryMatchesSearch(entry, _searchQuery))
+        .toList();
     items.sort((a, b) => b.date.compareTo(a.date));
     return items;
   }
@@ -292,6 +328,10 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
         ),
         const SizedBox(height: 8),
         Text('${visible.length} transaction(s) found', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
+        if (_searchQuery.isNotEmpty && visible.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _buildSearchAnalytics(visible),
+        ],
         const SizedBox(height: 10),
         if (visible.isEmpty)
           Container(
@@ -299,7 +339,10 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
             child: Text(
-              _searchQuery.isEmpty ? 'No transactions were extracted.' : 'No transactions match “' + _searchController.text.trim() + '”.',
+              _searchQuery.isEmpty
+                  ? 'No transactions were extracted.'
+                  : 'No statement rows match “' + _searchController.text.trim() +
+                      '”. Phone numbers can only be searched when present in the PDF; try the customer name or UTR/reference if they are not shown.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(color: Colors.grey.shade600),
             ),
