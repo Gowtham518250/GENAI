@@ -387,7 +387,14 @@ class ProductDiscoveryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Text(text, style: GoogleFonts.inter(fontSize: 11.5, height: 1.4, color: const Color(0xFF64748B)),
+      child: Text(
+        text,
+        style: GoogleFonts.inter(
+          fontSize: 11.5,
+          height: 1.4,
+          color: const Color(0xFF64748B),
+        ),
+      ),
     );
   }
 }
