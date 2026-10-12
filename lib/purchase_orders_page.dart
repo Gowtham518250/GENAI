@@ -143,9 +143,6 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     final offers = item['online_offers'] is List
         ? (item['online_offers'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
         : <Map<String, dynamic>>[];
-    final best = item['best_offer'] is Map
-        ? Map<String, dynamic>.from(item['best_offer'] as Map)
-        : (offers.isNotEmpty ? offers.first : <String, dynamic>{});
     final stock = _number(item['current_stock']);
     final minStock = _number(item['min_stock']);
     final triggerStock = _number(item['reorder_level']) > minStock ? _number(item['reorder_level']) : minStock;
