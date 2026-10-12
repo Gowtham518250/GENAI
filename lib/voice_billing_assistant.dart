@@ -14,9 +14,12 @@
 //  • Retry partial failures without re-recording
 // =============================================================================
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'utils/free_translator_service.dart';
+import 'api_client.dart';
 
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:google_fonts/google_fonts.dart';
@@ -889,6 +892,170 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
     }
   }
 
+  String _catalogKey(String value) =>
+      value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '');
+
+  Map<String, dynamic>? _findKnownProduct(
+    String productName, {
+    String? sku,
+  }) {
+    final wantedName = _catalogKey(productName);
+    final wantedSku = (sku ?? '').trim().toLowerCase();
+    for (final product in widget.knownProducts ?? const <Map<String, dynamic>>[]) {
+      final name = (product['product_name'] ??
+              product['name'] ??
+              product['productName'] ??
+              product['itemName'] ??
+              '')
+          .toString()
+          .trim();
+      final productSku = (product['sku'] ??
+              product['product_code'] ??
+              product['item_code'] ??
+              '')
+          .toString()
+          .trim()
+          .toLowerCase();
+      final sameName = name.isNotEmpty &&
+          (name.toLowerCase() == productName.toLowerCase() ||
+              (wantedName.isNotEmpty && _catalogKey(name) == wantedName));
+      final sameSku = wantedSku.isNotEmpty && productSku.isNotEmpty &&
+          productSku == wantedSku;
+      if (sameName || sameSku) return product;
+    }
+    return null;
+  }
+
+  Future<({List<ParsedItem> items, List<String> warnings})>
+      _parseWithGroq(String transcript) async {
+    final response = await ApiClient.postJson(
+      ApiClient.voiceBillingParseEndpoint,
+      {
+        'transcript': transcript,
+        'language_code': _selectedLang.code,
+      },
+    );
+
+    dynamic responseBody;
+    try {
+      responseBody = jsonDecode(response.body);
+    } catch (_) {
+      responseBody = null;
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final detail = responseBody is Map
+          ? (responseBody['detail'] ?? responseBody['message'])?.toString()
+          : null;
+      throw StateError(
+        detail?.trim().isNotEmpty == true
+            ? detail!.trim()
+            : 'Groq voice billing returned HTTP ${response.statusCode}.',
+      );
+    }
+    if (responseBody is! Map) {
+      throw const FormatException('Invalid Groq voice-billing response.');
+    }
+
+    final payload = Map<String, dynamic>.from(responseBody);
+    final items = <ParsedItem>[];
+    final warnings = <String>[];
+    final rawItems = payload['items'];
+    if (rawItems is List) {
+      for (final rawValue in rawItems) {
+        if (rawValue is! Map) continue;
+        final raw = Map<String, dynamic>.from(rawValue);
+        final name = (raw['product_name'] ?? raw['name'] ?? raw['item'] ?? '')
+            .toString()
+            .trim();
+        final quantity = double.tryParse(
+          (raw['quantity'] ?? raw['qty'] ?? '').toString(),
+        );
+        final price = double.tryParse(
+          (raw['unit_price'] ?? raw['price'] ?? '').toString(),
+        );
+        final confidence =
+            double.tryParse((raw['confidence'] ?? '0').toString()) ?? 0;
+        if (name.isEmpty ||
+            quantity == null ||
+            !quantity.isFinite ||
+            quantity <= 0 ||
+            price == null ||
+            !price.isFinite ||
+            price <= 0 ||
+            confidence < 0.72) {
+          continue;
+        }
+
+        final sku = (raw['sku'] ?? '').toString().trim();
+        final catalogMatch = _catalog.findBest(name, minScore: 0.62);
+        final canonicalName = catalogMatch?.canonicalName ?? name;
+        final knownProduct = _findKnownProduct(canonicalName, sku: sku);
+        final unit = (knownProduct?['unit'] ??
+                knownProduct?['unit_name'] ??
+                knownProduct?['measurement_unit'] ??
+                catalogMatch?.defaultUnit ??
+                'pc')
+            .toString();
+        final barcode = (knownProduct?['barcode'] ??
+                knownProduct?['bar_code'] ??
+                knownProduct?['ean'] ??
+                knownProduct?['upc'] ??
+                '')
+            .toString()
+            .trim();
+        final gst = double.tryParse(
+          (knownProduct?['gst_percent'] ??
+                  knownProduct?['gst'] ??
+                  knownProduct?['tax_percent'] ??
+                  '')
+              .toString(),
+        );
+        final priceWarning =
+            (raw['price_warning'] ?? '').toString().trim();
+
+        if (priceWarning.isNotEmpty && !warnings.contains(priceWarning)) {
+          warnings.add(priceWarning);
+        }
+        if (raw['stock_warning'] == true) {
+          final stockWarning =
+              'The requested quantity for $canonicalName exceeds recorded stock. Verify stock before saving.';
+          if (!warnings.contains(stockWarning)) warnings.add(stockWarning);
+        }
+
+        items.add(
+          ParsedItem(
+            name: canonicalName,
+            qty: quantity,
+            unit: unit,
+            price: price,
+            confidence: confidence,
+            catalogMatched: true,
+            priceSource: (raw['price_source'] ?? 'catalog').toString(),
+            barcode: barcode.isEmpty ? null : barcode,
+            gst: gst,
+            priceWarning: priceWarning.isEmpty ? null : priceWarning,
+            isConfirmed: true,
+          ),
+        );
+      }
+    }
+
+    final clarification =
+        (payload['clarification_question'] ?? '').toString().trim();
+    if (payload['needs_clarification'] == true &&
+        clarification.isNotEmpty &&
+        !warnings.contains(clarification)) {
+      warnings.insert(0, clarification);
+    }
+    if (items.isEmpty && warnings.isEmpty) {
+      warnings.add(
+        'I could not confidently match a product, quantity and price. Please select the product manually or try speaking again.',
+      );
+    }
+
+    return (items: items, warnings: warnings);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1117,32 +1284,58 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
         );
       }
 
-      final result = await ProductionVoiceBillingService.parse(
-        transcript: clean,
-        localeCode: _selectedLang.code,
-        catalogService: _catalog,
-        knownProducts: widget.knownProducts ?? const [],
-      );
+      List<ParsedItem> items;
+      List<String> warnings;
+      try {
+        // Groq translates/interprets the selected Indian language and resolves
+        // each item only against this shop's authenticated product catalog.
+        // This is a draft-only call; saving the sale remains a separate action.
+        final groqResult = await _parseWithGroq(clean);
+        items = groqResult.items;
+        warnings = groqResult.warnings;
+      } catch (error) {
+        if (kDebugMode) {
+          debugPrint('🎙️ [VoiceBilling] Groq parse failed; using safe local fallback: $error');
+        }
+        // Offline/API-outage fallback is deliberately conservative. Local NLP
+        // can suggest names, but only catalog-matched, priced lines are eligible.
+        final fallback = await ProductionVoiceBillingService.parse(
+          transcript: clean,
+          localeCode: _selectedLang.code,
+          catalogService: _catalog,
+          knownProducts: widget.knownProducts ?? const [],
+        );
+        items = fallback.lines
+            .where((line) =>
+                line.catalogMatched &&
+                line.name.trim().isNotEmpty &&
+                line.quantity.isFinite &&
+                line.quantity > 0 &&
+                line.price.isFinite &&
+                line.price > 0)
+            .map(
+              (line) => ParsedItem(
+                name: line.name,
+                qty: line.quantity,
+                unit: line.unit,
+                price: line.price,
+                confidence: line.confidence,
+                catalogMatched: true,
+                priceSource: line.priceSource,
+                barcode: line.barcode,
+                gst: line.gst,
+                priceWarning: line.priceWarning,
+                isConfirmed: true,
+              ),
+            )
+            .toList();
+        warnings = <String>[
+          ...fallback.warnings,
+          'Groq is unavailable. Only locally matched products with a valid price were kept; review them before billing.',
+        ];
+      }
 
-      final items = result.lines
-          .map(
-            (line) => ParsedItem(
-              name: line.name,
-              qty: line.quantity,
-              unit: line.unit,
-              price: line.price,
-              confidence: line.confidence,
-              catalogMatched: line.catalogMatched,
-              priceSource: line.priceSource,
-              barcode: line.barcode,
-              gst: line.gst,
-              priceWarning: line.priceWarning,
-              isConfirmed: line.confidence >= 0.6 || line.catalogMatched,
-            ),
-          )
-          .toList();
-
-      _parseWarnings = result.warnings;
+      _parseWarnings = warnings;
       _lastPreviewItems = List<ParsedItem>.from(items);
       _clearEditControllers();
 
@@ -1167,6 +1360,9 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
         }
       } else {
         ParsedItems = List<ParsedItem>.from(items);
+        if (items.isEmpty && warnings.isNotEmpty) {
+          _showSnack(warnings.first, isError: true);
+        }
       }
 
       if (mounted) {
