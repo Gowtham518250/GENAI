@@ -195,7 +195,7 @@ class SalesEntryProvider extends ChangeNotifier {
           knownInventory: inventory,
         );
         final safeItems = <SalesItem>[];
-        String normalize(String value) => value.toLowerCase().trim().replaceAll(RegExp(r'\\s+'), ' ');
+        String normalize(String value) => value.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
 
         for (final item in localParsed) {
           final spokenName = (item['item'] ?? '').toString().trim();
