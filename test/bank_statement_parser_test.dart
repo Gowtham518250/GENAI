@@ -264,7 +264,7 @@ void main() {
       expect(BankStatementSearchMatcher.matches(phoneEntry, '9876543210'), isTrue);
       expect(BankStatementSearchMatcher.matches(phoneEntry, 'rahul'), isTrue);
       expect(BankStatementSearchMatcher.matches(phoneEntry, '9876500000'), isFalse);
-      expect(BankStatementSearchMatcher.matches(noPhoneEntry, '984222'), isFalse);
+      expect(BankStatementSearchMatcher.matches(noPhoneEntry, '9842221234'), isFalse);
       expect(BankStatementSearchMatcher.matches(noPhoneEntry, '9876543210'), isFalse);
       expect(BankStatementSearchMatcher.matches(utrEntry, '276804138067'), isTrue);
     });
