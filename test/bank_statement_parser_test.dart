@@ -173,9 +173,6 @@ void main() {
       expect(credit.amount, 1500.0);
       expect(debit.amount, 250.0);
     });
-  });
-}
-
 
     test('parses PhonePe month-first dates, explicit CREDIT/DEBIT and transaction metadata', () {
       final entries = BankStatementParser.parseText(
@@ -229,3 +226,6 @@ void main() {
       expect(entries.single.date, DateTime(2026, 7, 14));
       expect(entries.single.amount, 12);
     });
+
+  });
+}
