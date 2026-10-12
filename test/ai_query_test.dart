@@ -59,6 +59,25 @@ void main() {
       expect(response.hasSql, isFalse);
     });
 
+    test('prefers the grounded answer over raw SQL for display and TTS', () {
+      final response = AIQueryResponse.fromJson({
+        'query': "Tell me today's total profit",
+        'answer': "Today's recorded net profit is ₹1,250.00.",
+        'generated_model_response':
+            'TABLE: sales\\n\\nSQL:\\nSELECT product_name, SUM(total) FROM sales WHERE product_name ILIKE \'%fish%\';',
+        'generated_sql':
+            'SELECT product_name, SUM(total) FROM sales WHERE product_name ILIKE \'%fish%\';',
+        'results': [
+          {'net_profit': 1250.0}
+        ],
+      });
+
+      expect(response.displayAnswer, "Today's recorded net profit is ₹1,250.00.");
+      expect(response.displayAnswer, isNot(contains('SELECT')));
+      expect(response.displayAnswer, isNot(contains('fish')));
+      expect(response.effectiveSql, contains('SELECT'));
+    });
+
     test('synthesizes answer when generated_model_response is empty', () {
       final json = {
         'query': 'Total sales',
