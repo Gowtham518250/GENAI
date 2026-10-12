@@ -7,7 +7,6 @@ import '../models/sales_item.dart';
 import '../services/voice_nlp_service.dart';
 import '../../../inventory_sync_service.dart';
 import '../../../local_storage_service.dart';
-import '../../../native_language_service.dart';
 import '../../../sale_service.dart';
 import '../../../api_client.dart';
 
@@ -196,7 +195,7 @@ class SalesEntryProvider extends ChangeNotifier {
           knownInventory: inventory,
         );
         final safeItems = <SalesItem>[];
-        String normalize(String value) => value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+        String normalize(String value) => value.toLowerCase().trim().replaceAll(RegExp(r'\\s+'), ' ');
 
         for (final item in localParsed) {
           final spokenName = (item['item'] ?? '').toString().trim();
