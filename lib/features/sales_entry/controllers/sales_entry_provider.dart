@@ -33,6 +33,10 @@ class SalesEntryProvider extends ChangeNotifier {
   String shopType = '';
   String shopPhone = '';
   String shopEmail = '';
+  String? _draftBillNumber;
+  String? lastCompletedBillNumber;
+
+  String? get draftBillNumber => _draftBillNumber;
 
   SalesEntryProvider() {
     _initializeEmptyRow();
@@ -360,6 +364,7 @@ class SalesEntryProvider extends ChangeNotifier {
         return false;
       }
 
+      final billNumber = await ensureDraftBillNumber();
       final result = await SaleService.submitSale(
         saleId: DateTime.now().millisecondsSinceEpoch.toString(),
         items: itemsPayload,
@@ -373,10 +378,12 @@ class SalesEntryProvider extends ChangeNotifier {
           'cgst': withTax ? subtotalAmount * 0.09 : 0.0,
           'sgst': withTax ? subtotalAmount * 0.09 : 0.0,
         },
-        paymentMethod: isOnlinePayment ? 'Online' : 'Cash',
+        paymentMethod: selectedPaymentMethod,
+        invoiceNumber: billNumber,
       );
 
       if (result['success'] == true) {
+        lastCompletedBillNumber = (result['invoiceNumber'] ?? result['invoice_number'] ?? billNumber).toString();
         _clearForm();
         return true;
       }
@@ -423,6 +430,7 @@ class SalesEntryProvider extends ChangeNotifier {
         return false;
       }
 
+      final billNumber = await ensureDraftBillNumber();
       final result = await SaleService.submitSale(
         saleId: DateTime.now().millisecondsSinceEpoch.toString(),
         items: itemsPayload,
@@ -437,9 +445,12 @@ class SalesEntryProvider extends ChangeNotifier {
           'sgst': withTax ? subtotalAmount * 0.09 : 0.0,
         },
         paymentMethod: 'Credit',
+        isBorrow: true,
+        invoiceNumber: billNumber,
       );
 
       if (result['success'] == true) {
+        lastCompletedBillNumber = (result['invoiceNumber'] ?? result['invoice_number'] ?? billNumber).toString();
         await _addToCustomerLedger(
           customerName: customerNameController.text.trim(),
           customerPhone: customerPhoneController.text.trim(),
@@ -537,6 +548,7 @@ class SalesEntryProvider extends ChangeNotifier {
     entries.clear();
     customerNameController.clear();
     customerPhoneController.clear();
+    _draftBillNumber = null;
     _initializeEmptyRow();
   }
 
@@ -597,11 +609,59 @@ class SalesEntryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Reuse the same customer-facing number for preview, saving, printing and sharing.
+  Future<String> ensureDraftBillNumber() async {
+    if (_draftBillNumber != null && _draftBillNumber!.isNotEmpty) return _draftBillNumber!;
+
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
+    final key = userId > 0 ? 'last_bill_number_$userId' : 'last_bill_number';
+    var current = prefs.getInt(key) ?? 0;
+
+    // Include existing local invoices so clearing app cache preferences cannot restart numbering.
+    try {
+      final sales = await LocalStorageService.loadSales();
+      for (final raw in sales) {
+        if (raw is! Map) continue;
+        final rawBill = raw['bill_number'] ?? raw['invoice_number'] ?? raw['invoice_display_number'] ?? '';
+        final match = RegExp(r'BILL-(\d+)', caseSensitive: false).firstMatch(rawBill.toString());
+        final sequence = int.tryParse(match?.group(1) ?? '') ?? 0;
+        if (sequence > current) current = sequence;
+      }
+    } catch (error) {
+      if (kDebugMode) debugPrint('Could not read local bill history: $error');
+    }
+
+    // The backend sequence wins when reachable; local/offline billing still works if it is not.
+    try {
+      final response = await ApiClient.getJson('/api/invoices/next-bill-number');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) {
+          final sequence = int.tryParse(decoded['highest_bill_number']?.toString() ?? '0') ?? 0;
+          if (sequence > current) current = sequence;
+        }
+      }
+    } catch (error) {
+      if (kDebugMode) debugPrint('Backend bill sequence unavailable; using local sequence: $error');
+    }
+
+    final next = current + 1;
+    await prefs.setInt(key, next);
+    if (userId <= 0) await prefs.setInt('last_bill_number', next);
+    _draftBillNumber = 'BILL-' + next.toString().padLeft(4, '0');
+    notifyListeners();
+    return _draftBillNumber!;
+  }
+
   Future<void> generateBillPreview() async {
     isGeneratingBill = true;
     notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 500));
-    isGeneratingBill = false;
-    notifyListeners();
+    try {
+      await ensureDraftBillNumber();
+    } finally {
+      isGeneratingBill = false;
+      notifyListeners();
+    }
   }
 }
