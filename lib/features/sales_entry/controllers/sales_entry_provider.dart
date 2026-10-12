@@ -413,7 +413,7 @@ class SalesEntryProvider extends ChangeNotifier {
     if (incomplete.isEmpty) return true;
 
     lastVoiceMessage =
-        'Enter a positive selling price and quantity for: \${incomplete.take(4).map((entry) => entry.itemName).join(', ')} before saving.';
+        "Enter a positive selling price and quantity for: ${incomplete.take(4).map((entry) => entry.itemName).join(', ')} before saving.";
     notifyListeners();
     return false;
   }
