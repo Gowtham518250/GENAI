@@ -259,7 +259,7 @@ class AiQueryService {
 
 
   /// Recognize clear purchase intent without stealing normal sales/inventory questions.
-  static bool _isProductShoppingRequest(String query) {
+  static bool isProductShoppingRequest(String query) {
     final value = query.trim().toLowerCase();
     if (value.isEmpty) return false;
 
@@ -272,7 +272,7 @@ class AiQueryService {
     if (businessQuery && !explicitShoppingContext) return false;
 
     final englishIntent = RegExp(
-      r"\b(?:i\s+need|i\s+want|i would like|i\u0027d like|need to buy|want to buy|looking for|find me|get me|buy me|where can i buy|where can i get|search for|buy|purchase)\s+.{2,}",
+      r"\b(?:i\s+need|i\s+want|i would like|need to buy|want to buy|looking for|find me|get me|buy me|where can i buy|where can i get|search for|buy|purchase)\s+.{2,}",
     ).hasMatch(value) ||
         RegExp(r'\b(?:near me|around me|compare prices?|price of|online price|shops? near me)\b').hasMatch(value);
 
@@ -403,7 +403,7 @@ class AiQueryService {
       );
     }
 
-    if (_isProductShoppingRequest(trimmedQuery)) {
+    if (isProductShoppingRequest(trimmedQuery)) {
       return _searchProductsNearby(trimmedQuery, languageCode: languageCode);
     }
 
