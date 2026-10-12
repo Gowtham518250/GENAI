@@ -1,13 +1,17 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:record/record.dart';
 import 'controllers/sales_entry_provider.dart';
 import 'widgets/compact_total_card.dart';
 import 'widgets/premium_product_entry.dart';
 import 'widgets/smart_payment_section.dart';
 import 'widgets/bill_preview_dialog.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class SalesEntryScreen extends StatelessWidget {
   const SalesEntryScreen({Key? key}) : super(key: key);
@@ -29,48 +33,119 @@ class _SalesEntryView extends StatefulWidget {
 }
 
 class _SalesEntryViewState extends State<_SalesEntryView> {
-  final stt.SpeechToText _speechToText = stt.SpeechToText();
+  final Record _audioRecorder = Record();
   bool _isListening = false;
+  int _recordSeconds = 0;
+  Timer? _recordTimer;
+  bool _finalizingVoice = false;
   
   Future<void> _startListening(BuildContext context) async {
-    if (context.read<SalesEntryProvider>().isVoiceProcessing) return;
-    final available = await _speechToText.initialize();
-    if (!mounted) return;
-    if (!available) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Speech recognition is unavailable. Check microphone and language settings.')),
-      );
-      return;
-    }
+    if (_finalizingVoice || context.read<SalesEntryProvider>().isVoiceProcessing) return;
 
-    setState(() => _isListening = true);
-    await _speechToText.listen(
-      listenFor: const Duration(seconds: 35),
-      pauseFor: const Duration(seconds: 4),
-      partialResults: false,
-      onResult: (result) async {
-        if (!result.finalResult || !mounted) return;
-        setState(() => _isListening = false);
-        final provider = context.read<SalesEntryProvider>();
-        await provider.processVoiceCommand(result.recognizedWords);
-        if (!mounted) return;
-        final message = provider.lastVoiceMessage;
-        if (message != null && message.trim().isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 5),
-            ),
-          );
+    try {
+      final hasPermission = await _audioRecorder.hasPermission();
+      if (!mounted) return;
+      if (!hasPermission) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microphone permission is required for voice billing.')),
+        );
+        return;
+      }
+
+      final directory = await getTemporaryDirectory();
+      final audioPath = '${directory.path}${Platform.pathSeparator}retail_mind_billing_${DateTime.now().microsecondsSinceEpoch}.wav';
+      await _audioRecorder.start(
+        path: audioPath,
+        encoder: AudioEncoder.wav,
+        samplingRate: 16000,
+      );
+      if (!mounted) {
+        await _audioRecorder.stop();
+        return;
+      }
+
+      setState(() {
+        _isListening = true;
+        _recordSeconds = 0;
+      });
+      _recordTimer?.cancel();
+      _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted || !_isListening) {
+          timer.cancel();
+          return;
         }
-      },
-    );
+        if (_recordSeconds >= 59) {
+          unawaited(_stopListening(context));
+          return;
+        }
+        setState(() => _recordSeconds++);
+      });
+    } catch (error) {
+      _recordTimer?.cancel();
+      if (!mounted) return;
+      setState(() => _isListening = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not start recording. Check microphone permission and try again.')),
+      );
+    }
   }
 
-  void _stopListening() {
-    _speechToText.stop();
-    if (mounted) setState(() => _isListening = false);
+  Future<void> _stopListening(BuildContext context) async {
+    if (!_isListening || _finalizingVoice) return;
+    _finalizingVoice = true;
+    _recordTimer?.cancel();
+    _recordTimer = null;
+    String? audioPath;
+
+    try {
+      audioPath = await _audioRecorder.stop();
+      if (!mounted) return;
+      setState(() => _isListening = false);
+
+      if (audioPath == null || audioPath.trim().isEmpty || !await File(audioPath).exists()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No audio was recorded. Please try again.')),
+        );
+        return;
+      }
+
+      final provider = context.read<SalesEntryProvider>();
+      await provider.processVoiceRecording(audioPath, languageCode: 'auto');
+      if (!mounted) return;
+
+      final message = provider.lastVoiceMessage;
+      if (message != null && message.trim().isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Voice billing failed. Please retry or enter items manually.')),
+      );
+    } finally {
+      if (audioPath != null) {
+        try {
+          final recordingFile = File(audioPath);
+          if (await recordingFile.exists()) await recordingFile.delete();
+        } catch (_) {
+          // Temporary audio cleanup must not hide the billing result.
+        }
+      }
+      _finalizingVoice = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _recordTimer?.cancel();
+    unawaited(_audioRecorder.dispose());
+    super.dispose();
   }
 
   @override
@@ -176,8 +251,10 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             const SizedBox(height: 4),
                             Text(
                               context.watch<SalesEntryProvider>().isVoiceProcessing
-                                  ? 'Finding inventory products and filling quantity and price…'
-                                  : 'Say: "2 kg sugar aur 1 tel"',
+                                  ? 'Groq is transcribing and matching your inventory…'
+                                  : _isListening
+                                      ? 'Recording… $_recordSeconds s. Tap the mic to finish.'
+                                      : 'Speak product names, quantities and optional prices.',
                               style: GoogleFonts.poppins(
                                 color: Colors.white70,
                                 fontSize: 12,
@@ -187,7 +264,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => context.read<SalesEntryProvider>().isVoiceProcessing ? null : _isListening ? _stopListening() : _startListening(context),
+                        onTap: () => context.read<SalesEntryProvider>().isVoiceProcessing || _finalizingVoice ? null : _isListening ? _stopListening(context) : _startListening(context),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
