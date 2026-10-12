@@ -3285,7 +3285,8 @@ class _SalesEntryPageState extends State<SalesEntryPage>
 
     // Internal transaction id is separate from the customer-facing bill number.
     final saleId = 'SALE_${DateTime.now().microsecondsSinceEpoch}';
-    final billNumber = await _allocateNextBillNumber();
+    final billNumber = _draftBillNumber ?? await _allocateNextBillNumber();
+    _draftBillNumber = billNumber;
 
     try {
       final items = _getProcessedItems();
@@ -3348,6 +3349,8 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       }
 
       if (result['success'] == true) {
+        // Local durable save is confirmed; the next sale gets a new number.
+        _draftBillNumber = null;
         _hapticSuccess();
         // ✅ CRITICAL: Reset loading BEFORE clearing interface so buttons re-enable
         if (mounted) setState(() { isLoading = false; message = ''; });
@@ -3712,7 +3715,8 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     }
   }
 
-  // GlobalKey to capture the bill widget as image
+  // One stable bill number is shared by preview, save, print and share.
+  String? _draftBillNumber;
   final GlobalKey _billKey = GlobalKey();
 
   Future<void> generateBill() async {
@@ -3765,9 +3769,21 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     final shopEmail = prefs.getString('email') ?? '';
     final shopLogo = prefs.getString('logo_base64');
 
-    // Sequential bill number for preview
-    int currentLast = prefs.getInt('last_bill_number') ?? 0;
-    final String nextBillNo = 'BILL-${(currentLast + 1).toString().padLeft(4, '0')}';
+    // Reserve one per-shop sequence number and reuse it when the sale is saved.
+    // _allocateNextBillNumber consults local history and the backend sequence.
+    late final String nextBillNo;
+    try {
+      nextBillNo = _draftBillNumber ?? await _allocateNextBillNumber();
+      _draftBillNumber = nextBillNo;
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          message = 'Could not allocate a bill number. Please retry. $error';
+        });
+      }
+      return;
+    }
 
     // snapshot entry data before dialog
     final processedSnapshot = _getProcessedItems();
