@@ -608,6 +608,7 @@ class InventoryManagementService {
       'product_name': p['product_name'] ?? p['name'] ?? '',
       'sku': p['sku'] ?? p['barcode'] ?? '',
       'unit_price': p['unit_price'] ?? p['price'] ?? 0,
+      'purchase_price': p['purchase_price'] ?? p['cost_price'] ?? 0,
       'current_stock': InventoryStockHelper.readStock(p),
       'stock': InventoryStockHelper.readStock(p),
       'min_stock': p['min_stock'] ?? 10,
