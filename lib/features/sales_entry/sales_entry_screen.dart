@@ -32,22 +32,45 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
   final stt.SpeechToText _speechToText = stt.SpeechToText();
   bool _isListening = false;
   
-  void _startListening(BuildContext context) async {
-    bool available = await _speechToText.initialize();
-    if (available) {
-      setState(() => _isListening = true);
-      _speechToText.listen(onResult: (result) {
-        if (result.finalResult) {
-          context.read<SalesEntryProvider>().processVoiceCommand(result.recognizedWords);
-          setState(() => _isListening = false);
-        }
-      });
+  Future<void> _startListening(BuildContext context) async {
+    if (context.read<SalesEntryProvider>().isVoiceProcessing) return;
+    final available = await _speechToText.initialize();
+    if (!mounted) return;
+    if (!available) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Speech recognition is unavailable. Check microphone and language settings.')),
+      );
+      return;
     }
+
+    setState(() => _isListening = true);
+    await _speechToText.listen(
+      listenFor: const Duration(seconds: 35),
+      pauseFor: const Duration(seconds: 4),
+      partialResults: false,
+      onResult: (result) async {
+        if (!result.finalResult || !mounted) return;
+        setState(() => _isListening = false);
+        final provider = context.read<SalesEntryProvider>();
+        await provider.processVoiceCommand(result.recognizedWords);
+        if (!mounted) return;
+        final message = provider.lastVoiceMessage;
+        if (message != null && message.trim().isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      },
+    );
   }
 
   void _stopListening() {
     _speechToText.stop();
-    setState(() => _isListening = false);
+    if (mounted) setState(() => _isListening = false);
   }
 
   @override
@@ -152,7 +175,9 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Say: "2 kg sugar aur 1 tel"',
+                              context.watch<SalesEntryProvider>().isVoiceProcessing
+                                  ? 'Finding inventory products and filling quantity and price…'
+                                  : 'Say: "2 kg sugar aur 1 tel"',
                               style: GoogleFonts.poppins(
                                 color: Colors.white70,
                                 fontSize: 12,
@@ -162,7 +187,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => _isListening ? _stopListening() : _startListening(context),
+                        onTap: () => context.read<SalesEntryProvider>().isVoiceProcessing ? null : _isListening ? _stopListening() : _startListening(context),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
