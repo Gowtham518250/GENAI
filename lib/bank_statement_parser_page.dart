@@ -218,6 +218,12 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
                 'Search extracted UPI/NEFT/IMPS entries by name, UPI ID, phone or reference. See money received and money paid separately.',
                 Icons.payment,
               ),
+              const SizedBox(height: 12),
+              _buildInstructionCard(
+                'Ask Retail Mind about payments',
+                'After parsing, ask questions such as “How much was credited by Rahul?” or “Show the phone number and payment details for Rahul.” Statement answers stay on this device.',
+                Icons.chat_bubble_outline,
+              ),
             ],
           ],
         ),
