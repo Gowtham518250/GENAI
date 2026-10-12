@@ -13,6 +13,8 @@ class BankStatementParserPage extends StatefulWidget {
 
 class _BankStatementParserPageState extends State<BankStatementParserPage> {
   static const Color _primary = Color(0xFF6366F1);
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
   
   List<BankEntry> _parsedEntries = [];
   List<Map<String, dynamic>> _appSales = [];
@@ -24,76 +26,103 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() {
+      if (mounted) setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+    });
     _loadAppSales();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAppSales() async {
     final sales = await LocalStorageService.loadSales();
+    if (!mounted) return;
     setState(() {
       _appSales = sales.map((s) => Map<String, dynamic>.from(s)).toList();
     });
   }
 
+  List<BankEntry> get _filteredEntries {
+    final query = _searchQuery;
+    final items = _parsedEntries.where((entry) {
+      if (query.isEmpty) return true;
+      return entry.counterparty.toLowerCase().contains(query) ||
+          entry.description.toLowerCase().contains(query) ||
+          entry.reference.toLowerCase().contains(query) ||
+          entry.rawLine.toLowerCase().contains(query) ||
+          entry.bankName.toLowerCase().contains(query);
+    }).toList();
+    items.sort((a, b) => b.date.compareTo(a.date));
+    return items;
+  }
+
+  String _transactionKey(Map<String, dynamic> txn) => [
+        txn['date']?.toString().split('T').first ?? '',
+        txn['amount']?.toString() ?? '',
+        txn['direction']?.toString() ?? '',
+        txn['reference']?.toString() ?? '',
+        txn['rawLine']?.toString() ?? '',
+      ].join('|');
+
   Future<void> _parsePDF() async {
     setState(() {
       _loading = true;
-      _status = 'Parsing PDF...';
+      _status = 'Reading the PDF on this device...';
     });
 
     try {
-      // Show file picker and get filepath
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
+        allowMultiple: false,
       );
-      
       if (result == null || result.files.isEmpty) {
-        setState(() => _status = 'No file selected');
+        if (mounted) setState(() => _status = 'No file selected');
         return;
       }
-      
       final filepath = result.files.single.path;
-      if (filepath == null) {
-        setState(() => _status = 'File path not available');
-        return;
+      if (filepath == null || filepath.isEmpty) {
+        throw Exception('This file provider did not return a readable PDF path.');
       }
-      
+
       final entries = await BankStatementParser.parsePDFFile(filepath);
-      
+      final bankTransactions = entries.map((entry) => entry.toJson()).toList();
+      final incoming = bankTransactions
+          .where((txn) => txn['direction']?.toString() == 'CREDIT')
+          .toList();
+      final unmatched = BankReconciliation.reconcile(incoming, _appSales);
+      final unmatchedKeys = unmatched.map(_transactionKey).toSet();
+      final matched = incoming
+          .where((txn) => !unmatchedKeys.contains(_transactionKey(txn)))
+          .toList();
+
+      if (!mounted) return;
       setState(() {
         _parsedEntries = entries;
-        _status = 'Found ${entries.length} transactions. Reconciling...';
-      });
-
-      // Convert to format expected by reconciliation
-      final bankTransactions = entries.map((e) => {
-        'amount': e.amount.toString(),
-        'date': e.date.toIso8601String(),
-        'reference': e.reference,
-        'rawLine': e.rawLine,
-      }).toList();
-
-      // Reconcile
-      final unmatched = BankReconciliation.reconcile(bankTransactions, _appSales);
-      
-      // Separate matched and unmatched
-      final matched = bankTransactions.where((txn) => 
-        !_unmatched.any((u) => u['amount'] == txn['amount'] && 
-                              u['date']?.split('T').first == txn['date']?.split('T').first)
-      ).toList();
-
-      setState(() {
         _matched = matched;
         _unmatched = unmatched;
-        _status = 'Reconciliation complete. ${matched.length} matched, ${unmatched.length} unmatched.';
-        _loading = false;
+        _searchController.clear();
+        _searchQuery = '';
+        final received = entries.fold<double>(0, (sum, entry) => sum + entry.receivedAmount);
+        final paid = entries.fold<double>(0, (sum, entry) => sum + entry.paidAmount);
+        _status = 'Parsed ' + entries.length.toString() + ' transactions locally. Received ₹' +
+            received.toStringAsFixed(2) + '; paid ₹' + paid.toStringAsFixed(2) + '.';
       });
-
-    } catch (e) {
-      setState(() {
-        _status = 'Error: $e';
-        _loading = false;
-      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _parsedEntries = [];
+          _matched = [];
+          _unmatched = [];
+          _status = error.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -184,51 +213,200 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
   }
 
   Widget _buildResultsSection() {
+    final visible = _filteredEntries;
+    final received = visible.fold<double>(0, (sum, entry) => sum + entry.receivedAmount);
+    final paid = visible.fold<double>(0, (sum, entry) => sum + entry.paidAmount);
+    final net = received - paid;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Reconciliation Results', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 16),
-
-        // Summary
+        Text('Statement Summary', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(
-              child: _buildSummaryCard('Parsed', '${_parsedEntries.length}', Colors.blue, Icons.receipt),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildSummaryCard('Matched', '${_matched.length}', Colors.green, Icons.check_circle),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildSummaryCard('Unmatched', '${_unmatched.length}', Colors.orange, Icons.warning),
-            ),
+            Expanded(child: _buildSummaryCard('Received', '₹${received.toStringAsFixed(2)}', Colors.green, Icons.south_west_rounded)),
+            const SizedBox(width: 10),
+            Expanded(child: _buildSummaryCard('Paid', '₹${paid.toStringAsFixed(2)}', Colors.red, Icons.north_east_rounded)),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: net >= 0 ? Colors.green.shade50 : Colors.red.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: (net >= 0 ? Colors.green : Colors.red).withValues(alpha: 0.22)),
+          ),
+          child: Row(
+            children: [
+              Icon(net >= 0 ? Icons.account_balance_wallet_outlined : Icons.warning_amber_rounded,
+                  color: net >= 0 ? Colors.green.shade800 : Colors.red.shade800),
+              const SizedBox(width: 10),
+              Expanded(child: Text('Net flow for this search', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12))),
+              Text('₹${net.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, color: net >= 0 ? Colors.green.shade800 : Colors.red.shade800)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 22),
+        Text('Search Transaction History', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _searchController,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: 'Search any name, UPI ID, phone or reference...',
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: _searchQuery.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear search',
+                    onPressed: _searchController.clear,
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text('${visible.length} transaction(s) found', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
+        const SizedBox(height: 10),
+        if (visible.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            child: Text(
+              _searchQuery.isEmpty ? 'No transactions were extracted.' : 'No transactions match “' + _searchController.text.trim() + '”.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(color: Colors.grey.shade600),
+            ),
+          )
+        else
+          ...visible.map(_buildHistoryCard),
 
-        // Matched Transactions
+        const SizedBox(height: 24),
+        Text('Sale Reconciliation', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildSummaryCard('Incoming', _parsedEntries.where((e) => e.direction == 'CREDIT').length.toString(), Colors.blue, Icons.receipt)),
+            const SizedBox(width: 10),
+            Expanded(child: _buildSummaryCard('Matched sales', _matched.length.toString(), Colors.green, Icons.check_circle)),
+            const SizedBox(width: 10),
+            Expanded(child: _buildSummaryCard('Unmatched', _unmatched.length.toString(), Colors.orange, Icons.warning)),
+          ],
+        ),
+        const SizedBox(height: 20),
         if (_matched.isNotEmpty) ...[
           Text('✅ Matched Transactions', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green.shade800)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           ..._matched.take(5).map((txn) => _buildTransactionCard(txn, true)),
-          if (_matched.length > 5) 
+          if (_matched.length > 5)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text('+ ${_matched.length - 5} more matched transactions', 
-                style: GoogleFonts.poppins(color: Colors.green.shade600)),
+              child: Text('+ ${_matched.length - 5} more matched transactions', style: GoogleFonts.poppins(color: Colors.green.shade600)),
             ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
         ],
-
-        // Unmatched Transactions
         if (_unmatched.isNotEmpty) ...[
-          Text('⚠️ Unmatched Transactions', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
-          const SizedBox(height: 12),
+          Text('⚠️ Incoming transactions not matched to a sale', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
+          const SizedBox(height: 10),
           ..._unmatched.map((txn) => _buildTransactionCard(txn, false)),
         ],
       ],
+    );
+  }
+
+  Widget _buildHistoryCard(BankEntry entry) {
+    final isCredit = entry.direction == 'CREDIT';
+    final color = isCredit ? Colors.green : Colors.red;
+    final party = entry.counterparty.trim().isEmpty ? 'Unknown counterparty' : entry.counterparty.trim();
+    return Card(
+      margin: const EdgeInsets.only(bottom: 9),
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: color.withValues(alpha: 0.22)),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(party, style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${isCredit ? 'Money received' : 'Money paid'}: ₹${entry.amount.toStringAsFixed(2)}'),
+                Text('Date: ${entry.date.toIso8601String().split('T').first}'),
+                Text('Direction: ${entry.direction}'),
+                Text('Bank: ${entry.bankName}'),
+                if (entry.reference.isNotEmpty) Text('Reference: ${entry.reference}'),
+                const SizedBox(height: 8),
+                Text('Description: ${entry.description.isEmpty ? entry.rawLine : entry.description}'),
+                const SizedBox(height: 8),
+                Text('Source row: ${entry.rawLine}', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600)),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                child: Icon(isCredit ? Icons.south_west_rounded : Icons.north_east_rounded, color: color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(party, style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 13)),
+                    const SizedBox(height: 3),
+                    Text(
+                      entry.description.isEmpty ? entry.rawLine : entry.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${entry.date.toIso8601String().split('T').first} • ${entry.bankName}',
+                      style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade500),
+                    ),
+                    if (entry.reference.isNotEmpty)
+                      Text('Ref: ${entry.reference}', maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade500)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('${isCredit ? '+' : '-'}₹${entry.amount.toStringAsFixed(2)}',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w800, color: color, fontSize: 13)),
+                  Text(isCredit ? 'RECEIVED' : 'PAID',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: color, fontSize: 9)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
