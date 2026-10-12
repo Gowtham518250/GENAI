@@ -54,6 +54,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   final _nameC = TextEditingController();
   final _barcodeC = TextEditingController();
   final _priceC = TextEditingController();
+  final _purchasePriceC = TextEditingController();
   final _mrpC = TextEditingController();
   final _stockC = TextEditingController();
   final _catC = TextEditingController();
@@ -273,7 +274,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     _durableEventsSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     RealtimeClient.disconnect();
-    _nameC.dispose(); _barcodeC.dispose(); _priceC.dispose(); _mrpC.dispose();
+    _nameC.dispose(); _barcodeC.dispose(); _priceC.dispose(); _purchasePriceC.dispose(); _mrpC.dispose();
     _stockC.dispose(); _catC.dispose(); _minStockC.dispose(); _unitC.dispose();
     InventoryManagementService.onInventoryChanged = null;
     super.dispose();
@@ -488,9 +489,10 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   }
 
   Future<void> _addProduct() async {
-    if (_nameC.text.isEmpty || _priceC.text.isEmpty) {
+    final purchasePrice = double.tryParse(_purchasePriceC.text);
+    if (_nameC.text.isEmpty || _priceC.text.isEmpty || purchasePrice == null || !purchasePrice.isFinite || purchasePrice <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product Name and Price are required')));
+        const SnackBar(content: Text('Product name, selling price, and purchase cost (greater than zero) are required')));
       return;
     }
 
@@ -498,6 +500,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       'product_name': _nameC.text.trim(),
       'sku': (_barcodeC.text.trim().isNotEmpty ? _barcodeC.text.trim() : _nameC.text.trim()).toLowerCase(),
       'unit_price': double.tryParse(_priceC.text) ?? 0,
+      'purchase_price': purchasePrice,
       'mrp': double.tryParse(_mrpC.text) ?? 0,
       'current_stock': int.tryParse(_stockC.text) ?? 0,
       'min_stock': int.tryParse(_minStockC.text) ?? 10,
@@ -525,7 +528,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
 
       if (!mounted) return;
       Navigator.pop(context);
-      _nameC.clear(); _barcodeC.clear(); _priceC.clear(); _mrpC.clear();
+      _nameC.clear(); _barcodeC.clear(); _priceC.clear(); _purchasePriceC.clear(); _mrpC.clear();
       _stockC.clear(); _catC.clear(); _minStockC.text = '10'; _unitC.text = 'pcs';
       await _fetch();
 
@@ -696,7 +699,9 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                 ],
               ),
 
-              _field(_priceC, 'Unit Price (₹) *', Icons.currency_rupee,
+              _field(_purchasePriceC, 'Purchase Cost Price (₹) *', Icons.price_check,
+                  type: TextInputType.number),
+              _field(_priceC, 'Selling Price (₹) *', Icons.currency_rupee,
                   type: TextInputType.number),
               _field(_mrpC, 'MRP - Declared (₹) [GST Compliance]', Icons.verified_user,
                   type: TextInputType.number),
@@ -1483,6 +1488,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   void _showEditDialog(Map<String, dynamic> p) {
     final nameC = TextEditingController(text: p['product_name']?.toString() ?? '');
     final priceC = TextEditingController(text: p['unit_price']?.toString() ?? '');
+    final purchasePriceC = TextEditingController(text: (p['purchase_price'] ?? p['cost_price'] ?? 0).toString());
     final stockC = TextEditingController(text: p['current_stock']?.toString() ?? '');
     final minC = TextEditingController(text: p['min_stock']?.toString() ?? '10');
     final catC = TextEditingController(text: p['category']?.toString() ?? '');
@@ -1510,7 +1516,8 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
             ]),
             const SizedBox(height: 16),
             _field(nameC, 'Product Name *', Icons.inventory_2),
-            _field(priceC, 'Unit Price (\u20b9) *', Icons.currency_rupee, type: TextInputType.number),
+            _field(purchasePriceC, 'Purchase Cost Price (₹)', Icons.price_check, type: TextInputType.number),
+            _field(priceC, 'Selling Price (₹) *', Icons.currency_rupee, type: TextInputType.number),
             _field(stockC, 'Current Stock', Icons.numbers, type: TextInputType.number),
             _field(minC, 'Min Stock Alert', Icons.warning_amber, type: TextInputType.number),
             _field(catC, 'Category', Icons.category),
@@ -1531,6 +1538,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                     final updated = Map<String, dynamic>.from(p);
                     updated['product_name'] = nameC.text.trim();
                     updated['unit_price'] = double.tryParse(priceC.text) ?? updated['unit_price'];
+                    updated['purchase_price'] = double.tryParse(purchasePriceC.text) ?? updated['purchase_price'] ?? 0;
                     final newStock = double.tryParse(stockC.text) ??
                         InventoryStockHelper.readStock(updated);
                     InventoryStockHelper.writeStock(updated, newStock);
@@ -1544,6 +1552,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                       'product_name': updated['product_name'],
                       'sku': updated['sku'] ?? updated['barcode'] ?? '',
                       'unit_price': updated['unit_price'],
+                      'purchase_price': updated['purchase_price'] ?? 0,
                       'current_stock': InventoryStockHelper.readStock(updated),
                       'min_stock': updated['min_stock'] ?? 10,
                       'category': updated['category'] ?? 'General',
