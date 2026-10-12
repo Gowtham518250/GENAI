@@ -97,6 +97,18 @@ class BankStatementParser {
         .map((line) => line.replaceAll(RegExp(r'\s+'), ' ').trim())
         .where((line) => line.isNotEmpty)
         .toList();
+    final headerText = sourceLines.take(40).join(' ').toLowerCase();
+    final debitHeader = RegExp(
+      r'\\b(?:debit|withdrawal)(?:\\s+(?:amount|amt))?\\b',
+    ).firstMatch(headerText);
+    final creditHeader = RegExp(
+      r'\\b(?:credit|deposit)(?:\\s+(?:amount|amt))?\\b',
+    ).firstMatch(headerText);
+    final hasDebitCreditColumns = debitHeader != null &&
+        creditHeader != null &&
+        (debitHeader.start - creditHeader.start).abs() < 180;
+    final debitColumnFirst = !hasDebitCreditColumns ||
+        debitHeader!.start < creditHeader!.start;
 
     // PDF extractors sometimes put each cell on a separate line. Combine those
     // fragments until a complete dated transaction is found, then start a new
@@ -109,7 +121,7 @@ class BankStatementParser {
         r'^(?:\d{4}[/-]\d{1,2}[/-]\d{1,2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})\b',
       ).hasMatch(line);
       if (startsWithDate && buffer.isNotEmpty) {
-        if (_parseTransactionLine(buffer, bankName) != null) {
+        if (_parseTransactionLine(buffer, bankName, hasDebitCreditColumns: hasDebitCreditColumns, debitColumnFirst: debitColumnFirst) != null) {
           logicalRows.add(buffer);
           buffer = line;
         } else {
@@ -127,14 +139,14 @@ class BankStatementParser {
       }
       // Guard malformed PDF extraction from joining a huge document into one
       // string. Keep long non-transaction sections from consuming unbounded RAM.
-      if (buffer.length > 5000 && _parseTransactionLine(buffer, bankName) == null) {
+      if (buffer.length > 5000 && _parseTransactionLine(buffer, bankName, hasDebitCreditColumns: hasDebitCreditColumns, debitColumnFirst: debitColumnFirst) == null) {
         buffer = buffer.substring(buffer.length - 1200);
       }
     }
     if (buffer.isNotEmpty) logicalRows.add(buffer);
 
     for (final line in logicalRows) {
-      final entry = _parseTransactionLine(line, bankName);
+      final entry = _parseTransactionLine(line, bankName, hasDebitCreditColumns: hasDebitCreditColumns, debitColumnFirst: debitColumnFirst);
       if (entry == null) continue;
       final dedupeKey = [
         entry.date.toIso8601String().split('T').first,
@@ -164,7 +176,12 @@ class BankStatementParser {
     return 'Unknown bank';
   }
 
-  static BankEntry? _parseTransactionLine(String line, String bankName) {
+  static BankEntry? _parseTransactionLine(
+    String line,
+    String bankName, {
+    bool hasDebitCreditColumns = false,
+    bool debitColumnFirst = true,
+  }) {
     final hasMovement = RegExp(
       r'\bUPI\b|\bNEFT\b|\bIMPS\b|\bRTGS\b|\bPOS\b|\bATM\b|\bECS\b|\bNACH\b|\bCHQ\b|\bCHEQUE\b|\bCARD\b|\bBILLPAY\b|\bCR(?:EDIT(?:ED)?)?\b|\bDR(?:EBIT(?:ED)?)?\b|\bRECEIVED\b|\bWITHDRAW(?:AL|N)?\b|\bDEPOSIT\b|\bTRANSFER\b|\bPAYMENT\b|\bCHARGE\b|\bSALARY\b|\bINTEREST\b',
       caseSensitive: false,
@@ -186,11 +203,45 @@ class BankStatementParser {
       r'UPI\s*/\s*DR\b|\bDR\b|\bDEBIT(?:ED)?\b|\bPAID\b|\bWITHDRAW(?:AL|N)?\b|\bOUTWARD\b',
       caseSensitive: false,
     ).hasMatch(line);
-    if (isCredit == isDebit) return null;
-    final direction = isCredit ? 'CREDIT' : 'DEBIT';
 
+    var direction = '';
+    double? amountFromColumns;
+    if (isCredit != isDebit) {
+      direction = isCredit ? 'CREDIT' : 'DEBIT';
+    } else if (hasDebitCreditColumns) {
+      // Some statements encode direction only in Debit/Credit columns and do
+      // not append CR/DR to the narration. Infer only when the row has both
+      // amount columns plus a balance value and exactly one flow is non-zero.
+      final columnTail = line.substring(dateMatch.end).trim();
+      final moneyPattern = RegExp(
+        r'(?<![A-Za-z0-9/])(?:₹\s*|Rs\.?\s*)?(-?[0-9][0-9,]*(?:\.\d{1,2})?)(?![A-Za-z0-9/])',
+        caseSensitive: false,
+      );
+      final candidates = <double>[];
+      for (final match in moneyPattern.allMatches(columnTail)) {
+        final raw = match.group(1) ?? '';
+        final normalized = raw.replaceAll(',', '').replaceAll('-', '');
+        if (!raw.contains(',') && !raw.contains('.') && normalized.length >= 6) continue;
+        final parsed = _parseAmount(raw);
+        if (parsed != null && parsed >= 0) candidates.add(parsed);
+      }
+      if (candidates.length < 3) return null;
+      final debitAmount = candidates[debitColumnFirst ? candidates.length - 3 : candidates.length - 2];
+      final creditAmount = candidates[debitColumnFirst ? candidates.length - 2 : candidates.length - 3];
+      if (debitAmount > 0 && creditAmount == 0) {
+        direction = 'DEBIT';
+        amountFromColumns = debitAmount;
+      } else if (creditAmount > 0 && debitAmount == 0) {
+        direction = 'CREDIT';
+        amountFromColumns = creditAmount;
+      } else {
+        return null;
+      }
+    } else {
+      return null;
+    }
     final tail = line.substring(dateMatch.end).trim();
-    double? amount;
+    double? amount = amountFromColumns;
     final markerAmount = RegExp(
       r'\b(?:CR|DR)\b\s*[:\-]?\s*(?:₹|RS\.?\s*)?([0-9][0-9,]*(?:\.\d{1,2})?)',
       caseSensitive: false,
