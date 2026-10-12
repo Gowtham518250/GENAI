@@ -93,8 +93,8 @@ class BankStatementParser {
     final seen = <String>{};
     final bankName = _detectBankName(text);
     final sourceLines = text
-        .split(RegExp(r'[\\r\\n]+'))
-        .map((line) => line.replaceAll(RegExp(r'\\s+'), ' ').trim())
+        .split(RegExp(r'[\r\n]+'))
+        .map((line) => line.replaceAll(RegExp(r'\s+'), ' ').trim())
         .where((line) => line.isNotEmpty)
         .toList();
 
@@ -106,7 +106,7 @@ class BankStatementParser {
     var buffer = '';
     for (final line in sourceLines) {
       final startsWithDate = RegExp(
-        r'^(?:\\d{4}[/-]\\d{1,2}[/-]\\d{1,2}|\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}|\\d{1,2}\\s+[A-Za-z]{3,9}\\s+\\d{2,4})\\b',
+        r'^(?:\d{4}[/-]\d{1,2}[/-]\d{1,2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})\b',
       ).hasMatch(line);
       if (startsWithDate &&
           buffer.isNotEmpty &&
@@ -344,15 +344,15 @@ class BankStatementQueryHelper {
 
     final hasKnownParty = transactions.any((row) => _matchesKnownParty(query, row));
     final bankIntent = RegExp(
-      r'\\b(bank|statement|transactions?|upi|neft|imps|rtgs|credited|credit|debited|debit|received|deposit(?:ed)?|withdraw(?:al|n)?|paid|payment|money in|money out|incoming|outgoing|phone number|utr|rrn)\\b',
+      r'\b(bank|statement|transactions?|upi|neft|imps|rtgs|credited|credit|debited|debit|received|deposit(?:ed)?|withdraw(?:al|n)?|paid|payment|money in|money out|incoming|outgoing|phone number|utr|rrn)\b',
     ).hasMatch(query);
     if (!bankIntent && !hasKnownParty) return null;
 
     final wantsCredit = RegExp(
-      r'\\b(credit|credited|received|deposit(?:ed)?|inward|incoming|paid me|paid into)\\b',
+      r'\b(credit|credited|received|deposit(?:ed)?|inward|incoming|paid me|paid into)\b',
     ).hasMatch(query);
     final wantsDebit = RegExp(
-      r'\\b(debit|debited|spent|withdraw(?:al|n)?|outward|outgoing|paid to|payment to|i paid)\\b',
+      r'\b(debit|debited|spent|withdraw(?:al|n)?|outward|outgoing|paid to|payment to|i paid)\b',
     ).hasMatch(query);
     final filterDirection = wantsCredit == wantsDebit
         ? null
@@ -370,13 +370,13 @@ class BankStatementQueryHelper {
     }
 
     final now = DateTime.now();
-    if (RegExp(r'\\btoday\\b').hasMatch(query)) {
+    if (RegExp(r'\btoday\b').hasMatch(query)) {
       rows = rows.where((row) {
         final date = DateTime.tryParse(row['date']?.toString() ?? '');
         return date != null && date.year == now.year &&
             date.month == now.month && date.day == now.day;
       }).toList();
-    } else if (RegExp(r'\\byesterday\\b').hasMatch(query)) {
+    } else if (RegExp(r'\byesterday\b').hasMatch(query)) {
       final day = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1));
       rows = rows.where((row) {
         final date = DateTime.tryParse(row['date']?.toString() ?? '');
@@ -386,18 +386,12 @@ class BankStatementQueryHelper {
     }
 
     final amountIntent = RegExp(
-      r'\\b(total|sum|how much|amount|value|totalled|in total|credited amount|debit amount)\\b',
+      r'\b(total|sum|how much|amount|value|totalled|in total|credited amount|debit amount)\b',
     ).hasMatch(query);
     final total = rows.fold<double>(
       0,
       (sum, row) => sum + _number(row['amount']),
     );
-    final directionLabel = filterDirection == 'CREDIT'
-        ? 'credited / received'
-        : filterDirection == 'DEBIT'
-            ? 'paid / debited'
-            : 'matched';
-
     final results = rows.take(100).map((row) {
       final direction = (row['direction'] ?? '').toString().toUpperCase();
       final amount = _number(row['amount']);
@@ -407,7 +401,7 @@ class BankStatementQueryHelper {
       final bankName = (row['bankName'] ?? 'Unknown bank').toString();
       final date = (row['date'] ?? '').toString().split('T').first;
       final phoneSource = '$counterparty $description';
-      final phones = RegExp(r'(?<!\\d)(?:\\+?91[ -]?)?[6-9]\\d{9}(?!\\d)')
+      final phones = RegExp(r'(?<!\d)(?:\+?91[ -]?)?[6-9]\d{9}(?!\d)')
           .allMatches(phoneSource)
           .map((m) => m.group(0)!.trim())
           .toSet()
@@ -426,7 +420,7 @@ class BankStatementQueryHelper {
     }).toList();
 
     final queryWantsDetails = RegExp(
-      r'\\b(details?|list|show|find|who|name|phone|number|reference|utr|rrn|transaction|transactions|history|entries)\\b',
+      r'\b(details?|list|show|find|who|name|phone|number|reference|utr|rrn|transaction|transactions|history|entries)\b',
     ).hasMatch(query);
     String answer;
     if (rows.isEmpty) {
@@ -451,11 +445,11 @@ class BankStatementQueryHelper {
         return '${row['date']} | $flow ₹${_number(row['amount']).toStringAsFixed(2)} | $party$phoneText'
             '${ref.isEmpty ? '' : ' | Ref: $ref'}'
             '${desc.isEmpty || desc == party ? '' : ' | Details: $desc'}';
-      }).join('\\n');
+      }).join('\n');
       answer = 'Found ${rows.length} matching statement transaction(s). '
           'Credited: ₹${rows.where((r) => (r['direction'] ?? '').toString().toUpperCase() == 'CREDIT').fold<double>(0, (sum, r) => sum + _number(r['amount'])).toStringAsFixed(2)}; '
-          'paid: ₹${rows.where((r) => (r['direction'] ?? '').toString().toUpperCase() == 'DEBIT').fold<double>(0, (sum, r) => sum + _number(r['amount'])).toStringAsFixed(2)}.\\n$visible'
-          '${rows.length > 12 ? '\\nShowing the first 12 matches; narrow your search for a shorter list.' : ''}';
+          'paid: ₹${rows.where((r) => (r['direction'] ?? '').toString().toUpperCase() == 'DEBIT').fold<double>(0, (sum, r) => sum + _number(r['amount'])).toStringAsFixed(2)}.\n$visible'
+          '${rows.length > 12 ? '\nShowing the first 12 matches; narrow your search for a shorter list.' : ''}';
     }
 
     return {
@@ -468,7 +462,7 @@ class BankStatementQueryHelper {
   }
 
   static bool _matchesKnownParty(String query, Map<String, dynamic> row) {
-    final digits = query.replaceAll(RegExp(r'\\D'), '');
+    final digits = query.replaceAll(RegExp(r'\D'), '');
     final searchable = [
       row['counterparty'],
       row['reference'],
@@ -481,13 +475,13 @@ class BankStatementQueryHelper {
 
     final tokens = normalizedSearchable.split(' ').where((token) =>
       token.length >= 3 && !_stopWords.contains(token) &&
-      !RegExp(r'^\\d+$').hasMatch(token));
+      !RegExp(r'^\d+$').hasMatch(token));
     for (final token in tokens) {
       if (RegExp('(?:^| )' + RegExp.escape(token) + '(?: |$)').hasMatch(query)) return true;
     }
 
     if (digits.length >= 7) {
-      final rowDigits = searchable.replaceAll(RegExp(r'\\D'), '');
+      final rowDigits = searchable.replaceAll(RegExp(r'\D'), '');
       if (rowDigits.contains(digits)) return true;
     }
     return false;
@@ -496,7 +490,7 @@ class BankStatementQueryHelper {
   static String _normalize(String value) => value
       .toLowerCase()
       .replaceAll(RegExp(r'[^a-z0-9+@.]+'), ' ')
-      .replaceAll(RegExp(r'\\s+'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
 
   static double _number(dynamic value) =>
