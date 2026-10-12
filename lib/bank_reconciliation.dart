@@ -410,6 +410,12 @@ class BankStatementQueryHelper {
     final bankIntent = RegExp(
       r'\b(bank|statement|transactions?|upi|neft|imps|rtgs|credited|credit|debited|debit|received|deposit(?:ed)?|withdraw(?:al|n)?|paid|payment|money in|money out|incoming|outgoing|phone number|utr|rrn)\b',
     ).hasMatch(query);
+    final businessIntent = RegExp(
+      r'\b(sales?|revenue|turnover|profit|margin|stock|inventory|products?|purchase orders?|invoices?|expenses?|attendance|workers?|employees?)\b',
+    ).hasMatch(query);
+    // A shared counterparty name must not hijack an ordinary business KPI
+    // query. Payment-specific wording still selects the local statement path.
+    if (businessIntent && !bankIntent) return null;
     if (!bankIntent && !hasKnownParty) return null;
 
     final wantsCredit = RegExp(
