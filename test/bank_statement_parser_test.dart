@@ -151,6 +151,12 @@ void main() {
         rows,
       );
       expect(unrelated, isNull);
+
+      final overlappingName = BankStatementQueryHelper.answerQuestion(
+        "What were Rahul's total sales?",
+        rows,
+      );
+      expect(overlappingName, isNull);
     });
 
     test('uses explicit debit and credit columns only when the statement exposes them', () {
