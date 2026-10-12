@@ -38,6 +38,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
 
   bool _finalizingSpeech = false;
   bool _isSpeakingAnswer = false;
+  String _speechStyle = 'Natural';
   bool _isLoading = false;
   bool _isRecording = false;
   bool _isVoiceProcessing = false;
@@ -87,7 +88,6 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     String query, {
     String? languageCode,
     bool preserveVoiceTranscript = false,
-    bool speakAnswerOnSuccess = true,
   }) async {
     final cleanQuery = query.trim();
     final requestLanguageCode = languageCode ?? _selectedLanguage.code;
@@ -124,9 +124,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         }
       });
       _scrollToBottom();
-      if (speakAnswerOnSuccess && response.isSuccess) {
-        unawaited(_speakAnswer(response));
-      }
+      // Speech is opt-in: translate and speak only after the user taps Listen.
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -295,12 +293,29 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     });
 
     try {
-      await _answerTts.setSpeechRate(0.46);
-      await _answerTts.setPitch(1.0);
+      await _applySpeechStyle(_speechStyle);
       await _answerTts.awaitSpeakCompletion(true);
     } catch (error) {
       if (kDebugMode) debugPrint('Ask Retail Mind TTS setup failed: $error');
     }
+  }
+
+  Future<void> _applySpeechStyle(String style) async {
+    // flutter_tts rate/pitch are device-engine controls, not generated voice cloning.
+    final settings = switch (style) {
+      'Calm' => (rate: 0.38, pitch: 0.92),
+      'Energetic' => (rate: 0.53, pitch: 1.08),
+      'Professional' => (rate: 0.44, pitch: 1.0),
+      _ => (rate: 0.46, pitch: 1.0),
+    };
+    _speechStyle = style;
+    try {
+      await _answerTts.setSpeechRate(settings.rate);
+      await _answerTts.setPitch(settings.pitch);
+    } catch (error) {
+      if (kDebugMode) debugPrint('Ask Retail Mind voice style setup failed: $error');
+    }
+    if (mounted) setState(() {});
   }
 
   Future<void> _speakAnswer([AIQueryResponse? response]) async {
@@ -583,6 +598,31 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                 label: Text(
                   _isSpeakingAnswer ? 'Stop speaking' : 'Listen in ${_selectedLanguage.name}',
                   style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: PopupMenuButton<String>(
+              tooltip: 'Choose speaking tone',
+              initialValue: _speechStyle,
+              onSelected: (style) => unawaited(_applySpeechStyle(style)),
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'Natural', child: Text('Natural voice')),
+                PopupMenuItem(value: 'Professional', child: Text('Professional voice')),
+                PopupMenuItem(value: 'Calm', child: Text('Calm voice')),
+                PopupMenuItem(value: 'Energetic', child: Text('Energetic voice')),
+              ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.tune_rounded, size: 16),
+                    const SizedBox(width: 5),
+                    Text('Voice: $_speechStyle', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                  ],
                 ),
               ),
             ),
