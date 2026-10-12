@@ -105,6 +105,46 @@ void main() {
     });
   });
 
+
+  group('Product discovery intent routing', () {
+    test('detects shopping requests and nearby price lookups', () {
+      expect(AiQueryService.isProductShoppingRequest('I need ghee'), isTrue);
+      expect(AiQueryService.isProductShoppingRequest('Find Amul ghee near me'), isTrue);
+      expect(AiQueryService.isProductShoppingRequest('Price of ghee'), isTrue);
+      expect(AiQueryService.isProductShoppingRequest('నాకు నెయ్యి కావాలి'), isTrue);
+    });
+
+    test('does not route normal business questions to product search', () {
+      expect(AiQueryService.isProductShoppingRequest('How much sales did I make today?'), isFalse);
+      expect(AiQueryService.isProductShoppingRequest('Show my low stock inventory'), isFalse);
+      expect(AiQueryService.isProductShoppingRequest('Which customers owe money?'), isFalse);
+    });
+
+    test('parses online offers and nearby shops as structured discovery data', () {
+      final response = AIQueryResponse.fromJson({
+        'query': 'I need ghee',
+        'answer': 'I found online listings for ghee.',
+        'product_discovery': {
+          'product_query': 'ghee',
+          'location_available': true,
+          'online_offers': [
+            {'title': 'Ghee 1L', 'source': 'Seller A', 'price': 599.0}
+          ],
+          'nearby_shops': [
+            {'name': 'Nearby Grocery', 'distance_km': 0.8, 'price': null}
+          ],
+        },
+        'results': [],
+      });
+
+      expect(response.isSuccess, isTrue);
+      expect(response.productDiscovery?['product_query'], 'ghee');
+      expect((response.productDiscovery?['online_offers'] as List).length, 1);
+      expect((response.productDiscovery?['nearby_shops'] as List).first['name'], 'Nearby Grocery');
+      expect(response.results, isEmpty);
+    });
+  });
+
   group('ResultCard & Data Formatting Tests', () {
     testWidgets('renders KPI Card for single metric result', (tester) async {
       await tester.pumpWidget(
