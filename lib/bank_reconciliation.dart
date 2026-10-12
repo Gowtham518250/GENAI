@@ -274,7 +274,7 @@ class BankStatementParser {
     if (labelled != null) return labelled.group(1) ?? '';
     for (final part in description.split('/')) {
       final value = part.trim();
-      if (RegExp(r'^[A-Z0-9]{8,}$', caseSensitive: false).hasMatch(value)) return value;
+      if (RegExp(r'^[A-Z0-9]{8,}
     }
     return '';
   }
@@ -290,15 +290,132 @@ class BankReconciliation {
     final unmatched = <Map<String, dynamic>>[];
 
     for (final txn in bankTransactions) {
-      final amount = txn['amount']?.toString() ?? '';
-      final date = txn['date']?.toString() ?? '';
+      // Debits represent money paid out; they should remain in bank history,
+      // but must not be treated as incoming customer sale payments.
+      if ((txn['direction'] ?? 'CREDIT').toString().toUpperCase() == 'DEBIT') continue;
+      final amount = double.tryParse(txn['amount']?.toString() ?? '');
+      final dateText = txn['date']?.toString().split('T').first ?? '';
+      if (amount == null || !amount.isFinite || amount <= 0 || dateText.isEmpty) {
+        unmatched.add({
+          ...txn,
+          'status': 'UNMATCHED',
+          'reconciled_at': DateTime.now().toIso8601String(),
+        });
+        continue;
+      }
 
-      // Try to match with app sales
-      final matched = appSales.any((s) {
-        final saleAmount = s['total']?.toString() ?? '';
-        final saleDate = s['date']?.toString() ?? s['sale_date']?.toString() ?? '';
+      final matched = appSales.any((sale) {
+        final saleAmount = double.tryParse(
+          (sale['total'] ?? sale['total_amount'] ?? sale['amount'] ?? '').toString(),
+        );
+        final saleDate = (sale['date'] ?? sale['sale_date'] ?? sale['created_at'] ?? '').toString();
+        final normalizedSaleDate = saleDate.split('T').first;
+        if (saleAmount == null || !saleAmount.isFinite || normalizedSaleDate != dateText) return false;
+        return (saleAmount - amount).abs() < 0.01;
+      });
 
-        return saleAmount == amount && saleDate.contains(date.split('T').first);
+      if (!matched) {
+        unmatched.add({
+          ...txn,
+          'status': 'UNMATCHED',
+          'reconciled_at': DateTime.now().toIso8601String(),
+        });
+      }
+    }
+
+    return unmatched;
+  }
+
+  /// Get reconciliation summary
+  static Map<String, dynamic> getSummary(
+    List<Map<String, dynamic>> bankTransactions,
+    List<Map<String, dynamic>> appSales,
+  ) {
+    final unmatched = reconcile(bankTransactions, appSales);
+
+    // Calculate totals
+    double bankTotal = 0;
+    double appTotal = 0;
+    double unmatchedTotal = 0;
+
+    for (final txn in bankTransactions) {
+      bankTotal += double.tryParse(txn['amount']?.toString() ?? '0') ?? 0;
+    }
+
+    for (final sale in appSales) {
+      appTotal += double.tryParse(sale['total']?.toString() ?? '0') ?? 0;
+    }
+
+    for (final um in unmatched) {
+      unmatchedTotal += double.tryParse(um['amount']?.toString() ?? '0') ?? 0;
+    }
+
+    return {
+      'bank_total': bankTotal,
+      'app_total': appTotal,
+      'matched_total': bankTotal - unmatchedTotal,
+      'unmatched_total': unmatchedTotal,
+      'unmatched_count': unmatched.length,
+      'reconciliation_rate': ((bankTotal - unmatchedTotal) / bankTotal * 100).toStringAsFixed(2) + '%',
+      'status': unmatchedTotal == 0 ? 'FULLY_RECONCILED' : 'PARTIAL_RECONCILIATION',
+    };
+  }
+
+  /// Export unmatched transactions for review
+  static Future<String> exportUnmatchedAsJSON(
+    List<Map<String, dynamic>> bankTransactions,
+    List<Map<String, dynamic>> appSales,
+  ) async {
+    final unmatched = reconcile(bankTransactions, appSales);
+    final summary = getSummary(bankTransactions, appSales);
+
+    final exportData = {
+      'export_date': DateTime.now().toIso8601String(),
+      'summary': summary,
+      'unmatched_transactions': unmatched,
+    };
+
+    return jsonEncode(exportData);
+  }
+}
+, caseSensitive: false).hasMatch(value) && RegExp(r'\d').hasMatch(value)) return value;
+    }
+    return '';
+  }
+}
+
+class BankReconciliation {
+  /// Reconciles bank transactions with app sales
+  /// Returns list of unmatched transactions for manual review
+  static List<Map<String, dynamic>> reconcile(
+    List<Map<String, dynamic>> bankTransactions,
+    List<Map<String, dynamic>> appSales,
+  ) {
+    final unmatched = <Map<String, dynamic>>[];
+
+    for (final txn in bankTransactions) {
+      // Debits represent money paid out; they should remain in bank history,
+      // but must not be treated as incoming customer sale payments.
+      if ((txn['direction'] ?? 'CREDIT').toString().toUpperCase() == 'DEBIT') continue;
+      final amount = double.tryParse(txn['amount']?.toString() ?? '');
+      final dateText = txn['date']?.toString().split('T').first ?? '';
+      if (amount == null || !amount.isFinite || amount <= 0 || dateText.isEmpty) {
+        unmatched.add({
+          ...txn,
+          'status': 'UNMATCHED',
+          'reconciled_at': DateTime.now().toIso8601String(),
+        });
+        continue;
+      }
+
+      final matched = appSales.any((sale) {
+        final saleAmount = double.tryParse(
+          (sale['total'] ?? sale['total_amount'] ?? sale['amount'] ?? '').toString(),
+        );
+        final saleDate = (sale['date'] ?? sale['sale_date'] ?? sale['created_at'] ?? '').toString();
+        final normalizedSaleDate = saleDate.split('T').first;
+        if (saleAmount == null || !saleAmount.isFinite || normalizedSaleDate != dateText) return false;
+        return (saleAmount - amount).abs() < 0.01;
       });
 
       if (!matched) {
