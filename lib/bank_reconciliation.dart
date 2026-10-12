@@ -92,10 +92,39 @@ class BankStatementParser {
     final entries = <BankEntry>[];
     final seen = <String>{};
     final bankName = _detectBankName(text);
+    final sourceLines = text
+        .split(RegExp(r'[\\r\\n]+'))
+        .map((line) => line.replaceAll(RegExp(r'\\s+'), ' ').trim())
+        .where((line) => line.isNotEmpty)
+        .toList();
 
-    for (final sourceLine in text.split(RegExp(r'[\r\n]+'))) {
-      final line = sourceLine.replaceAll(RegExp(r'\s+'), ' ').trim();
-      if (line.isEmpty) continue;
+    // PDF extractors sometimes put each cell on a separate line. Combine those
+    // fragments until a complete dated transaction is found, then start a new
+    // record on the next dated row. This preserves the original column order
+    // without guessing whether an unmarked amount was a credit or a debit.
+    final logicalRows = <String>[];
+    var buffer = '';
+    for (final line in sourceLines) {
+      final startsWithDate = RegExp(
+        r'^(?:\\d{4}[/-]\\d{1,2}[/-]\\d{1,2}|\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}|\\d{1,2}\\s+[A-Za-z]{3,9}\\s+\\d{2,4})\\b',
+      ).hasMatch(line);
+      if (startsWithDate &&
+          buffer.isNotEmpty &&
+          _parseTransactionLine(buffer, bankName) != null) {
+        logicalRows.add(buffer);
+        buffer = line;
+      } else {
+        buffer = buffer.isEmpty ? line : '$buffer $line';
+      }
+      // Guard malformed PDF extraction from joining a huge document into one
+      // string. Keep long non-transaction sections from consuming unbounded RAM.
+      if (buffer.length > 5000 && _parseTransactionLine(buffer, bankName) == null) {
+        buffer = buffer.substring(buffer.length - 1200);
+      }
+    }
+    if (buffer.isNotEmpty) logicalRows.add(buffer);
+
+    for (final line in logicalRows) {
       final entry = _parseTransactionLine(line, bankName);
       if (entry == null) continue;
       final dedupeKey = [
@@ -293,6 +322,197 @@ class BankStatementParser {
     }
     return '';
   }
+}
+
+
+/// Answers questions from the most recently uploaded statement using local data.
+/// Returns null when a question does not look statement-related, allowing the
+/// normal business AI query route to handle it. Bank transaction rows stay on-device.
+class BankStatementQueryHelper {
+  static const String _storagePrefix =
+      'retail_mind_uploaded_bank_statement_transactions_v1_';
+
+  static String storageKeyForUserId(String userId) =>
+      _storagePrefix + (userId.trim().isEmpty ? 'default' : userId.trim());
+
+  static Map<String, dynamic>? answerQuestion(
+    String question,
+    List<Map<String, dynamic>> transactions,
+  ) {
+    final query = _normalize(question);
+    if (query.isEmpty) return null;
+
+    final hasKnownParty = transactions.any((row) => _matchesKnownParty(query, row));
+    final bankIntent = RegExp(
+      r'\\b(bank|statement|transactions?|upi|neft|imps|rtgs|credited|credit|debited|debit|received|deposit(?:ed)?|withdraw(?:al|n)?|paid|payment|money in|money out|incoming|outgoing|phone number|utr|rrn)\\b',
+    ).hasMatch(query);
+    if (!bankIntent && !hasKnownParty) return null;
+
+    final wantsCredit = RegExp(
+      r'\\b(credit|credited|received|deposit(?:ed)?|inward|incoming|paid me|paid into)\\b',
+    ).hasMatch(query);
+    final wantsDebit = RegExp(
+      r'\\b(debit|debited|spent|withdraw(?:al|n)?|outward|outgoing|paid to|payment to|i paid)\\b',
+    ).hasMatch(query);
+    final filterDirection = wantsCredit == wantsDebit
+        ? null
+        : wantsCredit
+            ? 'CREDIT'
+            : 'DEBIT';
+
+    final identityMatches = transactions.where((row) =>
+        _matchesKnownParty(query, row)).toList();
+    final hasIdentityMatch = identityMatches.isNotEmpty;
+    var rows = hasIdentityMatch ? identityMatches : List<Map<String, dynamic>>.from(transactions);
+    if (filterDirection != null) {
+      rows = rows.where((row) =>
+          (row['direction'] ?? '').toString().toUpperCase() == filterDirection).toList();
+    }
+
+    final now = DateTime.now();
+    if (RegExp(r'\\btoday\\b').hasMatch(query)) {
+      rows = rows.where((row) {
+        final date = DateTime.tryParse(row['date']?.toString() ?? '');
+        return date != null && date.year == now.year &&
+            date.month == now.month && date.day == now.day;
+      }).toList();
+    } else if (RegExp(r'\\byesterday\\b').hasMatch(query)) {
+      final day = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1));
+      rows = rows.where((row) {
+        final date = DateTime.tryParse(row['date']?.toString() ?? '');
+        return date != null && date.year == day.year &&
+            date.month == day.month && date.day == day.day;
+      }).toList();
+    }
+
+    final amountIntent = RegExp(
+      r'\\b(total|sum|how much|amount|value|totalled|in total|credited amount|debit amount)\\b',
+    ).hasMatch(query);
+    final total = rows.fold<double>(
+      0,
+      (sum, row) => sum + _number(row['amount']),
+    );
+    final directionLabel = filterDirection == 'CREDIT'
+        ? 'credited / received'
+        : filterDirection == 'DEBIT'
+            ? 'paid / debited'
+            : 'matched';
+
+    final results = rows.take(100).map((row) {
+      final direction = (row['direction'] ?? '').toString().toUpperCase();
+      final amount = _number(row['amount']);
+      final counterparty = (row['counterparty'] ?? '').toString().trim();
+      final description = (row['description'] ?? row['rawLine'] ?? '').toString().trim();
+      final reference = (row['reference'] ?? '').toString().trim();
+      final bankName = (row['bankName'] ?? 'Unknown bank').toString();
+      final date = (row['date'] ?? '').toString().split('T').first;
+      final phoneSource = '$counterparty $description';
+      final phones = RegExp(r'(?<!\\d)(?:\\+?91[ -]?)?[6-9]\\d{9}(?!\\d)')
+          .allMatches(phoneSource)
+          .map((m) => m.group(0)!.trim())
+          .toSet()
+          .toList();
+      return <String, dynamic>{
+        'date': date,
+        'counterparty': counterparty.isEmpty ? 'Not identified in statement' : counterparty,
+        'phone_numbers': phones,
+        'direction': direction,
+        'amount': amount,
+        'flow': direction == 'CREDIT' ? 'CREDITED' : direction == 'DEBIT' ? 'PAID' : 'UNKNOWN',
+        'reference': reference,
+        'description': description,
+        'bank': bankName,
+      };
+    }).toList();
+
+    final queryWantsDetails = RegExp(
+      r'\\b(details?|list|show|find|who|name|phone|number|reference|utr|rrn|transaction|transactions|history|entries)\\b',
+    ).hasMatch(query);
+    String answer;
+    if (rows.isEmpty) {
+      answer = hasIdentityMatch
+          ? 'A matching name/reference was found, but no transactions match the requested direction or date in the uploaded statement.'
+          : 'No matching transactions were found in the latest bank statement saved on this device. Check the name, phone number, reference, date or credit/debit wording.';
+    } else if (amountIntent && !queryWantsDetails) {
+      final flowText = filterDirection == 'CREDIT'
+          ? 'credited/received'
+          : filterDirection == 'DEBIT'
+              ? 'paid/debited'
+              : 'transaction';
+      answer = 'The $flowText total in the uploaded statement is ₹${total.toStringAsFixed(2)} across ${rows.length} matching transaction(s).';
+    } else {
+      final visible = results.take(12).map((row) {
+        final phones = (row['phone_numbers'] as List).cast<String>();
+        final phoneText = phones.isEmpty ? '' : ' | Phone: ${phones.join(', ')}';
+        final party = row['counterparty'].toString();
+        final flow = row['flow'].toString();
+        final ref = row['reference'].toString();
+        final desc = row['description'].toString();
+        return '${row['date']} | $flow ₹${_number(row['amount']).toStringAsFixed(2)} | $party$phoneText'
+            '${ref.isEmpty ? '' : ' | Ref: $ref'}'
+            '${desc.isEmpty || desc == party ? '' : ' | Details: $desc'}';
+      }).join('\\n');
+      answer = 'Found ${rows.length} matching statement transaction(s). '
+          'Credited: ₹${rows.where((r) => (r['direction'] ?? '').toString().toUpperCase() == 'CREDIT').fold<double>(0, (sum, r) => sum + _number(r['amount'])).toStringAsFixed(2)}; '
+          'paid: ₹${rows.where((r) => (r['direction'] ?? '').toString().toUpperCase() == 'DEBIT').fold<double>(0, (sum, r) => sum + _number(r['amount'])).toStringAsFixed(2)}.\\n$visible'
+          '${rows.length > 12 ? '\\nShowing the first 12 matches; narrow your search for a shorter list.' : ''}';
+    }
+
+    return {
+      'query': question,
+      'answer': answer,
+      'results': results,
+      'source': 'uploaded_bank_statement_local',
+      'transactions_found': rows.length,
+    };
+  }
+
+  static bool _matchesKnownParty(String query, Map<String, dynamic> row) {
+    final digits = query.replaceAll(RegExp(r'\\D'), '');
+    final searchable = [
+      row['counterparty'],
+      row['reference'],
+      row['description'],
+      row['rawLine'],
+    ].map((value) => (value ?? '').toString()).join(' ');
+    final normalizedSearchable = _normalize(searchable);
+    final normalizedParty = _normalize((row['counterparty'] ?? '').toString());
+    if (normalizedParty.length >= 3 && query.contains(normalizedParty)) return true;
+
+    final tokens = normalizedSearchable.split(' ').where((token) =>
+      token.length >= 3 && !_stopWords.contains(token) &&
+      !RegExp(r'^\\d+$').hasMatch(token));
+    for (final token in tokens) {
+      if (RegExp('(?:^| )' + RegExp.escape(token) + '(?: |$)').hasMatch(query)) return true;
+    }
+
+    if (digits.length >= 7) {
+      final rowDigits = searchable.replaceAll(RegExp(r'\\D'), '');
+      if (rowDigits.contains(digits)) return true;
+    }
+    return false;
+  }
+
+  static String _normalize(String value) => value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9+@.]+'), ' ')
+      .replaceAll(RegExp(r'\\s+'), ' ')
+      .trim();
+
+  static double _number(dynamic value) =>
+      value is num ? value.toDouble() : double.tryParse(value?.toString() ?? '') ?? 0;
+
+  static const Set<String> _stopWords = {
+    'upi', 'neft', 'imps', 'rtgs', 'credit', 'credited', 'debit', 'debited',
+    'paid', 'pay', 'payment', 'received', 'receive', 'transfer', 'bank',
+    'statement', 'transaction', 'transactions', 'amount', 'total', 'money',
+    'cash', 'details', 'detail', 'name', 'phone', 'number', 'reference',
+    'account', 'today', 'yesterday', 'show', 'find', 'who', 'what', 'when',
+    'where', 'how', 'much', 'was', 'were', 'the', 'for', 'from', 'with',
+    'and', 'my', 'me', 'to', 'of', 'is', 'are', 'did', 'do', 'i', 'all',
+    'in', 'on', 'by', 'customer', 'customers', 'money', 'paid', 'received',
+    'amount', 'list', 'entries', 'history', 'utr', 'rrn',
+  };
 }
 
 class BankReconciliation {
