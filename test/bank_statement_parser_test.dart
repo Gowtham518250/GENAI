@@ -83,19 +83,19 @@ void main() {
 
     test('joins PDF table cells split across lines and keeps credit/debit separate', () {
       final entries = BankStatementParser.parseText(
-        'HDFC BANK STATEMENT\\n'
-        'Transaction Date Value Date Description Amount Balance\\n'
-        '07/04/26\\n'
-        '07/04/26\\n'
-        'UPI-RahulSharma-9876543210\\n'
-        'Cr\\n'
-        '1,500.00\\n'
-        '20,000.00\\n'
-        '08/04/26\\n'
-        '08/04/26\\n'
-        'UPI/DR/12345678/Swiggy/food@upi Dr\\n'
-        '250.00\\n'
-        '19,750.00\\n',
+        'HDFC BANK STATEMENT\n'
+        'Transaction Date Value Date Description Amount Balance\n'
+        '07/04/26\n'
+        '07/04/26\n'
+        'UPI-RahulSharma-9876543210\n'
+        'Cr\n'
+        '1,500.00\n'
+        '20,000.00\n'
+        '08/04/26\n'
+        '08/04/26\n'
+        'UPI/DR/12345678/Swiggy/food@upi Dr\n'
+        '250.00\n'
+        '19,750.00\n',
       );
 
       expect(entries, hasLength(2));
@@ -155,10 +155,10 @@ void main() {
 
     test('uses explicit debit and credit columns only when the statement exposes them', () {
       final entries = BankStatementParser.parseText(
-        'SBI BANK STATEMENT\\n'
-        'Transaction Date Narration Debit Credit Balance\\n'
-        '07-04-2026 UPI/P2A/12345678/Rahul 0.00 1,500.00 20,000.00\\n'
-        '08-04-2026 UPI/P2A/12345679/MarketShop 250.00 0.00 19,750.00\\n',
+        'SBI BANK STATEMENT\n'
+        'Transaction Date Narration Debit Credit Balance\n'
+        '07-04-2026 UPI/P2A/12345678/Rahul 0.00 1,500.00 20,000.00\n'
+        '08-04-2026 UPI/P2A/12345679/MarketShop 250.00 0.00 19,750.00\n',
       );
 
       expect(entries, hasLength(2));
