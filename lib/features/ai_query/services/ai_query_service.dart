@@ -540,10 +540,27 @@ class AiQueryService {
           query: trimmedQuery,
         );
       } else if (response.statusCode == 422) {
-        return AIQueryResponse.error(
-          'Unable to process this query format. Please try rephrasing your question.',
-          query: trimmedQuery,
-        );
+        // Preserve the backend's safe clarification message instead of replacing
+        // it with a generic "query format" error. SQL is not run when translation
+        // is genuinely uncertain, and the cashier/user should see that reason.
+        String message =
+            'I could not confidently understand that question. Please rephrase it and try again.';
+        try {
+          final errBody = json.decode(response.body);
+          if (errBody is Map) {
+            final detail = (errBody['detail'] ?? errBody['message'] ?? '').toString().trim();
+            final lowerDetail = detail.toLowerCase();
+            if (detail.isNotEmpty &&
+                !lowerDetail.contains('traceback') &&
+                !lowerDetail.contains('sqlalchemy') &&
+                !lowerDetail.contains('syntax error') &&
+                !lowerDetail.contains('column "') &&
+                !lowerDetail.contains('table "')) {
+              message = detail;
+            }
+          }
+        } catch (_) {}
+        return AIQueryResponse.error(message, query: trimmedQuery);
       } else if (response.statusCode >= 500 && response.statusCode < 600) {
         return AIQueryResponse.error(
           'Retail Mind couldn\'t process that question right now. Please try again.',
