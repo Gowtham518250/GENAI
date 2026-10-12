@@ -9,6 +9,7 @@ class AIQueryResponse {
   final String? queryEngineVersion;
   final String? query;
   final String? translatedQuery;
+  final String? answer;
   final String? generatedSql;
   final String? generatedModelResponse;
   final List<dynamic> retrievedTableInformation;
@@ -22,6 +23,7 @@ class AIQueryResponse {
     this.queryEngineVersion,
     this.query,
     this.translatedQuery,
+    this.answer,
     this.generatedSql,
     this.generatedModelResponse,
     this.retrievedTableInformation = const [],
@@ -38,6 +40,7 @@ class AIQueryResponse {
       query: query,
       isSuccess: false,
       errorMessage: message,
+      answer: message,
       generatedModelResponse: message,
       results: const [],
       retrievedTableInformation: const [],
@@ -58,19 +61,25 @@ class AIQueryResponse {
       final generatedSql = json['generated_sql']?.toString();
       final sql = json['sql']?.toString() ?? generatedSql;
 
-      // 4. Primary user-facing answer
-      // Inspect generated_model_response, fallback to 'answer', 'reply', 'response', or 'message'
+      // 4. Keep the user-facing answer separate from the raw LLM/SQL response.
+      // The backend's generated_model_response may contain "TABLE: ... SQL: ...";
+      // never let that override the plain, result-grounded "answer" field.
+      String? answerText;
+      for (final key in ['answer', 'reply', 'response', 'message']) {
+        final candidate = json[key]?.toString().trim();
+        if (candidate != null &&
+            candidate.isNotEmpty &&
+            !_looksLikeTechnicalText(candidate)) {
+          answerText = candidate;
+          break;
+        }
+      }
+
+      // Preserve the raw model response for diagnostics/compatibility, but it is
+      // not the primary display or TTS text when it contains SQL.
       String? generatedModelResponse = json['generated_model_response']?.toString();
       if (generatedModelResponse == null || generatedModelResponse.trim().isEmpty) {
-        if (json['answer'] != null) {
-          generatedModelResponse = json['answer'].toString();
-        } else if (json['reply'] != null) {
-          generatedModelResponse = json['reply'].toString();
-        } else if (json['response'] != null) {
-          generatedModelResponse = json['response'].toString();
-        } else if (json['message'] != null && json['message'] is String) {
-          generatedModelResponse = json['message'].toString();
-        }
+        generatedModelResponse = answerText;
       }
 
       // 5. Retrieved table information
@@ -100,6 +109,7 @@ class AIQueryResponse {
         queryEngineVersion: queryEngineVersion,
         query: query,
         translatedQuery: translatedQuery,
+        answer: answerText,
         generatedSql: generatedSql,
         generatedModelResponse: generatedModelResponse,
         retrievedTableInformation: tableInfo,
@@ -116,6 +126,14 @@ class AIQueryResponse {
         query: originalQuery,
       );
     }
+  }
+
+  /// Detects SQL/schema text that must never be shown or spoken as the answer.
+  static bool _looksLikeTechnicalText(String value) {
+    final text = value.trim();
+    return RegExp(r'^(?:TABLE\s*:|SQL\s*:|SELECT\b|WITH\b)', caseSensitive: false).hasMatch(text) ||
+        (RegExp(r'\bSQL\s*:', caseSensitive: false).hasMatch(text) &&
+         RegExp(r'\bSELECT\b', caseSensitive: false).hasMatch(text));
   }
 
   /// Synthesizes a clean fallback summary if the backend only returned raw data rows
@@ -150,15 +168,26 @@ class AIQueryResponse {
     return false;
   }
 
-  /// User-friendly display text for the primary answer
+  /// User-friendly display/TTS text. Always prefer the backend's grounded answer.
+  /// Raw SQL is only for the collapsible technical section and must never be spoken.
   String get displayAnswer {
-    if (generatedModelResponse != null && generatedModelResponse!.trim().isNotEmpty) {
-      return generatedModelResponse!.trim();
+    final directAnswer = answer?.trim() ?? '';
+    if (directAnswer.isNotEmpty && !_looksLikeTechnicalText(directAnswer)) {
+      return directAnswer;
     }
+
+    final modelText = generatedModelResponse?.trim() ?? '';
+    if (modelText.isNotEmpty && !_looksLikeTechnicalText(modelText)) {
+      return modelText;
+    }
+
     if (hasResults) {
-      return 'Here is the data found for your shop:';
+      return _synthesizeAnswerFromResults(results, query);
     }
-    return 'No additional details were returned for this question.';
+    if (errorMessage != null && errorMessage!.trim().isNotEmpty) {
+      return errorMessage!.trim();
+    }
+    return 'No readable answer was returned for this question.';
   }
 
   Map<String, dynamic> toJson() {
@@ -166,6 +195,7 @@ class AIQueryResponse {
       'query_engine_version': queryEngineVersion,
       'query': query,
       'translated_query': translatedQuery,
+      'answer': answer,
       'generated_sql': generatedSql,
       'generated_model_response': generatedModelResponse,
       'retrieved_table_information': retrievedTableInformation,
