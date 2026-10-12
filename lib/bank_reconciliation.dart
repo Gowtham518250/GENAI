@@ -283,9 +283,13 @@ class BankStatementParser {
       caseSensitive: false,
     ).firstMatch(line);
     if (labelled != null) return labelled.group(1) ?? '';
+
     for (final part in description.split('/')) {
       final value = part.trim();
-      if (RegExp(r'^[A-Z0-9]{8,}
+      if (RegExp(r'^[A-Z0-9]{8,}$', caseSensitive: false).hasMatch(value) &&
+          RegExp(r'\d').hasMatch(value)) {
+        return value;
+      }
     }
     return '';
   }
