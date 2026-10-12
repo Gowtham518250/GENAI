@@ -27,7 +27,6 @@ class SaleService {
   }) async {
     try {
       final quantities = <int, double>{};
-      final names = <int, String>{};
       for (final item in lineItems) {
         final productId = int.tryParse(item['product_id']?.toString() ?? '') ?? 0;
         final rawQuantity = item['quantity'] ?? item['qty'] ?? 0;
@@ -36,14 +35,12 @@ class SaleService {
             : double.tryParse(rawQuantity.toString()) ?? 0;
         if (productId <= 0 || quantity <= 0) continue;
         quantities[productId] = (quantities[productId] ?? 0) + quantity;
-        names[productId] = (item['product_name'] ?? 'Product $productId').toString();
       }
 
       for (final entry in quantities.entries) {
         await SmartReorderAIService.recordSale(
           saleId: saleId,
           productId: entry.key,
-          productName: names[entry.key] ?? 'Product ${entry.key}',
           quantity: entry.value,
         );
       }
