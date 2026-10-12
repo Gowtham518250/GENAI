@@ -19,6 +19,8 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
   double _monthRevenue = 0.0;
   double _expenses = 0.0;
   double _todayExpenses = 0.0;
+  double _todaySaleLoss = 0.0;
+  double _monthSaleLoss = 0.0;
   double _netProfit = 0.0;
   List<dynamic> _sales = [];
   List<dynamic> _expensesList = [];
@@ -61,10 +63,20 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
     try {
       final token = await SecureTokenStorage.getToken() ?? '';
       if (token.isNotEmpty) {
-        final expResp = await ApiClient.getJson('/api/expenses', headers: {'Authorization': 'Bearer $token'}).timeout(const Duration(seconds: 10));
+        final expResp = await ApiClient.getJson(
+          '/api/expenses?start_date=${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-01&end_date=${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}&limit=500',
+          headers: {'Authorization': 'Bearer $token'},
+        ).timeout(const Duration(seconds: 10));
         if (expResp.statusCode == 200) {
-          final parsed = List<dynamic>.from(jsonDecode(expResp.body) as List);
-          _expensesList = parsed;
+          final decoded = jsonDecode(expResp.body);
+          if (decoded is List) {
+            _expensesList = List<dynamic>.from(decoded);
+          } else if (decoded is Map && decoded['expenses'] is List) {
+            // Enterprise Expense Tracker returns {total_expenses, expenses:[...]}.
+            _expensesList = List<dynamic>.from(decoded['expenses'] as List);
+          } else {
+            _expensesList = [];
+          }
         }
       }
     } catch (_) {
@@ -79,6 +91,8 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
     double monthRevenue = 0.0;
     double totalExpenses = 0.0;
     double todayExpenses = 0.0;
+    double todaySaleLoss = 0.0;
+    double monthSaleLoss = 0.0;
 
     for (var sale in _sales) {
       final saleMap = Map<String, dynamic>.from(sale as Map);
@@ -105,6 +119,11 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
       if (!created.toLocal().isBefore(todayStart)) {
         todayExpenses += cost;
       }
+      final category = (expMap['category'] ?? '').toString().toUpperCase().replaceAll(' ', '_');
+      if (category == 'SALE_LOSS' || category == 'SALES_LOSS') {
+        if (!created.isBefore(monthStart)) monthSaleLoss += cost;
+        if (!created.toLocal().isBefore(todayStart)) todaySaleLoss += cost;
+      }
     }
 
     setState(() {
@@ -112,6 +131,8 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
       _monthRevenue = monthRevenue;
       _expenses = totalExpenses;
       _todayExpenses = todayExpenses;
+      _todaySaleLoss = todaySaleLoss;
+      _monthSaleLoss = monthSaleLoss;
       _netProfit = monthRevenue - totalExpenses;
       _loading = false;
     });
@@ -186,6 +207,8 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
                     const SizedBox(height: 12),
                     _detailTile('Total sales records', '${_sales.length}'),
                     _detailTile('Expense entries', '${_expensesList.length}'),
+                    _detailTile('Sale loss today', '₹${_todaySaleLoss.toStringAsFixed(2)}'),
+                    _detailTile('Sale loss this month', '₹${_monthSaleLoss.toStringAsFixed(2)}'),
                     _detailTile('Month profit percentage', _monthRevenue == 0.0 ? '0%' : '${((_netProfit / _monthRevenue) * 100).toStringAsFixed(1)}%'),
                     const SizedBox(height: 24),
                     Text('This page combines sales and expense data to give a real store-level profit view.', style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 13)),
