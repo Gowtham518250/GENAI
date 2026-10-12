@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -259,145 +258,6 @@ class AiQueryService {
   }
 
 
-  /// Recognize clear purchase intent without stealing normal sales/inventory questions.
-  static bool isProductShoppingRequest(String query) {
-    final value = query.trim().toLowerCase();
-    if (value.isEmpty) return false;
-
-    // Historical/business questions must win over generic phrases like
-    // "I need ..." or Telugu "నాకు ... కావాలి". Without these language cues,
-    // "I need yesterday's sales / which items were sold yesterday" was sent to
-    // online shopping and showed online listings instead of the shop's sales.
-    final businessQuery = RegExp(
-      r'\b(?:sales?|revenue|profit|inventory|stock|invoice|customers?|employees?|workers?|payroll|attendance|expenses?|reports?|dashboard|transactions?|sold|sold\s+out|items?\s+sold|sales?\s+history|previous\s+sales?)\b'
-      r'|(?:సేల్స్|అమ్మకాలు|అమ్మకం|అమ్మిన|అమ్మారు|అమ్ముడు\s*పోయి|అమ్ముడైన|విక్రయాలు|నిన్న.*(?:సేల్స్|అమ్మకాలు|అమ్మకం)|(?:సేల్స్|అమ్మకాలు|అమ్మకం).*నిన్న)'
-      r'|(?:बिक्री|बेचा|बेची|बेचे|बिके|कल.*बिक्री|बिक्री.*कल)'
-      r'|(?:விற்பனை|விற்ற|விற்கப்பட்ட|நேற்று.*விற்பனை|விற்பனை.*நேற்று)'
-      r'|(?:ಮಾರಾಟ|ಮಾರಿದ|ಮಾರಲ್ಪಟ್ಟ|ನಿನ್ನೆ.*ಮಾರಾಟ|ಮಾರಾಟ.*ನಿನ್ನೆ)'
-      r'|(?:വിൽപ്പന|വിറ്റ|വിറ്റത്|ഇന്നലെ.*വിൽപ്പന|വിൽപ്പന.*ഇന്നലെ)',
-    ).hasMatch(value);
-    final explicitShoppingContext = RegExp(
-      r'\b(?:buy|purchase|shops?\s+near|near\s+me|around\s+me|online\s+price|compare\s+prices?|product\s+price)\b',
-    ).hasMatch(value);
-    if (businessQuery && !explicitShoppingContext) return false;
-
-    final englishIntent = RegExp(
-      r"\b(?:i\s+need|i\s+want|i would like|need to buy|want to buy|looking for|find me|get me|buy me|where can i buy|where can i get|search for|buy|purchase)\s+.{2,}",
-    ).hasMatch(value) ||
-        RegExp(r'\b(?:near me|around me|compare prices?|price of|online price|shops? near me)\b').hasMatch(value);
-
-    final indianLanguageIntent = RegExp(
-      r'(?:నాకు.{1,}(?:కావాలి|కొనాలి)|కొనాలి|నా దగ్గరలో|దగ్గరలో దుకాణం|'
-      r'मुझे.{1,}(?:चाहिए|खरीदना है)|खरीदना है|मेरे पास|आसपास दुकान|'
-      r'எனக்கு.{1,}(?:வேண்டும்|வாங்க வேண்டும்)|வாங்க வேண்டும்|அருகில் கடை|'
-      r'ನನಗೆ.{1,}(?:ಬೇಕು|ಖರೀದಿಸಬೇಕು)|ಖರೀದಿಸಬೇಕು|ಹತ್ತಿರದ ಅಂಗಡಿ|'
-      r'എനിക്ക്.{1,}(?:വേണം|വാങ്ങണം)|വാങ്ങണം|അടുത്തുള്ള കട)',
-    ).hasMatch(query);
-    return englishIntent || indianLanguageIntent;
-  }
-
-  static Future<Position?> _requestProductSearchLocation() async {
-    try {
-      if (!await Geolocator.isLocationServiceEnabled()) return null;
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        return null;
-      }
-      return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-      ).timeout(const Duration(seconds: 8));
-    } catch (error) {
-      if (kDebugMode) debugPrint('Product search location unavailable: $error');
-      return null;
-    }
-  }
-
-  static Future<AIQueryResponse> _searchProductsNearby(
-    String query, {
-    required String languageCode,
-  }) async {
-    try {
-      // Location is requested only after a clear shopping-style prompt.
-      // If permission is declined, online results still work without local results.
-      final position = await _requestProductSearchLocation();
-      final fields = <String, String>{
-        'query': query,
-        'language_code': languageCode,
-        'radius_km': '10',
-      };
-      if (position != null) {
-        fields['latitude'] = position.latitude.toStringAsFixed(6);
-        fields['longitude'] = position.longitude.toStringAsFixed(6);
-      }
-
-      final response = await ApiClient.postForm(
-        ApiClient.askQueryProductDiscoveryEndpoint,
-        fields,
-      ).timeout(const Duration(seconds: 50));
-
-      dynamic decoded;
-      try {
-        decoded = json.decode(response.body);
-      } catch (_) {
-        decoded = null;
-      }
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        if (decoded is Map<String, dynamic>) {
-          final result = AIQueryResponse.fromJson(decoded, originalQuery: query);
-          if (result.productDiscovery == null) {
-            return AIQueryResponse.error(
-              'Product search returned an unexpected response. Please retry.',
-              query: query,
-            );
-          }
-          unawaited(saveQueryToHistory(query));
-          return result;
-        }
-        return AIQueryResponse.error(
-          'Product search returned an invalid response. Please retry.',
-          query: query,
-        );
-      }
-
-      final detail = decoded is Map
-          ? (decoded['detail'] ?? decoded['message'] ?? decoded['error'])?.toString()
-          : null;
-      if (response.statusCode == 401) {
-        return AIQueryResponse.error(
-          'Your session has expired. Please sign in again.',
-          query: query,
-        );
-      }
-      return AIQueryResponse.error(
-        detail != null && detail.trim().isNotEmpty
-            ? detail.trim()
-            : 'Online product search is temporarily unavailable. Please try again.',
-        query: query,
-      );
-    } on TimeoutException {
-      return AIQueryResponse.error(
-        'Product search took too long. Please retry with a shorter product request.',
-        query: query,
-      );
-    } on SocketException {
-      return AIQueryResponse.error(
-        'No internet connection. Check your connection and retry product search.',
-        query: query,
-      );
-    } catch (error) {
-      if (kDebugMode) debugPrint('Product discovery request failed: $error');
-      return AIQueryResponse.error(
-        'Retail Mind could not search online products right now. Please try again.',
-        query: query,
-      );
-    }
-  }
-
   /// Answer bank-statement questions from the latest PDF uploaded on this
   /// device. Transaction content is never sent to the backend or Groq.
   static Future<AIQueryResponse?> _answerUploadedBankStatementQuestion(
@@ -454,10 +314,9 @@ class AiQueryService {
       );
     }
 
-    if (isProductShoppingRequest(trimmedQuery)) {
-      return _searchProductsNearby(trimmedQuery, languageCode: languageCode);
-    }
-
+    // IMPORTANT: Ask Retail Mind is business-data-only. Never infer product-shopping
+    // intent here. Product discovery has its own explicit endpoint and is only
+    // called from the Purchase Orders shopping assistant.
     final statementAnswer = await _answerUploadedBankStatementQuestion(trimmedQuery);
     if (statementAnswer != null) return statementAnswer;
 
