@@ -212,7 +212,7 @@ class SalesEntryProvider extends ChangeNotifier {
         ApiClient.voiceBillingAudioEndpoint,
         {'language_code': languageCode},
         files: [multipartFile],
-        timeout: const Duration(seconds: 75),
+        timeout: const Duration(seconds: 90),
       );
       final response = await http.Response.fromStream(streamedResponse);
       dynamic decoded;
