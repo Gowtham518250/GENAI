@@ -186,25 +186,38 @@ class PrinterService {
 
       double subTotal = 0.0;
       double specialDiscount = 0.0;
+      final Map<double, double> gstByRate = <double, double>{};
       for (var item in items) {
-        final name = item['product_name'] ?? 'Item';
-        final qty = item['qty'] ?? '1';
-        final price = double.tryParse(item['price']?.toString() ?? '0') ?? 0.0;
+        final name = (item['product_name'] ?? item['item'] ?? item['itemName'] ?? 'Item').toString();
+        final qty = item['qty'] ?? item['quantity'] ?? '1';
+        final price = double.tryParse(item['price']?.toString() ?? item['unit_price']?.toString() ?? '0') ?? 0.0;
         final itemQty = qty is num
             ? qty.toDouble()
             : double.tryParse(qty.toString()) ?? 1.0;
         final itemDiscount =
             double.tryParse(item['discount_amount']?.toString() ?? '0') ?? 0.0;
+        final itemGstRaw = item['gstPercent'] ?? item['gst_percent'] ?? item['gst'];
+        final parsedItemGst = itemGstRaw is num
+            ? itemGstRaw.toDouble()
+            : double.tryParse(itemGstRaw?.toString() ?? '');
+        // A zero global rate explicitly disables GST for this bill; otherwise
+        // use each row's tax slab when present.
+        final itemGstRate = gstPercent <= 0 ? 0.0 : (parsedItemGst ?? gstPercent);
+
         subTotal += price * itemQty;
         specialDiscount += itemDiscount;
+        if (itemGstRate > 0) {
+          gstByRate[itemGstRate] =
+              (gstByRate[itemGstRate] ?? 0.0) + price * itemQty * itemGstRate / 100;
+        }
 
         // Handle long names
         if (name.length > 20) {
           bluetooth.printCustom(name.substring(0, 20), 1, 0);
           bluetooth.printNewLine();
-          bluetooth.printLeftRight("", "$qty x ${price.toStringAsFixed(2)}", 1);
+          bluetooth.printLeftRight("", qty.toString() + " x " + price.toStringAsFixed(2), 1);
         } else {
-          bluetooth.printLeftRight(name, "$qty x ${price.toStringAsFixed(2)}", 1);
+          bluetooth.printLeftRight(name, qty.toString() + " x " + price.toStringAsFixed(2), 1);
         }
         bluetooth.printNewLine();
       }
@@ -212,10 +225,10 @@ class PrinterService {
       bluetooth.printCustom("-" * 32, 1, 1);
       bluetooth.printNewLine();
 
-      // Totals
-      final gstAmount = subTotal * gstPercent / 100;
-      final total = subTotal + gstAmount;
-
+      final gstAmount = gstByRate.values.fold<double>(
+        0.0,
+        (sum, amount) => sum + amount,
+      );
       bluetooth.printLeftRight("Subtotal", subTotal.toStringAsFixed(2), 1);
       bluetooth.printNewLine();
       if (specialDiscount > 0) {
@@ -226,12 +239,29 @@ class PrinterService {
         );
         bluetooth.printNewLine();
       }
-      bluetooth.printLeftRight("GST (" + gstPercent.toString() + "%)", gstAmount.toStringAsFixed(2), 1);
-      bluetooth.printNewLine();
+      if (gstByRate.isEmpty) {
+        bluetooth.printLeftRight("GST (0%)", "0.00", 1);
+        bluetooth.printNewLine();
+      } else {
+        final rates = gstByRate.keys.toList()..sort();
+        for (final rate in rates) {
+          bluetooth.printLeftRight(
+            "GST (" + rate.toStringAsFixed(0) + "%)",
+            gstByRate[rate]!.toStringAsFixed(2),
+            1,
+          );
+          bluetooth.printNewLine();
+        }
+      }
       bluetooth.printCustom("-" * 32, 1, 1);
       bluetooth.printNewLine();
-      // Match the backend-confirmed total exactly.
-      bluetooth.printLeftRight("TOTAL", "Rs " + totalAmount.toStringAsFixed(2), 3);
+
+      // Keep the displayed total consistent with the bill snapshot passed in.
+      final calculatedTotal = subTotal + gstAmount;
+      final safeTotal = totalAmount.isFinite && totalAmount >= 0
+          ? totalAmount
+          : calculatedTotal;
+      bluetooth.printLeftRight("TOTAL", "Rs " + safeTotal.toStringAsFixed(2), 3);
       bluetooth.printNewLine();
       bluetooth.printCustom("-" * 32, 1, 1);
       bluetooth.printNewLine();
