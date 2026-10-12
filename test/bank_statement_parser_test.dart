@@ -227,5 +227,48 @@ void main() {
       expect(entries.single.amount, 12);
     });
 
+
+    test('searches phone numbers without confusing UTRs or transaction IDs for phones', () {
+      final phoneEntry = BankEntry(
+        date: DateTime(2026, 9, 10),
+        amount: 1000,
+        reference: 'T261001234567890123',
+        rawLine: 'Received from Rahul +91 98765 43210 CREDIT ₹1,000',
+        counterparty: 'Rahul',
+        description: 'Received from Rahul +91 98765 43210',
+        direction: 'CREDIT',
+        bankName: 'PhonePe',
+      );
+      final noPhoneEntry = BankEntry(
+        date: DateTime(2026, 10, 12),
+        amount: 49,
+        reference: 'NB26101210391532161141112',
+        rawLine: 'Mobile recharged XXXXXXXXX984222 DEBIT ₹49',
+        counterparty: 'Airtel Prepaid',
+        description: 'Mobile recharged',
+        direction: 'DEBIT',
+        bankName: 'PhonePe',
+      );
+      final utrEntry = BankEntry(
+        date: DateTime(2026, 10, 11),
+        amount: 2000,
+        reference: '276804138067',
+        rawLine: 'UTR No. 276804138067',
+        counterparty: 'Akka',
+        description: 'Received from Akka',
+        direction: 'CREDIT',
+        bankName: 'PhonePe',
+      );
+
+      expect(BankStatementSearchMatcher.matches(phoneEntry, '+91 98765-43210'), isTrue);
+      expect(BankStatementSearchMatcher.matches(phoneEntry, '9876543210'), isTrue);
+      expect(BankStatementSearchMatcher.matches(phoneEntry, 'rahul'), isTrue);
+      expect(BankStatementSearchMatcher.matches(phoneEntry, '9876500000'), isFalse);
+      expect(BankStatementSearchMatcher.matches(noPhoneEntry, '984222'), isFalse);
+      expect(BankStatementSearchMatcher.matches(noPhoneEntry, '9876543210'), isFalse);
+      expect(BankStatementSearchMatcher.matches(utrEntry, '276804138067'), isTrue);
+    });
+
+
   });
 }
