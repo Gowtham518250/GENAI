@@ -226,7 +226,7 @@ class SalesEntryProvider extends ChangeNotifier {
         throw Exception(
           detail?.toString().trim().isNotEmpty == true
               ? detail.toString()
-              : 'Voice billing failed (HTTP \${response.statusCode}). Please retry or enter the item manually.',
+              : 'Voice billing failed (HTTP ${response.statusCode}). Please retry or enter the item manually.',
         );
       }
       if (decoded is! Map) {
@@ -237,7 +237,7 @@ class SalesEntryProvider extends ChangeNotifier {
       if (kDebugMode) debugPrint('Groq audio voice billing failed: $error');
       lastVoiceMessage = error
           .toString()
-          .replaceFirst(RegExp(r'^Exception:\\s*'), '')
+          .replaceFirst(RegExp(r'^Exception:\s*'), '')
           .trim();
       if (lastVoiceMessage == null || lastVoiceMessage!.isEmpty) {
         lastVoiceMessage = 'Voice billing could not process the recording. Please retry.';
@@ -281,7 +281,7 @@ class SalesEntryProvider extends ChangeNotifier {
         }
         parsedItems.add(
           SalesItem(
-            id: '\${DateTime.now().microsecondsSinceEpoch}_\${parsedItems.length}',
+            id: '${DateTime.now().microsecondsSinceEpoch}_${parsedItems.length}',
             itemName: name,
             productId: int.tryParse((raw['product_id'] ?? '').toString()),
             quantity: quantity,
@@ -300,20 +300,20 @@ class SalesEntryProvider extends ChangeNotifier {
     if (parsedItems.isNotEmpty) {
       final reviewNotes = <String>[
         if (priceWarningProducts.isNotEmpty)
-          'Verify spoken/catalog price for: \${priceWarningProducts.take(3).join(', ')}.',
+          'Verify spoken/catalog price for: ${priceWarningProducts.take(3).join(', ')}.',
         if (stockWarningProducts.isNotEmpty)
-          'Quantity exceeds recorded stock for: \${stockWarningProducts.take(3).join(', ')}.',
+          'Quantity exceeds recorded stock for: ${stockWarningProducts.take(3).join(', ')}.',
       ].join(' ');
       final transcript = (decoded['transcript'] ?? '').toString().trim();
       final transcriptionPrefix = transcript.isEmpty ? '' : 'Heard: "$transcript". ';
-      final confirmation = '\${transcriptionPrefix}Added \${parsedItems.length} item(s) to the sale draft. Check each product, quantity and price before saving. \$reviewNotes'.trim();
+      final confirmation = '${transcriptionPrefix}Added ${parsedItems.length} item(s) to the sale draft. Check each product, quantity and price before saving. \$reviewNotes'.trim();
       lastVoiceMessage = needsClarification && clarification.isNotEmpty
           ? '\$confirmation \$clarification'
           : confirmation;
     } else {
       lastVoiceMessage = clarification.isNotEmpty
           ? clarification
-          : 'I could not confidently match the spoken product to this shop\\'s inventory. Please say the product name again or select it manually.';
+          : 'I could not confidently match the spoken product to this shop\'s inventory. Please say the product name again or select it manually.';
     }
     notifyListeners();
   }
