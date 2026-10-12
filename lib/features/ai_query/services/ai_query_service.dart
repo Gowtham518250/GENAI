@@ -264,8 +264,17 @@ class AiQueryService {
     final value = query.trim().toLowerCase();
     if (value.isEmpty) return false;
 
+    // Historical/business questions must win over generic phrases like
+    // "I need ..." or Telugu "నాకు ... కావాలి". Without these language cues,
+    // "I need yesterday's sales / which items were sold yesterday" was sent to
+    // online shopping and showed online listings instead of the shop's sales.
     final businessQuery = RegExp(
-      r'\b(?:sales?|revenue|profit|inventory|stock|invoice|customers?|employees?|workers?|payroll|attendance|expenses?|reports?|dashboard|transactions?)\b',
+      r'\b(?:sales?|revenue|profit|inventory|stock|invoice|customers?|employees?|workers?|payroll|attendance|expenses?|reports?|dashboard|transactions?|sold|sold\s+out|items?\s+sold|sales?\s+history|previous\s+sales?)\b'
+      r'|(?:సేల్స్|అమ్మకాలు|అమ్మకం|అమ్మిన|అమ్మారు|అమ్ముడు\s*పోయి|అమ్ముడైన|విక్రయాలు|నిన్న.*(?:సేల్స్|అమ్మకాలు|అమ్మకం)|(?:సేల్స్|అమ్మకాలు|అమ్మకం).*నిన్న)'
+      r'|(?:बिक्री|बेचा|बेची|बेचे|बिके|कल.*बिक्री|बिक्री.*कल)'
+      r'|(?:விற்பனை|விற்ற|விற்கப்பட்ட|நேற்று.*விற்பனை|விற்பனை.*நேற்று)'
+      r'|(?:ಮಾರಾಟ|ಮಾರಿದ|ಮಾರಲ್ಪಟ್ಟ|ನಿನ್ನೆ.*ಮಾರಾಟ|ಮಾರಾಟ.*ನಿನ್ನೆ)'
+      r'|(?:വിൽപ്പന|വിറ്റ|വിറ്റത്|ഇന്നലെ.*വിൽപ്പന|വിൽപ്പന.*ഇന്നലെ)',
     ).hasMatch(value);
     final explicitShoppingContext = RegExp(
       r'\b(?:buy|purchase|shops?\s+near|near\s+me|around\s+me|online\s+price|compare\s+prices?|product\s+price)\b',
