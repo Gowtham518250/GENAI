@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../api_client.dart';
+import '../../../bank_reconciliation.dart';
 import '../models/ai_query_response.dart';
 
 /// Successful or failed result from recorded-audio voice queries.
@@ -388,6 +389,47 @@ class AiQueryService {
     }
   }
 
+  /// Answer bank-statement questions from the latest PDF uploaded on this
+  /// device. Transaction content is never sent to the backend or Groq.
+  static Future<AIQueryResponse?> _answerUploadedBankStatementQuestion(
+    String question,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final rawUserId = (prefs.get('user_id') ?? prefs.get('userId') ?? 'default').toString();
+      final raw = prefs.getString(
+        BankStatementQueryHelper.storageKeyForUserId(rawUserId),
+      );
+      if (raw == null || raw.trim().isEmpty) return null;
+
+      final decoded = json.decode(raw);
+      if (decoded is! List) return null;
+      final rows = decoded
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList();
+      final localResult = BankStatementQueryHelper.answerQuestion(question, rows);
+      if (localResult == null) return null;
+
+      final answer = (localResult['answer'] ?? '').toString();
+      unawaited(saveQueryToHistory(question));
+      return AIQueryResponse(
+        queryEngineVersion: 'uploaded-bank-statement-local-v1',
+        query: question,
+        answer: answer,
+        generatedModelResponse: answer,
+        results: localResult['results'] is List
+            ? List<dynamic>.from(localResult['results'] as List)
+            : const [],
+        isSuccess: true,
+      );
+    } catch (error) {
+      // A bad/missing local cache must not prevent normal business queries.
+      if (kDebugMode) debugPrint('Local bank statement query unavailable: $error');
+      return null;
+    }
+  }
+
   /// Executes a natural-language business query against the backend.
   ///
   /// The user question is sent as-is without manual date conversion or SQL generation.
@@ -406,6 +448,9 @@ class AiQueryService {
     if (isProductShoppingRequest(trimmedQuery)) {
       return _searchProductsNearby(trimmedQuery, languageCode: languageCode);
     }
+
+    final statementAnswer = await _answerUploadedBankStatementQuestion(trimmedQuery);
+    if (statementAnswer != null) return statementAnswer;
 
     final stopwatch = Stopwatch()..start();
     int? statusCode;
