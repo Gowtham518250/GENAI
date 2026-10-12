@@ -550,7 +550,7 @@ class BankStatementQueryHelper {
       token.length >= 3 && !_stopWords.contains(token) &&
       !RegExp(r'^\d+$').hasMatch(token));
     for (final token in tokens) {
-      if (RegExp('(?:^| )' + RegExp.escape(token) + '(?: |$)').hasMatch(query)) return true;
+      if (RegExp(r'(?:^| )' + RegExp.escape(token) + r'(?: |$)').hasMatch(query)) return true;
     }
 
     if (identifiers.isNotEmpty) {
@@ -577,10 +577,11 @@ class BankStatementQueryHelper {
     'account', 'today', 'yesterday', 'show', 'find', 'who', 'what', 'when',
     'where', 'how', 'much', 'was', 'were', 'the', 'for', 'from', 'with',
     'and', 'my', 'me', 'to', 'of', 'is', 'are', 'did', 'do', 'i', 'all',
-    'in', 'on', 'by', 'customer', 'customers', 'money', 'paid', 'received',
-    'amount', 'list', 'entries', 'history', 'utr', 'rrn', 'sale', 'sales',
+    'in', 'on', 'by', 'customer', 'customers',
+    'list', 'entries', 'history', 'utr', 'rrn', 'sale', 'sales',
     'stock', 'revenue', 'profit', 'product', 'products', 'purchase', 'order',
     'orders', 'invoice', 'invoices', 'expense', 'expenses', 'shop', 'business',
+
   };
 }
 
