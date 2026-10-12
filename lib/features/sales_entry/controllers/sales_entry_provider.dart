@@ -258,36 +258,54 @@ class SalesEntryProvider extends ChangeNotifier {
     final parsedItems = <SalesItem>[];
     final priceWarningProducts = <String>[];
     final stockWarningProducts = <String>[];
+    final untrackedProducts = <String>[];
+    final missingPriceProducts = <String>[];
 
     if (rawItems is List) {
       for (final raw in rawItems) {
         if (raw is! Map) continue;
-        final name = (raw['product_name'] ?? raw['item'] ?? '').toString().trim();
+        final name = (raw['product_name_en'] ?? raw['product_name'] ?? raw['item'] ?? '')
+            .toString()
+            .trim();
         final quantity = double.tryParse((raw['quantity'] ?? raw['qty'] ?? '').toString());
-        final price = double.tryParse((raw['unit_price'] ?? raw['price'] ?? '').toString());
+        final parsedPrice = double.tryParse((raw['unit_price'] ?? raw['price'] ?? '').toString());
+        final priceMissing = raw['price_missing'] == true;
         final confidence = double.tryParse((raw['confidence'] ?? '1').toString()) ?? 0;
         if (name.isEmpty ||
             quantity == null ||
             !quantity.isFinite ||
             quantity <= 0 ||
-            price == null ||
-            !price.isFinite ||
-            price <= 0 ||
-            confidence < 0.72) {
+            !confidence.isFinite ||
+            confidence < 0.72 ||
+            (parsedPrice == null && !priceMissing) ||
+            (parsedPrice != null && (!parsedPrice.isFinite || parsedPrice < 0)) ||
+            (parsedPrice != null && parsedPrice <= 0 && !priceMissing)) {
           continue;
         }
+
+        final price = parsedPrice ?? 0.0;
+        final rawProductId = int.tryParse((raw['product_id'] ?? '').toString());
+        final declaredCatalogMatch = raw['catalog_matched'];
+        final isCatalogMatched = declaredCatalogMatch == true ||
+            (declaredCatalogMatch == null && rawProductId != null && rawProductId > 0);
+        final productId = isCatalogMatched && rawProductId != null && rawProductId > 0
+            ? rawProductId
+            : null;
 
         if ((raw['price_warning'] ?? '').toString().trim().isNotEmpty) {
           priceWarningProducts.add(name);
         }
-        if (raw['stock_warning'] == true) {
+        if (raw['stock_warning'] == true && productId != null) {
           stockWarningProducts.add(name);
         }
+        if (productId == null) untrackedProducts.add(name);
+        if (priceMissing || price <= 0) missingPriceProducts.add(name);
+
         parsedItems.add(
           SalesItem(
             id: '${DateTime.now().microsecondsSinceEpoch}_${parsedItems.length}',
             itemName: name,
-            productId: int.tryParse((raw['product_id'] ?? '').toString()),
+            productId: productId,
             quantity: quantity,
             price: price,
           ),
@@ -295,29 +313,35 @@ class SalesEntryProvider extends ChangeNotifier {
       }
     }
 
-    if (parsedItems.isNotEmpty) {
-      _appendVoiceDraftItems(parsedItems);
-    }
+    if (parsedItems.isNotEmpty) _appendVoiceDraftItems(parsedItems);
 
     final clarification = (decoded['clarification_question'] ?? '').toString().trim();
     final needsClarification = decoded['needs_clarification'] == true;
     if (parsedItems.isNotEmpty) {
       final reviewNotes = <String>[
         if (priceWarningProducts.isNotEmpty)
-          'Verify spoken/catalog price for: ${priceWarningProducts.take(3).join(', ')}.',
+          'Verify price for: ${priceWarningProducts.take(3).join(', ')}.',
         if (stockWarningProducts.isNotEmpty)
           'Quantity exceeds recorded stock for: ${stockWarningProducts.take(3).join(', ')}.',
+        if (untrackedProducts.isNotEmpty)
+          'Not in inventory (no stock deduction): ${untrackedProducts.take(4).join(', ')}.',
+        if (missingPriceProducts.isNotEmpty)
+          'Enter a selling price for: ${missingPriceProducts.take(4).join(', ')} before saving.',
       ].join(' ');
       final transcript = (decoded['transcript'] ?? '').toString().trim();
-      final transcriptionPrefix = transcript.isEmpty ? '' : 'Heard: "$transcript". ';
-      final confirmation = '${transcriptionPrefix}Added ${parsedItems.length} item(s) to the sale draft. Check each product, quantity and price before saving. \$reviewNotes'.trim();
+      final english = (decoded['interpreted_text_en'] ?? '').toString().trim();
+      final heardPrefix = transcript.isEmpty ? '' : 'Heard: "$transcript". ';
+      final englishPrefix = english.isEmpty ? '' : 'English: "$english". ';
+      final confirmation =
+          '${heardPrefix}${englishPrefix}Added ${parsedItems.length} item(s) to the sale draft. Check every product, quantity and price before saving. ${reviewNotes}'
+              .trim();
       lastVoiceMessage = needsClarification && clarification.isNotEmpty
-          ? '\$confirmation \$clarification'
+          ? '${confirmation} ${clarification}'.trim()
           : confirmation;
     } else {
       lastVoiceMessage = clarification.isNotEmpty
           ? clarification
-          : 'I could not confidently match the spoken product to this shop\'s inventory. Please say the product name again or select it manually.';
+          : 'I could not confidently identify a product and quantity. Please retry or enter the item manually.';
     }
     notifyListeners();
   }
@@ -329,8 +353,29 @@ class SalesEntryProvider extends ChangeNotifier {
     entries.addAll(parsedItems);
   }
 
+  bool _validateSaleDraftPrices() {
+    final incomplete = entries.where((entry) {
+      final name = entry.itemName.trim();
+      if (name.isEmpty || name.toLowerCase() == 'unknown' || name.toLowerCase() == 'unknown item') {
+        return false;
+      }
+      return !entry.price.isFinite ||
+          entry.price <= 0 ||
+          !entry.quantity.isFinite ||
+          entry.quantity <= 0;
+    }).toList();
+    if (incomplete.isEmpty) return true;
+
+    lastVoiceMessage =
+        'Enter a positive selling price and quantity for: \${incomplete.take(4).map((entry) => entry.itemName).join(', ')} before saving.';
+    notifyListeners();
+    return false;
+  }
+
   Future<bool> submitSale() async {
-    if (entries.isEmpty || totalAmount <= 0) return false;
+    if (entries.isEmpty) return false;
+    if (!_validateSaleDraftPrices()) return false;
+    if (totalAmount <= 0) return false;
 
     isSaving = true;
     notifyListeners();
@@ -398,7 +443,9 @@ class SalesEntryProvider extends ChangeNotifier {
   }
 
   Future<bool> saveAsCredit() async {
-    if (entries.isEmpty || totalAmount <= 0) return false;
+    if (entries.isEmpty) return false;
+    if (!_validateSaleDraftPrices()) return false;
+    if (totalAmount <= 0) return false;
 
     isSaving = true;
     notifyListeners();
@@ -568,18 +615,21 @@ class SalesEntryProvider extends ChangeNotifier {
         return 0;
       }
 
-      final normalizedName = productName.toLowerCase().trim();
+      String normalize(String value) => value
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+      final normalizedName = normalize(productName);
       for (var product in products) {
-        final productDbName = (product['product_name'] ?? product['name'] ?? '').toString().toLowerCase().trim();
-        if (productDbName == normalizedName) {
-          return int.tryParse(product['id']?.toString() ?? '0') ?? 0;
-        }
-      }
-
-      for (var product in products) {
-        final productDbName = (product['product_name'] ?? product['name'] ?? '').toString().toLowerCase().trim();
-        if (productDbName.isNotEmpty && (productDbName.contains(normalizedName) || normalizedName.contains(productDbName))) {
-          return int.tryParse(product['id']?.toString() ?? '0') ?? 0;
+        final productDbName = normalize(
+          (product['product_name'] ?? product['name'] ?? '').toString(),
+        );
+        if (productDbName.isNotEmpty && productDbName == normalizedName) {
+          return int.tryParse(
+                (product['id'] ?? product['product_id'] ?? '').toString(),
+              ) ??
+              0;
         }
       }
 
