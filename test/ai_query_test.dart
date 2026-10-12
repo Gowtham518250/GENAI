@@ -8,6 +8,7 @@ import 'package:retail_mind/features/ai_query/widgets/result_card.dart';
 import 'package:retail_mind/features/ai_query/widgets/suggestion_chip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:retail_mind/features/ai_query/services/ai_query_service.dart';
+import 'package:retail_mind/api_client.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -106,35 +107,16 @@ void main() {
   });
 
 
-  group('Product discovery intent routing', () {
-    test('detects shopping requests and nearby price lookups', () {
-      expect(AiQueryService.isProductShoppingRequest('I need ghee'), isTrue);
-      expect(AiQueryService.isProductShoppingRequest('Find Amul ghee near me'), isTrue);
-      expect(AiQueryService.isProductShoppingRequest('Price of ghee'), isTrue);
-      expect(AiQueryService.isProductShoppingRequest('నాకు నెయ్యి కావాలి'), isTrue);
-    });
-
-    test('does not route normal business questions to product search', () {
-      expect(AiQueryService.isProductShoppingRequest('How much sales did I make today?'), isFalse);
-      expect(AiQueryService.isProductShoppingRequest('Show my low stock inventory'), isFalse);
-      expect(AiQueryService.isProductShoppingRequest('Which customers owe money?'), isFalse);
+  group('Business and product endpoint separation', () {
+    test('business questions and product discovery use separate endpoints', () {
+      expect(ApiClient.askQueryEndpoint, '/askquery');
       expect(
-        AiQueryService.isProductShoppingRequest(
-          'I need yesterday sales. Which items were sold yesterday?',
-        ),
-        isFalse,
+        ApiClient.askQueryProductDiscoveryEndpoint,
+        '/askquery/product-discovery',
       );
       expect(
-        AiQueryService.isProductShoppingRequest(
-          'నాకు నిన్న సేల్స్ కావాలి నిన్న సేల్స్ ఏవేవే అమ్ముడు పోయాయో చెప్పగలవా',
-        ),
-        isFalse,
-      );
-      expect(
-        AiQueryService.isProductShoppingRequest(
-          'नमस्ते नहीं, कल कौन से सामान बिके?',
-        ),
-        isFalse,
+        ApiClient.askQueryEndpoint,
+        isNot(ApiClient.askQueryProductDiscoveryEndpoint),
       );
     });
 
@@ -162,6 +144,7 @@ void main() {
       expect(response.results, isEmpty);
     });
   });
+
 
   group('ResultCard & Data Formatting Tests', () {
     testWidgets('renders KPI Card for single metric result', (tester) async {
