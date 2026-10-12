@@ -471,7 +471,10 @@ class BankStatementQueryHelper {
   }
 
   static bool _matchesKnownParty(String query, Map<String, dynamic> row) {
-    final digits = query.replaceAll(RegExp(r'\D'), '');
+    final identifiers = RegExp(r'\b\d{7,}\b')
+        .allMatches(query)
+        .map((match) => match.group(0)!)
+        .toList();
     final searchable = [
       row['counterparty'],
       row['reference'],
@@ -489,9 +492,9 @@ class BankStatementQueryHelper {
       if (RegExp('(?:^| )' + RegExp.escape(token) + '(?: |$)').hasMatch(query)) return true;
     }
 
-    if (digits.length >= 7) {
+    if (identifiers.isNotEmpty) {
       final rowDigits = searchable.replaceAll(RegExp(r'\D'), '');
-      if (rowDigits.contains(digits)) return true;
+      if (identifiers.any(rowDigits.contains)) return true;
     }
     return false;
   }
@@ -514,7 +517,9 @@ class BankStatementQueryHelper {
     'where', 'how', 'much', 'was', 'were', 'the', 'for', 'from', 'with',
     'and', 'my', 'me', 'to', 'of', 'is', 'are', 'did', 'do', 'i', 'all',
     'in', 'on', 'by', 'customer', 'customers', 'money', 'paid', 'received',
-    'amount', 'list', 'entries', 'history', 'utr', 'rrn',
+    'amount', 'list', 'entries', 'history', 'utr', 'rrn', 'sale', 'sales',
+    'stock', 'revenue', 'profit', 'product', 'products', 'purchase', 'order',
+    'orders', 'invoice', 'invoices', 'expense', 'expenses', 'shop', 'business',
   };
 }
 
