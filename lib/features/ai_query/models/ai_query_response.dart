@@ -18,6 +18,7 @@ class AIQueryResponse {
   final DateTime timestamp;
   final bool isSuccess;
   final String? errorMessage;
+  final Map<String, dynamic>? productDiscovery;
 
   AIQueryResponse({
     this.queryEngineVersion,
@@ -32,6 +33,7 @@ class AIQueryResponse {
     DateTime? timestamp,
     this.isSuccess = true,
     this.errorMessage,
+    this.productDiscovery,
   }) : timestamp = timestamp ?? DateTime.now();
 
   /// Create an error response instance with a shopkeeper-friendly message.
@@ -100,6 +102,11 @@ class AIQueryResponse {
         resultsList = [rawResults];
       }
 
+      final rawProductDiscovery = json['product_discovery'];
+      final productDiscovery = rawProductDiscovery is Map
+          ? Map<String, dynamic>.from(rawProductDiscovery)
+          : null;
+
       // If generatedModelResponse is still empty but results exist, synthesize a gentle fallback message
       if ((generatedModelResponse == null || generatedModelResponse.trim().isEmpty) && resultsList.isNotEmpty) {
         generatedModelResponse = _synthesizeAnswerFromResults(resultsList, query);
@@ -115,6 +122,7 @@ class AIQueryResponse {
         retrievedTableInformation: tableInfo,
         sql: sql,
         results: resultsList,
+        productDiscovery: productDiscovery,
         isSuccess: true,
       );
     } catch (e, stack) {
@@ -204,6 +212,7 @@ class AIQueryResponse {
       'timestamp': timestamp.toIso8601String(),
       'is_success': isSuccess,
       'error_message': errorMessage,
+      'product_discovery': productDiscovery,
     };
   }
 }
