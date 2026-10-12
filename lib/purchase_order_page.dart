@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'api_client.dart';
 import 'local_storage_service.dart';
 import 'secure_token_storage.dart';
@@ -141,10 +142,351 @@ class _PurchaseOrderPageState extends State<PurchaseOrderPage> {
     }
   }
 
-  void _showCreateOrderDialog() {
-    final supplierController = TextEditingController();
-    final noteController = TextEditingController();
-    List<Map<String, dynamic>> orderItems = [];
+
+  Future<void> _openSupplierListing(String? rawUrl) async {
+    final uri = Uri.tryParse((rawUrl ?? '').trim());
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No valid online listing link is available.')),
+        );
+      }
+      return;
+    }
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open this supplier listing.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open this supplier listing.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showReorderRecommendations() async {
+    final token = await SecureTokenStorage.getToken() ?? '';
+    if (!mounted) return;
+    if (token.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in as a shop owner to check reorder suggestions.')),
+      );
+      return;
+    }
+
+    var loading = true;
+    var started = false;
+    String? failure;
+    var notice = '';
+    List<Map<String, dynamic>> suggestions = <Map<String, dynamic>>[];
+
+    Future<void> loadSuggestions(StateSetter setDialogState, BuildContext dialogContext) async {
+      setDialogState(() {
+        loading = true;
+        failure = null;
+      });
+      try {
+        final response = await ApiClient.getJson(
+          '/api/purchase-orders/reorder-recommendations?lookup_online=true&limit=12',
+          headers: {'Authorization': 'Bearer $token'},
+        ).timeout(const Duration(seconds: 65));
+        if (response.statusCode != 200) {
+          throw Exception('Request failed (' + response.statusCode.toString() + '). Please try again.');
+        }
+        final decoded = jsonDecode(response.body);
+        final rawItems = decoded is Map ? decoded['items'] : null;
+        final parsedItems = (rawItems is List ? rawItems : const <dynamic>[])
+            .whereType<Map>()
+            .map((entry) => Map<String, dynamic>.from(entry))
+            .toList();
+        if (!dialogContext.mounted) return;
+        setDialogState(() {
+          suggestions = parsedItems;
+          notice = decoded is Map ? (decoded['notice']?.toString() ?? '') : '';
+          failure = null;
+          loading = false;
+        });
+      } catch (e) {
+        if (!dialogContext.mounted) return;
+        setDialogState(() {
+          failure = e.toString().replaceFirst('Exception: ', '');
+          loading = false;
+        });
+      }
+    }
+
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          if (!started) {
+            started = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (dialogContext.mounted) loadSuggestions(setDialogState, dialogContext);
+            });
+          }
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.84,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    const Icon(Icons.price_check_rounded, color: Color(0xFF4F46E5), size: 28),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Smart Reorder', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700)),
+                          Text('Low stock • online price comparison', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Refresh recommendations',
+                      onPressed: () { loadSuggestions(setDialogState, dialogContext); },
+                      icon: const Icon(Icons.refresh_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (notice.isNotEmpty)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Text(notice, style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade700)),
+                  ),
+                if (loading)
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 12),
+                          Text('Checking your stock and online listings…'),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (!loading && failure != null)
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(failure!, style: GoogleFonts.poppins(color: Colors.red.shade700, fontSize: 12)),
+                  ),
+                if (!loading && failure == null && suggestions.isEmpty)
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        'No low-stock products found based on your configured minimum/reorder levels.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                if (!loading && suggestions.isNotEmpty)
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: suggestions.length,
+                      itemBuilder: (context, index) {
+                        final item = suggestions[index];
+                        final productName = item['product_name']?.toString() ?? 'Product';
+                        final urgency = item['urgency']?.toString() ?? 'REORDER';
+                        final stock = item['current_stock']?.toString() ?? '0';
+                        final qty = int.tryParse(item['suggested_reorder_qty']?.toString() ?? '') ?? 1;
+                        final recordedCost = double.tryParse(item['recorded_purchase_price']?.toString() ?? '') ?? 0;
+                        final best = item['best_offer'] is Map
+                            ? Map<String, dynamic>.from(item['best_offer'] as Map)
+                            : null;
+                        final offers = (item['online_offers'] as List? ?? [])
+                            .whereType<Map>()
+                            .map((entry) => Map<String, dynamic>.from(entry))
+                            .toList();
+                        final bestPrice = double.tryParse(best?['price']?.toString() ?? '');
+                        final diff = double.tryParse(item['price_difference_vs_recorded_cost']?.toString() ?? '');
+                        final urgencyColor = urgency == 'CRITICAL'
+                            ? const Color(0xFFDC2626)
+                            : urgency == 'HIGH'
+                                ? const Color(0xFFEA580C)
+                                : const Color(0xFF4F46E5);
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: 0,
+                          color: const Color(0xFFF8FAFC),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(13),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Text(productName, style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 14)),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: urgencyColor.withValues(alpha: 0.10),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(urgency, style: TextStyle(color: urgencyColor, fontSize: 10, fontWeight: FontWeight.w700)),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text('On hand: $stock  •  Suggested reorder: $qty',
+                                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade700)),
+                                if (recordedCost > 0)
+                                  Text('Recorded purchase cost: ₹' + recordedCost.toStringAsFixed(2),
+                                    style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade700)),
+                                if (offers.isNotEmpty) ...[
+                                  const SizedBox(height: 9),
+                                  Text('Online offers (lowest first)', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 11)),
+                                  ...offers.take(3).map((offer) {
+                                    final price = double.tryParse(offer['price']?.toString() ?? '');
+                                    final seller = offer['source']?.toString() ?? 'Online seller';
+                                    final title = offer['title']?.toString() ?? productName;
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 5),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(price == null ? seller : '₹' + price.toStringAsFixed(2) + ' • ' + seller,
+                                                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+                                                Text(title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                                                  style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade600)),
+                                              ],
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => _openSupplierListing(offer['url']?.toString()),
+                                            child: const Text('Open'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                  if (diff != null && recordedCost > 0)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: Text(
+                                        diff > 0
+                                            ? 'Lowest listing is ₹' + diff.toStringAsFixed(2) + ' below your recorded purchase cost.'
+                                            : diff < 0
+                                                ? 'Lowest listing is ₹' + diff.abs().toStringAsFixed(2) + ' above your recorded purchase cost.'
+                                                : 'Lowest listing matches your recorded purchase cost.',
+                                        style: GoogleFonts.poppins(fontSize: 11, color: diff > 0 ? const Color(0xFF047857) : Colors.grey.shade700),
+                                      ),
+                                    ),
+                                ] else
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      item['online_lookup_message']?.toString() ??
+                                          'No priced listings found. You can still draft a purchase order.',
+                                      style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
+                                    ),
+                                  ),
+                                const SizedBox(height: 8),
+                                Text('Confirm the exact brand/pack size, delivery charges and supplier price before ordering.',
+                                  style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade600)),
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.add_shopping_cart_rounded, size: 16),
+                                    label: const Text('Create draft PO'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF4F46E5),
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    onPressed: () {
+                                      final seller = best?['source']?.toString().trim() ?? '';
+                                      final chosenPrice = bestPrice ?? (recordedCost > 0 ? recordedCost : null);
+                                      final draftItem = <String, dynamic>{
+                                        'product_id': item['product_id'],
+                                        'product_name': productName,
+                                        'quantity': qty > 0 ? qty : 1,
+                                        'unit_cost': chosenPrice ?? 0.0,
+                                      };
+                                      Navigator.of(dialogContext).pop();
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (!mounted) return;
+                                        _showCreateOrderDialog(
+                                          initialItems: [draftItem],
+                                          initialSupplier: seller.isEmpty ? 'Supplier to confirm' : seller,
+                                          initialNotes: 'Low-stock reorder suggestion. Verify the selected listing and pack size before finalizing.',
+                                        );
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showCreateOrderDialog({
+    List<Map<String, dynamic>>? initialItems,
+    String? initialSupplier,
+    String? initialNotes,
+  }) {
+    final supplierController = TextEditingController(text: initialSupplier ?? '');
+    final noteController = TextEditingController(text: initialNotes ?? '');
+    List<Map<String, dynamic>> orderItems = (initialItems ?? const <Map<String, dynamic>>[])
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
 
     showModalBottomSheet(
       context: context,
@@ -425,6 +767,13 @@ class _PurchaseOrderPageState extends State<PurchaseOrderPage> {
       appBar: AppBar(
         title: const Text('Purchase Orders'),
         backgroundColor: const Color(0xFF6366F1),
+        actions: [
+          IconButton(
+            tooltip: 'Find low stock and compare online prices',
+            onPressed: _showReorderRecommendations,
+            icon: const Icon(Icons.price_check_rounded),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadOrders,
