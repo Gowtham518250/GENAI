@@ -1348,8 +1348,8 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
 
         if (_committedItems.isEmpty) {
           _showSnack(
-            result.warnings.isNotEmpty
-                ? result.warnings.first
+            warnings.isNotEmpty
+                ? warnings.first
                 : 'I could not understand that bill.',
             isError: true,
           );
