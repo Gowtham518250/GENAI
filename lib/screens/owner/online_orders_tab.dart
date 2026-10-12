@@ -263,6 +263,16 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
         dispatched.length.toString() + ', delivered=' +
         delivered.length.toString() + ')',
       );
+
+      // Keep name/phone search results in sync when an order advances locally
+      // or another worker changes it through the durable event feed.
+      final activeQuery = _searchController.text.trim();
+      if (activeQuery.isNotEmpty) {
+        _searchDebounce?.cancel();
+        final searchVersion = ++_historySearchVersion;
+        if (mounted) setState(() => _isSearchingHistory = true);
+        unawaited(_searchOnlineHistory(activeQuery, searchVersion));
+      }
     } catch (e) {
       debugPrint('Failed to fetch online orders: ' + e.toString());
       // Preserve locally cached data when a refresh fails.
@@ -1672,8 +1682,10 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                                         ? 'PAYMENT DUE'
                                         : '';
 
-                return Container(
-                  padding: const EdgeInsets.all(17),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(17),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -1822,6 +1834,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                       ],
                     ],
                   ),
+                ),
                 );
               },
             ),
