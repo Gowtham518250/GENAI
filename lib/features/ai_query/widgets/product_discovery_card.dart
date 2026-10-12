@@ -325,7 +325,7 @@ class ProductDiscoveryCard extends StatelessWidget {
                       ),
                     const SizedBox(height: 8),
                     Text(
-                      'Ghee price / stock: call to confirm',
+                      productQuery + ' price / stock: call to confirm',
                       style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w700, color: const Color(0xFF92400E)),
                     ),
                     const SizedBox(height: 4),
