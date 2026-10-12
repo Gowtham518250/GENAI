@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
+import 'device_stt_service.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,6 +28,15 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   final ScrollController _shoppingChatScrollController = ScrollController();
   final List<Map<String, dynamic>> _shoppingChatMessages = [];
   bool _shoppingSearchLoading = false;
+  final DeviceSTTService _shoppingSpeechService = DeviceSTTService();
+  bool _isShoppingListening = false;
+  double _shoppingRadiusKm = 10;
+  int _selectedBottomNavigation = 0;
+  String _activeDiscoverySection = 'online';
+  final GlobalKey _shoppingTopKey = GlobalKey();
+  final GlobalKey _discoveryResultsKey = GlobalKey();
+  final GlobalKey _lowStockKey = GlobalKey();
+  final GlobalKey _ordersSectionKey = GlobalKey();
 
   static const _bg = Color(0xFFF6F8FF);
   // Keep the existing purchase-order creation sheet dark; the main screen is light.
@@ -142,6 +152,152 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     return value.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
   }
 
+  Map<String, dynamic>? get _latestProductDiscovery {
+    for (final message in _shoppingChatMessages.reversed) {
+      final raw = message['product_discovery'];
+      if (raw is Map) return Map<String, dynamic>.from(raw);
+    }
+    return null;
+  }
+
+  Future<void> _scrollToSection(
+    GlobalKey key, {
+    int? navigationIndex,
+    String? discoverySection,
+  }) async {
+    if (navigationIndex != null || discoverySection != null) {
+      setState(() {
+        if (navigationIndex != null) _selectedBottomNavigation = navigationIndex;
+        if (discoverySection != null) _activeDiscoverySection = discoverySection;
+      });
+    }
+    await WidgetsBinding.instance.endOfFrame;
+    final target = key.currentContext;
+    if (target == null) return;
+    await Scrollable.ensureVisible(
+      target,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOutCubic,
+      alignment: 0.04,
+    );
+  }
+
+  Future<void> _toggleShoppingVoiceInput() async {
+    if (_isShoppingListening) {
+      final transcript = await _shoppingSpeechService.stopListening();
+      if (!mounted) return;
+      setState(() => _isShoppingListening = false);
+      if (transcript.trim().isNotEmpty) {
+        _shoppingChatController.text = transcript.trim();
+        _shoppingChatController.selection = TextSelection.collapsed(
+          offset: _shoppingChatController.text.length,
+        );
+      }
+      return;
+    }
+
+    setState(() => _isShoppingListening = true);
+    await _shoppingSpeechService.startListening(
+      localeId: 'en-IN',
+      onResult: (text) {
+        if (!mounted) return;
+        _shoppingChatController.text = text;
+        _shoppingChatController.selection = TextSelection.collapsed(
+          offset: _shoppingChatController.text.length,
+        );
+      },
+      onError: (message) {
+        if (!mounted) return;
+        setState(() => _isShoppingListening = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Voice search unavailable: ' + message)),
+        );
+      },
+    );
+  }
+
+  Future<void> _showShoppingSettings() async {
+    final selectedRadius = await showModalBottomSheet<double>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Shopping preferences',
+                style: GoogleFonts.poppins(
+                  color: _ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Choose how far away to search for nearby shops.',
+                style: GoogleFonts.poppins(color: _muted, fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              for (final radius in <double>[5, 10, 25])
+                RadioListTile<double>(
+                  value: radius,
+                  groupValue: _shoppingRadiusKm,
+                  title: Text(radius.round().toString() + ' km radius'),
+                  activeColor: _primary,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (value) {
+                    if (value != null) Navigator.pop(sheetContext, value);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selectedRadius != null && mounted) {
+      setState(() => _shoppingRadiusKm = selectedRadius);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Nearby search radius set to ' +
+                selectedRadius.round().toString() +
+                ' km. It applies to your next search.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _callNearbyShop(String? phone) async {
+    final cleaned = (phone ?? '').trim();
+    if (cleaned.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This listing has no public phone number.')),
+      );
+      return;
+    }
+    try {
+      final opened = await launchUrl(Uri(scheme: 'tel', path: cleaned));
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the phone app.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the phone app.')),
+        );
+      }
+    }
+  }
+
   Future<void> _sendPurchaseShoppingQuery({String? query}) async {
     final question = (query ?? _shoppingChatController.text).trim();
     if (question.isEmpty || _shoppingSearchLoading) return;
@@ -160,7 +316,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       final fields = <String, String>{
         'query': question,
         'language_code': 'en',
-        'radius_km': '10',
+        'radius_km': _shoppingRadiusKm.round().toString(),
       };
       if (position != null) {
         fields['latitude'] = position.latitude.toStringAsFixed(6);
@@ -257,16 +413,17 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   Widget _buildPurchaseShoppingChat() {
     final hasMessages = _shoppingChatMessages.isNotEmpty;
     return Container(
-      margin: const EdgeInsets.only(bottom: 24),
+      key: _shoppingTopKey,
+      margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
         color: _surface,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(25),
         border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF233B73).withValues(alpha: 0.07),
-            blurRadius: 28,
-            offset: const Offset(0, 12),
+            color: const Color(0xFF263B78).withValues(alpha: 0.06),
+            blurRadius: 22,
+            offset: const Offset(0, 7),
           ),
         ],
       ),
@@ -274,34 +431,27 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.fromLTRB(18, 20, 14, 20),
+            padding: const EdgeInsets.fromLTRB(17, 16, 12, 16),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFFF0E9FF), Color(0xFFE8F6FF)],
+                colors: [Color(0xFFF1EAFE), Color(0xFFE7F4FF)],
               ),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(27)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 49,
+                  height: 49,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF6557F5), Color(0xFF3D83F6)],
+                      colors: [Color(0xFF6C5CE7), Color(0xFF3977F6)],
                     ),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _primary.withValues(alpha: 0.22),
-                        blurRadius: 14,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(17),
                   ),
-                  child: const Icon(Icons.shopping_cart_rounded, color: Colors.white, size: 29),
+                  child: const Icon(Icons.smart_toy_rounded, color: Colors.white, size: 28),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -312,157 +462,81 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                         'Purchase Shopping Assistant',
                         style: GoogleFonts.poppins(
                           color: _ink,
-                          fontSize: 15.5,
-                          height: 1.35,
+                          fontSize: 14.5,
+                          height: 1.3,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         'Find products beyond your inventory',
-                        style: GoogleFonts.poppins(
-                          color: const Color(0xFF596986),
-                          fontSize: 11.5,
-                          height: 1.4,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: GoogleFonts.poppins(color: const Color(0xFF5D6C89), fontSize: 11.5),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Clear shopping chat',
+                  tooltip: 'Clear conversation',
                   visualDensity: VisualDensity.compact,
                   onPressed: _shoppingSearchLoading
                       ? null
-                      : () => setState(() => _shoppingChatMessages.clear()),
-                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF71809D), size: 21),
+                      : () => setState(_shoppingChatMessages.clear),
+                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF71809D)),
                 ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+            padding: const EdgeInsets.fromLTRB(15, 14, 15, 15),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Search any product, compare online prices, and discover nearby shops — even when it is not in your stock list.',
-                  style: GoogleFonts.poppins(color: _muted, fontSize: 12, height: 1.6),
-                ),
-                if (!hasMessages) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 182,
-                    width: double.infinity,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 198,
-                          height: 158,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [Color(0xFFE8E8FF), Color(0xFFEAF7FF)],
-                            ),
-                          ),
-                        ),
-                        const Icon(Icons.shopping_basket_rounded, size: 110, color: Color(0xFF5B55ED)),
-                        Align(
-                          alignment: const Alignment(-0.82, -0.48),
-                          child: Container(
-                            width: 45,
-                            height: 45,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFEEF0),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Icon(Icons.location_on_rounded, color: Color(0xFFF16B78), size: 25),
-                          ),
-                        ),
-                        Align(
-                          alignment: const Alignment(0.82, -0.4),
-                          child: Container(
-                            width: 45,
-                            height: 45,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE1FAF4),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Icon(Icons.sell_rounded, color: Color(0xFF10A88A), size: 24),
-                          ),
-                        ),
-                        Align(
-                          alignment: const Alignment(0.62, 0.83),
-                          child: Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFDDE5FF), width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _primary.withValues(alpha: 0.15),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.search_rounded, size: 31, color: Color(0xFF437DF2)),
-                          ),
-                        ),
-                        const Align(
-                          alignment: Alignment(-0.82, 0.58),
-                          child: Icon(Icons.auto_awesome_rounded, color: Color(0xFF9687FF), size: 18),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'What are you looking to buy?',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(color: _ink, fontSize: 19, height: 1.35, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    'Search your inventory or discover new products online.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(color: _muted, fontSize: 11.5, height: 1.6),
-                  ),
-                  const SizedBox(height: 18),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 9,
+                if (!hasMessages)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _shoppingPromptChip('Find ghee'),
-                      _shoppingPromptChip('Compare rice prices'),
-                      _shoppingPromptChip('Search cooking oil'),
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEDEAFF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.smart_toy_rounded, color: _primary, size: 21),
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3F5FC),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            'Hi! 👋 What product are you looking to buy? I can search online stores and nearby shops even if it is not in your inventory.',
+                            style: GoogleFonts.poppins(color: _ink, fontSize: 12, height: 1.55),
+                          ),
+                        ),
+                      ),
                     ],
-                  ),
-                ] else ...[
-                  const SizedBox(height: 15),
+                  )
+                else
                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 480),
+                    constraints: const BoxConstraints(maxHeight: 260),
                     child: ListView.builder(
                       controller: _shoppingChatScrollController,
                       shrinkWrap: true,
-                      padding: const EdgeInsets.only(bottom: 2),
+                      padding: EdgeInsets.zero,
                       itemCount: _shoppingChatMessages.length + (_shoppingSearchLoading ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index >= _shoppingChatMessages.length) {
                           return Align(
                             alignment: Alignment.centerLeft,
                             child: Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+                              margin: const EdgeInsets.only(top: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF3F5FF),
+                                color: const Color(0xFFF3F5FC),
                                 borderRadius: BorderRadius.circular(15),
                               ),
                               child: Row(
@@ -473,83 +547,77 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                                     height: 15,
                                     child: CircularProgressIndicator(strokeWidth: 2, color: _primary),
                                   ),
-                                  const SizedBox(width: 9),
-                                  Flexible(
-                                    child: Text(
-                                      'Comparing online listings and nearby shops…',
-                                      style: GoogleFonts.poppins(color: _muted, fontSize: 11),
-                                    ),
-                                  ),
+                                  const SizedBox(width: 8),
+                                  Text('Searching listings…', style: GoogleFonts.poppins(color: _muted, fontSize: 11)),
                                 ],
                               ),
                             ),
                           );
                         }
-
                         final message = _shoppingChatMessages[index];
                         final isUser = message['role'] == 'user';
-                        final data = message['product_discovery'];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 13),
-                          child: Column(
-                            crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                                decoration: BoxDecoration(
-                                  gradient: isUser
-                                      ? const LinearGradient(colors: [Color(0xFF6557F5), Color(0xFF3D83F6)])
-                                      : null,
-                                  color: isUser ? null : const Color(0xFFF3F5FB),
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: const Radius.circular(17),
-                                    topRight: const Radius.circular(17),
-                                    bottomLeft: Radius.circular(isUser ? 17 : 5),
-                                    bottomRight: Radius.circular(isUser ? 5 : 17),
-                                  ),
-                                ),
-                                child: Text(
-                                  (message['text'] ?? '').toString(),
-                                  style: GoogleFonts.poppins(
-                                    color: isUser ? Colors.white : _ink,
-                                    fontSize: 12,
-                                    height: 1.5,
-                                  ),
-                                ),
+                        return Align(
+                          alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
+                            margin: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+                            decoration: BoxDecoration(
+                              gradient: isUser
+                                  ? const LinearGradient(colors: [Color(0xFF6557F5), Color(0xFF3D83F6)])
+                                  : null,
+                              color: isUser ? null : const Color(0xFFF3F5FC),
+                              borderRadius: BorderRadius.only(
+                                topLeft: const Radius.circular(16),
+                                topRight: const Radius.circular(16),
+                                bottomLeft: Radius.circular(isUser ? 16 : 5),
+                                bottomRight: Radius.circular(isUser ? 5 : 16),
                               ),
-                              if (!isUser && data is Map) ...[
-                                const SizedBox(height: 9),
-                                ProductDiscoveryCard(
-                                  data: Map<String, dynamic>.from(data),
-                                  purchaseAssistantMode: true,
-                                ),
-                              ],
-                            ],
+                            ),
+                            child: Text(
+                              (message['text'] ?? '').toString(),
+                              style: GoogleFonts.poppins(
+                                color: isUser ? Colors.white : _ink,
+                                fontSize: 12,
+                                height: 1.48,
+                              ),
+                            ),
                           ),
                         );
                       },
                     ),
                   ),
-                ],
-                const SizedBox(height: 19),
+                const SizedBox(height: 13),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _shoppingPromptChip('Find ghee'),
+                      const SizedBox(width: 8),
+                      _shoppingPromptChip('Compare rice prices'),
+                      const SizedBox(width: 8),
+                      _shoppingPromptChip('Search cooking oil'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 13),
                 Container(
+                  padding: const EdgeInsets.fromLTRB(10, 4, 5, 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFF),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE3E8F5)),
+                    color: const Color(0xFFFAFBFF),
+                    borderRadius: BorderRadius.circular(23),
+                    border: Border.all(color: const Color(0xFFDDE5F5)),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF233B73).withValues(alpha: 0.05),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                        color: _primary.withValues(alpha: 0.04),
+                        blurRadius: 11,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
                   child: Row(
                     children: [
-                      const SizedBox(width: 13),
-                      const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF7583A0), size: 22),
+                      const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF7986A0), size: 21),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
@@ -561,60 +629,47 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                           style: GoogleFonts.poppins(color: _ink, fontSize: 12),
                           decoration: InputDecoration(
                             hintText: 'Ask for any product or supplier…',
-                            hintStyle: GoogleFonts.poppins(color: const Color(0xFF8490A8), fontSize: 11),
+                            hintStyle: GoogleFonts.poppins(color: const Color(0xFF8792A8), fontSize: 10.5),
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 11),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      IconButton(
+                        tooltip: _isShoppingListening ? 'Stop voice input' : 'Speak product search',
+                        onPressed: _shoppingSearchLoading ? null : _toggleShoppingVoiceInput,
+                        icon: Icon(
+                          _isShoppingListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                          color: _isShoppingListening ? const Color(0xFFDB3F62) : _primary,
+                        ),
+                      ),
                       Container(
-                        margin: const EdgeInsets.only(right: 5),
-                        width: 45,
-                        height: 45,
+                        width: 42,
+                        height: 42,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(colors: [Color(0xFF6557F5), Color(0xFF3D83F6)]),
-                          borderRadius: BorderRadius.circular(17),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: IconButton(
-                          tooltip: 'Search products online',
+                          tooltip: 'Search products',
                           onPressed: _shoppingSearchLoading ? null : () => _sendPurchaseShoppingQuery(),
                           color: Colors.white,
-                          icon: const Icon(Icons.arrow_forward_rounded),
+                          icon: const Icon(Icons.send_rounded, size: 19),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 13),
+                const SizedBox(height: 9),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF2F4FC),
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.tune_rounded, size: 15, color: Color(0xFF5D6B85)),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Online + nearby',
-                            style: GoogleFonts.poppins(color: const Color(0xFF4A5874), fontSize: 9.5, fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 9),
-                    const Icon(Icons.verified_user_outlined, size: 16, color: Color(0xFF7986A0)),
-                    const SizedBox(width: 5),
+                    const Icon(Icons.verified_user_outlined, size: 15, color: Color(0xFF7986A0)),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         'Online prices may vary. Confirm stock and final price with the seller.',
-                        style: GoogleFonts.poppins(color: _muted, fontSize: 9.2, height: 1.45),
+                        style: GoogleFonts.poppins(color: _muted, fontSize: 9.5, height: 1.4),
                       ),
                     ),
                   ],
@@ -628,52 +683,131 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   }
 
   Widget _shoppingPromptChip(String label) {
-    final width = ((MediaQuery.sizeOf(context).width - 92) / 3).clamp(72.0, 132.0).toDouble();
-    final icon = label.contains('ghee')
-        ? Icons.breakfast_dining_rounded
+    final IconData icon = label.contains('ghee')
+        ? Icons.local_offer_rounded
         : label.contains('rice')
             ? Icons.rice_bowl_rounded
             : Icons.water_drop_rounded;
-    return SizedBox(
-      width: width,
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(17),
+    final Color iconColor = label.contains('ghee')
+        ? const Color(0xFFD59A25)
+        : label.contains('rice')
+            ? const Color(0xFFAE7A51)
+            : const Color(0xFFE0A120);
+    return Material(
+      color: const Color(0xFFF9FAFF),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: _shoppingSearchLoading ? null : () => _sendPurchaseShoppingQuery(query: label),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 41),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFD8D7FF)),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: iconColor),
+              const SizedBox(width: 7),
+              Text(label, style: GoogleFonts.poppins(color: _ink, fontSize: 10.5, fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiscoveryNavigation() {
+    Widget pill(String label, IconData icon, String section) {
+      final selected = _activeDiscoverySection == section;
+      return Material(
+        color: selected ? const Color(0xFFE9E7FF) : Colors.white,
+        borderRadius: BorderRadius.circular(23),
         child: InkWell(
-          borderRadius: BorderRadius.circular(17),
-          onTap: _shoppingSearchLoading ? null : () => _sendPurchaseShoppingQuery(query: label),
+          borderRadius: BorderRadius.circular(23),
+          onTap: () {
+            if (section == 'low-stock') {
+              _scrollToSection(_lowStockKey, discoverySection: section);
+            } else {
+              _scrollToSection(_discoveryResultsKey, discoverySection: section);
+            }
+          },
           child: Container(
-            constraints: const BoxConstraints(minHeight: 82),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
             decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFD5E3FF)),
-              borderRadius: BorderRadius.circular(17),
+              borderRadius: BorderRadius.circular(23),
+              border: Border.all(color: selected ? const Color(0xFFD7D2FF) : const Color(0xFFE7ECF6)),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  icon,
-                  size: 25,
-                  color: label.contains('ghee')
-                      ? const Color(0xFFDC9B20)
-                      : label.contains('rice')
-                          ? const Color(0xFFB87847)
-                          : const Color(0xFFE7A525),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(color: _ink, fontSize: 9.5, height: 1.3, fontWeight: FontWeight.w700),
-                ),
+                Icon(icon, color: selected ? _primary : _ink, size: 18),
+                const SizedBox(width: 7),
+                Text(label, style: GoogleFonts.poppins(color: selected ? _primary : _ink, fontSize: 10.5, fontWeight: FontWeight.w700)),
               ],
             ),
           ),
         ),
+      );
+    }
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          pill('Online Listings', Icons.language_rounded, 'online'),
+          const SizedBox(width: 8),
+          pill('Nearby Shops', Icons.location_on_outlined, 'nearby'),
+          const SizedBox(width: 8),
+          pill('Low Stock Ideas', Icons.lightbulb_outline_rounded, 'low-stock'),
+        ],
       ),
+    );
+  }
+
+  Widget _buildDiscoveryResultsSection() {
+    final discovery = _latestProductDiscovery;
+    return Container(
+      key: _discoveryResultsKey,
+      margin: const EdgeInsets.only(bottom: 18, top: 14),
+      child: discovery == null
+          ? Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(21),
+                border: Border.all(color: _border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(color: const Color(0xFFEDEAFF), borderRadius: BorderRadius.circular(14)),
+                    child: const Icon(Icons.search_rounded, color: _primary, size: 26),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Search results will appear here', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w800, fontSize: 12)),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Search any product, even when it is not in your inventory. Online listings and nearby shop results will appear after you search.',
+                          style: GoogleFonts.poppins(color: _muted, fontSize: 10.5, height: 1.45),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : ProductDiscoveryCard(
+              data: discovery,
+              purchaseAssistantMode: true,
+            ),
     );
   }
 
@@ -1275,99 +1409,234 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           'Purchase Orders',
           style: GoogleFonts.poppins(color: _ink, fontSize: 21, fontWeight: FontWeight.w800),
         ),
+        actions: [
+          TextButton.icon(
+            onPressed: () => _scrollToSection(_ordersSectionKey, navigationIndex: 1),
+            icon: const Icon(Icons.description_outlined, size: 18),
+            label: Text(
+              'My Orders',
+              style: GoogleFonts.poppins(color: _ink, fontSize: 9.5, fontWeight: FontWeight.w700),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Shopping preferences',
+            onPressed: _showShoppingSettings,
+            icon: const Icon(Icons.tune_rounded),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Create purchase order',
+      floatingActionButton: FloatingActionButton.extended(
+        tooltip: 'Create a purchase order',
         backgroundColor: _primary,
         foregroundColor: Colors.white,
-        elevation: 5,
+        elevation: 6,
         onPressed: _showCreatePO,
-        child: const Icon(Icons.add_rounded),
+        icon: const Icon(Icons.add_rounded),
+        label: Text(
+          'Create Purchase Order',
+          style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.w700),
+        ),
       ),
-      // Keep product search available immediately even when purchase orders
-      // are still loading or the shop has no saved orders yet.
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: RefreshIndicator(
-              onRefresh: _refreshAll,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
+        onRefresh: _refreshAll,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 112),
+          children: [
+            _buildPurchaseShoppingChat(),
+            _buildDiscoveryNavigation(),
+            _buildDiscoveryResultsSection(),
+            KeyedSubtree(
+              key: _lowStockKey,
+              child: _buildReorderSuggestions(),
+            ),
+            Container(
+              key: _ordersSectionKey,
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _surface,
+                borderRadius: BorderRadius.circular(21),
+                border: Border.all(color: _border),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF263B78).withValues(alpha: 0.035),
+                    blurRadius: 16,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildPurchaseShoppingChat(),
-                  _buildReorderSuggestions(),
                   Row(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(color: const Color(0xFFEDEAFF), borderRadius: BorderRadius.circular(13)),
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEDEAFF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         child: const Icon(Icons.receipt_long_rounded, color: _primary),
                       ),
-                      const SizedBox(width: 11),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Your purchase orders', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w800, fontSize: 17)),
-                            Text('Track supplier orders and delivery status', style: GoogleFonts.poppins(color: _muted, fontSize: 11)),
+                            Text(
+                              'Your purchase orders',
+                              style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w800, fontSize: 15),
+                            ),
+                            Text(
+                              'Track supplier orders and delivery status',
+                              style: GoogleFonts.poppins(color: _muted, fontSize: 10.5),
+                            ),
                           ],
                         ),
                       ),
+                      if (!_loading)
+                        IconButton(
+                          tooltip: 'Refresh orders',
+                          onPressed: _fetchOrders,
+                          icon: const Icon(Icons.refresh_rounded, color: _muted),
+                        ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   if (_loading && _orders.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: _surface,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: _border),
-                      ),
-                      child: const Row(
-                        children: [
-                          SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: _primary),
-                          ),
-                          SizedBox(width: 11),
-                          Expanded(
-                            child: Text(
-                              'Loading saved purchase orders…',
-                              style: TextStyle(color: _muted, fontSize: 12),
-                            ),
-                          ),
-                        ],
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(
+                        child: CircularProgressIndicator(color: _primary, strokeWidth: 2),
                       ),
                     )
                   else if (_orders.isEmpty)
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 18),
-                      decoration: BoxDecoration(color: _surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: _border)),
-                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Container(
-                          width: 65,
-                          height: 65,
-                          decoration: BoxDecoration(color: const Color(0xFFF3F5FC), borderRadius: BorderRadius.circular(20)),
-                          child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF8A96B2), size: 32),
-                        ),
-                        const SizedBox(height: 12),
-                        Text('No purchase orders yet', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Create a draft when you are ready to order from a supplier.',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(color: _muted, fontSize: 11, height: 1.5),
-                        ),
-                      ]),
+                      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFF),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: const Color(0xFFE8ECF5)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.receipt_long_outlined, color: Color(0xFF8A96B2), size: 32),
+                          const SizedBox(height: 8),
+                          Text('No purchase orders yet', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Create a draft when you are ready to order from a supplier.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(color: _muted, fontSize: 10.5, height: 1.45),
+                          ),
+                        ],
+                      ),
                     )
                   else
                     ..._orders.asMap().entries.map((entry) => _buildOrderCard(entry.value, entry.key)),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _buildBottomNavigation(),
     );
   }
+
+  Widget _buildBottomNavigation() {
+    Widget item({
+      required IconData icon,
+      required String label,
+      required int index,
+      required VoidCallback onTap,
+    }) {
+      final selected = _selectedBottomNavigation == index;
+      return Expanded(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(15),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: selected ? const Color(0xFFEDEAFF) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(icon, color: selected ? _primary : const Color(0xFF8090AA), size: 22),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    style: GoogleFonts.poppins(
+                      color: selected ? _primary : const Color(0xFF71809A),
+                      fontSize: 9.5,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(top: BorderSide(color: Color(0xFFE9EDF5))),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF263B78).withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 5, 12, 3),
+          child: Row(
+            children: [
+              item(
+                icon: Icons.chat_bubble_rounded,
+                label: 'Shopping',
+                index: 0,
+                onTap: () => _scrollToSection(_shoppingTopKey, navigationIndex: 0),
+              ),
+              item(
+                icon: Icons.description_outlined,
+                label: 'My Orders',
+                index: 1,
+                onTap: () => _scrollToSection(_ordersSectionKey, navigationIndex: 1),
+              ),
+              item(
+                icon: Icons.lightbulb_outline_rounded,
+                label: 'Suggestions',
+                index: 2,
+                onTap: () => _scrollToSection(
+                  _lowStockKey,
+                  navigationIndex: 2,
+                  discoverySection: 'low-stock',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 }
