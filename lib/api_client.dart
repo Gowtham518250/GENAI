@@ -121,6 +121,7 @@ class ApiClient {
   static const String inventoryPrefix = '/api/inventory';
   static const String inventoryProducts = '/api/inventory/products';
   static const String voiceBillingParseEndpoint = '/api/inventory/voice-billing/parse';
+  static const String voiceBillingAudioEndpoint = '/api/inventory/voice-billing/parse-audio';
   static const String inventoryStockMovement = '/api/inventory/stock-movement';
   static const String inventoryLowStock = '/api/inventory/low-stock';
   static const String inventoryStockAlerts = '/api/inventory/stock-alerts';
