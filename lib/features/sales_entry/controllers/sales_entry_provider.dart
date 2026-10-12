@@ -92,6 +92,24 @@ class SalesEntryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _canUseOfflineVoiceFallback(String transcript, String languageCode) {
+    final language = languageCode.trim().toLowerCase().replaceAll('_', '-');
+    final baseLanguage = language.split('-').first;
+    if (baseLanguage.isNotEmpty && !{'auto', 'en', 'und'}.contains(baseLanguage)) {
+      return false;
+    }
+    if (RegExp(r'[^\x00-\x7F]').hasMatch(transcript)) return false;
+    const cues = {
+      'rendu', 'moodu', 'nalugu', 'biyyam', 'biyam', 'palu', 'paalu',
+      'noone', 'kavali', 'cheyyandi', 'yaabhai', 'iravai', 'chawal',
+      'chaval', 'doodh', 'dudh', 'cheeni', 'shakkar', 'pachaas',
+      'pachis', 'kilolu', 'rupay', 'paani', 'neeru', 'thanni', 'ennai',
+      'nenu', 'naaku', 'naku', 'ivvandi', 'cheppandi',
+    };
+    final words = transcript.toLowerCase().split(RegExp(r'[^a-z0-9]+')).toSet();
+    return words.intersection(cues).isEmpty;
+  }
+
   /// Parse recognized speech through the authenticated backend Groq extractor.
   /// The endpoint only returns validated draft line items; it never submits a sale.
   Future<void> processVoiceCommand(
@@ -130,11 +148,19 @@ class SalesEntryProvider extends ChangeNotifier {
 
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('Groq voice billing unavailable; trying catalog-constrained local parsing: $error');
+        debugPrint('Groq voice billing unavailable; considering safe local parsing: $error');
       }
 
-      // Offline/AI-outage fallback. Only allow entries that the local catalog
-      // matcher maps back to an exact inventory name; never add an unknown item.
+      if (!_canUseOfflineVoiceFallback(transcript, languageCode)) {
+        lastVoiceMessage =
+            'Voice translation is unavailable, so I did not add this item or change stock. '
+            'Reconnect and retry so the spoken product can be translated to English first.';
+        notifyListeners();
+        return;
+      }
+
+      // Offline fallback only processes English text. Unknown English products can
+      // be added as custom lines, but only exact catalog matches get product IDs.
       try {
         final rawInventory = await LocalStorageService.loadBackendProducts();
         final inventory = rawInventory.map((product) {
@@ -155,20 +181,33 @@ class SalesEntryProvider extends ChangeNotifier {
         final safeItems = <SalesItem>[];
         String normalize(String value) => value.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
 
+        final untrackedItems = <String>[];
+        final missingPriceItems = <String>[];
         for (final item in localParsed) {
           final spokenName = (item['item'] ?? '').toString().trim();
+          if (spokenName.isEmpty) continue;
           final matchedInventory = inventory.where(
             (product) => normalize((product['name'] ?? '').toString()) == normalize(spokenName),
           );
-          if (matchedInventory.isEmpty) continue;
+          final knownProduct = matchedInventory.isEmpty ? null : matchedInventory.first;
           final quantity = double.tryParse((item['qty'] ?? '').toString()) ?? 1;
-          final price = double.tryParse((item['price'] ?? '').toString()) ?? 0;
-          if (quantity <= 0 || !quantity.isFinite || price <= 0 || !price.isFinite) continue;
+          final parsedPrice = double.tryParse((item['price'] ?? '').toString()) ?? 0;
+          if (quantity <= 0 || !quantity.isFinite || parsedPrice < 0 || !parsedPrice.isFinite) continue;
+          final catalogPrice = double.tryParse(
+                (knownProduct?['price'] ?? knownProduct?['unit_price'] ?? knownProduct?['selling_price'] ?? '').toString(),
+              ) ??
+              0;
+          final price = parsedPrice > 0 ? parsedPrice : (catalogPrice > 0 ? catalogPrice : 0.0);
+          if (knownProduct == null) untrackedItems.add(spokenName);
+          if (price <= 0) missingPriceItems.add(spokenName);
+
           safeItems.add(
             SalesItem(
               id: '${DateTime.now().microsecondsSinceEpoch}_${safeItems.length}',
-              itemName: matchedInventory.first['name'].toString(),
-              productId: int.tryParse((matchedInventory.first['id'] ?? matchedInventory.first['product_id'] ?? '').toString()),
+              itemName: knownProduct?['name']?.toString() ?? spokenName,
+              productId: knownProduct == null
+                  ? null
+                  : int.tryParse((knownProduct['id'] ?? knownProduct['product_id'] ?? '').toString()),
               quantity: quantity,
               price: price,
             ),
@@ -177,9 +216,16 @@ class SalesEntryProvider extends ChangeNotifier {
 
         if (safeItems.isNotEmpty) {
           _appendVoiceDraftItems(safeItems);
-          lastVoiceMessage = 'Groq could not be reached. I filled ${safeItems.length} catalog-matched item(s) using local parsing; carefully verify them before saving.';
+          final notes = <String>[
+            'Groq could not be reached. I added ${safeItems.length} English item(s) to the draft; verify before saving.',
+            if (untrackedItems.isNotEmpty)
+              'Not in inventory (no stock deduction): ${untrackedItems.take(4).join(', ')}.',
+            if (missingPriceItems.isNotEmpty)
+              'Enter a selling price for: ${missingPriceItems.take(4).join(', ')}.',
+          ];
+          lastVoiceMessage = notes.join(' ');
         } else {
-          lastVoiceMessage = 'Voice AI is temporarily unavailable, and no reliable local product match was found. Please retry or select the product manually.';
+          lastVoiceMessage = 'Voice AI is temporarily unavailable, and no reliable product line was recognized. Please retry or enter it manually.';
         }
       } catch (fallbackError) {
         if (kDebugMode) debugPrint('Local voice billing fallback failed: $fallbackError');
@@ -395,7 +441,7 @@ class SalesEntryProvider extends ChangeNotifier {
 
         itemsPayload.add({
           'itemName': e.itemName,
-          'product_id': actualProductId,
+          'product_id': actualProductId > 0 ? actualProductId : null,
           'quantity': e.quantity,
           'price': e.price,
           'gst': e.gst,
@@ -455,15 +501,17 @@ class SalesEntryProvider extends ChangeNotifier {
 
       final itemsPayload = <Map<String, dynamic>>[];
       for (final e in entries.where((e) => e.itemName.isNotEmpty && e.itemName.trim() != 'Unknown' && e.price > 0)) {
-        final actualProductId = await _lookupProductIdByName(e.itemName);
+        final actualProductId = e.productId != null && e.productId! > 0
+            ? e.productId!
+            : await _lookupProductIdByName(e.itemName);
 
         if (actualProductId == 0 && kDebugMode) {
-          debugPrint('⚠️ Product lookup failed for: ${e.itemName}, submitting without stock deduction');
+          debugPrint('Product is untracked or unmatched: ${e.itemName}; submitting without stock deduction');
         }
 
         itemsPayload.add({
           'itemName': e.itemName,
-          'product_id': actualProductId,
+          'product_id': actualProductId > 0 ? actualProductId : null,
           'quantity': e.quantity,
           'price': e.price,
           'gst': e.gst,
