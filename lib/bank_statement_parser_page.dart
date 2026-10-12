@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'bank_reconciliation.dart';
 import 'local_storage_service.dart';
 
@@ -91,6 +92,17 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
 
       final entries = await BankStatementParser.parsePDFFile(filepath);
       final bankTransactions = entries.map((entry) => entry.toJson()).toList();
+
+      // Keep the latest uploaded statement local to this app account so Ask
+      // Retail Mind can answer transaction questions without uploading private
+      // bank rows to Groq or the backend database.
+      final prefs = await SharedPreferences.getInstance();
+      final rawUserId = prefs.get('user_id') ?? prefs.get('userId') ?? 'default';
+      await prefs.setString(
+        BankStatementQueryHelper.storageKeyForUserId(rawUserId.toString()),
+        jsonEncode(bankTransactions),
+      );
+
       final incoming = bankTransactions
           .where((txn) => txn['direction']?.toString() == 'CREDIT')
           .toList();
@@ -110,7 +122,8 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
         final received = entries.fold<double>(0, (sum, entry) => sum + entry.receivedAmount);
         final paid = entries.fold<double>(0, (sum, entry) => sum + entry.paidAmount);
         _status = 'Parsed ' + entries.length.toString() + ' transactions locally. Received ₹' +
-            received.toStringAsFixed(2) + '; paid ₹' + paid.toStringAsFixed(2) + '.';
+            received.toStringAsFixed(2) + '; paid ₹' + paid.toStringAsFixed(2) +
+            '. Saved on this device for Ask Retail Mind questions.';
       });
     } catch (error) {
       if (mounted) {
