@@ -383,6 +383,234 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
     );
   }
 
+  Widget _buildSearchAnalytics(List<BankEntry> entries) {
+    final credits = entries
+        .where((entry) => entry.direction.toUpperCase() == 'CREDIT')
+        .toList();
+    final debits = entries
+        .where((entry) => entry.direction.toUpperCase() == 'DEBIT')
+        .toList();
+    final creditedTotal = credits.fold<double>(0, (sum, entry) => sum + entry.amount);
+    final paidTotal = debits.fold<double>(0, (sum, entry) => sum + entry.amount);
+    final net = creditedTotal - paidTotal;
+    final sorted = List<BankEntry>.from(entries)
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final monthly = <String, Map<String, dynamic>>{};
+    for (final entry in entries) {
+      final key = entry.date.year.toString() + '-' +
+          entry.date.month.toString().padLeft(2, '0');
+      final month = months[entry.date.month - 1] + ' ' + entry.date.year.toString();
+      final bucket = monthly.putIfAbsent(
+        key,
+        () => <String, dynamic>{
+          'key': key,
+          'month': month,
+          'credit_count': 0,
+          'debit_count': 0,
+          'credited_total': 0.0,
+          'paid_total': 0.0,
+        },
+      );
+      if (entry.direction.toUpperCase() == 'CREDIT') {
+        bucket['credit_count'] = (bucket['credit_count'] as int) + 1;
+        bucket['credited_total'] = (bucket['credited_total'] as double) + entry.amount;
+      } else if (entry.direction.toUpperCase() == 'DEBIT') {
+        bucket['debit_count'] = (bucket['debit_count'] as int) + 1;
+        bucket['paid_total'] = (bucket['paid_total'] as double) + entry.amount;
+      }
+    }
+    final monthsDescending = monthly.values.toList()
+      ..sort((a, b) => (b['key'] as String).compareTo(a['key'] as String));
+
+    Widget metric(String label, String value, Color color, IconData icon) {
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.16)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: color, size: 19),
+              const SizedBox(height: 7),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800, color: color),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(fontSize: 10, height: 1.35, color: Colors.grey.shade700),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final netColor = net >= 0 ? const Color(0xFF087F5B) : const Color(0xFFB42318);
+    final query = _searchController.text.trim();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE0E7F2)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF233B73).withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 39,
+                height: 39,
+                decoration: BoxDecoration(color: const Color(0xFFEDEAFF), borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.insights_rounded, color: _primary),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Customer / Search Analytics',
+                        style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w800)),
+                    Text(
+                      'Matches for “' + query + '”',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                decoration: BoxDecoration(color: const Color(0xFFF0F3FA), borderRadius: BorderRadius.circular(20)),
+                child: Text(
+                  entries.length.toString() + ' txns',
+                  style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF4A5874)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              metric(
+                'Credited · ' + credits.length.toString() + ' txns',
+                '₹' + creditedTotal.toStringAsFixed(2),
+                const Color(0xFF07845F),
+                Icons.south_west_rounded,
+              ),
+              const SizedBox(width: 10),
+              metric(
+                'Paid · ' + debits.length.toString() + ' txns',
+                '₹' + paidTotal.toStringAsFixed(2),
+                const Color(0xFFC2414B),
+                Icons.north_east_rounded,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: netColor.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: netColor.withValues(alpha: 0.17)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.account_balance_wallet_outlined, color: netColor, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Net flow (credit − debit)',
+                    style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Text(
+                  (net < 0 ? '−' : '') + '₹' + net.abs().toStringAsFixed(2),
+                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w800, color: netColor),
+                ),
+              ],
+            ),
+          ),
+          if (sorted.isNotEmpty) ...[
+            const SizedBox(height: 9),
+            Text(
+              'Activity: ' + sorted.first.date.toIso8601String().split('T').first +
+                  ' to ' + sorted.last.date.toIso8601String().split('T').first,
+              style: GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 10),
+            ),
+          ],
+          if (monthsDescending.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text('Monthly activity', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 7),
+            ...monthsDescending.take(6).map((month) {
+              final monthCredit = (month['credited_total'] as num).toDouble();
+              final monthPaid = (month['paid_total'] as num).toDouble();
+              return Container(
+                margin: const EdgeInsets.only(top: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+                decoration: BoxDecoration(color: const Color(0xFFF8FAFD), borderRadius: BorderRadius.circular(11)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(month['month'].toString(), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          '+ ₹' + monthCredit.toStringAsFixed(2) + ' received (' + month['credit_count'].toString() + ')',
+                          style: GoogleFonts.poppins(color: const Color(0xFF07845F), fontSize: 10, fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          '− ₹' + monthPaid.toStringAsFixed(2) + ' paid (' + month['debit_count'].toString() + ')',
+                          style: GoogleFonts.poppins(color: const Color(0xFFC2414B), fontSize: 10, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+          const SizedBox(height: 9),
+          Text(
+            'Based only on transactions in this statement that match the search. Net flow does not automatically mean that either person owes money.',
+            style: GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 9.5, height: 1.45),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHistoryCard(BankEntry entry) {
     final isCredit = entry.direction == 'CREDIT';
     final color = isCredit ? Colors.green : Colors.red;
