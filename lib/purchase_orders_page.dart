@@ -28,8 +28,14 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   final List<Map<String, dynamic>> _shoppingChatMessages = [];
   bool _shoppingSearchLoading = false;
 
-  static const _bg = Color(0xFF1A1A2E);
+  static const _bg = Color(0xFFF6F8FF);
+  // Keep the existing purchase-order creation sheet dark; the main screen is light.
   static const _card = Color(0xFF16213E);
+  static const _surface = Colors.white;
+  static const _ink = Color(0xFF142044);
+  static const _muted = Color(0xFF64748B);
+  static const _primary = Color(0xFF5146F2);
+  static const _border = Color(0xFFE1E8F5);
 
   @override
   void initState() {
@@ -249,175 +255,372 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   }
 
   Widget _buildPurchaseShoppingChat() {
+    final hasMessages = _shoppingChatMessages.isNotEmpty;
     return Container(
-      margin: const EdgeInsets.only(bottom: 22),
-      padding: const EdgeInsets.all(15),
+      margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.tealAccent.withValues(alpha: 0.28)),
+        color: _surface,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF233B73).withValues(alpha: 0.07),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.tealAccent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.shopping_cart_checkout_rounded, color: Colors.tealAccent),
+          Container(
+            padding: const EdgeInsets.fromLTRB(18, 20, 14, 20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFF0E9FF), Color(0xFFE8F6FF)],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Purchase Shopping Assistant',
-                      style: GoogleFonts.poppins(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                    Text('Compare online prices and find nearby shops',
-                      style: GoogleFonts.poppins(color: Colors.white60, fontSize: 10.5)),
-                  ],
-                ),
-              ),
-              IconButton(
-                tooltip: 'Clear shopping chat',
-                onPressed: _shoppingSearchLoading ? null : () => setState(() => _shoppingChatMessages.clear()),
-                icon: const Icon(Icons.delete_outline, color: Colors.white54, size: 20),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Try “Find ghee”, “Amul ghee 1 kg”, or “Compare rice prices”. Nearby store stock and shelf prices must be confirmed with the shop.',
-            style: GoogleFonts.poppins(color: Colors.white54, fontSize: 10.5, height: 1.45),
-          ),
-          if (_shoppingChatMessages.isEmpty) ...[
-            const SizedBox(height: 11),
-            Wrap(
-              spacing: 7,
-              runSpacing: 7,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(27)),
+            ),
+            child: Row(
               children: [
-                _shoppingPromptChip('Find ghee'),
-                _shoppingPromptChip('Amul ghee 1 kg'),
-                _shoppingPromptChip('Rice 5 kg'),
-                _shoppingPromptChip('Cooking oil 1 L'),
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6557F5), Color(0xFF3D83F6)],
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _primary.withValues(alpha: 0.22),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.shopping_cart_rounded, color: Colors.white, size: 29),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Purchase Shopping Assistant',
+                        style: GoogleFonts.poppins(
+                          color: _ink,
+                          fontSize: 15.5,
+                          height: 1.35,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Find products beyond your inventory',
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFF596986),
+                          fontSize: 11.5,
+                          height: 1.4,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Clear shopping chat',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: _shoppingSearchLoading
+                      ? null
+                      : () => setState(() => _shoppingChatMessages.clear()),
+                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF71809D), size: 21),
+                ),
               ],
             ),
-          ],
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 420,
-            child: _shoppingChatMessages.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Search any product, compare online prices, and discover nearby shops — even when it is not in your stock list.',
+                  style: GoogleFonts.poppins(color: _muted, fontSize: 12, height: 1.6),
+                ),
+                if (!hasMessages) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 182,
+                    width: double.infinity,
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
-                        const Icon(Icons.search_rounded, size: 39, color: Colors.white24),
-                        const SizedBox(height: 8),
-                        Text('What product do you need?',
-                          style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12)),
-                        const SizedBox(height: 4),
-                        Text('Online listings • Best listed price • Nearby shops',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(color: Colors.white38, fontSize: 10)),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _shoppingChatScrollController,
-                    itemCount: _shoppingChatMessages.length + (_shoppingSearchLoading ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index >= _shoppingChatMessages.length) {
-                        return Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(11),
-                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.07), borderRadius: BorderRadius.circular(12)),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
-                                const SizedBox(width: 9),
-                                Text('Comparing online prices and nearby shops…',
-                                  style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10.5)),
-                              ],
+                        Container(
+                          width: 198,
+                          height: 158,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFFE8E8FF), Color(0xFFEAF7FF)],
                             ),
                           ),
-                        );
-                      }
-
-                      final message = _shoppingChatMessages[index];
-                      final isUser = message['role'] == 'user';
-                      final data = message['product_discovery'];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Column(
-                          crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              constraints: const BoxConstraints(maxWidth: 300),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
+                        const Icon(Icons.shopping_basket_rounded, size: 110, color: Color(0xFF5B55ED)),
+                        Align(
+                          alignment: const Alignment(-0.82, -0.48),
+                          child: Container(
+                            width: 45,
+                            height: 45,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFEEF0),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(Icons.location_on_rounded, color: Color(0xFFF16B78), size: 25),
+                          ),
+                        ),
+                        Align(
+                          alignment: const Alignment(0.82, -0.4),
+                          child: Container(
+                            width: 45,
+                            height: 45,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE1FAF4),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(Icons.sell_rounded, color: Color(0xFF10A88A), size: 24),
+                          ),
+                        ),
+                        Align(
+                          alignment: const Alignment(0.62, 0.83),
+                          child: Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFDDE5FF), width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _primary.withValues(alpha: 0.15),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.search_rounded, size: 31, color: Color(0xFF437DF2)),
+                          ),
+                        ),
+                        const Align(
+                          alignment: Alignment(-0.82, 0.58),
+                          child: Icon(Icons.auto_awesome_rounded, color: Color(0xFF9687FF), size: 18),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'What are you looking to buy?',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(color: _ink, fontSize: 19, height: 1.35, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    'Search your inventory or discover new products online.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(color: _muted, fontSize: 11.5, height: 1.6),
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 9,
+                    children: [
+                      _shoppingPromptChip('Find ghee'),
+                      _shoppingPromptChip('Compare rice prices'),
+                      _shoppingPromptChip('Search cooking oil'),
+                    ],
+                  ),
+                ] else ...[
+                  const SizedBox(height: 15),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 480),
+                    child: ListView.builder(
+                      controller: _shoppingChatScrollController,
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.only(bottom: 2),
+                      itemCount: _shoppingChatMessages.length + (_shoppingSearchLoading ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= _shoppingChatMessages.length) {
+                          return Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
                               decoration: BoxDecoration(
-                                color: isUser ? Colors.indigoAccent.withValues(alpha: 0.24) : Colors.white.withValues(alpha: 0.07),
-                                borderRadius: BorderRadius.circular(13),
+                                color: const Color(0xFFF3F5FF),
+                                borderRadius: BorderRadius.circular(15),
                               ),
-                              child: Text(
-                                (message['text'] ?? '').toString(),
-                                style: GoogleFonts.poppins(color: Colors.white, fontSize: 11, height: 1.45),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(
+                                    width: 15,
+                                    height: 15,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: _primary),
+                                  ),
+                                  const SizedBox(width: 9),
+                                  Flexible(
+                                    child: Text(
+                                      'Comparing online listings and nearby shops…',
+                                      style: GoogleFonts.poppins(color: _muted, fontSize: 11),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            if (!isUser && data is Map) ...[
-                              const SizedBox(height: 8),
-                              ProductDiscoveryCard(
-                                data: Map<String, dynamic>.from(data),
-                                purchaseAssistantMode: true,
+                          );
+                        }
+
+                        final message = _shoppingChatMessages[index];
+                        final isUser = message['role'] == 'user';
+                        final data = message['product_discovery'];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 13),
+                          child: Column(
+                            crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                decoration: BoxDecoration(
+                                  gradient: isUser
+                                      ? const LinearGradient(colors: [Color(0xFF6557F5), Color(0xFF3D83F6)])
+                                      : null,
+                                  color: isUser ? null : const Color(0xFFF3F5FB),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(17),
+                                    topRight: const Radius.circular(17),
+                                    bottomLeft: Radius.circular(isUser ? 17 : 5),
+                                    bottomRight: Radius.circular(isUser ? 5 : 17),
+                                  ),
+                                ),
+                                child: Text(
+                                  (message['text'] ?? '').toString(),
+                                  style: GoogleFonts.poppins(
+                                    color: isUser ? Colors.white : _ink,
+                                    fontSize: 12,
+                                    height: 1.5,
+                                  ),
+                                ),
                               ),
+                              if (!isUser && data is Map) ...[
+                                const SizedBox(height: 9),
+                                ProductDiscoveryCard(
+                                  data: Map<String, dynamic>.from(data),
+                                  purchaseAssistantMode: true,
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 19),
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFF),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFE3E8F5)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF233B73).withValues(alpha: 0.05),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 13),
+                      const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF7583A0), size: 22),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _shoppingChatController,
+                          minLines: 1,
+                          maxLines: 3,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _sendPurchaseShoppingQuery(),
+                          style: GoogleFonts.poppins(color: _ink, fontSize: 12),
+                          decoration: InputDecoration(
+                            hintText: 'Ask for any product or supplier…',
+                            hintStyle: GoogleFonts.poppins(color: const Color(0xFF8490A8), fontSize: 11),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
                         ),
-                      );
-                    },
-                  ),
-          ),
-          const SizedBox(height: 11),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _shoppingChatController,
-                  minLines: 1,
-                  maxLines: 3,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => _sendPurchaseShoppingQuery(),
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
-                  decoration: InputDecoration(
-                    hintText: 'Search a product, brand or pack size…',
-                    hintStyle: GoogleFonts.poppins(color: Colors.white38, fontSize: 11),
-                    filled: true,
-                    fillColor: Colors.black.withValues(alpha: 0.15),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(13), borderSide: BorderSide.none),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        margin: const EdgeInsets.only(right: 5),
+                        width: 45,
+                        height: 45,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(colors: [Color(0xFF6557F5), Color(0xFF3D83F6)]),
+                          borderRadius: BorderRadius.circular(17),
+                        ),
+                        child: IconButton(
+                          tooltip: 'Search products online',
+                          onPressed: _shoppingSearchLoading ? null : () => _sendPurchaseShoppingQuery(),
+                          color: Colors.white,
+                          icon: const Icon(Icons.arrow_forward_rounded),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 7),
-              SizedBox(
-                height: 46,
-                width: 46,
-                child: IconButton.filled(
-                  tooltip: 'Search online and nearby',
-                  onPressed: _shoppingSearchLoading ? null : () => _sendPurchaseShoppingQuery(),
-                  style: IconButton.styleFrom(backgroundColor: Colors.teal.shade700, foregroundColor: Colors.white),
-                  icon: const Icon(Icons.search_rounded),
+                const SizedBox(height: 13),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF2F4FC),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.tune_rounded, size: 15, color: Color(0xFF5D6B85)),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Online + nearby',
+                            style: GoogleFonts.poppins(color: const Color(0xFF4A5874), fontSize: 9.5, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    const Icon(Icons.verified_user_outlined, size: 16, color: Color(0xFF7986A0)),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        'Online prices may vary. Confirm stock and final price with the seller.',
+                        style: GoogleFonts.poppins(color: _muted, fontSize: 9.2, height: 1.45),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -425,15 +628,52 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   }
 
   Widget _shoppingPromptChip(String label) {
-    return ActionChip(
-      label: Text(label, style: GoogleFonts.poppins(fontSize: 10, color: Colors.white)),
-      backgroundColor: Colors.white.withValues(alpha: 0.07),
-      side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-      onPressed: _shoppingSearchLoading
-          ? null
-          : () => _sendPurchaseShoppingQuery(
-                query: label.toLowerCase().startsWith('find ') ? label : 'Find $label',
-              ),
+    final width = ((MediaQuery.sizeOf(context).width - 72) / 3).clamp(82.0, 132.0).toDouble();
+    final icon = label.contains('ghee')
+        ? Icons.breakfast_dining_rounded
+        : label.contains('rice')
+            ? Icons.rice_bowl_rounded
+            : Icons.water_drop_rounded;
+    return SizedBox(
+      width: width,
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(17),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(17),
+          onTap: _shoppingSearchLoading ? null : () => _sendPurchaseShoppingQuery(query: label),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 82),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFFD5E3FF)),
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 25,
+                  color: label.contains('ghee')
+                      ? const Color(0xFFDC9B20)
+                      : label.contains('rice')
+                          ? const Color(0xFFB87847)
+                          : const Color(0xFFE7A525),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(color: _ink, fontSize: 9.5, height: 1.3, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -442,39 +682,52 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       margin: const EdgeInsets.only(bottom: 22),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.indigoAccent.withValues(alpha: 0.35)),
+        color: _surface,
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF233B73).withValues(alpha: 0.04), blurRadius: 18, offset: const Offset(0, 6)),
+        ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Icon(Icons.inventory_2_outlined, color: Colors.orangeAccent),
-          const SizedBox(width: 9),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(color: const Color(0xFFFFF4DF), borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.inventory_2_outlined, color: Color(0xFFCF8B18)),
+          ),
+          const SizedBox(width: 10),
           Expanded(child: Text('Low-stock reorder suggestions',
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold))),
+              style: GoogleFonts.poppins(color: _ink, fontSize: 14, fontWeight: FontWeight.w800))),
           IconButton(
             tooltip: 'Refresh stock and online prices',
             onPressed: _reorderLoading ? null : () => _fetchReorderRecommendations(),
             icon: _reorderLoading
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.refresh, color: Colors.white70),
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: _primary))
+                : const Icon(Icons.refresh_rounded, color: _muted),
           ),
         ]),
         Text(
-          'Items at or below your reorder threshold. Listed online prices are comparison hints—not confirmed wholesale quotes. Creating a PO here does not place an online order.',
-          style: GoogleFonts.poppins(color: Colors.white60, fontSize: 11, height: 1.4),
+          'Items at or below your reorder threshold. Online listings are comparison hints, not confirmed wholesale quotes. Creating a PO here does not place an online order.',
+          style: GoogleFonts.poppins(color: _muted, fontSize: 11, height: 1.55),
         ),
         if (_reorderLoading && _reorderSuggestions.isEmpty) ...[
           const SizedBox(height: 16),
-          const LinearProgressIndicator(color: Colors.indigoAccent),
+          const LinearProgressIndicator(color: _primary),
         ],
         if (!_reorderLoading && _reorderSuggestions.isEmpty) ...[
           const SizedBox(height: 12),
-          Text(
-            _reorderNotice.contains('SERPAPI_API_KEY')
-                ? 'No low-stock items were returned, or online price search needs configuration. Check inventory thresholds and backend settings.'
-                : 'No products are currently at or below their configured reorder level.',
-            style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: const Color(0xFFF8FAFD), borderRadius: BorderRadius.circular(13)),
+            child: Text(
+              _reorderNotice.contains('SERPAPI_API_KEY')
+                  ? 'No low-stock items were returned, or online price search needs configuration. Check inventory thresholds and backend settings.'
+                  : 'No products are currently at or below their configured reorder level.',
+              style: GoogleFonts.poppins(color: _muted, fontSize: 11.5, height: 1.45),
+            ),
           ),
         ],
         if (_reorderSuggestions.isNotEmpty) ...[
@@ -483,7 +736,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         ],
         if (_reorderNotice.trim().isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text(_reorderNotice, style: GoogleFonts.poppins(color: Colors.white38, fontSize: 10, height: 1.35)),
+          Text(_reorderNotice, style: GoogleFonts.poppins(color: const Color(0xFF7D8BA4), fontSize: 10, height: 1.35)),
         ],
       ]),
     );
@@ -500,33 +753,41 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     final recordedCost = _number(item['recorded_purchase_price']);
     final bestPrice = _number(item['best_online_price'], -1);
     final urgency = (item['urgency'] ?? 'REORDER').toString().toUpperCase();
-    final urgencyColor = urgency == 'CRITICAL' ? Colors.redAccent : urgency == 'HIGH' ? Colors.deepOrangeAccent : Colors.orangeAccent;
+    final urgencyColor = urgency == 'CRITICAL'
+        ? const Color(0xFFDC2626)
+        : urgency == 'HIGH'
+            ? const Color(0xFFEA580C)
+            : const Color(0xFFD97706);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.045), borderRadius: BorderRadius.circular(13)),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFE),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: const Color(0xFFE6EAF4)),
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: Text((item['product_name'] ?? 'Unnamed product').toString(),
-              style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
+              style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w700, fontSize: 13))),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: urgencyColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: urgencyColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
             child: Text(urgency, style: GoogleFonts.poppins(color: urgencyColor, fontSize: 9, fontWeight: FontWeight.bold)),
           ),
         ]),
-        const SizedBox(height: 6),
+        const SizedBox(height: 7),
         Text('Stock: ${stock.toStringAsFixed(stock % 1 == 0 ? 0 : 2)} • Reorder threshold: ${triggerStock.toStringAsFixed(triggerStock % 1 == 0 ? 0 : 2)} • Suggested quantity: $suggestedQty',
-            style: GoogleFonts.poppins(color: Colors.white60, fontSize: 10.5, height: 1.4)),
+            style: GoogleFonts.poppins(color: _muted, fontSize: 10.5, height: 1.5)),
         const SizedBox(height: 8),
         Wrap(spacing: 12, runSpacing: 5, children: [
-          Text('Recorded cost ${_money(recordedCost)}', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 11)),
-          if (bestPrice > 0) Text('Lowest online ${_money(bestPrice)}', style: GoogleFonts.poppins(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 11)),
+          Text('Recorded cost ${_money(recordedCost)}', style: GoogleFonts.poppins(color: const Color(0xFF53627E), fontSize: 11)),
+          if (bestPrice > 0) Text('Lowest online ${_money(bestPrice)}', style: GoogleFonts.poppins(color: const Color(0xFF07856D), fontWeight: FontWeight.bold, fontSize: 11)),
           if (bestPrice > 0 && recordedCost > 0)
             Text(bestPrice < recordedCost ? '₹${(recordedCost - bestPrice).toStringAsFixed(2)} lower' : bestPrice > recordedCost ? '₹${(bestPrice - recordedCost).toStringAsFixed(2)} higher' : 'Same as recorded cost',
-                style: GoogleFonts.poppins(color: bestPrice <= recordedCost ? Colors.greenAccent : Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.w600)),
+                style: GoogleFonts.poppins(color: bestPrice <= recordedCost ? const Color(0xFF16885E) : const Color(0xFFB7791F), fontSize: 11, fontWeight: FontWeight.w600)),
         ]),
         if (offers.isNotEmpty) ...[
           const SizedBox(height: 7),
@@ -534,9 +795,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
             padding: const EdgeInsets.only(top: 5),
             child: Row(children: [
               Expanded(child: Text('${offer['source'] ?? 'Online seller'} · ${offer['title'] ?? item['product_name']}',
-                  maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(color: Colors.white54, fontSize: 10))),
+                  maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(color: _muted, fontSize: 10))),
               const SizedBox(width: 6),
-              Text(_money(offer['price']), style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+              Text(_money(offer['price']), style: GoogleFonts.poppins(color: _ink, fontSize: 10, fontWeight: FontWeight.w700)),
               TextButton(
                 onPressed: () => _openOffer(offer['url']),
                 style: TextButton.styleFrom(minimumSize: const Size(0, 28), padding: const EdgeInsets.symmetric(horizontal: 7), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
@@ -546,7 +807,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           )),
         ] else if ((item['online_lookup_message'] ?? '').toString().trim().isNotEmpty) ...[
           const SizedBox(height: 5),
-          Text(item['online_lookup_message'].toString(), style: GoogleFonts.poppins(color: Colors.white38, fontSize: 10)),
+          Text(item['online_lookup_message'].toString(), style: GoogleFonts.poppins(color: const Color(0xFF8490A8), fontSize: 10)),
         ],
         const SizedBox(height: 8),
         Align(
@@ -555,7 +816,11 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
             onPressed: () => _showCreatePO(suggestion: item),
             icon: const Icon(Icons.playlist_add, size: 17),
             label: Text('Draft purchase order ($suggestedQty)', style: const TextStyle(fontSize: 11)),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.indigoAccent, side: const BorderSide(color: Colors.indigoAccent)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _primary,
+              side: const BorderSide(color: Color(0xFFBFCBFF)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           ),
         ),
       ]),
@@ -564,33 +829,42 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
 
   Widget _buildOrderCard(dynamic po, int i) {
     final status = (po['status'] ?? 'PENDING').toString().toUpperCase();
+    final statusColor = _statusColor(status);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF233B73).withValues(alpha: 0.035), blurRadius: 14, offset: const Offset(0, 5)),
+        ],
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('PO #${po['id'] ?? i + 1}', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+          Text('PO #${po['id'] ?? i + 1}', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w800)),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: _statusColor(status).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-            child: Text(status, style: GoogleFonts.poppins(color: _statusColor(status), fontSize: 11, fontWeight: FontWeight.bold)),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
+            child: Text(status, style: GoogleFonts.poppins(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
           ),
         ]),
         const SizedBox(height: 8),
-        Text(po['supplier_name']?.toString() ?? 'Supplier', style: GoogleFonts.poppins(color: Colors.white70)),
-        Text('Rs ${po['total_cost']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 18)),
+        Text(po['supplier_name']?.toString() ?? 'Supplier', style: GoogleFonts.poppins(color: _muted)),
+        const SizedBox(height: 4),
+        Text('₹${po['total_cost']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: const Color(0xFF079579), fontWeight: FontWeight.w800, fontSize: 18)),
         if (status == 'PENDING') ...[
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: ElevatedButton.icon(
               onPressed: () => _markDelivered(po['id']), icon: const Icon(Icons.check, size: 16), label: const Text('Delivered'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16885E), foregroundColor: Colors.white),
             )),
             const SizedBox(width: 8),
             Expanded(child: ElevatedButton.icon(
               onPressed: () => _cancelPO(po['id']), icon: const Icon(Icons.close, size: 16), label: const Text('Cancel'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC4C58), foregroundColor: Colors.white),
             )),
           ]),
         ],
@@ -661,9 +935,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
 
   Color _statusColor(String status) {
     switch (status.toUpperCase()) {
-      case 'DELIVERED': return Colors.greenAccent;
-      case 'CANCELLED': return Colors.redAccent;
-      default: return Colors.orangeAccent;
+      case 'DELIVERED': return const Color(0xFF16885E);
+      case 'CANCELLED': return const Color(0xFFDC4C58);
+      default: return const Color(0xFFCA8A04);
     }
   }
 
@@ -993,13 +1267,22 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: _card,
-        title: Text('Purchase Orders', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: _bg,
+        foregroundColor: _ink,
+        surfaceTintColor: _bg,
+        elevation: 0,
+        title: Text(
+          'Purchase Orders',
+          style: GoogleFonts.poppins(color: _ink, fontSize: 21, fontWeight: FontWeight.w800),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.indigoAccent,
+        tooltip: 'Create purchase order',
+        backgroundColor: _primary,
+        foregroundColor: Colors.white,
+        elevation: 5,
         onPressed: _showCreatePO,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add_rounded),
       ),
       body: _loading && _orders.isEmpty
           ? const Center(child: CircularProgressIndicator(color: Colors.indigoAccent))
@@ -1011,15 +1294,47 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                 children: [
                   _buildPurchaseShoppingChat(),
                   _buildReorderSuggestions(),
-                  Text('Purchase Orders', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(color: const Color(0xFFEDEAFF), borderRadius: BorderRadius.circular(13)),
+                        child: const Icon(Icons.receipt_long_rounded, color: _primary),
+                      ),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Your purchase orders', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w800, fontSize: 17)),
+                            Text('Track supplier orders and delivery status', style: GoogleFonts.poppins(color: _muted, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
                   if (_orders.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 36),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 18),
+                      decoration: BoxDecoration(color: _surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: _border)),
                       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        const Icon(Icons.receipt_long, color: Colors.white24, size: 72),
+                        Container(
+                          width: 65,
+                          height: 65,
+                          decoration: BoxDecoration(color: const Color(0xFFF3F5FC), borderRadius: BorderRadius.circular(20)),
+                          child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF8A96B2), size: 32),
+                        ),
                         const SizedBox(height: 12),
-                        Text('No purchase orders yet', style: GoogleFonts.poppins(color: Colors.white38)),
+                        Text('No purchase orders yet', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Create a draft when you are ready to order from a supplier.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(color: _muted, fontSize: 11, height: 1.5),
+                        ),
                       ]),
                     )
                   else
