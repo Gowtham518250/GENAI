@@ -21,6 +21,7 @@ import 'api_client.dart';
 import 'secure_token_storage.dart';
 import 'validation_helper.dart';
 import 'shop_profile_persistence_service.dart';
+import 'secure_preferences_service.dart';
 import 'shop_logo_format.dart';
 import 'scoped_shared_preferences.dart';
 
@@ -192,6 +193,10 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
     await ScopedSharedPreferences.setString('shop_tagline', taglineController.text.trim());
     await ScopedSharedPreferences.setString('primary_upi_id', upiIdController.text.trim());
     await ScopedSharedPreferences.setString('upi_id', upiIdController.text.trim());
+
+    // Keep the encrypted UPI value used by the Sales Dashboard in sync with
+    // first-time setup and every subsequent profile save/load.
+    await SecurePreferencesService.setUpiId(upiIdController.text.trim());
     await ScopedSharedPreferences.setString('shop_gst', gstController.text.trim());
     await ScopedSharedPreferences.setString('gst_number', gstController.text.trim());
 
