@@ -4,6 +4,7 @@ import 'marketing_page.dart';
 import 'package:retail_mind/premium_ui.dart';
 import 'sale_service.dart';
 import 'sales_restore_service.dart';
+import 'shop_logo_format.dart';
 import 'agent_debug_log.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -2345,9 +2346,7 @@ class _DashboardPageState extends State<DashboardPage>
             final cachedLogo =
                 await ScopedSharedPreferences.getString('logo_base64') ?? '';
             if (cachedLogo.isEmpty ||
-                (remoteVersion != '0' &&
-                    localVersion.isNotEmpty &&
-                    remoteVersion != localVersion)) {
+                (remoteVersion != '0' && remoteVersion != localVersion)) {
               final logoResponse = await ApiClient.getJson(
                 '/api/shop/logo/$userId',
                 headers: token.isNotEmpty
@@ -10870,52 +10869,63 @@ class _DashboardPageState extends State<DashboardPage>
 
       bool logoUploaded = true;
       String? logoError;
-      if (logoBytes != null && logoBytes.isNotEmpty) {
-        final file = http.MultipartFile.fromBytes(
-          'file',
-          logoBytes,
-          filename: 'shop_logo_${DateTime.now().millisecondsSinceEpoch}.png',
-        );
-        final logoResponse = await ApiClient.postMultipart(
-          ApiClient.shopUploadLogo,
-          <String, String>{},
-          headers: {'Authorization': 'Bearer $token'},
-          files: <http.MultipartFile>[file],
-        ).timeout(const Duration(seconds: 30));
-
-        final responseBody = await logoResponse.stream.bytesToString();
-        Map<String, dynamic>? payload;
-        try {
-          final decoded = json.decode(responseBody);
-          if (decoded is Map) payload = Map<String, dynamic>.from(decoded);
-        } catch (_) {}
-
-        final logoUrl = payload?['logo_url']?.toString() ?? '';
-        logoUploaded = (logoResponse.statusCode == 200 ||
-                logoResponse.statusCode == 201) &&
-            payload?['status']?.toString().toLowerCase() == 'success' &&
-            logoUrl.isNotEmpty;
-
-        if (logoUploaded) {
-          await ScopedSharedPreferences.setString('shop_logo_url', logoUrl);
-          await ScopedSharedPreferences.setString(
-            'logo_base64',
-            base64Encode(logoBytes),
-          );
-          final version = payload?['logo_version']?.toString();
-          if (version != null && version.isNotEmpty) {
-            await ScopedSharedPreferences.setString(
-              'shop_logo_version',
-              version,
-            );
-          }
-          if (mounted) {
-            setState(() => this.logoBytes = logoBytes);
-          }
+      final logoToUpload = logoBytes;
+      if (logoToUpload != null && logoToUpload.isNotEmpty) {
+        final imageFormat = ShopLogoFormat.detect(logoToUpload);
+        if (imageFormat == null) {
+          logoUploaded = false;
+          logoError = 'Unsupported logo image type. Use PNG, JPEG, GIF, or WebP.';
         } else {
-          logoError = 'HTTP ${logoResponse.statusCode}: '
-              '${responseBody.length > 180 ? responseBody.substring(0, 180) : responseBody}';
-          if (kDebugMode) debugPrint('⚠️ Shop logo upload failed: $logoError');
+          final file = http.MultipartFile.fromBytes(
+            'file',
+            logoToUpload,
+            filename:
+                'shop_logo_${DateTime.now().millisecondsSinceEpoch}.${imageFormat.extension}',
+            contentType: imageFormat.contentType,
+          );
+          final logoResponse = await ApiClient.postMultipart(
+            ApiClient.shopUploadLogo,
+            <String, String>{},
+            headers: {'Authorization': 'Bearer $token'},
+            files: <http.MultipartFile>[file],
+          ).timeout(const Duration(seconds: 30));
+
+          final responseBody = await logoResponse.stream.bytesToString();
+          Map<String, dynamic>? payload;
+          try {
+            final decoded = json.decode(responseBody);
+            if (decoded is Map) payload = Map<String, dynamic>.from(decoded);
+          } catch (_) {}
+
+          final logoUrl = payload?['logo_url']?.toString() ?? '';
+          logoUploaded = (logoResponse.statusCode == 200 ||
+                  logoResponse.statusCode == 201) &&
+              payload?['status']?.toString().toLowerCase() == 'success' &&
+              logoUrl.isNotEmpty;
+
+          if (logoUploaded) {
+            await ScopedSharedPreferences.setString('shop_logo_url', logoUrl);
+            await ScopedSharedPreferences.setString(
+              'logo_base64',
+              base64Encode(logoToUpload),
+            );
+            final version = payload?['logo_version']?.toString();
+            if (version != null && version.isNotEmpty) {
+              await ScopedSharedPreferences.setString(
+                'shop_logo_version',
+                version,
+              );
+            }
+            if (mounted) {
+              setState(() => this.logoBytes = logoToUpload);
+            }
+          } else {
+            logoError = 'HTTP ${logoResponse.statusCode}: '
+                '${responseBody.length > 180 ? responseBody.substring(0, 180) : responseBody}';
+          }
+        }
+        if (!logoUploaded && kDebugMode) {
+          debugPrint('⚠️ Shop logo upload failed: ${logoError ?? 'unknown error'}');
         }
       }
 
