@@ -1510,21 +1510,30 @@ class SyncService {
       'record_khata_payment',
     };
 
-    final awakened = await SyncQueueManager.makeActionsRetryableNow(actions);
-    if (awakened <= 0) {
-      return <String, dynamic>{
-        'started': false,
-        'reason': 'no_retryable_business_operations',
-        'awakened': 0,
-      };
-    }
+    // Claim the sync flag before the first await. Otherwise the 30-second
+    // background pulse could begin processing while we clear the retry delay.
+    SyncQueueManager.isSyncing = true;
+    try {
+      return await _syncLock.synchronized(() async {
+        final awakened = await SyncQueueManager.makeActionsRetryableNow(actions);
+        if (awakened <= 0) {
+          return <String, dynamic>{
+            'started': false,
+            'reason': 'no_retryable_business_operations',
+            'awakened': 0,
+          };
+        }
 
-    await processQueueSafe();
-    return <String, dynamic>{
-      'started': true,
-      'reason': 'retry_requested',
-      'awakened': awakened,
-    };
+        await _processQueueImpl();
+        return <String, dynamic>{
+          'started': true,
+          'reason': 'retry_requested',
+          'awakened': awakened,
+        };
+      });
+    } finally {
+      SyncQueueManager.isSyncing = false;
+    }
   }
 
   /// Sync one or many line items for a single bill (idempotent).
