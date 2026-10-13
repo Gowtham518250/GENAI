@@ -10962,6 +10962,8 @@ class _DashboardPageState extends State<DashboardPage>
         );
       }
     }
+  }
+
   void _showChangePinDialog() {
     final oldController = TextEditingController();
     final newController = TextEditingController();
