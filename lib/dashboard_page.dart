@@ -2317,6 +2317,29 @@ class _DashboardPageState extends State<DashboardPage>
               profile['location'].toString(),
             );
           }
+          // The profile form stores UPI in the shop profile, while the
+          // dashboard's payment controls read it from encrypted storage.
+          // Hydrate both stores and the live widget state after the backend
+          // profile refresh so first-time setup works without re-login.
+          final profileUpiId = [
+            profile['primary_upi_id'],
+            profile['upi_id'],
+            profile['upi'],
+          ]
+              .map((value) => value?.toString().trim() ?? '')
+              .firstWhere((value) => value.isNotEmpty, orElse: () => '');
+          if (profileUpiId.isNotEmpty) {
+            await ScopedSharedPreferences.setString(
+              'primary_upi_id',
+              profileUpiId,
+            );
+            await ScopedSharedPreferences.setString('upi_id', profileUpiId);
+            await SecurePreferencesService.setUpiId(profileUpiId);
+            if (mounted && _upiId != profileUpiId) {
+              setState(() => _upiId = profileUpiId);
+            }
+          }
+
           if (profile['phone_number'] != null) {
             await ScopedSharedPreferences.setString(
               'shop_phone',
