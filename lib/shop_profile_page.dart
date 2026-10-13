@@ -508,7 +508,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
 
       // Create multipart file from bytes
       final multipartFile = http.MultipartFile.fromBytes(
-        'logo_file',
+        'file',
         logoBytes!,
         filename: 'shop_logo_${DateTime.now().millisecondsSinceEpoch}.png',
       );
@@ -540,6 +540,17 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
           body['status']?.toString().toLowerCase() == 'success' &&
           logoUrl != null &&
           logoUrl.isNotEmpty;
+
+      if (persisted && logoUrl != null) {
+        await ScopedSharedPreferences.setString('shop_logo_url', logoUrl);
+        final version = body is Map ? body['logo_version']?.toString() : null;
+        if (version != null && version.isNotEmpty) {
+          await ScopedSharedPreferences.setString('shop_logo_version', version);
+        }
+        if (logoBytes != null) {
+          await ScopedSharedPreferences.setString('logo_base64', base64Encode(logoBytes!));
+        }
+      }
 
       if (!persisted) {
         if (kDebugMode) debugPrint('❌ Logo upload returned success without a persisted logo_url');
