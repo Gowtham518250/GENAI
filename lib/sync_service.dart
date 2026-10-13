@@ -1614,11 +1614,10 @@ class SyncService {
   }
 
 static Future<bool> _syncSaleItem(Map<String, dynamic> data) async {
-    // Legacy sync_sale queue entries are normalized into the same JSON
-    // invoice-sync contract used by save_sale/create_sale. Never send
-    // form-data to the invoice JSON endpoint.
+    // Legacy sync_sale entries are converted into the same JSON invoice-sync
+    // contract used by save_sale/create_sale. Mutate the in-memory queue record
+    // so the normalized payload can be persisted back into the durable outbox.
     try {
-      final normalized = <String, dynamic>{...data};
       if (data['payload'] is Map || data['invoice_payload'] is Map) {
         return _syncSaleBatchItem(data);
       }
@@ -1634,46 +1633,66 @@ static Future<bool> _syncSaleItem(Map<String, dynamic> data) async {
               '')
           .toString()
           .trim();
+      final rawDate = (data['invoice_date'] ??
+              data['business_date'] ??
+              data['sale_date'] ??
+              data['date'] ??
+              data['created_at'] ??
+              data['sale_timestamp'] ??
+              '')
+          .toString()
+          .trim();
 
-      if (invoiceNumber.isEmpty || lineItems.isEmpty) {
-        if (kDebugMode) {
-          debugPrint('⚠️ sync_sale skipped: missing invoice_number or line_items');
+      // Old queue rows can be missing line items or the business date. Recover
+      // only from an exact stable-ID match in local history; never guess today's
+      // date or substitute another sale based on amount/product similarity.
+      if (invoiceNumber.isEmpty || lineItems.isEmpty || rawDate.isEmpty) {
+        final localSales = await LocalStorageService.loadSales();
+        final recovered = buildInvoicePayloadFromLocalSale(data, localSales);
+        if (recovered == null) {
+          throw StateError(
+            'SALE_SYNC_INVALID_PAYLOAD: missing invoice ID, business date, or line items, and no matching local sale was available for recovery.',
+          );
         }
-        return false;
+        data['endpoint'] = ApiClient.invoicesSync;
+        data['payload'] = recovered;
+        data['invoice_payload'] = recovered;
+        data['invoice_number'] ??= recovered['invoice_number'];
+        data['sale_id'] ??= recovered['offline_id'];
+        return _syncSaleBatchItem(data);
       }
 
       final payload = <String, dynamic>{
         'invoice_number': invoiceNumber,
-        'offline_id': data['offline_id'] ?? invoiceNumber,
+        'offline_id': data['offline_id'] ?? data['sale_id'] ?? invoiceNumber,
         'customer_name': data['customer_name'] ?? 'Cash Customer',
-        'customer_phone': data['customer_phone'],
+        if (data['customer_phone'] != null)
+          'customer_phone': data['customer_phone'],
         'total_amount': data['total_amount'] ?? data['total'] ?? 0,
         'paid_amount': data['paid_amount'] ?? data['amount_paid'] ?? 0,
         'payment_status': data['payment_status'] ?? 'PAID',
-        'invoice_date': data['invoice_date'] ??
-            data['business_date'] ??
-            data['sale_date'] ??
-            data['date'],
+        'invoice_date': rawDate.length >= 10 ? rawDate.substring(0, 10) : rawDate,
+        if (data['payment_method'] != null)
+          'payment_method': data['payment_method'],
+        if (data['tax'] != null) 'tax': data['tax'],
         if (data['sale_timestamp'] != null)
           'sale_timestamp': data['sale_timestamp'],
         if (data['created_at'] != null)
           'created_at': data['created_at'],
+        if (data['notes'] != null) 'notes': data['notes'],
         'line_items': lineItems,
       };
 
-      normalized
-        ..clear()
-        ..addAll({
-          'endpoint': ApiClient.invoicesSync,
-          'payload': payload,
-          'invoice_payload': payload,
-          'sale_id': invoiceNumber,
-        });
-
-      return _syncSaleBatchItem(normalized);
+      data
+        ..['endpoint'] = ApiClient.invoicesSync
+        ..['payload'] = payload
+        ..['invoice_payload'] = payload
+        ..['invoice_number'] = invoiceNumber
+        ..['sale_id'] ??= data['offline_id'] ?? invoiceNumber;
+      return _syncSaleBatchItem(data);
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error syncing legacy sale queue item: $e');
-      return false;
+      rethrow;
     }
   }
 
