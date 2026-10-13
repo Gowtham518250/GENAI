@@ -4,7 +4,7 @@ import 'package:http_parser/http_parser.dart';
 
 /// Supported formats accepted by the backend shop-logo upload endpoint.
 class ShopLogoFormat {
-  const ShopLogoFormat({
+  ShopLogoFormat({
     required this.extension,
     required this.contentType,
   });
@@ -24,7 +24,7 @@ class ShopLogoFormat {
     }
 
     if (matches(const <int>[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])) {
-      return const ShopLogoFormat(
+      return ShopLogoFormat(
         extension: 'png',
         contentType: MediaType('image', 'png'),
       );
