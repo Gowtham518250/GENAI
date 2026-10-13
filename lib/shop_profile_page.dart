@@ -21,6 +21,7 @@ import 'api_client.dart';
 import 'secure_token_storage.dart';
 import 'validation_helper.dart';
 import 'shop_profile_persistence_service.dart';
+import 'shop_logo_format.dart';
 import 'scoped_shared_preferences.dart';
 
 class ShopProfilePage extends StatefulWidget {
@@ -495,8 +496,17 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
 
   /// 🔧 Upload logo to backend using POST /api/shop/upload-logo
   Future<bool> _uploadLogoToBackend() async {
-    if (logoBytes == null || logoBytes!.isEmpty) {
-      return false; // No logo to upload
+    final bytes = logoBytes;
+    if (bytes == null || bytes.isEmpty) {
+      return false;
+    }
+
+    final imageFormat = ShopLogoFormat.detect(bytes);
+    if (imageFormat == null) {
+      if (kDebugMode) {
+        debugPrint('❌ Unsupported logo image format. Choose a PNG, JPEG, GIF, or WebP image.');
+      }
+      return false;
     }
 
     try {
@@ -506,55 +516,52 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       final token = await _resolveAuthToken();
       if (token.isEmpty) return false;
 
-      // Create multipart file from bytes
+      // Match both the backend's multipart field name and the actual file MIME
+      // type. Uploading every picked image as application/octet-stream/PNG
+      // causes valid JPEG and WebP uploads to be rejected with HTTP 400.
       final multipartFile = http.MultipartFile.fromBytes(
         'file',
-        logoBytes!,
-        filename: 'shop_logo_${DateTime.now().millisecondsSinceEpoch}.png',
+        bytes,
+        filename:
+            'shop_logo_${DateTime.now().millisecondsSinceEpoch}.${imageFormat.extension}',
+        contentType: imageFormat.contentType,
       );
 
-      // Upload to backend
       final resp = await ApiClient.postMultipart(
         ApiClient.shopUploadLogo,
-        {},
-        headers: {
-          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-        },
-        files: [multipartFile],
+        <String, String>{},
+        headers: {'Authorization': 'Bearer $token'},
+        files: <http.MultipartFile>[multipartFile],
       ).timeout(const Duration(seconds: 30));
 
       final statusCode = resp.statusCode;
-      // Multipart responses are streamed, so read the response body exactly once.
       final responseBody = await resp.stream.bytesToString();
       if (kDebugMode) {
-        debugPrint('📥 Logo upload response: \${statusCode} - \${responseBody}');
+        debugPrint('📥 Logo upload response: $statusCode - $responseBody');
       }
 
       if (statusCode != 200 && statusCode != 201) {
         return false;
       }
 
-      final body = json.decode(responseBody);
-      final logoUrl = body is Map ? body['logo_url']?.toString() : null;
-      final persisted = body is Map &&
-          body['status']?.toString().toLowerCase() == 'success' &&
-          logoUrl != null &&
+      final decoded = json.decode(responseBody);
+      final body = decoded is Map ? decoded : null;
+      final logoUrl = body?['logo_url']?.toString() ?? '';
+      final persisted = body?['status']?.toString().toLowerCase() == 'success' &&
           logoUrl.isNotEmpty;
 
-      if (persisted && logoUrl != null) {
-        await ScopedSharedPreferences.setString('shop_logo_url', logoUrl);
-        final version = body is Map ? body['logo_version']?.toString() : null;
-        if (version != null && version.isNotEmpty) {
-          await ScopedSharedPreferences.setString('shop_logo_version', version);
+      if (!persisted) {
+        if (kDebugMode) {
+          debugPrint('❌ Logo upload returned success without a persisted logo_url');
         }
-        if (logoBytes != null) {
-          await ScopedSharedPreferences.setString('logo_base64', base64Encode(logoBytes!));
-        }
+        return false;
       }
 
-      if (!persisted) {
-        if (kDebugMode) debugPrint('❌ Logo upload returned success without a persisted logo_url');
-        return false;
+      await ScopedSharedPreferences.setString('shop_logo_url', logoUrl);
+      await ScopedSharedPreferences.setString('logo_base64', base64Encode(bytes));
+      final version = body?['logo_version']?.toString();
+      if (version != null && version.isNotEmpty) {
+        await ScopedSharedPreferences.setString('shop_logo_version', version);
       }
 
       return true;
