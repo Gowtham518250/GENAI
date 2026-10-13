@@ -391,10 +391,18 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             end: Alignment.bottomRight,
                           ),
                           isLoading: false,
-                          onPressed: () {
+                          onPressed: () async {
                             HapticFeedback.lightImpact();
-                            // Generate Bill: Creates preview PDF, does NOT save
-                            showDialog(context: context, builder: (_) => ChangeNotifierProvider.value(value: provider, child: const BillPreviewDialog()));
+                            // Preview and saved invoice must use the same stable bill number.
+                            final invoiceNumber = await provider.ensureDraftBillNumber();
+                            if (!mounted) return;
+                            showDialog(
+                              context: context,
+                              builder: (_) => ChangeNotifierProvider.value(
+                                value: provider,
+                                child: BillPreviewDialog(invoiceNumber: invoiceNumber),
+                              ),
+                            );
                           },
                         ),
                       ),
@@ -564,8 +572,16 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                       ),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            showDialog(context: context, builder: (_) => ChangeNotifierProvider.value(value: provider, child: const BillPreviewDialog()));
+                          onPressed: () async {
+                            final invoiceNumber = await provider.ensureDraftBillNumber();
+                            if (!mounted) return;
+                            showDialog(
+                              context: context,
+                              builder: (_) => ChangeNotifierProvider.value(
+                                value: provider,
+                                child: BillPreviewDialog(invoiceNumber: invoiceNumber),
+                              ),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF10B981),
