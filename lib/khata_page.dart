@@ -16,6 +16,7 @@ import 'sync_queue_manager.dart';
 import 'sync_service.dart';
 import 'visual_widgets.dart';
 import 'paid_invoices_page.dart';
+import 'invoice_dedup_helper.dart';
 
 class KhataPage extends StatefulWidget {
   final String? focusPhone;
@@ -136,122 +137,25 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
   /// A business invoice may exist in local invoice storage, sales history and
   /// a restored backend record with different identifier fields. Merge those
   /// representations before calculating totals or rendering cards.
+  /// Reconcile invoice rows and sale mirrors by every stable ID alias.
+  /// Connected-component merging handles bridge rows that link a local sale ID
+  /// to a backend invoice ID and its customer-facing invoice number.
   Map<String, Map<String, dynamic>> _canonicalInvoiceMap(
     List<dynamic> invoices,
     List<dynamic> sales,
   ) {
+    final rows = InvoiceDedupHelper.canonicalizeInvoices(
+      <dynamic>[...invoices, ...sales],
+    );
     final canonical = <String, Map<String, dynamic>>{};
-    final aliasToCanonical = <String, String>{};
-    int sequence = 0;
 
-    List<String> aliases(Map<String, dynamic> row) {
-      final values = <String>[];
-      for (final field in const [
-        'invoice_number',
-        'number',
-        'sale_id',
-        'offline_id',
-        'invoice_id',
-        'backend_id',
-        'id',
-      ]) {
-        final value = row[field]?.toString().trim().toLowerCase() ?? '';
-        if (value.isNotEmpty && value != 'null' && value != '0') {
-          // Preserve the original field alias and add a shared transaction
-          // alias so different representations (invoice_number vs sale_id)
-          // resolve to the same logical invoice.
-          values.add('$field:$value');
-          values.add('transaction:$value');
-        }
-      }
-      return values;
-    }
-
-    String fallbackKey(Map<String, dynamic> row) {
-      final date = (row['business_date'] ??
-              row['invoice_date'] ??
-              row['sale_date'] ??
-              row['date'] ??
-              row['created_at'] ??
-              '')
-          .toString();
-      final phone =
-          (row['customer_phone'] ?? row['phone'] ?? '').toString().trim();
-      final total = double.tryParse(
-            (row['total_amount'] ?? row['total'] ?? 0).toString(),
-          ) ??
-          0.0;
-      return 'fallback|$date|$phone|${total.toStringAsFixed(2)}';
-    }
-
-    void add(dynamic raw, {bool prefer = false}) {
-      if (raw is! Map) return;
-
-      final row = Map<String, dynamic>.from(raw);
-      final rowAliases = aliases(row);
-
-      String? existingKey;
-      for (final alias in rowAliases) {
-        final mapped = aliasToCanonical[alias];
-        if (mapped != null) {
-          existingKey = mapped;
-          break;
-        }
-      }
-
-      final key = existingKey ??
-          (rowAliases.isNotEmpty ? rowAliases.first : fallbackKey(row));
-
-      if (existingKey == null) {
-        canonical[key] = row;
-      } else {
-        final existing = canonical[key]!;
-        final existingUpdated =
-            DateTime.tryParse(existing['updated_at']?.toString() ?? '');
-        final incomingUpdated =
-            DateTime.tryParse(row['updated_at']?.toString() ?? '');
-        final incomingNewer = incomingUpdated != null &&
-            (existingUpdated == null ||
-                incomingUpdated.isAfter(existingUpdated));
-
-        if (incomingNewer || prefer) {
-          canonical[key] = {
-            ...existing,
-            ...row,
-          };
-        } else {
-          canonical[key] = {
-            ...row,
-            ...existing,
-            if ((existing['customer_phone'] ?? '').toString().trim().isEmpty &&
-                (row['customer_phone'] ?? '').toString().trim().isNotEmpty)
-              'customer_phone': row['customer_phone'],
-            if ((existing['customer_name'] ?? '').toString().trim().isEmpty ||
-                const ['Guest Customer', 'Cash Customer']
-                    .contains(existing['customer_name']))
-              if ((row['customer_name'] ?? '').toString().trim().isNotEmpty &&
-                  !const ['Guest Customer', 'Cash Customer']
-                      .contains(row['customer_name']))
-                'customer_name': row['customer_name'],
-          };
-        }
-      }
-
-      for (final alias in rowAliases) {
-        aliasToCanonical[alias] = key;
-      }
-
-      if (rowAliases.isEmpty) {
-        aliasToCanonical['generated:$sequence'] = key;
-        sequence++;
-      }
-    }
-
-    for (final inv in invoices) {
-      add(inv, prefer: true);
-    }
-    for (final sale in sales) {
-      add(sale);
+    for (var index = 0; index < rows.length; index++) {
+      final row = rows[index];
+      final tokens = InvoiceDedupHelper.identityTokens(row);
+      final key = tokens.isNotEmpty
+          ? tokens.first
+          : '__anonymous_invoice_$index';
+      canonical[key] = row;
     }
 
     return canonical;
