@@ -3,6 +3,7 @@ import 'whatsapp_orders_page.dart';
 import 'marketing_page.dart';
 import 'package:retail_mind/premium_ui.dart';
 import 'sale_service.dart';
+import 'sales_restore_service.dart';
 import 'agent_debug_log.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -265,6 +266,7 @@ class _DashboardPageState extends State<DashboardPage>
       0; // Surfaced as a persistent dashboard warning, not just used for the health score
   String _unsyncedSyncDetail = '';
   bool _retryingUnsyncedBills = false;
+  bool _emptySalesRestoreInProgress = false;
 
   void _addToActivityFeed(String activity) {
     setState(() {
@@ -3790,24 +3792,64 @@ class _DashboardPageState extends State<DashboardPage>
         _recomputeDailyHealthScore();
 
         // Background-only cloud reconciliation. It must never block the cashier UI.
+        final localWasEmptyAtBoot = history.isEmpty;
         unawaited(() async {
           try {
             final changed = await _fetchInvoicesFromBackend();
-            if (changed && mounted) {
+            if ((changed || localWasEmptyAtBoot) && mounted) {
               final refreshed = await LocalStorageService.loadSales();
               if (!mounted) return;
-              setState(() {
-                sales = _flattenLocalSales(refreshed);
-                _cachedTodaySales = null;
-                _cachedTodayOrders = null;
-                _cachedTodayOnlineOrders = null;
-                _lastMetricsCacheDate = null;
-                _recalculateAnalytics();
-              });
+              if (refreshed.isNotEmpty || changed) {
+                setState(() {
+                  sales = _flattenLocalSales(refreshed);
+                  _cachedTodaySales = null;
+                  _cachedTodayOrders = null;
+                  _cachedTodayOnlineOrders = null;
+                  _lastMetricsCacheDate = null;
+                  _recalculateAnalytics();
+                });
+                _recomputeDailyHealthScore();
+              }
+            }
+
+            // GET /api/invoices is the normal quick path. If its response was
+            // empty/unusable and this is a fresh local cache (common after a
+            // reinstall or same-user recovery), use the canonical restore endpoint
+            // to restore both invoice headers and line items without stock replay.
+            if (localWasEmptyAtBoot &&
+                !changed &&
+                !_emptySalesRestoreInProgress) {
+              _emptySalesRestoreInProgress = true;
+              try {
+                final restore = await SalesRestoreService.restoreAllSales(
+                  includeStockImpact: false,
+                );
+                if (restore['success'] == true && mounted) {
+                  final restored = await LocalStorageService.loadSales();
+                  if (restored.isNotEmpty) {
+                    setState(() {
+                      sales = _flattenLocalSales(restored);
+                      _cachedTodaySales = null;
+                      _cachedTodayOrders = null;
+                      _cachedTodayOnlineOrders = null;
+                      _lastMetricsCacheDate = null;
+                      _recalculateAnalytics();
+                    });
+                    _recomputeDailyHealthScore();
+                  }
+                } else if (kDebugMode && restore['success'] != true) {
+                  debugPrint(
+                    '⚠️ Empty-cache sales restore deferred: ${restore['error'] ?? restore['message'] ?? 'unknown error'}',
+                  );
+                }
+              } finally {
+                _emptySalesRestoreInProgress = false;
+              }
             }
           } catch (e) {
-            if (kDebugMode)
+            if (kDebugMode) {
               debugPrint('⚠️ Background dashboard reconciliation failed: $e');
+            }
           }
         }());
 
