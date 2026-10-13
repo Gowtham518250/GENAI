@@ -1742,8 +1742,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                         // one. Removed here so the synced page is what actually loads.
                         '/profit-loss': (context) => const ProfitLossPage(),
                         '/chatbot-help': (context) => const ChatbotPage(),
-                        '/worker-management': (context) =>
-                            const WorkerManagementPage(),
+                        '/worker-management': (context) {
+                          final args = ModalRoute.of(context)?.settings.arguments;
+                          final openAddWorker =
+                              args is Map && args['openAddWorkerOnLoad'] == true;
+                          return WorkerManagementPage(
+                            openAddWorkerOnLoad: openAddWorker,
+                          );
+                        },
                         '/expense': (context) => const ExpenseTrackerPage(),
                         '/gift-card': (context) => const GiftCardPage(),
                         '/retail-intelligence': (context) =>
