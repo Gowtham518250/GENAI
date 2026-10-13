@@ -10952,55 +10952,6 @@ class _DashboardPageState extends State<DashboardPage>
         );
       }
     }
-  }) async {
-    try {
-      final body = {
-        'owner_name': ownerName,
-        'shop_name': shopName,
-        'upi_id': upiId,
-        if (logoBytes != null) 'logo_base64': base64Encode(logoBytes),
-        if (qrBytes != null) 'payment_qr_b64': base64Encode(qrBytes),
-      };
-
-      final response = await ApiClient.postJson(ApiClient.shopSettings, body);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        if (kDebugMode) debugPrint('✅ Shop settings synced to backend');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Shop settings saved to cloud')),
-          );
-        }
-        return;
-      }
-
-      if (kDebugMode)
-        debugPrint('⚠️ Shop settings backend returned ${response.statusCode}');
-      final data = json.decode(response.body);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              data['detail']?.toString() ??
-                  'Saved locally; backend sync failed',
-            ),
-            backgroundColor: Colors.amber,
-          ),
-        );
-      }
-    } catch (e) {
-      if (kDebugMode)
-        debugPrint('⚠️ Failed to save shop settings to backend: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Shop settings saved locally. Backend sync failed.'),
-            backgroundColor: Colors.amber,
-          ),
-        );
-      }
-    }
-  }
-
   void _showChangePinDialog() {
     final oldController = TextEditingController();
     final newController = TextEditingController();
