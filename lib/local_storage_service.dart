@@ -1045,12 +1045,13 @@ class LocalStorageService {
     // no longer change once the local ledger has been reconciled.
     var needsPersist = combinedRows.length != invoiceOnlyCanonical.length;
     for (final row in combinedRows) {
-      final mirror = invoiceOnlyCanonical.cast<Map<String, dynamic>?>().firstWhere(
-        (candidate) =>
-            candidate != null &&
-            InvoiceDedupHelper.sameInvoice(row, candidate),
-        orElse: () => null,
-      );
+      Map<String, dynamic>? mirror;
+      for (final candidate in invoiceOnlyCanonical) {
+        if (InvoiceDedupHelper.sameInvoice(row, candidate)) {
+          mirror = candidate;
+          break;
+        }
+      }
       if (mirror == null) {
         if (InvoiceDedupHelper.identityTokens(row).isNotEmpty) {
           needsPersist = true;
