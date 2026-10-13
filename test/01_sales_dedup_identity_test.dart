@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:retail_mind/sales_dedup_helper.dart';
+import 'package:retail_mind/invoice_dedup_helper.dart';
 
 Map<String, dynamic> sale(String id) => {
   'sale_id': id,
@@ -61,6 +62,40 @@ void main() {
       expect(
         SalesDedupHelper.isDuplicateBill(a, [b]),
         isTrue,
+      );
+    });
+
+    test('local SALE ID and cloud BILL ID are recognized as one bill', () {
+      final local = {
+        ...sale('SALE_100'),
+        'invoice_number': 'BILL-0007',
+        'bill_number': 'BILL-0007',
+      };
+      final cloud = {
+        ...sale('BILL-0007'),
+        'id': 42,
+        'invoice_id': 42,
+        'invoice_number': 'BILL-0007',
+        'sale_id': 'BILL-0007',
+        'offline_id': null,
+        'backend_id': 42,
+      };
+
+      expect(SalesDedupHelper.isDuplicateBill(cloud, [local]), isTrue);
+      final result = SalesDedupHelper.dedupeBills([local, cloud]);
+      expect(result, hasLength(1));
+      expect(result.single['invoice_number'], 'BILL-0007');
+      expect(result.single['sale_id'], 'SALE_100');
+      expect(result.single['invoice_id'], 42);
+    });
+
+    test('a numeric backend ID never matches a numeric bill number by accident', () {
+      final backend = {'id': 12};
+      final local = {'invoice_number': '12', 'total': 50.0, 'items': [{'name': 'A'}]};
+
+      expect(
+        InvoiceDedupHelper.sameInvoice(backend, local),
+        isFalse,
       );
     });
   });

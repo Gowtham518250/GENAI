@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'format_helper.dart';
 import 'local_storage_service.dart';
 import 'financial_math.dart';
+import 'invoice_dedup_helper.dart';
 
 /// Result of a one-time Hive sales cleanup (Option B).
 class SalesCleanupResult {
@@ -116,27 +117,9 @@ class SalesDedupHelper {
   /// Remove only true duplicate records. Stable business identities always win;
   /// content similarity alone must NEVER merge two legitimate sales.
   static List<Map<String, dynamic>> dedupeBills(List<dynamic> raw) {
-    final byIdentity = <String, Map<String, dynamic>>{};
+    final active = <Map<String, dynamic>>[];
     final anonymous = <Map<String, dynamic>>[];
     final cancelled = <Map<String, dynamic>>[];
-
-    String identityOf(Map<String, dynamic> sale) {
-      const fields = <String>[
-        'offline_id',
-        'sale_id',
-        'invoice_number',
-        'backend_id',
-        'invoice_id',
-        'id',
-      ];
-      for (final field in fields) {
-        final value = sale[field]?.toString().trim();
-        if (value != null && value.isNotEmpty && value != 'null' && value != '0') {
-          return '${field.toLowerCase()}:$value';
-        }
-      }
-      return '';
-    }
 
     for (final entry in raw) {
       if (entry is! Map) continue;
@@ -148,36 +131,86 @@ class SalesDedupHelper {
         continue;
       }
 
-      final identity = identityOf(sale);
-      if (identity.isEmpty) {
-        // Records without any stable ID cannot safely be merged merely because
-        // their contents happen to match. Keep them until a stable identity is
-        // assigned by the sale/sync pipeline.
+      if (InvoiceDedupHelper.identityTokens(sale).isEmpty) {
+        // Without stable identifiers it is unsafe to merge by matching amount,
+        // product, or timestamp. Keep independent anonymous sales separate.
         anonymous.add(sale);
         continue;
       }
+      active.add(sale);
+    }
 
-      final existing = byIdentity[identity];
-      if (existing == null) {
-        byIdentity[identity] = sale;
-      } else if (_preferIncomingBill(existing, sale)) {
-        byIdentity[identity] = sale;
-      } else {
-        // Preserve useful fields from a richer copy without creating a second
-        // business transaction.
-        final merged = <String, dynamic>{...existing};
-        for (final entry in sale.entries) {
-          final value = entry.value;
-          final current = merged[entry.key];
-          if (current == null || current.toString().trim().isEmpty) {
-            merged[entry.key] = value;
-          }
+    // Treat all identifiers on a sale as aliases for the same transaction.
+    // Example: a local sale may have sale_id=SALE_x and invoice_number=BILL_x,
+    // while a restored copy may have sale_id=BILL_x. A single "primary ID"
+    // map fails to connect these copies; connected components do not.
+    final parents = List<int>.generate(active.length, (index) => index);
+
+    int root(int index) {
+      var current = index;
+      while (parents[current] != current) {
+        parents[current] = parents[parents[current]];
+        current = parents[current];
+      }
+      return current;
+    }
+
+    void union(int left, int right) {
+      final a = root(left);
+      final b = root(right);
+      if (a != b) parents[b] = a;
+    }
+
+    final tokenOwner = <String, int>{};
+    for (var index = 0; index < active.length; index++) {
+      for (final token in InvoiceDedupHelper.identityTokens(active[index])) {
+        final previous = tokenOwner[token];
+        if (previous == null) {
+          tokenOwner[token] = index;
+        } else {
+          union(index, previous);
         }
-        byIdentity[identity] = merged;
       }
     }
 
-    return [...byIdentity.values, ...anonymous, ...cancelled];
+    final groups = <int, List<Map<String, dynamic>>>{};
+    for (var index = 0; index < active.length; index++) {
+      groups.putIfAbsent(root(index), () => <Map<String, dynamic>>[]).add(active[index]);
+    }
+
+    final deduped = <Map<String, dynamic>>[];
+    for (final group in groups.values) {
+      var merged = Map<String, dynamic>.from(group.first);
+      for (final incomingRaw in group.skip(1)) {
+        final incoming = Map<String, dynamic>.from(incomingRaw);
+        final previous = Map<String, dynamic>.from(merged);
+
+        if (_preferIncomingBill(merged, incoming)) {
+          merged = <String, dynamic>{...merged, ...incoming};
+          // Keep the losing record's aliases and useful values if the preferred
+          // copy leaves a field empty, so later syncs can still match this bill.
+          for (final entry in previous.entries) {
+            final current = merged[entry.key];
+            if (current == null || current.toString().trim().isEmpty) {
+              merged[entry.key] = entry.value;
+            }
+          }
+        } else {
+          // Existing/local data wins by default, but missing server identifiers
+          // and richer fields are retained for future idempotent reconciliation.
+          for (final entry in incoming.entries) {
+            final current = merged[entry.key];
+            final value = entry.value;
+            if (current == null || current.toString().trim().isEmpty) {
+              merged[entry.key] = value;
+            }
+          }
+        }
+      }
+      deduped.add(merged);
+    }
+
+    return [...deduped, ...anonymous, ...cancelled];
   }
 
   /// Remove duplicate flattened lines shown in charts/transactions.
@@ -226,43 +259,16 @@ class SalesDedupHelper {
     return SalesCleanupResult(before: before, after: after, removed: before - after);
   }
 
-  /// True only when the cloud and local records share a stable business identity.
-  /// Content similarity is NEVER sufficient to declare two sales duplicates.
+  /// True only when the cloud and local records share a canonical identity
+  /// alias. Numeric backend IDs remain namespaced apart from bill numbers.
+  /// Content similarity is never sufficient to declare two sales duplicates.
   static bool isDuplicateBill(
     Map<String, dynamic> cloud,
     Iterable<Map<String, dynamic>> localBills,
   ) {
-    const fields = <String>[
-      'offline_id',
-      'sale_id',
-      'invoice_number',
-      'backend_id',
-      'invoice_id',
-      'id',
-    ];
-
-    String normalize(dynamic value) => value?.toString().trim() ?? '';
-
-    final cloudIds = <String>{};
-    for (final field in fields) {
-      final value = normalize(cloud[field]);
-      if (value.isNotEmpty && value != 'null' && value != '0') {
-        cloudIds.add(value);
-      }
-    }
-    if (cloudIds.isEmpty) return false;
-
-    for (final local in localBills) {
-      for (final field in fields) {
-        final localId = normalize(local[field]);
-        if (localId.isNotEmpty && localId != 'null' && localId != '0' && cloudIds.contains(localId)) {
-          return true;
-        }
-      }
-    }
-
-    // Never use content fingerprints to merge bills with distinct identities.
-    return false;
+    return localBills.any(
+      (local) => InvoiceDedupHelper.sameInvoice(cloud, local),
+    );
   }
 
   /// Group API line rows (one row per item) into bills by sale_id.

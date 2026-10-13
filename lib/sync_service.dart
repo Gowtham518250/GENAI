@@ -960,7 +960,10 @@ class SyncService {
               .whereType<Map>()
               .map((s) => Map<String, dynamic>.from(s))
               .toList();
-          final existingIds = localBills.map((s) => s['sale_id'].toString()).toSet();
+          // Check every stable identity alias when reconciling cloud invoices.
+          // Local rows use sale_id=SALE_<timestamp> while the server invoice uses
+          // invoice_number=BILL-xxxx; comparing only sale_id misses that mirror
+          // and restores it as a second cash sale.
           final List<Map<String, dynamic>> newItems = [];
 
           // Group API rows — /auth/sales returns one row per line item (flattened)
@@ -974,7 +977,20 @@ class SyncService {
 
           for (final entry in grouped.entries) {
             final saleId = entry.key;
-            if (existingIds.contains(saleId)) continue;
+            final hasLocalMirror = entry.value.whereType<Map>().any((raw) =>
+                SalesDedupHelper.isDuplicateBill(
+                  Map<String, dynamic>.from(raw),
+                  localBills,
+                ));
+            if (hasLocalMirror) {
+              if (kDebugMode) {
+                debugPrint(
+                  '⏭️ Skipping cloud sale mirror $saleId: '
+                  'a local bill already shares its stable identity.',
+                );
+              }
+              continue;
+            }
 
             final firstItem = entry.value.first as Map;
             dynamic rawLineItems = firstItem['line_items'] ?? firstItem['items'];
@@ -1014,7 +1030,17 @@ class SyncService {
                 firstItem['invoice_date'] ??
                 firstItem['date'];
             newItems.add({
-              'sale_id': saleId,
+              // Keep all canonical aliases on a restored record so later sync
+              // passes can recognize the same bill across SALE_ and BILL IDs.
+              'sale_id': firstItem['sale_id'] ??
+                  firstItem['offline_id'] ??
+                  saleId,
+              'offline_id': firstItem['offline_id'] ?? firstItem['sale_id'],
+              'invoice_number': firstItem['invoice_number'] ??
+                  firstItem['number'] ??
+                  saleId,
+              'invoice_id': firstItem['invoice_id'] ?? firstItem['id'],
+              'backend_id': firstItem['backend_id'] ?? firstItem['id'],
               'customer_name': firstItem['customer_name'] ?? 'Cash Customer',
               'customer_phone': firstItem['customer_phone'] ?? '',
               'items': validItems,
