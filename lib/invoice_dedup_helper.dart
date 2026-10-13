@@ -256,7 +256,7 @@ class InvoiceDedupHelper {
     // Build groups only after all unions: one bridge row may connect two groups.
     final groups = <int, List<Map<String, dynamic>>>{};
     for (var i = 0; i < rows.length; i++) {
-      groups.putIfAbsent(root(i), () => <Map<String, dynamic>[]).add(rows[i]);
+      groups.putIfAbsent(root(i), () => <Map<String, dynamic>>[]).add(rows[i]);
     }
 
     return groups.values
