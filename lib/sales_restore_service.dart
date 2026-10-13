@@ -4,6 +4,7 @@ import 'api_client.dart';
 import 'secure_token_storage.dart';
 import 'local_storage_service.dart';
 import 'inventory_sync_service.dart';
+import 'sales_dedup_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 
@@ -272,13 +273,7 @@ class SalesRestoreService {
       final List<dynamic> existingSales = await LocalStorageService.loadSales();
       final List<dynamic> existingLocalInvoices = await LocalStorageService.loadLocalInvoices();
       
-      final Map<String, dynamic> existingSalesMap = {};
       final Map<String, dynamic> existingInvoiceMap = {};
-      
-      for (var s in existingSales) {
-        final saleId = (s['sale_id'] ?? s['invoice_number']).toString();
-        existingSalesMap[saleId] = s;
-      }
       
       for (var inv in existingLocalInvoices) {
         final invId = (inv['invoice_number']).toString();
@@ -426,44 +421,72 @@ class SalesRestoreService {
             'restored': true,
           };
           
-          if (existingSalesMap.containsKey(saleId)) {
-            // Conflict resolution: keep the newer one
-            final existingSale = existingSalesMap[saleId];
-            final existingUpdatedAt = existingSale['updated_at'] ?? existingSale['created_at'];
+          // Match by any stable transaction identity, not just the display ID.
+          // Local sales use SALE_<timestamp>; backend invoices use BILL-xxxx.
+          // A shared invoice_number/offline_id means these are the same sale.
+          final existingSaleIndex = salesHistory.indexWhere((raw) {
+            if (raw is! Map) return false;
+            return SalesDedupHelper.isDuplicateBill(
+              backendSaleRecord,
+              [Map<String, dynamic>.from(raw)],
+            );
+          });
+
+          if (existingSaleIndex >= 0) {
+            final existingSale = Map<String, dynamic>.from(
+              salesHistory[existingSaleIndex] as Map,
+            );
+            final existingUpdatedAt =
+                existingSale['updated_at'] ?? existingSale['created_at'];
             final backendUpdatedAt = backendSaleRecord['updated_at'];
-            
-            // Parse dates
-            DateTime existingDate = existingUpdatedAt != null 
+
+            final existingDate = existingUpdatedAt != null
                 ? DateTime.tryParse(existingUpdatedAt.toString()) ?? DateTime(1970)
                 : DateTime(1970);
-            DateTime backendDate = backendUpdatedAt != null 
+            final backendDate = backendUpdatedAt != null
                 ? DateTime.tryParse(backendUpdatedAt.toString()) ?? DateTime(1970)
                 : DateTime(1970);
-            
+
             if (backendDate.isAfter(existingDate)) {
-              // Backend is newer - update existing
-              final index = salesHistory.indexWhere((s) => (s['sale_id'] ?? s['invoice_number']).toString() == saleId);
-              if (index != -1) {
-                // Merge backend data but preserve local sync metadata if it's pending
-                if (existingSale['sync_status'] == 'pending') {
-                  // Keep local pending sale - don't overwrite
-                  if (kDebugMode) debugPrint('⏭️ Keeping local pending sale $saleId (has pending sync)');
-                } else {
-                  // Overwrite with backend
-                  salesHistory[index] = {
-                    ...backendSaleRecord,
-                    'sync_status': 'synced',
-                    'sync_attempts': existingSale['sync_attempts'] ?? 0,
-                  };
-                  if (kDebugMode) debugPrint('🔄 Updated local sale $saleId with newer backend data');
+              if (existingSale['sync_status'] == 'pending') {
+                if (kDebugMode) {
+                  debugPrint('⏭️ Keeping local pending sale $saleId (has pending sync)');
+                }
+              } else {
+                final merged = <String, dynamic>{
+                  ...existingSale,
+                  ...backendSaleRecord,
+                };
+                // Preserve the local/offline IDs while adding backend IDs. The
+                // invoice number stays canonical for future sync reconciliation.
+                for (final key in const ['sale_id', 'offline_id']) {
+                  final value = existingSale[key];
+                  if (value != null && value.toString().trim().isNotEmpty) {
+                    merged[key] = value;
+                  }
+                }
+                merged['invoice_number'] =
+                    backendSaleRecord['invoice_number'] ??
+                    existingSale['invoice_number'] ??
+                    saleId;
+                merged['invoice_id'] = backendSaleRecord['invoice_id'] ??
+                    existingSale['invoice_id'];
+                merged['backend_id'] = backendSaleRecord['backend_id'] ??
+                    existingSale['backend_id'];
+                salesHistory[existingSaleIndex] = {
+                  ...merged,
+                  'sync_status': 'synced',
+                  'sync_attempts': existingSale['sync_attempts'] ?? 0,
+                };
+                if (kDebugMode) {
+                  debugPrint('🔄 Reconciled cloud invoice $saleId with existing local sale');
                 }
               }
-            } else {
-              // Local is newer - keep local
-              if (kDebugMode) debugPrint('⏭️ Keeping local sale $saleId (newer than backend)');
+            } else if (kDebugMode) {
+              debugPrint('⏭️ Keeping local sale $saleId (newer than backend)');
             }
           } else {
-            // New sale from backend
+            // Add a cloud sale-history row only when no local alias matches.
             salesHistory.add(backendSaleRecord);
             if (kDebugMode) debugPrint('➕ Added new backend sale $saleId');
           }
