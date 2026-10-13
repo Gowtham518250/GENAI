@@ -520,6 +520,20 @@ class _AttendancePageState extends State<AttendancePage>
     return totalHours;
   }
 
+  Future<void> _openWorkerManagement({required bool openAddWorker}) async {
+    await Navigator.pushNamed(
+      context,
+      '/worker-management',
+      arguments: {'openAddWorkerOnLoad': openAddWorker},
+    );
+    if (!mounted) return;
+    // Update the roster and attendance immediately after returning from Worker
+    // Management so newly added workers appear without reopening this page.
+    await _loadStaff();
+    if (!mounted) return;
+    await _fetch();
+  }
+
   void _showSnack(String msg, Color color) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -707,6 +721,58 @@ class _AttendancePageState extends State<AttendancePage>
               _bannerStat(_teamHoursToday().toStringAsFixed(2), 'Team hours today'),
             ]),
           ]),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _openWorkerManagement(openAddWorker: true),
+                icon: const Icon(Icons.person_add_alt_1, size: 18),
+                label: Text(
+                  'Add Worker',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _openWorkerManagement(openAddWorker: false),
+                icon: const Icon(Icons.groups_2_outlined, size: 18),
+                label: Text(
+                  'Manage Workers',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _primary,
+                  padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 8),
+                  side: BorderSide(color: _primary.withValues(alpha: 0.35)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 20),
         Row(
