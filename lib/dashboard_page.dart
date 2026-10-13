@@ -11438,8 +11438,8 @@ class _DashboardPageState extends State<DashboardPage>
               children: [
                 Text(
                   count == 1
-                      ? '1 sale not backed up to the cloud yet'
-                      : '$count sales not backed up to the cloud yet',
+                      ? '1 sale/payment update awaiting cloud confirmation'
+                      : '$count sale/payment updates awaiting cloud confirmation',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
                     fontSize: 13.5,
@@ -11448,10 +11448,42 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Stay connected to the internet until these sync. Do NOT clear app data or uninstall until this warning disappears — that would permanently delete them.',
+                  'A live internet connection does not guarantee this upload was accepted. Keep app data intact; this warning clears only after the server acknowledges the queued record.',
                   style: GoogleFonts.poppins(
                     fontSize: 11.5,
                     color: const Color(0xFF7F1D1D),
+                  ),
+                ),
+                if (_unsyncedSyncDetail.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _unsyncedSyncDetail,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: const Color(0xFF7F1D1D),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _retryingUnsyncedBills ? null : _retryPendingCloudSync,
+                    icon: _retryingUnsyncedBills
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.sync_rounded, size: 18),
+                    label: Text(
+                      _retryingUnsyncedBills ? 'Retrying sync...' : 'Retry sync now',
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFB91C1C),
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                    ),
                   ),
                 ),
               ],
