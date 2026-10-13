@@ -9,6 +9,7 @@ import 'secure_token_storage.dart';
 import 'api_client.dart';
 import 'local_storage_service.dart';
 import 'sales_dedup_helper.dart';
+import 'transaction_reconciliation_helper.dart';
 import 'invoices_page.dart';
 import 'khata_page.dart';
 import 'sync_queue_manager.dart';
@@ -132,7 +133,13 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
         final amount = double.tryParse((sale['total_amount'] ?? sale['total'] ?? '0').toString()) ?? 0;
         final eventDate = _transactionEventDate(sale);
         final businessDate = _businessDate(sale['business_date'] ?? sale['sale_date'] ?? sale['invoice_date'] ?? sale['date']);
-        final saleDate = eventDate?.toIso8601String() ?? businessDate?.toIso8601String();
+        // eventDate is already in local time. Serialize it as UTC (with Z)
+        // before storing it in the transaction view-model, otherwise the card
+        // parser treats this local, zone-less string as UTC and shifts it
+        // forward by 5h30 in India — sometimes onto the next calendar day.
+        final eventTimestamp = TransactionReconciliationHelper.serializeEventTime(eventDate);
+        final saleDate = eventTimestamp ??
+            (businessDate == null ? null : DateFormat('yyyy-MM-dd').format(businessDate));
         final customerName = sale['customer_name'] ?? 'Walk-in Customer';
         final customerPhone = sale['customer_phone'];
         final saleId = sale['sale_id'] ?? sale['invoice_number'] ?? sale['id'];
@@ -144,6 +151,8 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
           'id': saleId,
           'amount': amount,
           'date': saleDate,
+          'event_timestamp': eventTimestamp,
+          'business_date': businessDate == null ? null : DateFormat('yyyy-MM-dd').format(businessDate),
           'customer': customerName,
           'customer_phone': customerPhone,
           'items': sale['items'] ?? [],
@@ -234,7 +243,11 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                   'customer': invoice['customer_name'] ?? 'Unknown',
                   'customer_phone': invoice['customer_phone'],
                   'status': invoice['payment_status'] ?? 'Pending',
-                  'items_count': (invoice['items'] as List?)?.length ?? 0,
+                  // The API InvoiceResponse exposes line_items, not items.
+                  // Read both shapes so real invoices don't render as "0 items".
+                  'items_count': ((invoice['line_items'] ?? invoice['items']) is List)
+                      ? ((invoice['line_items'] ?? invoice['items']) as List).length
+                      : 0,
                   'raw': invoice,
                 });
               }
@@ -245,26 +258,20 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
         debugPrint('⚠️ Failed to load invoices: $e');
       }
 
-      // Combine by business transaction id. A backend invoice and its local
-      // sale are the SAME transaction and must not count twice.
-      final combinedById = <String, Map<String, dynamic>>{};
-      void addUnique(List<Map<String, dynamic>> items) {
-        for (final item in items) {
-          final key = (item['id'] ?? '').toString().trim();
-          if (key.isEmpty) continue;
-          final existing = combinedById[key];
-          if (existing == null) {
-            combinedById[key] = item;
-          } else {
-            combinedById[key] = {...existing, ...item, 'raw': item['raw'] ?? existing['raw']};
-          }
-        }
-      }
-      addUnique(_cashTransactions);
-      addUnique(_onlineTransactions);
-      addUnique(_khataTransactions);
-      addUnique(_invoiceTransactions);
-      _allTransactions = combinedById.values.toList();
+      // Reconcile local/remote mirrors by every stable transaction alias,
+      // not only the display ID. A local row may use SALE_<timestamp> while
+      // its server invoice uses BILL-0001; both carry the shared invoice number.
+      // This keeps counts and total amount from double-counting the same sale.
+      _cashTransactions = TransactionReconciliationHelper.dedupe(_cashTransactions);
+      _onlineTransactions = TransactionReconciliationHelper.dedupe(_onlineTransactions);
+      _khataTransactions = TransactionReconciliationHelper.dedupe(_khataTransactions);
+      _invoiceTransactions = TransactionReconciliationHelper.dedupe(_invoiceTransactions);
+      _allTransactions = TransactionReconciliationHelper.dedupe([
+        ..._cashTransactions,
+        ..._onlineTransactions,
+        ..._khataTransactions,
+        ..._invoiceTransactions,
+      ]);
 
       _paidCustomers = _invoiceTransactions.where((invoice) {
         final status = invoice['status']?.toString().toUpperCase() ?? '';
