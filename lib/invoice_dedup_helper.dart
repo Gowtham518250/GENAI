@@ -44,7 +44,8 @@ class InvoiceDedupHelper {
 
       // Numeric IDs live in the backend-ID namespace. This prevents a bill
       // number like "12" accidentally matching database invoice id 12.
-      if (RegExp(r'^\d+.hasMatch(value)) {
+      final isNumericId = value.isNotEmpty && value.codeUnits.every((code) => code >= 48 && code <= 57);
+      if (isNumericId) {
         tokens.add('backend:$value');
       } else {
         // Older clients sometimes store the bill number in invoice_id/id.
@@ -98,7 +99,7 @@ class InvoiceDedupHelper {
       'amount',
     ]) {
       final value = _number(row[field], -1);
-      if (value >= 0) return value;
+      if (value > 0) return value;
     }
     return 0;
   }
