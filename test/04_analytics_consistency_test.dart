@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:retail_mind/analytics_engine.dart';
+import 'package:retail_mind/invoice_analytics_snapshot.dart';
 
 void main() {
   group('P0/P1 Analytics integrity', () {
@@ -69,5 +70,49 @@ void main() {
       expect(engine.totalSales, 100);
       expect(engine.totalTransactions, 1);
     });
+
+    test('invoice analytics keeps paid invoices and aggregates all payment states', () {
+      final snapshot = InvoiceAnalyticsSnapshot.fromRows(
+        [
+          {
+            'invoice_number': 'BILL-0001',
+            'customer_name': 'Paid Customer',
+            'customer_phone': '9876543210',
+            'total_amount': 100.0,
+            'paid_amount': 100.0,
+          },
+          {
+            'invoice_number': 'BILL-0002',
+            'customer_name': 'Partial Customer',
+            'customer_phone': '9876543211',
+            'total_amount': 80.0,
+            'paid_amount': 30.0,
+          },
+          {
+            'invoice_number': 'BILL-0003',
+            'customer_name': 'Guest Customer',
+            'total_amount': 25.0,
+            'paid_amount': 0.0,
+          },
+        ],
+        isValidCustomerPhone: (phone) =>
+            RegExp(r'^[6-9][0-9]{9}$').hasMatch(phone),
+      );
+
+      expect(snapshot.invoices, hasLength(3));
+      expect(snapshot.invoices.first['payment_status'], 'PAID');
+      expect(snapshot.paidCount, 1);
+      expect(snapshot.partialCount, 1);
+      expect(snapshot.unpaidCount, 1);
+      expect(snapshot.totalInvoiced, 205.0);
+      expect(snapshot.totalPaid, 130.0);
+      expect(snapshot.totalPending, 75.0);
+      expect(snapshot.outstandingCreditInvoices, hasLength(1));
+      expect(
+        snapshot.outstandingCreditInvoices.single['invoice_number'],
+        'BILL-0002',
+      );
+    });
+
   });
 }

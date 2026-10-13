@@ -17,6 +17,7 @@ import 'sync_service.dart';
 import 'visual_widgets.dart';
 import 'paid_invoices_page.dart';
 import 'invoice_dedup_helper.dart';
+import 'invoice_analytics_snapshot.dart';
 
 class KhataPage extends StatefulWidget {
   final String? focusPhone;
@@ -302,7 +303,9 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
         );
         final paid = paidRaw.clamp(0.0, total).toDouble();
         final status = _deriveStatus(total, paid);
-        final businessDate = row['sale_timestamp'] ??
+        final businessDate = row['paid_at'] ??
+            row['payment_date'] ??
+            row['sale_timestamp'] ??
             row['created_at'] ??
             row['business_date'] ??
             row['invoice_date'] ??
@@ -319,7 +322,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                 .toString()
                 .trim();
 
-        return {
+        return <String, dynamic>{
           ...row,
           'invoice_number': invoiceNumber,
           'customer_name': rawName.isNotEmpty ? rawName : 'Customer',
@@ -333,66 +336,21 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
         };
       }).toList();
 
-      // Khata is a CREDIT ledger, not a general sales report.
-      // Only show:
-      //   1) a valid customer phone number
-      //   2) an outstanding amount
-      // This excludes normal cash/paid sales and anonymous records.
-      final invoices = normalized.where((inv) {
-        final phone = (inv['customer_phone'] ?? '').toString().trim();
-        final total = (inv['total_amount'] as num?)?.toDouble() ?? 0.0;
-        final paid = (inv['paid_amount'] as num?)?.toDouble() ?? 0.0;
-        final pending = (total - paid).clamp(0.0, double.infinity).toDouble();
-
-        return _isValidCustomerPhone(phone) && pending > 0.01;
-      }).toList();
-
-      invoices.sort((a, b) {
-        final da =
-            DateTime.tryParse(a['business_date']?.toString() ?? '') ??
-                DateTime(1970);
-        final db =
-            DateTime.tryParse(b['business_date']?.toString() ?? '') ??
-                DateTime(1970);
-        return db.compareTo(da);
-      });
-
-      double creditTotal = 0.0;
-      double collectedAgainstCredit = 0.0;
-      int partialCount = 0;
-      int unpaidCount = 0;
+      // Invoice Analytics is a full invoice ledger: keep PAID, PARTIAL and
+      // UNPAID invoices visible. Only the Top Outstanding Customers panel is
+      // restricted to phone-backed, genuinely outstanding credit accounts.
+      final snapshot = InvoiceAnalyticsSnapshot.fromRows(
+        normalized,
+        isValidCustomerPhone: _isValidCustomerPhone,
+      );
 
       final outstandingByCustomer = <String, Map<String, dynamic>>{};
 
-      for (final inv in invoices) {
-        final total =
-            (inv['total_amount'] as num?)?.toDouble() ?? 0.0;
-        final paidAmt =
-            (inv['paid_amount'] as num?)?.toDouble() ?? 0.0;
-        final pending =
-            (total - paidAmt).clamp(0.0, double.infinity).toDouble();
-
-        creditTotal += total;
-        collectedAgainstCredit += paidAmt;
-
-        final status =
-            (inv['payment_status'] ?? _deriveStatus(total, paidAmt))
-                .toString()
-                .toUpperCase();
-
-        if (status == 'PARTIAL') {
-          partialCount++;
-        } else {
-          unpaidCount++;
-        }
-
-        final customerId =
-            (inv['customer_id'] ?? '').toString().trim();
-        final phone =
-            (inv['customer_phone'] ?? '').toString().trim();
-        final name =
-            (inv['customer_name'] ?? 'Customer').toString().trim();
-
+      for (final inv in snapshot.outstandingCreditInvoices) {
+        final pending = (inv['pending_amount'] as num?)?.toDouble() ?? 0.0;
+        final customerId = (inv['customer_id'] ?? '').toString().trim();
+        final phone = (inv['customer_phone'] ?? '').toString().trim();
+        final name = (inv['customer_name'] ?? 'Customer').toString().trim();
         final key = customerId.isNotEmpty && customerId != '0'
             ? 'id:$customerId'
             : 'phone:$phone';
@@ -400,8 +358,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
         final existing = outstandingByCustomer[key];
         if (existing == null) {
           outstandingByCustomer[key] = {
-            'customer_id':
-                customerId.isNotEmpty ? customerId : null,
+            'customer_id': customerId.isNotEmpty ? customerId : null,
             'name': name.isNotEmpty ? name : 'Customer',
             'phone': phone,
             'outstanding': pending,
@@ -425,26 +382,15 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
       if (!mounted) return;
 
       setState(() {
-        _allInvoices = invoices;
-        _invoicedTotal = creditTotal;
-        _paidTotal = collectedAgainstCredit;
-        _pendingTotal = invoices.fold<double>(
-          0.0,
-          (sum, inv) =>
-              sum +
-              ((inv['pending_amount'] as num?)?.toDouble() ?? 0.0),
-        );
-
-        // Paid invoices are intentionally not part of this Khata view.
-        _paidCount = 0;
-        _partialCount = partialCount;
-        _unpaidCount = unpaidCount;
+        _allInvoices = snapshot.invoices;
+        _invoicedTotal = snapshot.totalInvoiced;
+        _paidTotal = snapshot.totalPaid;
+        _pendingTotal = snapshot.totalPending;
+        _paidCount = snapshot.paidCount;
+        _partialCount = snapshot.partialCount;
+        _unpaidCount = snapshot.unpaidCount;
         _topOutstandingCustomers = topOutstanding.take(5).toList();
         _invoicesLoading = false;
-
-        if (_invoiceStatusFilter == 'PAID') {
-          _invoiceStatusFilter = 'ALL';
-        }
       });
 
       // Backend reconciliation is already performed by _loadKhata().
@@ -460,7 +406,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
   }
 
   String _deriveStatus(double total, double paid) {
-    if (paid >= total - 0.01) return 'PAID';
+    if (total > 0 && paid >= total - 0.01) return 'PAID';
     if (paid > 0) return 'PARTIAL';
     return 'UNPAID';
   }
@@ -1571,10 +1517,12 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildInvoiceAnalyticsHero(),
+            const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Overview', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                Text('Invoice performance', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                 TextButton.icon(
                   onPressed: _exportSummary,
                   icon: const Icon(Icons.ios_share_rounded, size: 16),
@@ -1590,7 +1538,28 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
             const SizedBox(height: 20),
             _buildTopOutstandingCustomers(),
             const SizedBox(height: 20),
-            Text('Pending Credit Invoices', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('All invoices', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                      const SizedBox(height: 3),
+                      Text('Paid, partially paid and outstanding records', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF64748B))),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _primary.withValues(alpha: 0.09),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text('${_filteredInvoices.length} shown', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: _primary)),
+                ),
+              ],
+            ),
             const SizedBox(height: 10),
             _buildInvoiceSearchAndSort(),
             const SizedBox(height: 10),
@@ -1767,41 +1736,137 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildInvoiceSummaryCards() {
-    return Row(
-      children: [
-        Expanded(child: _buildSummaryCard('Total Invoiced', _invoicedTotal, const Color(0xFF4F46E5), Icons.receipt_long_rounded)),
-        const SizedBox(width: 10),
-        Expanded(child: _buildSummaryCard('Total Paid', _paidTotal, _success, Icons.check_circle_rounded)),
-        const SizedBox(width: 10),
-        Expanded(child: _buildSummaryCard('Total Pending', _pendingTotal, _danger, Icons.pending_actions_rounded)),
-      ],
+  Widget _buildInvoiceAnalyticsHero() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3730A3), Color(0xFF6366F1), Color(0xFF7C3AED)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: _primary.withValues(alpha: 0.20),
+            blurRadius: 22,
+            offset: const Offset(0, 9),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
+            ),
+            child: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 27),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Invoice intelligence',
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Track billing, collections and outstanding balances in one place.',
+                  style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.82), fontSize: 11, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              children: [
+                Text('RECORDS', style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.78), fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 0.6)),
+                const SizedBox(height: 4),
+                Text('${_allInvoices.length}', style: GoogleFonts.inter(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildSummaryCard(String label, double amount, Color color, IconData icon) {
+  Widget _buildInvoiceSummaryCards() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = (constraints.maxWidth - 10) / 2;
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _buildSummaryCard('Total invoices', '${_allInvoices.length}', _primary, Icons.receipt_long_rounded, cardWidth),
+            _buildSummaryCard('Total invoiced', '₹${_invoicedTotal.toStringAsFixed(0)}', const Color(0xFF0EA5E9), Icons.request_quote_rounded, cardWidth),
+            _buildSummaryCard('Collected', '₹${_paidTotal.toStringAsFixed(0)}', _success, Icons.check_circle_rounded, cardWidth),
+            _buildSummaryCard('Outstanding', '₹${_pendingTotal.toStringAsFixed(0)}', _danger, Icons.pending_actions_rounded, cardWidth),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSummaryCard(
+    String label,
+    String value,
+    Color color,
+    IconData icon,
+    double width,
+  ) {
     return Container(
+      width: width,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: const Color(0xFFE8ECF4)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.035),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(label, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
+          Container(
+            width: 35,
+            height: 35,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.11),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, color: color, size: 19),
+          ),
+          const SizedBox(height: 12),
           Text(
-            '₹${amount.toStringAsFixed(0)}',
-            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF0F172A)),
+            value,
+            style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w900, color: const Color(0xFF0F172A)),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
           ),
         ],
       ),
@@ -1825,13 +1890,13 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Outstanding Credit Status', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+          Text('Invoice payment status', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
           const SizedBox(height: 16),
           if (total == 0)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
-                child: Text('No invoices yet', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8))),
+                child: Text('Your payment breakdown will appear when invoices are available.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF94A3B8))),
               ),
             )
           else
@@ -1913,6 +1978,8 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
       child: Row(
         children: [
           _buildInvoiceChip('ALL', 'All (${_allInvoices.length})'),
+          const SizedBox(width: 8),
+          _buildInvoiceChip('PAID', 'Paid ($_paidCount)', color: _success),
           const SizedBox(width: 8),
           _buildInvoiceChip('PARTIAL', 'Partial ($_partialCount)', color: _warning),
           const SizedBox(width: 8),
@@ -2227,17 +2294,68 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
   }
 
   Widget _buildInvoiceEmptyState() {
+    final noRecords = _allInvoices.isEmpty;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.fromLTRB(22, 28, 22, 26),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE8ECF4)),
+        ),
         child: Column(
           children: [
-            Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 12),
-            Text('No invoices found', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                color: _primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                noRecords ? Icons.receipt_long_outlined : Icons.search_off_rounded,
+                size: 34,
+                color: _primary,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              noRecords ? 'No invoice records yet' : 'No matching invoices',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B)),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              noRecords
+                  ? 'Invoices will appear here after a sale is saved or cloud sync completes. Paid invoices remain in analytics.'
+                  : 'Try a different payment status or clear your search to see more invoices.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(fontSize: 12, height: 1.45, color: const Color(0xFF64748B)),
+            ),
+            if (!noRecords) ...[
+              const SizedBox(height: 14),
+              TextButton.icon(
+                onPressed: () {
+                  _invoiceSearchController.clear();
+                  setState(() {
+                    _invoiceSearchQuery = '';
+                    _invoiceStatusFilter = 'ALL';
+                  });
+                },
+                icon: const Icon(Icons.filter_alt_off_rounded, size: 17),
+                label: const Text('Clear filters'),
+                style: TextButton.styleFrom(foregroundColor: _primary),
+              ),
+            ],
             const SizedBox(height: 4),
-            Text('Invoices will appear here once sales are recorded.',
-                style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B))),
+            TextButton.icon(
+              onPressed: _loadInvoiceAnalytics,
+              icon: const Icon(Icons.refresh_rounded, size: 17),
+              label: const Text('Refresh invoices'),
+              style: TextButton.styleFrom(foregroundColor: _primary),
+            ),
           ],
         ),
       ),
