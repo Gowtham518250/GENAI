@@ -195,32 +195,87 @@ class _DecentLoginPageState extends State<DecentLoginPage>
           }
         })();
 
-        // Clear stale session-only state only when an older local owner session
-        // is still present. After a normal logout the token is already gone, so
-        // repeating the full purge here can reopen/clear storage again and leave
-        // the login overlay waiting indefinitely.
+        // A new access token is expected on every login, including the SAME
+        // account. Only clear legacy unscoped caches when identity actually
+        // changes. The previous code compared token strings, so re-login for the
+        // same owner wiped local sales/offline work before cloud restoration.
         final existingToken = await SecureTokenStorage.getToken();
         if ((existingToken ?? '').isNotEmpty && existingToken != accessToken) {
-          if (kDebugMode) {
-            debugPrint(
-              '🧹 Existing local session detected; clearing stale session data...',
-            );
-          }
+          final existingPrefs = await SharedPreferences.getInstance();
+          var previousUserId = int.tryParse(
+                existingPrefs.getString('user_id') ??
+                    existingPrefs.getString('userId') ??
+                    '',
+              ) ??
+              existingPrefs.getInt('user_id') ??
+              existingPrefs.getInt('userId') ??
+              0;
+          var previousRole = (existingPrefs.getString('user_role') ??
+                  existingPrefs.getString('user_type') ??
+                  existingPrefs.getString('role') ??
+                  '')
+              .trim()
+              .toUpperCase();
+
+          // Prefer signed-token identity if legacy preference metadata is absent.
           try {
-            await UserDataClearService.clearAllUserData().timeout(
-              const Duration(seconds: 8),
-            );
-          } on TimeoutException {
-            if (mounted) {
-              setState(() {
-                errorMessage =
-                    'Local session cleanup timed out. Please retry login.';
-              });
+            final parts = existingToken!.split('.');
+            if (parts.length == 3) {
+              final normalized = base64Url.normalize(parts[1]);
+              final oldClaims = json.decode(
+                utf8.decode(base64Url.decode(normalized)),
+              );
+              if (oldClaims is Map) {
+                previousUserId = previousUserId > 0
+                    ? previousUserId
+                    : int.tryParse(oldClaims['sub']?.toString() ?? '') ?? 0;
+                if (previousRole.isEmpty) {
+                  previousRole = (oldClaims['role'] ??
+                          oldClaims['user_type'] ??
+                          '')
+                      .toString()
+                      .trim()
+                      .toUpperCase();
+                }
+              }
             }
+          } catch (_) {}
+
+          final newRole = role.trim().toUpperCase();
+          final identityKnown = previousUserId > 0;
+          final sameUser = identityKnown && previousUserId == userId;
+          final sameRole = previousRole.isEmpty ||
+              newRole.isEmpty ||
+              previousRole == newRole;
+          final identityChanged = !sameUser || !sameRole;
+
+          if (identityChanged) {
             if (kDebugMode) {
-              debugPrint('⏱️ Login aborted: local session cleanup timed out');
+              debugPrint(
+                '🧹 Account identity changed; clearing legacy unscoped local cache '
+                '(previous user=$previousUserId, new user=$userId).',
+              );
             }
-            return;
+            try {
+              await UserDataClearService.clearAllUserData().timeout(
+                const Duration(seconds: 8),
+              );
+            } on TimeoutException {
+              if (mounted) {
+                setState(() {
+                  errorMessage =
+                      'Local session cleanup timed out. Please retry login.';
+                });
+              }
+              if (kDebugMode) {
+                debugPrint('⏱️ Login aborted: local session cleanup timed out');
+              }
+              return;
+            }
+          } else if (kDebugMode) {
+            debugPrint(
+              '✅ Same account re-authenticated; preserving local sales and pending sync queue.',
+            );
           }
         }
 
