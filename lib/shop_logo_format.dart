@@ -31,7 +31,7 @@ class ShopLogoFormat {
     }
 
     if (matches(const <int>[0xFF, 0xD8, 0xFF])) {
-      return const ShopLogoFormat(
+      return ShopLogoFormat(
         extension: 'jpg',
         contentType: MediaType('image', 'jpeg'),
       );
@@ -39,7 +39,7 @@ class ShopLogoFormat {
 
     if (matches(const <int>[0x47, 0x49, 0x46, 0x38, 0x37, 0x61]) ||
         matches(const <int>[0x47, 0x49, 0x46, 0x38, 0x39, 0x61])) {
-      return const ShopLogoFormat(
+      return ShopLogoFormat(
         extension: 'gif',
         contentType: MediaType('image', 'gif'),
       );
@@ -51,7 +51,7 @@ class ShopLogoFormat {
         bytes[9] == 0x45 &&
         bytes[10] == 0x42 &&
         bytes[11] == 0x50) {
-      return const ShopLogoFormat(
+      return ShopLogoFormat(
         extension: 'webp',
         contentType: MediaType('image', 'webp'),
       );
