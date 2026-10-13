@@ -298,6 +298,7 @@ class _DashboardPageState extends State<DashboardPage>
             status != 'SYNCED' &&
             status != 'DONE';
       }).toList();
+      final unsyncedBills = pendingBusinessItems.length;
 
       String syncDetail = '';
       if (pendingBusinessItems.isNotEmpty) {
