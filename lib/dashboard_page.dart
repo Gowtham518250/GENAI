@@ -262,6 +262,8 @@ class _DashboardPageState extends State<DashboardPage>
   int _onlineTotalPaidCount = 0;
   int _unsyncedBillsCount =
       0; // Surfaced as a persistent dashboard warning, not just used for the health score
+  String _unsyncedSyncDetail = '';
+  bool _retryingUnsyncedBills = false;
 
   void _addToActivityFeed(String activity) {
     setState(() {
@@ -276,17 +278,48 @@ class _DashboardPageState extends State<DashboardPage>
   Future<void> _recomputeDailyHealthScore() async {
     try {
       final queueItems = await SyncQueueManager.getAll();
-      final unsyncedBills = queueItems.where((e) {
+      const businessSyncActions = <String>{
+        'sync_sale',
+        'save_sale',
+        'create_sale',
+        'sync_invoice_batch',
+        'record_payment',
+        'update_payment',
+        'update_invoice_payment',
+        'update_invoice_paid',
+        'update_invoice_unpaid',
+        'record_khata_payment',
+      };
+      final pendingBusinessItems = queueItems.where((e) {
         final action = e['action']?.toString() ?? '';
-        // These actions represent “not yet committed to backend”.
-        return action == 'sync_sale' ||
-            action == 'save_sale' ||
-            action == 'update_payment' ||
-            action == 'update_invoice_paid' ||
-            action == 'update_invoice_unpaid';
-      }).length;
+        final status = (e['status']?.toString() ?? 'PENDING').toUpperCase();
+        // Count only unacknowledged business writes, not terminal/old markers.
+        return businessSyncActions.contains(action) &&
+            status != 'SYNCED' &&
+            status != 'DONE';
+      }).toList();
 
-      if (mounted) setState(() => _unsyncedBillsCount = unsyncedBills);
+      String syncDetail = '';
+      if (pendingBusinessItems.isNotEmpty) {
+        final first = pendingBusinessItems.first;
+        final rawError = first['last_error']?.toString().trim() ?? '';
+        final retryCount = int.tryParse(first['retries']?.toString() ?? '') ?? 0;
+        final status = (first['status']?.toString() ?? 'PENDING').toUpperCase();
+        if (rawError.isNotEmpty && rawError != 'SYNC_FAILED') {
+          syncDetail = 'Latest attempt: ${_describeSyncFailure(rawError)}';
+        } else if (retryCount > 0) {
+          syncDetail = 'Still waiting for server acknowledgement (status $status, attempt $retryCount). Tap Retry now to try immediately.';
+        } else {
+          syncDetail = 'The device has internet, but this record has not received a successful server acknowledgement yet.';
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _unsyncedBillsCount = pendingBusinessItems.length;
+          _unsyncedSyncDetail = syncDetail;
+        });
+      }
 
       final dayClosed = _shopClosed || _closedToday;
       final duesPending = _pendingInvoices.isNotEmpty;
@@ -11322,6 +11355,61 @@ class _DashboardPageState extends State<DashboardPage>
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeInOut,
     );
+  }
+
+  String _describeSyncFailure(String raw) {
+    final message = raw.replaceAll(RegExp(r'\\s+'), ' ').trim();
+    if (RegExp(r'HTTP[_ ]401|HTTP[_ ]403', caseSensitive: false).hasMatch(message)) {
+      return 'The login session was rejected. Refresh your session, then retry.';
+    }
+    if (RegExp(r'HTTP[_ ]422', caseSensitive: false).hasMatch(message)) {
+      return 'The server rejected one or more invoice fields (HTTP 422). The exact validation response is saved on this device.';
+    }
+    if (RegExp(r'HTTP[_ ]400', caseSensitive: false).hasMatch(message)) {
+      return 'The server rejected this invoice (HTTP 400). Check the saved validation details before retrying.';
+    }
+    if (RegExp(r'HTTP[_ ]5[0-9][0-9]', caseSensitive: false).hasMatch(message)) {
+      return 'The backend returned a server error. The record is retained and can be retried.';
+    }
+    if (message.toLowerCase().contains('timeout') ||
+        message.toLowerCase().contains('socketexception') ||
+        message.toLowerCase().contains('network')) {
+      return 'The upload request timed out or lost its connection. The record is retained for retry.';
+    }
+    return message.length > 180 ? '${message.substring(0, 177)}...' : message;
+  }
+
+  Future<void> _retryPendingCloudSync() async {
+    if (_retryingUnsyncedBills) return;
+    setState(() => _retryingUnsyncedBills = true);
+    try {
+      final result = await SyncService.retryPendingBusinessOperationsNow();
+      await _recomputeDailyHealthScore();
+      if (!mounted) return;
+
+      final bool started = result['started'] == true;
+      final String reason = result['reason']?.toString() ?? '';
+      final int awakened = (result['awakened'] as num?)?.toInt() ?? 0;
+      final String message = started
+          ? 'Retry started for $awakened queued record(s). The warning clears only after server acknowledgement.'
+          : reason == 'sync_already_running'
+              ? 'A sync is already running. Wait a moment while the current upload finishes.'
+              : 'No retryable sale/payment changes were found. The queued record, if any, has not been deleted.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start sync retry: ${e.runtimeType}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _retryingUnsyncedBills = false);
+    }
   }
 
   Widget _buildUnsyncedSalesWarning() {
