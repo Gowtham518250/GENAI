@@ -9,7 +9,14 @@ import 'worker_local_storage.dart';
 import 'models.dart';
 
 class WorkerManagementPage extends StatefulWidget {
-  const WorkerManagementPage({super.key});
+  const WorkerManagementPage({
+    super.key,
+    this.openAddWorkerOnLoad = false,
+  });
+
+  /// When true, open the existing Add Worker dialog as soon as this page opens.
+  /// Used by the Attendance page's shortcut so both flows share one form.
+  final bool openAddWorkerOnLoad;
 
   @override
   State<WorkerManagementPage> createState() => _WorkerManagementPageState();
@@ -67,6 +74,11 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
   void initState() {
     super.initState();
     _fetchWorkers();
+    if (widget.openAddWorkerOnLoad) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showAddWorkerDialog();
+      });
+    }
   }
 
   @override
