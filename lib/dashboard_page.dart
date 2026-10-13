@@ -11358,7 +11358,7 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   String _describeSyncFailure(String raw) {
-    final message = raw.replaceAll(RegExp(r'\\s+'), ' ').trim();
+    final message = raw.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (RegExp(r'HTTP[_ ]401|HTTP[_ ]403', caseSensitive: false).hasMatch(message)) {
       return 'The login session was rejected. Refresh your session, then retry.';
     }
