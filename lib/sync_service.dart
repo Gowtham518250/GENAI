@@ -1470,6 +1470,47 @@ class SyncService {
     }
   }
 
+  /// Explicitly retry queued sale/payment writes now, without waiting for backoff.
+  /// Returns the number of durable queue items that were made immediately retryable.
+  static Future<Map<String, dynamic>> retryPendingBusinessOperationsNow() async {
+    if (SyncQueueManager.isSyncing) {
+      return <String, dynamic>{
+        'started': false,
+        'reason': 'sync_already_running',
+        'awakened': 0,
+      };
+    }
+
+    const actions = <String>{
+      'save_sale',
+      'create_sale',
+      'sync_sale',
+      'sync_invoice_batch',
+      'record_payment',
+      'update_payment',
+      'update_invoice_payment',
+      'update_invoice_paid',
+      'update_invoice_unpaid',
+      'record_khata_payment',
+    };
+
+    final awakened = await SyncQueueManager.makeActionsRetryableNow(actions);
+    if (awakened <= 0) {
+      return <String, dynamic>{
+        'started': false,
+        'reason': 'no_retryable_business_operations',
+        'awakened': 0,
+      };
+    }
+
+    await processQueueSafe();
+    return <String, dynamic>{
+      'started': true,
+      'reason': 'retry_requested',
+      'awakened': awakened,
+    };
+  }
+
   /// Sync one or many line items for a single bill (idempotent).
   static Future<bool> _syncSaleBatchItem(Map<String, dynamic> data) async {
     // ONE sale sync path: /api/invoices/sync. It is the authoritative atomic
@@ -1500,10 +1541,24 @@ class SyncService {
       ).timeout(const Duration(seconds: 15));
 
       // 201 = created; 200 = already exists/idempotent duplicate.
-      return res.statusCode == 200 || res.statusCode == 201;
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        return true;
+      }
+
+      // Preserve the real backend rejection in the queue's last_error field.
+      // Connectivity can be live while the backend rejects malformed/stale data.
+      var responseDetail = res.body.replaceAll(RegExp(r'\\s+'), ' ').trim();
+      if (responseDetail.length > 240) {
+        responseDetail = responseDetail.substring(0, 240);
+      }
+      final diagnostic = responseDetail.isEmpty
+          ? 'HTTP ${res.statusCode}'
+          : 'HTTP ${res.statusCode}: $responseDetail';
+      throw StateError('SALE_SYNC_REJECTED: $diagnostic');
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Offline Sale/Invoice Sync failed: $e');
-      return false;
+      // Let the durable queue processor persist the actual failure and retry time.
+      rethrow;
     }
   }
 
