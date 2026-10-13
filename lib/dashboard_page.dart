@@ -2448,7 +2448,18 @@ class _DashboardPageState extends State<DashboardPage>
     }
 
     // 🔒 SECURITY FIX: Load UPI ID and Master PIN status from encrypted SecureStorage
-    final upiId = await SecurePreferencesService.getUpiId();
+    var upiId = await SecurePreferencesService.getUpiId();
+    // Migration/fallback for UPI IDs saved by older app versions in the
+    // user-scoped profile cache before the secure key was populated.
+    if (upiId == null || upiId.trim().isEmpty) {
+      final cachedProfileUpi =
+          await ScopedSharedPreferences.getString('primary_upi_id') ??
+          await ScopedSharedPreferences.getString('upi_id');
+      if (cachedProfileUpi != null && cachedProfileUpi.trim().isNotEmpty) {
+        upiId = cachedProfileUpi.trim();
+        await SecurePreferencesService.setUpiId(upiId);
+      }
+    }
     final isMasterPinSet = await SecurePreferencesService.isMasterPinSet();
 
     setState(() {
