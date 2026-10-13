@@ -10,6 +10,7 @@ import 'models.dart';
 import 'local_storage_service.dart';
 import 'secure_token_storage.dart';
 import 'sync_queue_manager.dart';
+import 'sync_payload_recovery.dart';
 import 'sale_service.dart';
 import 'error_log_helper.dart';
 import 'sales_dedup_helper.dart';
@@ -1292,6 +1293,16 @@ class SyncService {
               success = false;
           }
 
+          // A recovery path may have rebuilt a legacy queued sale from the
+          // local history. Persist that payload into the durable outbox before
+          // ACK/removal, so a crash during this attempt cannot lose the repair.
+          final storedQueueData = item['data'];
+          if (data['payload'] is Map &&
+              (storedQueueData is! Map || storedQueueData['payload'] is! Map)) {
+            item['data'] = data;
+            await SyncQueueManager.update(actionId, item);
+          }
+
           if (success) {
             // ACK protocol: persist local SYNCED state first. Only then can the
             // durable outbox item be removed. If local marking fails, the queue
@@ -1391,6 +1402,11 @@ class SyncService {
             consecutiveNetworkFailures++;
           }
         } catch (e, stack) {
+          final storedQueueData = item['data'];
+          if (data['payload'] is Map &&
+              (storedQueueData is! Map || storedQueueData['payload'] is! Map)) {
+            item['data'] = data;
+          }
           await ErrorLogHelper.logException(e, stack,
             context: 'SyncService._processQueueImpl - action: $action',
             attributes: {'action_id': actionId, 'action': action},
@@ -1526,8 +1542,34 @@ class SyncService {
     }
 
     if (payload == null || payload.isEmpty) {
-      if (kDebugMode) debugPrint('⚠️ Invalid queued sale payload; parking it instead of using legacy /auth/sales.');
-      return false;
+      try {
+        final localSales = await LocalStorageService.loadSales();
+        final recovered = buildInvoicePayloadFromLocalSale(data, localSales);
+        if (recovered != null) {
+          payload = recovered;
+          data['payload'] = recovered;
+          data['invoice_payload'] = recovered;
+          data['endpoint'] = ApiClient.invoicesSync;
+          data['invoice_number'] ??= recovered['invoice_number'];
+          data['sale_id'] ??= recovered['offline_id'];
+          if (kDebugMode) {
+            debugPrint(
+              '🔁 Rebuilt a legacy queued invoice payload from local history '
+              'for ${recovered['invoice_number']}.',
+            );
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Legacy invoice payload recovery failed: $e');
+      }
+
+      if (payload == null || payload.isEmpty) {
+        // Fail closed: keep the original queue entry, but report a specific
+        // error rather than retrying an unusable payload without explanation.
+        throw StateError(
+          'SALE_SYNC_INVALID_PAYLOAD: no matching local invoice history was found to rebuild this queued sale.',
+        );
+      }
     }
 
     try {
