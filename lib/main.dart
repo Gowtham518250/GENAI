@@ -1306,8 +1306,48 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final loginPrefs = await SharedPreferences.getInstance();
     _hasSeenOnboarding = loginPrefs.getBool('has_seen_onboarding') ?? false;
 
-    // 7-day auto-login logic implementation
-    final isValid = await SecureTokenStorage.isSessionValid();
+    // The local seven-day timestamp is a cache guard, not the only login
+    // path. If it expires, try the persisted refresh token before showing Login.
+    // A rejected/expired refresh token is cleared by autoLogin(); a network or
+    // 5xx failure keeps credentials so the local dashboard can still open offline.
+    var isValid = await SecureTokenStorage.isSessionValid();
+    if (!isValid) {
+      final refreshToken = await SecureTokenStorage.getRefreshToken();
+      final existingAccessToken = await SecureTokenStorage.getToken();
+      if ((refreshToken ?? '').isNotEmpty &&
+          (existingAccessToken ?? '').isNotEmpty) {
+        try {
+          final refreshed = await SessionManagementService.autoLogin()
+              .timeout(const Duration(seconds: 7), onTimeout: () => null);
+          isValid = refreshed?['success'] == true &&
+              await SecureTokenStorage.isSessionValid();
+
+          if (!isValid) {
+            // autoLogin preserves tokens on network/5xx failure, but clears
+            // them on 401/403. Preserve access to local sales while temporarily
+            // offline; queued writes still require backend acknowledgement.
+            final retainedRefresh = await SecureTokenStorage.getRefreshToken();
+            final retainedAccess = await SecureTokenStorage.getToken();
+            isValid = (retainedRefresh ?? '').isNotEmpty &&
+                (retainedAccess ?? '').isNotEmpty;
+            if (isValid && kDebugMode) {
+              debugPrint(
+                '⚠️ Refresh could not be confirmed at boot; opening local dashboard '
+                'with queued sync paused/retrying when the backend is reachable.',
+              );
+            }
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('⚠️ Boot refresh unavailable; checking retained session: ${e.runtimeType}');
+          }
+          final retainedRefresh = await SecureTokenStorage.getRefreshToken();
+          final retainedAccess = await SecureTokenStorage.getToken();
+          isValid = (retainedRefresh ?? '').isNotEmpty &&
+              (retainedAccess ?? '').isNotEmpty;
+        }
+      }
+    }
 
     // Restore shop profile from SharedPreferences if available
     if (isValid) {
