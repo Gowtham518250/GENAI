@@ -11,6 +11,7 @@ import 'sms_background_receiver.dart';
 import 'financial_math.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:typed_data';
 import 'secure_token_storage.dart';
@@ -2331,6 +2332,46 @@ class _DashboardPageState extends State<DashboardPage>
               'shop_logo_url',
               profile['logo_url'].toString(),
             );
+
+            // A logo URL alone is not enough for the native avatar. Pull the
+            // canonical image bytes and cache them for offline rendering. The
+            // image endpoint reads from PostgreSQL, so it survives deploys.
+            final remoteVersion =
+                (profile['logo_version'] ?? 0).toString();
+            final localVersion =
+                await ScopedSharedPreferences.getString('shop_logo_version') ?? '';
+            final cachedLogo =
+                await ScopedSharedPreferences.getString('logo_base64') ?? '';
+            if (cachedLogo.isEmpty ||
+                (remoteVersion != '0' &&
+                    localVersion.isNotEmpty &&
+                    remoteVersion != localVersion)) {
+              final logoResponse = await ApiClient.getJson(
+                '/api/shop/logo/$userId',
+                headers: token.isNotEmpty
+                    ? {'Authorization': 'Bearer $token'}
+                    : null,
+              ).timeout(const Duration(seconds: 10));
+              if (logoResponse.statusCode == 200 &&
+                  logoResponse.bodyBytes.isNotEmpty) {
+                final encodedLogo = base64Encode(logoResponse.bodyBytes);
+                await ScopedSharedPreferences.setString(
+                  'logo_base64',
+                  encodedLogo,
+                );
+                await ScopedSharedPreferences.setString(
+                  'shop_logo_version',
+                  remoteVersion,
+                );
+                if (mounted) {
+                  setState(() => logoBytes = logoResponse.bodyBytes);
+                }
+              } else if (kDebugMode) {
+                debugPrint(
+                  '⚠️ Shop logo fetch failed: HTTP ${logoResponse.statusCode}',
+                );
+              }
+            }
           }
 
           // 🔒 SECURITY: Save full profile as JSON for detailed dashboard use (scoped)
@@ -10738,6 +10779,137 @@ class _DashboardPageState extends State<DashboardPage>
     required String upiId,
     Uint8List? logoBytes,
     Uint8List? qrBytes,
+  }) async {
+    final token = await SecureTokenStorage.getToken() ?? '';
+    if (token.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Saved on this device, but cloud save needs a valid login session.'),
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      // /api/shop/settings is for business-hours/payment-method settings; this
+      // screen changes the shop profile, so persist fields via PUT /profile.
+      final profileBody = <String, dynamic>{
+        'shop_name': shopName.trim(),
+        'contact_person_name': ownerName.trim(),
+        'upi_id': upiId.trim(),
+      };
+      final profileResponse = await ApiClient.putJson(
+        ApiClient.shopProfile,
+        profileBody,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 15));
+
+      if (profileResponse.statusCode != 200 &&
+          profileResponse.statusCode != 201) {
+        final detail = profileResponse.body.length > 220
+            ? profileResponse.body.substring(0, 220)
+            : profileResponse.body;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Shop details remain local; backend save failed '
+                '(HTTP ${profileResponse.statusCode}): $detail',
+              ),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+        return;
+      }
+
+      bool logoUploaded = true;
+      String? logoError;
+      if (logoBytes != null && logoBytes.isNotEmpty) {
+        final file = http.MultipartFile.fromBytes(
+          'file',
+          logoBytes,
+          filename: 'shop_logo_${DateTime.now().millisecondsSinceEpoch}.png',
+        );
+        final logoResponse = await ApiClient.postMultipart(
+          ApiClient.shopUploadLogo,
+          <String, String>{},
+          headers: {'Authorization': 'Bearer $token'},
+          files: <http.MultipartFile>[file],
+        ).timeout(const Duration(seconds: 30));
+
+        final responseBody = await logoResponse.stream.bytesToString();
+        Map<String, dynamic>? payload;
+        try {
+          final decoded = json.decode(responseBody);
+          if (decoded is Map) payload = Map<String, dynamic>.from(decoded);
+        } catch (_) {}
+
+        final logoUrl = payload?['logo_url']?.toString() ?? '';
+        logoUploaded = (logoResponse.statusCode == 200 ||
+                logoResponse.statusCode == 201) &&
+            payload?['status']?.toString().toLowerCase() == 'success' &&
+            logoUrl.isNotEmpty;
+
+        if (logoUploaded) {
+          await ScopedSharedPreferences.setString('shop_logo_url', logoUrl);
+          await ScopedSharedPreferences.setString(
+            'logo_base64',
+            base64Encode(logoBytes),
+          );
+          final version = payload?['logo_version']?.toString();
+          if (version != null && version.isNotEmpty) {
+            await ScopedSharedPreferences.setString(
+              'shop_logo_version',
+              version,
+            );
+          }
+          if (mounted) {
+            setState(() => this.logoBytes = logoBytes);
+          }
+        } else {
+          logoError = 'HTTP ${logoResponse.statusCode}: '
+              '${responseBody.length > 180 ? responseBody.substring(0, 180) : responseBody}';
+          if (kDebugMode) debugPrint('⚠️ Shop logo upload failed: $logoError');
+        }
+      }
+
+      // The payment QR remains in secure local storage; only shop profile and
+      // image bytes are written through the supported backend endpoints.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              logoBytes != null
+                  ? (logoUploaded
+                      ? 'Shop details and logo saved to cloud.'
+                      : 'Shop details saved, but logo upload failed: ${logoError ?? 'unknown error'}')
+                  : 'Shop details saved to cloud.',
+            ),
+            backgroundColor: logoBytes == null || logoUploaded
+                ? Colors.green
+                : Colors.orange,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Failed to save shop profile/logo to backend: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cloud save failed: ${e.runtimeType}. Local data was kept.'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }) async {
     try {
       final body = {
