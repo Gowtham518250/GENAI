@@ -2427,6 +2427,16 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
+  /// Reload locally saved payment settings after the profile screen closes,
+  /// then refresh cloud-backed dashboard data. This avoids requiring logout
+  /// and login for a newly saved UPI ID to appear.
+  Future<void> _refreshShopProfileAfterEdit() async {
+    if (!mounted) return;
+    await _loadQr();
+    if (!mounted) return;
+    await _loadSales();
+  }
+
   Future<void> _loadQr() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
@@ -12468,7 +12478,7 @@ class _DashboardPageState extends State<DashboardPage>
             () => Navigator.pushNamed(
               context,
               '/shop-profile',
-            ).then((_) => _loadSales()),
+            ).then((_) => _refreshShopProfileAfterEdit()),
           ),
           const SizedBox(height: 14),
           _buildStepCard(
@@ -14048,7 +14058,7 @@ class _DashboardPageState extends State<DashboardPage>
               if (await SecurityService.verifyMasterPin(context)) {
                 if (!mounted) return;
                 Navigator.pushNamed(context, '/shop-profile').then((_) {
-                  if (mounted) _loadSales();
+                  if (mounted) _refreshShopProfileAfterEdit();
                 });
                 setState(() => _isSidebarOpen = false);
               }
@@ -15009,8 +15019,10 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
-                          onPressed: () =>
-                              Navigator.pushNamed(context, '/shop-profile'),
+                          onPressed: () => Navigator.pushNamed(
+                            context,
+                            '/shop-profile',
+                          ).then((_) => _refreshShopProfileAfterEdit()),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF2563EB),
                             foregroundColor: Colors.white,
@@ -15095,7 +15107,7 @@ class _DashboardPageState extends State<DashboardPage>
                     onTap: () => Navigator.pushNamed(
                       context,
                       '/shop-profile',
-                    ).then((_) => _loadSales()),
+                    ).then((_) => _refreshShopProfileAfterEdit()),
                     child: Container(
                       width: double.infinity,
                       margin: const EdgeInsets.only(bottom: 24),
