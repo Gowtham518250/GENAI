@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'inventory_stock_helper.dart';
 import 'sales_dedup_helper.dart';
+import 'invoice_dedup_helper.dart';
 import 'stored_sale.dart';
 
 /// SENIOR ENGINEER REFACTOR: Enterprise Local Storage Service
@@ -811,52 +812,61 @@ class LocalStorageService {
   // =========== INVOICES & CUSTOMERS ===========
   
   static Future<void> saveLocalInvoices(List<dynamic> invoices) async {
-    // 🔒 SECURITY FIX: Require valid user ID to prevent data leakage
+    // 🔒 Require a valid user ID to prevent data leakage between accounts.
     if (!await _hasValidUserId()) {
       if (kDebugMode) debugPrint('⚠️ saveLocalInvoices failed — no logged-in user');
-      throw Exception('SECURITY: Cannot save invoices without authenticated user_id. Please log in first.');
+      throw Exception(
+        'SECURITY: Cannot save invoices without authenticated user_id. Please log in first.',
+      );
     }
+
     final box = await _getBox(_invoicesBoxBase);
-    final List<dynamic> existingInvoices = List<dynamic>.from(box.get('manual_invoices', defaultValue: []));
-    final Map<String, Map<String, dynamic>> invoiceMap = {};
+    final existing = List<dynamic>.from(
+      box.get('manual_invoices', defaultValue: []),
+    );
 
-    for (final rawInvoice in [...existingInvoices, ...invoices]) {
-      if (rawInvoice is! Map) continue;
-      final invoice = Map<String, dynamic>.from(rawInvoice);
-      final id = invoice['sale_id']?.toString() ??
-                 invoice['invoice_number']?.toString() ??
-                 invoice['id']?.toString() ??
-                 invoice['invoiceId']?.toString() ??
-                 '';
-      if (id.isEmpty) {
-        final key = '__anon_invoice_${invoiceMap.length}';
-        invoiceMap[key] = invoice;
-      } else {
-        final existing = invoiceMap[id];
-        if (existing == null) {
-          invoiceMap[id] = invoice;
-        } else {
-          final existingUpdatedAt = DateTime.tryParse(existing['updated_at']?.toString() ?? existing['created_at']?.toString() ?? '') ?? DateTime(1970);
-          final currentUpdatedAt = DateTime.tryParse(invoice['updated_at']?.toString() ?? invoice['created_at']?.toString() ?? '') ?? DateTime(1970);
-          invoiceMap[id] = currentUpdatedAt.isAfter(existingUpdatedAt) ? invoice : existing;
-        }
-      }
-    }
-
-    final dedupedInvoices = invoiceMap.values.toList();
+    // Merge by connected identity aliases, not only the first non-null ID.
+    // One record may say sale_id=SALE_x while another says invoice_number=BILL_x
+    // and a bridge record links them via invoice_id=42.
+    final dedupedInvoices = InvoiceDedupHelper.canonicalizeInvoices(
+      <dynamic>[...existing, ...invoices],
+    );
     await box.put('manual_invoices', dedupedInvoices);
-    if (kDebugMode) debugPrint('💾 [LocalStorage] Saved ${dedupedInvoices.length} invoices');
+
+    if (kDebugMode) {
+      debugPrint(
+        '💾 [LocalStorage] Saved ${dedupedInvoices.length} canonical invoices '
+        '(input ${existing.length + invoices.length})',
+      );
+    }
   }
 
   static Future<List<dynamic>> loadLocalInvoices() async {
-    // 🔒 SECURITY FIX: Require valid user ID to prevent data leakage
+    // 🔒 Require a valid user ID to prevent data leakage between accounts.
     if (!await _hasValidUserId()) {
       if (kDebugMode) debugPrint('⚠️ loadLocalInvoices failed — no logged-in user');
-      throw Exception('SECURITY: Cannot load invoices without authenticated user_id. Please log in first.');
+      throw Exception(
+        'SECURITY: Cannot load invoices without authenticated user_id. Please log in first.',
+      );
     }
+
     final box = await _getBox(_invoicesBoxBase);
-    final data = box.get('manual_invoices', defaultValue: []);
-    return List<dynamic>.from(data);
+    final data = List<dynamic>.from(
+      box.get('manual_invoices', defaultValue: []),
+    );
+    final canonical = InvoiceDedupHelper.canonicalizeInvoices(data);
+
+    // Self-heal legacy duplicate rows as soon as the invoice ledger is read.
+    if (canonical.length < data.length) {
+      await box.put('manual_invoices', canonical);
+      if (kDebugMode) {
+        debugPrint(
+          '🧹 [LocalStorage] Reconciled ${data.length - canonical.length} '
+          'duplicate invoice mirror(s) during load',
+        );
+      }
+    }
+    return canonical;
   }
 
   static Future<void> savePurchaseOrders(List<dynamic> orders) async {
@@ -934,179 +944,144 @@ class LocalStorageService {
     final customers = await loadLocalCustomers();
     final khataBalances = await loadKhataBalances();
 
-    String invoiceKey(Map<String, dynamic> row) {
-      for (final field in const [
-        'invoice_id',
-        'sale_id',
-        'invoice_number',
-        'invoiceId',
-        'backend_id',
-        'id',
-      ]) {
-        final value = row[field]?.toString().trim().toLowerCase() ?? '';
-        if (value.isNotEmpty && value != 'null' && value != '0') {
-          return value;
-        }
-      }
-      final date =
-          (row['business_date'] ??
-                  row['invoice_date'] ??
-                  row['sale_date'] ??
-                  row['date'] ??
-                  row['created_at'] ??
-                  '')
-              .toString();
-      final phone =
-          (row['customer_phone'] ?? row['phone'] ?? '').toString().trim();
-      final total = double.tryParse(
-            (row['total_amount'] ?? row['total'] ?? 0).toString(),
-          ) ??
-          0.0;
-      return 'fallback|$date|$phone|${total.toStringAsFixed(2)}';
-    }
-
     double amount(dynamic value) {
       if (value is num) return value.toDouble();
       return double.tryParse(value?.toString() ?? '') ?? 0.0;
     }
 
-    // Build one canonical invoice map. A real invoice record wins over a
-    // flattened sale copy because it contains the authoritative payment state.
-    final Map<String, Map<String, dynamic>> canonical = {};
-
-    void mergeInvoice(
-      dynamic raw, {
-      bool prefer = false,
-    }) {
-      if (raw is! Map) return;
-      final row = Map<String, dynamic>.from(raw);
-      final key = invoiceKey(row);
-      if (key.isEmpty) return;
-
-      final existing = canonical[key];
-      if (existing == null) {
-        canonical[key] = row;
-        return;
-      }
-
-      final existingUpdated = DateTime.tryParse(
-            existing['updated_at']?.toString() ??
-                existing['last_updated']?.toString() ??
-                existing['created_at']?.toString() ??
-                '',
-          ) ??
-          DateTime(1970);
-      final incomingUpdated = DateTime.tryParse(
-            row['updated_at']?.toString() ??
-                row['last_updated']?.toString() ??
-                row['created_at']?.toString() ??
-                '',
-          ) ??
-          DateTime(1970);
-
-      if (prefer || incomingUpdated.isAfter(existingUpdated)) {
-        canonical[key] = {...existing, ...row};
-      } else {
-        canonical[key] = {
-          ...row,
-          ...existing,
-          if ((existing['customer_name'] ?? '').toString().trim().isEmpty &&
-              (row['customer_name'] ?? '').toString().trim().isNotEmpty)
-            'customer_name': row['customer_name'],
-          if ((existing['customer_phone'] ?? '').toString().trim().isEmpty &&
-              (row['customer_phone'] ?? '').toString().trim().isNotEmpty)
-            'customer_phone': row['customer_phone'],
-          if ((existing['payment_method'] ?? '').toString().trim().isEmpty &&
-              (row['payment_method'] ?? '').toString().trim().isNotEmpty)
-            'payment_method': row['payment_method'],
-        };
-      }
+    String invoiceKey(Map<String, dynamic> row, int index) {
+      final tokens = InvoiceDedupHelper.identityTokens(row);
+      if (tokens.isNotEmpty) return tokens.first;
+      // Without a stable ID it is unsafe to collapse two content-identical
+      // real invoices. Keep each anonymous record distinct in memory.
+      return '__anonymous_invoice_$index';
     }
 
-    // Existing invoice mirrors are authoritative.
-    for (final invoice in invoices) {
-      mergeInvoice(invoice, prefer: true);
-    }
+    final invoiceOnlyCanonical =
+        InvoiceDedupHelper.canonicalizeInvoices(invoices);
+    final combinedRows = InvoiceDedupHelper.canonicalizeInvoices(
+      <dynamic>[...invoices, ...sales],
+    );
+    final canonical = <String, Map<String, dynamic>>{};
 
-    // Promote any cloud-restored/legacy sales that do not already have an
-    // invoice mirror. This is the key recovery path after app-data clearing.
-    for (final rawSale in sales) {
-      if (rawSale is! Map) continue;
-      final sale = Map<String, dynamic>.from(rawSale);
-      final key = invoiceKey(sale);
-      if (canonical.containsKey(key)) continue;
-
-      final rawItems = sale['line_items'] ?? sale['items'];
-      List<dynamic> lineItems = const [];
-      if (rawItems is List && rawItems.isNotEmpty) {
-        lineItems = rawItems;
-      } else if ((sale['product_name'] ?? sale['product'] ?? '').toString().trim().isNotEmpty) {
-        final p = amount(sale['price']);
-        final q = amount(sale['quantity'] ?? sale['qty']);
-        lineItems = [
-          {
-            'product_name':
-                (sale['product_name'] ?? sale['product']).toString(),
-            'price': p,
-            'quantity': q > 0 ? q : 1,
-            'qty': q > 0 ? q : 1,
-            'total': amount(sale['total']) > 0
-                ? amount(sale['total'])
-                : p * (q > 0 ? q : 1),
-          }
-        ];
-      }
-
-      final total = amount(
-        sale['total_amount'] ??
-            sale['total'] ??
-            sale['invoice_total'] ??
-            sale['grand_total'] ??
-            sale['final_amount'],
+    bool hasInvoiceMirror(Map<String, dynamic> row) {
+      final tokens = InvoiceDedupHelper.identityTokens(row);
+      if (tokens.isEmpty) return false;
+      return invoices.whereType<Map>().any(
+        (raw) => InvoiceDedupHelper.sameInvoice(
+          row,
+          Map<String, dynamic>.from(raw),
+        ),
       );
-      final paid = amount(
-        sale['paid_amount'] ??
-            sale['amount_paid'] ??
-            sale['paid'] ??
-            (sale['payment_status']?.toString().toUpperCase() == 'PAID'
+    }
+
+    for (var index = 0; index < combinedRows.length; index++) {
+      final source = combinedRows[index];
+      final row = Map<String, dynamic>.from(source);
+      final total = amount(
+        row['total_amount'] ??
+            row['total'] ??
+            row['invoice_total'] ??
+            row['grand_total'] ??
+            row['final_amount'] ??
+            row['amount'],
+      );
+      final reportedPaid = amount(
+        row['paid_amount'] ??
+            row['amount_paid'] ??
+            row['paid'] ??
+            row['received_amount'] ??
+            ((row['payment_status']?.toString().split('.').last.toUpperCase() == 'PAID')
                 ? total
                 : 0),
-      ).clamp(0.0, total);
+      );
+      final paid = reportedPaid.clamp(0.0, total).toDouble();
 
-      canonical[key] = {
-        ...sale,
-        'invoice_number': sale['invoice_number'] ??
-            sale['sale_id'] ??
-            sale['invoice_id'] ??
-            sale['id'],
-        'sale_id': sale['sale_id'] ??
-            sale['invoice_number'] ??
-            sale['invoice_id'] ??
-            sale['id'],
-        'customer_name':
-            sale['customer_name'] ?? sale['name'] ?? 'Cash Customer',
-        'customer_phone':
-            sale['customer_phone'] ?? sale['phone'] ?? '',
-        'total_amount': total,
-        'paid_amount': paid,
-        'payment_status': sale['payment_status'] ??
-            _deriveInvoiceStatus(total, paid),
-        'line_items': lineItems,
-        'items': lineItems,
-        'is_recovered_from_sale': true,
-      };
+      final rawItems = row['line_items'] ?? row['items'];
+      final List<dynamic> lineItems = rawItems is List
+          ? List<dynamic>.from(rawItems)
+          : <dynamic>[];
+      final mirrorExists = hasInvoiceMirror(row);
+
+      final invoiceNumber = row['invoice_number'] ??
+          row['number'] ??
+          row['sale_id'] ??
+          row['offline_id'] ??
+          row['invoice_id'] ??
+          row['id'];
+      row
+        ..['invoice_number'] = invoiceNumber
+        ..['sale_id'] = row['sale_id'] ??
+            row['invoice_number'] ??
+            row['offline_id'] ??
+            row['invoice_id'] ??
+            row['id']
+        ..['customer_name'] = row['customer_name'] ??
+            row['name'] ??
+            row['customer'] ??
+            'Cash Customer'
+        ..['customer_phone'] = row['customer_phone'] ??
+            row['phone'] ??
+            row['mobile'] ??
+            ''
+        ..['total_amount'] = total
+        ..['paid_amount'] = paid
+        ..['pending_amount'] = (total - paid)
+            .clamp(0.0, double.infinity)
+            .toDouble()
+        ..['payment_status'] = _deriveInvoiceStatus(total, paid)
+        ..['line_items'] = lineItems
+        ..['items'] = lineItems;
+
+      if (!mirrorExists) {
+        row['is_recovered_from_sale'] = true;
+      }
+
+      canonical[invoiceKey(row, index)] = row;
     }
 
-    // Persist promoted records so the recovered invoices survive a restart and
-    // do not depend on the in-memory ledger being rebuilt again.
-    final recovered = canonical.values
-        .where((row) => row['is_recovered_from_sale'] == true)
-        .toList();
-    if (recovered.isNotEmpty) {
+    // Repair invoice mirrors and promote sale-only records, preserving aliases
+    // and payment state. Repeating this is idempotent: canonical counts/amounts
+    // no longer change once the local ledger has been reconciled.
+    var needsPersist = combinedRows.length != invoiceOnlyCanonical.length;
+    for (final row in combinedRows) {
+      final mirror = invoiceOnlyCanonical.cast<Map<String, dynamic>?>().firstWhere(
+        (candidate) =>
+            candidate != null &&
+            InvoiceDedupHelper.sameInvoice(row, candidate),
+        orElse: () => null,
+      );
+      if (mirror == null) {
+        if (InvoiceDedupHelper.identityTokens(row).isNotEmpty) {
+          needsPersist = true;
+        }
+        continue;
+      }
+
+      final rowPaid = amount(
+        row['paid_amount'] ?? row['amount_paid'] ?? row['paid'] ?? 0,
+      );
+      final mirrorPaid = amount(
+        mirror['paid_amount'] ??
+            mirror['amount_paid'] ??
+            mirror['paid'] ??
+            0,
+      );
+      final rowStatus =
+          (row['payment_status'] ?? '').toString().split('.').last.toUpperCase();
+      final mirrorStatus =
+          (mirror['payment_status'] ?? '').toString().split('.').last.toUpperCase();
+      if ((rowPaid - mirrorPaid).abs() > 0.009 ||
+          rowStatus != mirrorStatus) {
+        needsPersist = true;
+      }
+    }
+
+    if (needsPersist) {
       try {
-        await saveLocalInvoices(recovered);
+        await saveLocalInvoices(canonical.values.toList());
       } catch (_) {
-        // Ledger remains usable even if a legacy record cannot be persisted.
+        // The in-memory unified ledger remains usable if persistence is blocked.
       }
     }
 
