@@ -682,6 +682,55 @@ class SyncQueueManager {
     });
   }
 
+  /// Wake critical business operations for an explicit foreground retry.
+  ///
+  /// Keeps every payload and idempotency key intact. This only clears the retry
+  /// delay; the normal processor still requires a successful server response
+  /// and local acknowledgement before removing a financial operation.
+  static Future<int> makeActionsRetryableNow(Set<String> actions) async {
+    if (actions.isEmpty) return 0;
+
+    return _queueLock.synchronized(() async {
+      try {
+        final box = await _getBoxUnlocked();
+        final now = DateTime.now().toUtc().toIso8601String();
+        int awakened = 0;
+
+        for (final entry in box.toMap().entries) {
+          final raw = entry.value;
+          if (raw is! Map) continue;
+
+          final item = Map<String, dynamic>.from(raw);
+          final action = item['action']?.toString() ?? '';
+          if (!actions.contains(action)) continue;
+
+          final status = (item['status']?.toString() ?? 'PENDING').toUpperCase();
+          if (status == 'SYNCED' || status == 'DONE') continue;
+
+          item['status'] = 'PENDING';
+          item['next_attempt_at'] = now;
+          item['updated_at'] = now;
+          item['manual_retry_requested_at'] = now;
+          item['needs_attention'] = false;
+          // Deliberately preserve last_error and retries for diagnosis.
+          await box.put(entry.key, item);
+          awakened++;
+        }
+
+        if (kDebugMode && awakened > 0) {
+          debugPrint('🔁 [SyncQueue] Foreground retry made $awakened critical operation(s) ready');
+        }
+        return awakened;
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint('❌ [SyncQueue] Failed to wake critical operations: $e');
+          debugPrint(st.toString());
+        }
+        return 0;
+      }
+    });
+  }
+
   static Future<List<Map<String, dynamic>>> getAll() async {
     await recoverQuarantinedForCurrentUser();
     await recoverStuckItems();
