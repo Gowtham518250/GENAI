@@ -1547,7 +1547,7 @@ class SyncService {
 
       // Preserve the real backend rejection in the queue's last_error field.
       // Connectivity can be live while the backend rejects malformed/stale data.
-      var responseDetail = res.body.replaceAll(RegExp(r'\\s+'), ' ').trim();
+      var responseDetail = res.body.replaceAll(RegExp(r'\s+'), ' ').trim();
       if (responseDetail.length > 240) {
         responseDetail = responseDetail.substring(0, 240);
       }
