@@ -1,0 +1,50 @@
+import 'package:flutter_test/flutter_test.dart';
+
+import '../lib/cache_consistency_service.dart';
+
+void main() {
+  group('inventory product image cache reconciliation', () {
+    test('keeps a locally uploaded image while its sync is pending', () {
+      const localImage = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/';
+      final local = <String, dynamic>{
+        'id': 12,
+        'product_name': 'Tamarind',
+        'image_url': localImage,
+        'sync_status': 'pending',
+        'local_updated_at': '2026-10-14T10:00:00.000Z',
+      };
+      final staleServer = <String, dynamic>{
+        'id': 12,
+        'product_name': 'Tamarind',
+        'image_url': null,
+      };
+
+      final merged = CacheConsistencyService.mergeRecord(local, staleServer);
+
+      expect(merged['image_url'], localImage);
+      expect(merged['sync_status'], 'pending');
+      expect(merged['conflict_state'], 'local_pending');
+    });
+
+    test('uses the server image after the local image update is acknowledged', () {
+      const serverImage = 'https://images.example.test/tamarind.webp';
+      final local = <String, dynamic>{
+        'id': 12,
+        'product_name': 'Tamarind',
+        'image_url': serverImage,
+        'sync_status': 'synced',
+        'local_updated_at': '2026-10-14T10:00:00.000Z',
+      };
+      final server = <String, dynamic>{
+        'id': 12,
+        'product_name': 'Tamarind',
+        'image_url': serverImage,
+      };
+
+      final merged = CacheConsistencyService.mergeRecord(local, server);
+
+      expect(merged['image_url'], serverImage);
+      expect(merged['conflict_state'], 'remote_wins');
+    });
+  });
+}
