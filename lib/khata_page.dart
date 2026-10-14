@@ -145,8 +145,9 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
     List<dynamic> invoices,
     List<dynamic> sales,
   ) {
-    final rows = InvoiceDedupHelper.canonicalizeInvoices(
-      <dynamic>[...invoices, ...sales],
+    final rows = InvoiceDedupHelper.canonicalizeInvoiceLedger(
+      invoices,
+      sales,
     );
     final canonical = <String, Map<String, dynamic>>{};
 

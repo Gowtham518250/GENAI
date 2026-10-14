@@ -212,6 +212,90 @@ class InvoiceDedupHelper {
     return merged;
   }
 
+  static bool _intersectsLinkFields(
+    Map<String, dynamic> left,
+    List<String> leftFields,
+    Map<String, dynamic> right,
+    List<String> rightFields,
+  ) {
+    final leftValues = leftFields
+        .map((field) => _normalized(left[field]))
+        .where((value) => value.isNotEmpty)
+        .toSet();
+    if (leftValues.isEmpty) return false;
+    return rightFields
+        .map((field) => _normalized(right[field]))
+        .any((value) => value.isNotEmpty && leftValues.contains(value));
+  }
+
+  /// A sale belongs in invoice analytics only when a field explicitly links
+  /// it to an invoice. Never compare generic sale.id to generic invoice.id:
+  /// those IDs come from different tables and can collide by coincidence.
+  static bool _isSaleMirrorOfInvoice(
+    Map<String, dynamic> invoice,
+    Map<String, dynamic> sale,
+  ) {
+    // Foreign keys that explicitly identify the invoice from a sales row.
+    if (_intersectsLinkFields(
+      sale,
+      const ['invoice_id', 'invoiceId', 'backend_invoice_id'],
+      invoice,
+      const ['id', 'invoice_id', 'invoiceId', 'backend_id', 'server_id'],
+    )) {
+      return true;
+    }
+
+    // The customer-facing bill number is another safe cross-table link.
+    if (_intersectsLinkFields(
+      sale,
+      const ['invoice_number', 'invoice_no', 'bill_number', 'bill_no'],
+      invoice,
+      const ['invoice_number', 'invoice_no', 'bill_number', 'bill_no', 'number'],
+    )) {
+      return true;
+    }
+
+    // Offline transaction keys are valid only when the invoice row stores the
+    // same key as a sale/source reference, not merely as its own database ID.
+    if (_intersectsLinkFields(
+      sale,
+      const ['sale_id', 'offline_id', 'local_sale_id', 'source_sale_id', 'id'],
+      invoice,
+      const ['sale_id', 'offline_id', 'local_sale_id', 'source_sale_id', 'original_sale_id'],
+    )) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Invoice Analytics is an invoice ledger, not the general sales ledger.
+  /// Standalone retail sales remain in Sales reporting. Only sales with an
+  /// explicit invoice foreign key/number or shared offline-sale key are merged
+  /// as mirrors of a real invoice.
+  static List<Map<String, dynamic>> canonicalizeInvoiceLedger(
+    List<dynamic> invoices,
+    List<dynamic> sales,
+  ) {
+    final invoiceRows = invoices
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+
+    final saleRows = sales
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+
+    final saleMirrors = saleRows.where((sale) =>
+        invoiceRows.any((invoice) => _isSaleMirrorOfInvoice(invoice, sale)));
+
+    return canonicalizeInvoices(<dynamic>[
+      ...invoiceRows,
+      ...saleMirrors,
+    ]);
+  }
+
   static List<Map<String, dynamic>> canonicalizeInvoices(
     List<dynamic> rawRows,
   ) {
