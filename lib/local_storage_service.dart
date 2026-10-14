@@ -1087,6 +1087,8 @@ class LocalStorageService {
     }
 
     final Map<String, Map<String, dynamic>> unified = {};
+    // Index normalized phones to the canonical customer row for Khata merging.
+    final Map<String, String> phoneToKey = {};
 
     String normalizePhone(dynamic value) {
       var digits = (value?.toString() ?? '').replaceAll(RegExp(r'[^0-9]'), '');
@@ -1134,8 +1136,6 @@ class LocalStorageService {
       dynamic name,
     }) {
       final key = customerKey(customerId: customerId, phone: phone, name: name);
-      if (key.isEmpty) return {};
-
       if (key.isEmpty) return {};
       final normalizedPhone = normalizePhone(phone);
       if (normalizedPhone.isNotEmpty) {
