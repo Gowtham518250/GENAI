@@ -212,6 +212,36 @@ class InvoiceDedupHelper {
     return merged;
   }
 
+  /// Invoice Analytics is an invoice ledger, not the general sales ledger.
+  /// Include sales rows only when they are mirrors of an actual invoice row;
+  /// standalone retail sales must remain in Sales analytics and must not be
+  /// counted as unpaid invoices merely because they have no paid_amount field.
+  static List<Map<String, dynamic>> canonicalizeInvoiceLedger(
+    List<dynamic> invoices,
+    List<dynamic> sales,
+  ) {
+    final invoiceRows = invoices
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+    final invoiceIdentities = invoiceRows
+        .where((row) => identityTokens(row).isNotEmpty)
+        .toList();
+
+    final saleMirrors = sales.whereType<Map>().where((rawSale) {
+      final sale = Map<String, dynamic>.from(rawSale);
+      if (identityTokens(sale).isEmpty) return false;
+      return invoiceIdentities.any(
+        (invoice) => sameInvoice(invoice, sale),
+      );
+    }).map((row) => Map<String, dynamic>.from(row));
+
+    return canonicalizeInvoices(<dynamic>[
+      ...invoiceRows,
+      ...saleMirrors,
+    ]);
+  }
+
   static List<Map<String, dynamic>> canonicalizeInvoices(
     List<dynamic> rawRows,
   ) {
