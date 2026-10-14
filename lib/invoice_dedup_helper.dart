@@ -212,14 +212,6 @@ class InvoiceDedupHelper {
     return merged;
   }
 
-  static String _linkValue(Map<String, dynamic> row, List<String> fields) {
-    for (final field in fields) {
-      final value = _normalized(row[field]);
-      if (value.isNotEmpty) return value;
-    }
-    return '';
-  }
-
   static bool _intersectsLinkFields(
     Map<String, dynamic> left,
     List<String> leftFields,
