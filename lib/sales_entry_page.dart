@@ -10,6 +10,7 @@ import 'dart:collection';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
 import 'secure_token_storage.dart';
+import 'secure_preferences_service.dart';
 import 'scoped_shared_preferences.dart';
 import 'app_localizations.dart';
 import 'sync_queue_manager.dart';
@@ -2478,14 +2479,46 @@ class _SalesEntryPageState extends State<SalesEntryPage>
 
   Future<void> _loadPaymentConfig() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Shop profile saves UPI IDs in user-scoped and encrypted storage. The old
+    // sales screen read only the unscoped legacy preference, which is empty for
+    // a first-time setup; consequently the dynamic payment QR stayed disabled.
+    var upiId = (await ScopedSharedPreferences.getString('primary_upi_id') ?? '').trim();
+    if (upiId.isEmpty) {
+      upiId = (await ScopedSharedPreferences.getString('upi_id') ?? '').trim();
+    }
+    if (upiId.isEmpty) {
+      upiId = (await SecurePreferencesService.getUpiId() ?? '').trim();
+    }
+    if (upiId.isEmpty) {
+      // One-time migration from older installs that stored UPI unscoped.
+      upiId = (prefs.getString('upi_id') ?? '').trim();
+    }
+    if (upiId.isNotEmpty) {
+      await ScopedSharedPreferences.setString('primary_upi_id', upiId);
+      await ScopedSharedPreferences.setString('upi_id', upiId);
+      await SecurePreferencesService.setUpiId(upiId);
+    }
+
+    final scopedShopName = (await ScopedSharedPreferences.getString('shop_name') ?? '').trim();
+    final legacyShopName = (prefs.getString('shop_name') ?? '').trim();
+    final resolvedShopName = scopedShopName.isNotEmpty
+        ? scopedShopName
+        : legacyShopName.isNotEmpty
+            ? legacyShopName
+            : 'Retail Shop';
+
+    if (!mounted) return;
     setState(() {
-      _upiId = prefs.getString('upi_id');
-      _shopNameForDynamicQr = prefs.getString('shop_name') ?? 'Retail Shop';
+      _upiId = upiId.isNotEmpty ? upiId : null;
+      _shopNameForDynamicQr = resolvedShopName;
       _paymentSoundEnabled = prefs.getBool('payment_sound_enabled') ?? true;
       _paymentSoundLang = prefs.getString('payment_sound_lang') ?? 'en-US';
       _speechInputLang = prefs.getString('speech_input_lang') ?? _paymentSoundLang;
       final modeIndex = prefs.getInt('announcement_mode') ?? 1; // 1 = shopkeeper
-      _announcementMode = AnnouncementMode.values[modeIndex];
+      _announcementMode = AnnouncementMode.values[
+        modeIndex.clamp(0, AnnouncementMode.values.length - 1)
+      ];
     });
 
     // Start automatic payment detection (Singleton Stream)
@@ -5266,7 +5299,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
           if (_isOnlinePayment) ...[
             const SizedBox(height: 14),
             
-            if (_upiId != null && totalAmount > 0) ...[
+            if ((_upiId?.trim().isNotEmpty ?? false) && totalAmount > 0) ...[
                Center(
                 child: Column(
                   children: [
@@ -5287,7 +5320,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                       ),
                       padding: const EdgeInsets.all(16),
                       child: QrImageView(
-                        data: 'upi://pay?pa=$_upiId&pn=${Uri.encodeComponent(_shopNameForDynamicQr!)}&am=${totalAmount.toStringAsFixed(2)}&cu=INR&tn=Bill-${DateTime.now().millisecondsSinceEpoch % 10000}',
+                        data: 'upi://pay?pa=${Uri.encodeComponent(_upiId!.trim())}&pn=${Uri.encodeComponent(_shopNameForDynamicQr!.trim())}&am=${totalAmount.toStringAsFixed(2)}&cu=INR&tn=Bill-${DateTime.now().millisecondsSinceEpoch % 10000}',
                         version: QrVersions.auto,
                         size: 200.0,
                         backgroundColor: Colors.white,
