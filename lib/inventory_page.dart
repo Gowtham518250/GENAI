@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'cache_consistency_service.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
 import 'app_localizations.dart';
@@ -60,6 +62,10 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   final _catC = TextEditingController();
   final _minStockC = TextEditingController(text: '10');
   final _unitC = TextEditingController(text: 'pcs');
+  final _imageUrlC = TextEditingController();
+  Uint8List? _selectedProductImageBytes;
+  String? _selectedProductImageDataUrl;
+  bool _imageLookupLoading = false;
 
   // Voice to Text
   late stt.SpeechToText _speech;
@@ -276,6 +282,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     RealtimeClient.disconnect();
     _nameC.dispose(); _barcodeC.dispose(); _priceC.dispose(); _purchasePriceC.dispose(); _mrpC.dispose();
     _stockC.dispose(); _catC.dispose(); _minStockC.dispose(); _unitC.dispose();
+    _imageUrlC.dispose();
     InventoryManagementService.onInventoryChanged = null;
     super.dispose();
   }
@@ -506,6 +513,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       'min_stock': int.tryParse(_minStockC.text) ?? 10,
       'category': _catC.text.trim().isNotEmpty ? _catC.text.trim() : 'General',
       'unit': _unitC.text.trim().isNotEmpty ? _unitC.text.trim() : 'pcs',
+      'image_url': _selectedProductImageDataUrl ?? (_imageUrlC.text.trim().isEmpty ? null : _imageUrlC.text.trim()),
     };
 
     try {
@@ -530,6 +538,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       Navigator.pop(context);
       _nameC.clear(); _barcodeC.clear(); _priceC.clear(); _purchasePriceC.clear(); _mrpC.clear();
       _stockC.clear(); _catC.clear(); _minStockC.text = '10'; _unitC.text = 'pcs';
+      _imageUrlC.clear(); _selectedProductImageBytes = null; _selectedProductImageDataUrl = null;
       await _fetch();
 
       // Flush the canonical outbox immediately when online. The operation
@@ -554,6 +563,368 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   }
 
   bool _isAddingProduct = false;
+
+
+  Widget _productImagePreview(Uint8List? bytes, String? imageUrl, {double size = 82}) {
+    final value = (imageUrl ?? '').trim();
+    Widget image = Container(
+      width: size,
+      height: size,
+      color: const Color(0xFFF1F5F9),
+      child: Icon(Icons.inventory_2_rounded, color: Colors.blueGrey.shade400, size: size * 0.36),
+    );
+    if (bytes != null && bytes.isNotEmpty) {
+      image = Image.memory(bytes, width: size, height: size, fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Icon(Icons.inventory_2_rounded, color: Colors.blueGrey.shade400, size: size * 0.36));
+    } else if (value.startsWith('data:image/')) {
+      final comma = value.indexOf(',');
+      if (comma > 0) {
+        try {
+          image = Image.memory(base64Decode(value.substring(comma + 1)), width: size, height: size, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Icon(Icons.broken_image_outlined, color: Colors.blueGrey.shade400, size: size * 0.36));
+        } catch (_) {}
+      }
+    } else if (value.startsWith('https://') || value.startsWith('http://')) {
+      image = Image.network(value, width: size, height: size, fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Icon(Icons.broken_image_outlined, color: Colors.blueGrey.shade400, size: size * 0.36));
+    }
+    return Container(
+      width: size,
+      height: size,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Center(child: image),
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _findProductImageSuggestions(
+    String productName,
+    String category,
+  ) async {
+    final encodedName = Uri.encodeQueryComponent(productName.trim());
+    final encodedCategory = Uri.encodeQueryComponent(category.trim());
+    final response = await ApiClient.getJson(
+      '/api/inventory/product-image-suggestions?product_name=' + encodedName +
+      (encodedCategory.isEmpty ? '' : '&category=' + encodedCategory),
+    ).timeout(const Duration(seconds: 12));
+    if (response.statusCode != 200) {
+      String message = 'Online image search failed (HTTP ' + response.statusCode.toString() + ').';
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map && body['detail'] != null) message = body['detail'].toString();
+      } catch (_) {}
+      throw Exception(message);
+    }
+    final decoded = jsonDecode(response.body);
+    final raw = decoded is Map ? decoded['images'] : null;
+    if (raw is! List) return <Map<String, dynamic>>[];
+    return raw
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .where((item) => (item['image_url']?.toString() ?? '').startsWith('https://'))
+        .take(8)
+        .toList();
+  }
+
+  Future<String?> _chooseProductImage(String productName, List<Map<String, dynamic>> images) {
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Choose a matching image', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 17)),
+        content: SizedBox(
+          width: 440,
+          height: 420,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Suggestions for ' + productName + '. Check the package/brand before saving.',
+              style: GoogleFonts.poppins(fontSize: 11, color: Colors.blueGrey.shade600)),
+            const SizedBox(height: 10),
+            Expanded(
+              child: ListView.separated(
+                itemCount: images.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final item = images[index];
+                  final url = item['image_url']?.toString() ?? '';
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => Navigator.of(dialogContext).pop(url),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(children: [
+                        _productImagePreview(null, url, size: 66),
+                        const SizedBox(width: 10),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(item['title']?.toString() ?? productName, maxLines: 2, overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 3),
+                          Text(item['source']?.toString() ?? 'Online image result', maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(fontSize: 9, color: Colors.blueGrey.shade500)),
+                          const SizedBox(height: 3),
+                          Text('Use this image', style: GoogleFonts.poppins(fontSize: 9, color: _primary, fontWeight: FontWeight.w800)),
+                        ])),
+                        const Icon(Icons.chevron_right_rounded),
+                      ]),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ]),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel'))],
+      ),
+    );
+  }
+
+  Future<void> _pickProductImage(StateSetter updateDialog) async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 28,
+        maxWidth: 320,
+        maxHeight: 320,
+      );
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      if (bytes.isEmpty) throw Exception('The selected image is empty.');
+      if (bytes.length > 45 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Choose a smaller image. Please crop it or use a lower-resolution photo (45 KB max).')),
+          );
+        }
+        return;
+      }
+      updateDialog(() {
+        _selectedProductImageBytes = bytes;
+        _selectedProductImageDataUrl = 'data:image/jpeg;base64,' + base64Encode(bytes);
+        _imageUrlC.clear();
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not select image: ' + error.toString())),
+        );
+      }
+    }
+  }
+
+  Future<void> _lookupProductImageForAdd(StateSetter updateDialog) async {
+    final name = _nameC.text.trim();
+    if (name.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter the product name first.')));
+      return;
+    }
+    updateDialog(() => _imageLookupLoading = true);
+    try {
+      final suggestions = await _findProductImageSuggestions(name, _catC.text);
+      if (suggestions.isEmpty) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No online images found. You can upload a photo or paste an image URL.')),
+        );
+        return;
+      }
+      if (!mounted) return;
+      final selected = await _chooseProductImage(name, suggestions);
+      if (selected != null) {
+        updateDialog(() {
+          _imageUrlC.text = selected;
+          _selectedProductImageBytes = null;
+          _selectedProductImageDataUrl = null;
+        });
+      }
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      try { updateDialog(() => _imageLookupLoading = false); } catch (_) {}
+    }
+  }
+
+  Future<void> _showProductImageDialog(Map<String, dynamic> product) async {
+    final urlController = TextEditingController(text: product['image_url']?.toString() ?? '');
+    Uint8List? selectedBytes;
+    String? selectedDataUrl;
+    bool lookupLoading = false;
+    bool saving = false;
+    final productName = product['product_name']?.toString() ?? 'Product';
+    final category = product['category']?.toString() ?? '';
+    final rawId = int.tryParse(product['id']?.toString() ?? '');
+    final sku = product['sku']?.toString() ?? product['barcode']?.toString() ?? '';
+
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) => StatefulBuilder(
+          builder: (sheetContext, ss) => Container(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(22),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  const Icon(Icons.photo_camera_back_rounded, color: _primary),
+                  const SizedBox(width: 9),
+                  Expanded(child: Text('Product image · ' + productName, maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800))),
+                  IconButton(onPressed: () => Navigator.pop(sheetContext), icon: const Icon(Icons.close)),
+                ]),
+                const SizedBox(height: 12),
+                Center(child: _productImagePreview(selectedBytes, urlController.text, size: 130)),
+                const SizedBox(height: 12),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  OutlinedButton.icon(
+                    onPressed: saving ? null : () async {
+                      try {
+                        final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 28, maxWidth: 320, maxHeight: 320);
+                        if (picked == null) return;
+                        final bytes = await picked.readAsBytes();
+                        if (bytes.isEmpty || bytes.length > 45 * 1024) {
+                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Choose a smaller image (45 KB max).')));
+                          return;
+                        }
+                        ss(() {
+                          selectedBytes = bytes;
+                          selectedDataUrl = 'data:image/jpeg;base64,' + base64Encode(bytes);
+                          urlController.clear();
+                        });
+                      } catch (error) {
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Image selection failed: ' + error.toString())));
+                      }
+                    },
+                    icon: const Icon(Icons.upload_rounded),
+                    label: const Text('Upload photo'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: saving || lookupLoading ? null : () async {
+                      ss(() => lookupLoading = true);
+                      try {
+                        final suggestions = await _findProductImageSuggestions(productName, category);
+                        if (!mounted) return;
+                        if (suggestions.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No matching images found.')));
+                        } else {
+                          final selected = await _chooseProductImage(productName, suggestions);
+                          if (selected != null) ss(() {
+                            urlController.text = selected;
+                            selectedBytes = null;
+                            selectedDataUrl = null;
+                          });
+                        }
+                      } catch (error) {
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))));
+                      } finally {
+                        try { ss(() => lookupLoading = false); } catch (_) {}
+                      }
+                    },
+                    icon: lookupLoading ? const SizedBox(width: 14,height: 14,child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore_rounded),
+                    label: const Text('Find online image'),
+                  ),
+                ]),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: urlController,
+                  onChanged: (_) => ss(() { selectedBytes = null; selectedDataUrl = null; }),
+                  decoration: InputDecoration(
+                    labelText: 'Image URL (optional)',
+                    hintText: 'https://…',
+                    prefixIcon: const Icon(Icons.link_rounded),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(width: double.infinity, child: FilledButton.icon(
+                  onPressed: saving ? null : () async {
+                    final imageUrl = selectedDataUrl ?? (urlController.text.trim().isEmpty ? null : urlController.text.trim());
+                    if (imageUrl != null && !imageUrl.startsWith('https://') && !imageUrl.startsWith('http://') && !imageUrl.startsWith('data:image/')) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Use an http(s) image URL or upload a photo.')));
+                      return;
+                    }
+                    ss(() => saving = true);
+                    try {
+                      final updated = Map<String, dynamic>.from(product);
+                      updated['image_url'] = imageUrl;
+                      final timestamp = DateTime.now().toUtc().toIso8601String();
+                      updated['local_updated_at'] = timestamp;
+                      updated['sync_status'] = 'pending';
+                      final backendProducts = await LocalStorageService.loadBackendProducts();
+                      final backendIndex = rawId == null ? -1 : backendProducts.indexWhere((item) => item['id']?.toString() == rawId.toString());
+                      if (backendIndex >= 0) {
+                        backendProducts[backendIndex] = Map<String,dynamic>.from(backendProducts[backendIndex])..['image_url'] = imageUrl;
+                        await LocalStorageService.saveBackendProducts(backendProducts);
+                      }
+                      final local = await LocalStorageService.loadLocalProducts();
+                      var localKey = local.keys.firstWhere((key) =>
+                        key.toString() == sku ||
+                        (local[key] is Map && ((local[key]['sku'] ?? local[key]['barcode'])?.toString() == sku ||
+                          (rawId != null && local[key]['id']?.toString() == rawId.toString()))),
+                        orElse: () => '');
+                      if (localKey.isNotEmpty && local[localKey] is Map) {
+                        final localRecord = Map<String,dynamic>.from(local[localKey] as Map);
+                        localRecord['image_url'] = imageUrl;
+                        localRecord['local_updated_at'] = timestamp;
+                        localRecord['sync_status'] = 'pending';
+                        local[localKey] = localRecord;
+                        await LocalStorageService.saveLocalProducts(local);
+                      }
+                      if (rawId != null && rawId > 0 && _userId != null) {
+                        final operationId = 'PRODUCT_IMAGE_UPDATE_' + rawId.toString() + '_' + DateTime.now().microsecondsSinceEpoch.toString();
+                        await CacheConsistencyService.markLocalMutation('inventory', operationId: operationId);
+                        await SyncQueueManager.enqueue('update_local_product', {
+                          'operation_id': operationId,
+                          'id': rawId,
+                          'user_id': _userId,
+                          'payload': {'image_url': imageUrl, 'local_updated_at': timestamp},
+                        });
+                        unawaited(SyncService.processQueueSafe());
+                      } else if (sku.isNotEmpty && localKey.isNotEmpty && _userId != null) {
+                        // Products that have not reached the server yet get their image
+                        // from the refreshed local product snapshot when create sync runs.
+                        final operationId = 'PRODUCT_IMAGE_LOCAL_' + sku;
+                        await CacheConsistencyService.markLocalMutation('inventory', operationId: operationId);
+                      }
+                      if (mounted) {
+                        setState(() {
+                          final index = _products.indexWhere((item) =>
+                            (rawId != null && item['id']?.toString() == rawId.toString()) ||
+                            (sku.isNotEmpty && (item['sku'] ?? item['barcode'])?.toString() == sku));
+                          if (index >= 0) _products[index] = updated;
+                        });
+                        Navigator.pop(sheetContext);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Product image saved locally and queued to sync.')));
+                      }
+                    } catch (error) {
+                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save image: ' + error.toString())));
+                    } finally {
+                      try { ss(() => saving = false); } catch (_) {}
+                    }
+                  },
+                  icon: saving ? const SizedBox(width: 15,height: 15,child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_rounded),
+                  label: Text(saving ? 'Saving…' : 'Save product image'),
+                )),
+              ]),
+            ),
+          ),
+        ),
+      );
+    } finally {
+      urlController.dispose();
+    }
+  }
 
   void _showAddDialog() {
     _isAddingProduct = false; // reset in case a previous sheet left it stuck
@@ -710,6 +1081,63 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
               _field(_minStockC, 'Min Stock Alert', Icons.warning_amber,
                   type: TextInputType.number),
               _field(_catC, 'Category', Icons.category),
+              Container(
+                margin: const EdgeInsets.only(top: 2, bottom: 14),
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    const Icon(Icons.add_photo_alternate_rounded, color: _primary, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Product image', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700)),
+                      Text('Optional · upload your own or choose a matching online image', style: GoogleFonts.poppins(fontSize: 10, color: Colors.blueGrey.shade500)),
+                    ])),
+                  ]),
+                  const SizedBox(height: 11),
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    _productImagePreview(_selectedProductImageBytes, _imageUrlC.text, size: 86),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Wrap(spacing: 7, runSpacing: 7, children: [
+                        OutlinedButton.icon(
+                          onPressed: () => _pickProductImage(ss),
+                          icon: const Icon(Icons.upload_rounded, size: 16),
+                          label: const Text('Upload'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _imageLookupLoading ? null : () => _lookupProductImageForAdd(ss),
+                          icon: _imageLookupLoading
+                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.travel_explore_rounded, size: 16),
+                          label: const Text('Find online'),
+                        ),
+                      ]),
+                      const SizedBox(height: 5),
+                      Text('Confirm the brand/package before using an online suggestion.', style: GoogleFonts.poppins(fontSize: 9, color: Colors.blueGrey.shade500, height: 1.4)),
+                    ])),
+                  ]),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _imageUrlC,
+                    onChanged: (_) => ss(() {
+                      _selectedProductImageBytes = null;
+                      _selectedProductImageDataUrl = null;
+                    }),
+                    decoration: InputDecoration(
+                      labelText: 'Image URL (optional)',
+                      hintText: 'https://…',
+                      prefixIcon: const Icon(Icons.link_rounded),
+                      isDense: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ]),
+              ),
               DropdownButtonFormField<String>(
                 value: _unitC.text.isEmpty ? 'pcs' : _unitC.text,
                 decoration: InputDecoration(
@@ -1111,7 +1539,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Icon(Icons.inventory_2, color: statusColor, size: 24),
+                _productImagePreview(null, p['image_url']?.toString(), size: 46),
                 // ✨ Pulse animation for low stock
                 if (isLow)
                   Positioned.fill(
@@ -1193,6 +1621,24 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(Icons.edit_rounded, size: 16, color: _primary),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () => _showProductImageDialog(Map<String, dynamic>.from(p)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.teal.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      (p['image_url']?.toString().isNotEmpty ?? false)
+                        ? Icons.photo_camera_back_rounded
+                        : Icons.add_photo_alternate_outlined,
+                      size: 16,
+                      color: Colors.teal.shade700,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 6),

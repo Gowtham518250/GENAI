@@ -1875,6 +1875,18 @@ static Future<bool> _createLocalProductItem(Map<String, dynamic> data) async {
       if (payload is! Map) return false;
 
       final raw = Map<String, dynamic>.from(payload);
+      try {
+        final sku = (raw['sku'] ?? raw['barcode'] ?? '').toString();
+        if (sku.isNotEmpty) {
+          final latestLocal = await LocalStorageService.loadLocalProducts();
+          final latest = latestLocal[sku];
+          if (latest is Map) {
+            raw.addAll(Map<String, dynamic>.from(latest));
+          }
+        }
+      } catch (_) {
+        // Keep the durable outbox payload if local-cache reconciliation is unavailable.
+      }
       final apiPayload = <String, dynamic>{
         'product_name': raw['product_name'] ?? raw['name'] ?? '',
         'sku': raw['sku'] ?? raw['barcode'] ?? '',
@@ -1882,6 +1894,7 @@ static Future<bool> _createLocalProductItem(Map<String, dynamic> data) async {
         'current_stock': raw['current_stock'] ?? raw['stock'] ?? raw['quantity'] ?? 0,
         'min_stock': raw['min_stock'] ?? 10,
         'category': raw['category'] ?? 'General',
+        'image_url': raw['image_url'],
       };
 
       final res = await ApiClient.postJson(
