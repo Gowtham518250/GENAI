@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../api_client.dart';
 import '../../../bank_reconciliation.dart';
+import '../../../sync_queue_manager.dart';
+import '../../../sync_service.dart';
 import '../models/ai_query_response.dart';
 
 /// Successful or failed result from recorded-audio voice queries.
@@ -32,7 +34,37 @@ class AIQueryVoiceResult {
 class AiQueryService {
   static const String _historyKey = 'retail_mind_ai_query_history_v1';
   static const int _maxHistoryItems = 20;
-  static const Duration _requestTimeout = Duration(seconds: 30);
+  // Observed Render requests reached 35 seconds while the client timed out at
+  // 30 seconds. Keep a small margin for the backend's bounded AI call/review.
+  static const Duration _requestTimeout = Duration(seconds: 45);
+
+  static bool _isWorkerPayrollQuestion(String query) {
+    final normalized = query.toLowerCase();
+    final hasPayIntent = RegExp(r'\b(pay|paying|paid|salary|salaries|wage|wages|payroll)\b')
+        .hasMatch(normalized);
+    final hasWorkerContext = RegExp(
+      r'\b(worker|workers|employee|employees|staff|labou?rers?|salary|payroll|wage|wages)\b',
+    ).hasMatch(normalized);
+    return hasPayIntent && hasWorkerContext;
+  }
+
+  /// Before asking the backend for a worker estimate, attempt to flush locally
+  /// queued attendance and refuse to return a false zero while those writes remain.
+  static Future<bool> _syncPendingAttendanceForPayroll() async {
+    await SyncQueueManager.makeActionsRetryableNow(
+      {'attendance_check_in', 'attendance_check_out'},
+    );
+    await SyncService.processQueueSafe(waitForActiveSync: true);
+    final pending = await SyncQueueManager.getAll();
+    return pending.any((item) {
+      final action = item['action']?.toString() ?? '';
+      if (action != 'attendance_check_in' && action != 'attendance_check_out') {
+        return false;
+      }
+      final status = (item['status']?.toString() ?? 'PENDING').toUpperCase();
+      return status != 'SYNCED' && status != 'DONE';
+    });
+  }
 
   static String _friendlyVoiceServiceError(String? detail, int statusCode) {
     final message = (detail ?? '').trim();
@@ -326,6 +358,27 @@ class AiQueryService {
     int resultCount = 0;
 
     try {
+      if (_isWorkerPayrollQuestion(trimmedQuery)) {
+        try {
+          final attendanceSyncPending =
+              await _syncPendingAttendanceForPayroll();
+          if (attendanceSyncPending) {
+            return AIQueryResponse.error(
+              'Worker attendance is still waiting to sync. Connect to the internet and refresh Attendance before asking for a reliable pay estimate; Retail Mind will not treat pending attendance as zero.',
+              query: trimmedQuery,
+            );
+          }
+        } catch (error) {
+          if (kDebugMode) {
+            debugPrint('Payroll attendance pre-sync deferred: $error');
+          }
+          return AIQueryResponse.error(
+            'I could not verify that worker attendance has synced. Refresh Attendance while connected, then retry the payroll question.',
+            query: trimmedQuery,
+          );
+        }
+      }
+
       // NOTE: Do NOT pre-check the stored token here. ApiClient.postJson already
       // wraps every request in _withTokenRefresh, which intercepts a 401, silently
       // calls /api/session/refresh with the stored refresh token, stores the new
@@ -386,6 +439,27 @@ class AiQueryService {
             query: trimmedQuery,
           );
         }
+      } else if (response.statusCode == 429) {
+        String message =
+            'Retail Mind AI is temporarily rate-limited. Please wait a moment and try again.';
+        try {
+          final errBody = json.decode(response.body);
+          if (errBody is Map && errBody['detail'] != null) {
+            final detail = errBody['detail'].toString().trim();
+            if (detail.isNotEmpty && !detail.toLowerCase().contains('traceback')) {
+              message = detail;
+            }
+          }
+        } catch (_) {}
+        _logTelemetry(
+          query: trimmedQuery,
+          status: response.statusCode,
+          engineVersion: engineVersion,
+          duration: stopwatch.elapsed,
+          resultCount: 0,
+          error: 'AI rate limited',
+        );
+        return AIQueryResponse.error(message, query: trimmedQuery);
       } else if (response.statusCode == 401) {
         // _withTokenRefresh in ApiClient already attempted a silent refresh + retry.
         // If we still see a 401 here, the refresh token itself is also invalid/expired.
