@@ -590,16 +590,10 @@ class SalesEntryProvider extends ChangeNotifier {
 
       if (result['success'] == true) {
         lastCompletedBillNumber = (result['invoiceNumber'] ?? result['invoice_number'] ?? billNumber).toString();
-        // Invoice outstanding is the canonical debt balance. Keep the legacy
-        // phone-based customer mirror only when a real phone is available.
-        if (customerPhone.isNotEmpty) {
-          await _addToCustomerLedger(
-            customerName: customerName,
-            customerPhone: customerPhone,
-            amount: totalAmount,
-            saleId: result['saleId']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
-          );
-        }
+        // The invoice/sale record is the single source of truth for outstanding
+        // credit. Do not also append the same debt to a separate local ledger:
+        // that mirror could drift, inflate customer credit limits, or be counted
+        // again by older screens after retries/restoration.
         _clearForm();
         return true;
       }
@@ -618,80 +612,6 @@ class SalesEntryProvider extends ChangeNotifier {
     } finally {
       isSaving = false;
       notifyListeners();
-    }
-  }
-
-  Future<void> _addToCustomerLedger({
-    required String customerName,
-    required String customerPhone,
-    required double amount,
-    required String saleId,
-  }) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      final ledgerKey = 'khata_ledger';
-      final ledgerData = prefs.getString(ledgerKey);
-      List<Map<String, dynamic>> ledger = [];
-
-      if (ledgerData != null) {
-        try {
-          ledger = List<Map<String, dynamic>>.from(
-            jsonDecode(ledgerData).map((e) => Map<String, dynamic>.from(e)),
-          );
-        } catch (_) {}
-      }
-
-      final phone = customerPhone.isNotEmpty ? customerPhone : 'GUEST_${saleId.substring(saleId.length - 6)}';
-      final name = customerName.isNotEmpty ? customerName : 'Guest Customer';
-
-      ledger.add({
-        'customer_name': name,
-        'customer_phone': phone,
-        'amount': amount,
-        'type': 'CREDIT',
-        'sale_id': saleId,
-        'date': DateTime.now().toIso8601String(),
-        'balance': amount,
-      });
-
-      await prefs.setString(ledgerKey, jsonEncode(ledger));
-
-      final customersKey = 'customers';
-      final customersData = prefs.getString(customersKey);
-      List<Map<String, dynamic>> customers = [];
-
-      if (customersData != null) {
-        try {
-          customers = List<Map<String, dynamic>>.from(
-            jsonDecode(customersData).map((e) => Map<String, dynamic>.from(e)),
-          );
-        } catch (_) {}
-      }
-
-      final customerIndex = customers.indexWhere((c) => c['phone'] == phone);
-
-      if (customerIndex >= 0) {
-        customers[customerIndex]['credit_balance'] = (customers[customerIndex]['credit_balance'] as num? ?? 0) + amount;
-        customers[customerIndex]['credit_limit'] = (customers[customerIndex]['credit_limit'] as num? ?? 0) + amount;
-        customers[customerIndex]['last_transaction'] = DateTime.now().toIso8601String();
-      } else {
-        customers.add({
-          'customer_name': name,
-          'phone': phone,
-          'email': '',
-          'city': '',
-          'credit_limit': amount,
-          'credit_balance': amount,
-          'total_purchases': amount,
-          'last_purchase': DateTime.now().toIso8601String(),
-          'purchase_count': 1,
-        });
-      }
-
-      await prefs.setString(customersKey, jsonEncode(customers));
-    } catch (e) {
-      print('Error adding to customer ledger: ');
     }
   }
 
