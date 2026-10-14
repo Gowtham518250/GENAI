@@ -876,7 +876,16 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                       final backendProducts = await LocalStorageService.loadBackendProducts();
                       final backendIndex = rawId == null ? -1 : backendProducts.indexWhere((item) => item['id']?.toString() == rawId.toString());
                       if (backendIndex >= 0) {
-                        backendProducts[backendIndex] = Map<String,dynamic>.from(backendProducts[backendIndex])..['image_url'] = imageUrl;
+                        // A photo edit is a local mutation until the durable
+                        // outbox confirms the PUT. Mark the cached row pending
+                        // so a concurrent refresh with the old server snapshot
+                        // cannot erase the newly selected image.
+                        final cachedProduct =
+                            Map<String, dynamic>.from(backendProducts[backendIndex]);
+                        cachedProduct['image_url'] = imageUrl;
+                        cachedProduct['local_updated_at'] = timestamp;
+                        cachedProduct['sync_status'] = 'pending';
+                        backendProducts[backendIndex] = cachedProduct;
                         await LocalStorageService.saveBackendProducts(backendProducts);
                       }
                       final local = await LocalStorageService.loadLocalProducts();
