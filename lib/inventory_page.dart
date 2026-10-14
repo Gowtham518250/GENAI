@@ -904,10 +904,9 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                         });
                         unawaited(SyncService.processQueueSafe());
                       } else if (sku.isNotEmpty && localKey.isNotEmpty && _userId != null) {
-                        // Products that have not reached the server yet get their image
-                        // from the refreshed local product snapshot when create sync runs.
-                        final operationId = 'PRODUCT_IMAGE_LOCAL_' + sku;
-                        await CacheConsistencyService.markLocalMutation('inventory', operationId: operationId);
+                        // The existing durable PRODUCT_CREATE operation will read the newest
+                        // local snapshot (including image_url) before its first server POST.
+                        // Do not create a separate cache mutation with no matching outbox item.
                       }
                       if (mounted) {
                         setState(() {
