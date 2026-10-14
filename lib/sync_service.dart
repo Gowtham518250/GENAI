@@ -2274,8 +2274,17 @@ static Future<bool> _saveCustomerItem(Map<String, dynamic> data) async {
         final id = data['id']?.toString() ?? '';
         final payload = data['payload'];
         final key = local.keys.firstWhere(
-          (k) => k.toString() == id ||
-              (local[k] is Map && local[k]['id']?.toString() == id),
+          (k) {
+            if (k.toString() == id) return true;
+            final raw = local[k];
+            if (raw is! Map) return false;
+            return <dynamic>[
+              raw['id'],
+              raw['product_id'],
+              raw['backend_id'],
+              raw['server_id'],
+            ].any((candidate) => candidate?.toString() == id);
+          },
           orElse: () => '',
         );
         if (key.isNotEmpty && local[key] is Map) {
@@ -2296,6 +2305,41 @@ static Future<bool> _saveCustomerItem(Map<String, dynamic> data) async {
             (value is Map && value['id']?.toString() == id));
         await LocalStorageService.saveLocalProducts(local);
       }
+
+      // Reconcile the backend-product cache only after the server confirms the
+      // update. Sparse updates (such as image_url-only edits) must be applied
+      // to the cached row and then marked synced; otherwise a later refresh can
+      // replace the photo with a stale server snapshot.
+      if (action == 'update_local_product') {
+        final id = data['id']?.toString() ?? '';
+        final payload = data['payload'];
+        final backendProducts = await LocalStorageService.loadBackendProducts();
+        final backendIndex = backendProducts.indexWhere((item) =>
+            <dynamic>[
+              item['id'],
+              item['product_id'],
+              item['backend_id'],
+              item['server_id'],
+            ].any((candidate) => candidate?.toString() == id));
+        if (backendIndex >= 0) {
+          final cachedProduct =
+              Map<String, dynamic>.from(backendProducts[backendIndex]);
+          if (payload is Map) {
+            for (final entry in payload.entries) {
+              if (entry.key.toString() == 'sync_status' ||
+                  entry.key.toString() == 'last_ack_at') {
+                continue;
+              }
+              cachedProduct[entry.key.toString()] = entry.value;
+            }
+          }
+          cachedProduct['sync_status'] = 'synced';
+          cachedProduct['last_ack_at'] = DateTime.now().toUtc().toIso8601String();
+          backendProducts[backendIndex] = cachedProduct;
+          await LocalStorageService.saveBackendProducts(backendProducts);
+        }
+      }
+
       await CacheConsistencyService.markLocalMutationAcknowledged(
         'inventory',
         operationId: data['operation_id']?.toString(),

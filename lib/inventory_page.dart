@@ -874,45 +874,109 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                       updated['local_updated_at'] = timestamp;
                       updated['sync_status'] = 'pending';
                       final backendProducts = await LocalStorageService.loadBackendProducts();
-                      final backendIndex = rawId == null ? -1 : backendProducts.indexWhere((item) => item['id']?.toString() == rawId.toString());
+                      // API/cache rows can identify the same product through id,
+                      // product_id, backend_id or server_id. Resolve through the
+                      // canonical helper instead of assuming product['id'] exists.
+                      final backendProductId = _resolveBackendProductId(
+                        product,
+                        cachedProducts: backendProducts,
+                      ) ?? rawId;
+                      final backendIndex = backendProductId == null
+                          ? -1
+                          : backendProducts.indexWhere((item) =>
+                              _resolveBackendProductId(item) == backendProductId ||
+                              (sku.isNotEmpty &&
+                                  (item['sku'] ?? item['barcode'])?.toString() == sku));
+
                       if (backendIndex >= 0) {
-                        backendProducts[backendIndex] = Map<String,dynamic>.from(backendProducts[backendIndex])..['image_url'] = imageUrl;
+                        final cachedProduct = Map<String, dynamic>.from(backendProducts[backendIndex]);
+                        cachedProduct['image_url'] = imageUrl;
+                        cachedProduct['local_updated_at'] = timestamp;
+                        cachedProduct['sync_status'] = 'pending';
+                        backendProducts[backendIndex] = cachedProduct;
+                        await LocalStorageService.saveBackendProducts(backendProducts);
+                      } else if (backendProductId != null) {
+                        // The API product may be visible in the current list but
+                        // not yet persisted in the cache. Add the pending row so
+                        // the next remote refresh cannot replace its image with
+                        // an older/null image_url before the update is acked.
+                        final cachedProduct = InventoryStockHelper.normalizeProduct(product);
+                        cachedProduct['id'] = backendProductId;
+                        cachedProduct['product_id'] ??= backendProductId;
+                        cachedProduct['image_url'] = imageUrl;
+                        cachedProduct['local_updated_at'] = timestamp;
+                        cachedProduct['sync_status'] = 'pending';
+                        backendProducts.add(cachedProduct);
                         await LocalStorageService.saveBackendProducts(backendProducts);
                       }
+
                       final local = await LocalStorageService.loadLocalProducts();
-                      var localKey = local.keys.firstWhere((key) =>
-                        key.toString() == sku ||
-                        (local[key] is Map && ((local[key]['sku'] ?? local[key]['barcode'])?.toString() == sku ||
-                          (rawId != null && local[key]['id']?.toString() == rawId.toString()))),
-                        orElse: () => '');
+                      final productIds = <String>{
+                        rawId?.toString() ?? '',
+                        backendProductId?.toString() ?? '',
+                        product['product_id']?.toString() ?? '',
+                        product['backend_id']?.toString() ?? '',
+                        product['server_id']?.toString() ?? '',
+                      }..removeWhere((value) => value.isEmpty || value == 'null' || value == '0');
+                      final normalizedName = productName.trim().toLowerCase();
+                      final sameNameLocalCount = normalizedName.isEmpty ? 0 : local.values
+                          .whereType<Map>()
+                          .where((value) =>
+                              (value['product_name'] ?? value['name'] ?? '').toString().trim().toLowerCase() == normalizedName)
+                          .length;
+                      final localKey = local.keys.firstWhere((key) {
+                        if (sku.isNotEmpty && key.toString() == sku) return true;
+                        final raw = local[key];
+                        if (raw is! Map) return false;
+                        final row = Map<String, dynamic>.from(raw);
+                        final localSku = (row['sku'] ?? row['barcode'] ?? '').toString();
+                        if (sku.isNotEmpty && localSku == sku) return true;
+                        final localIds = <String>{
+                          row['id']?.toString() ?? '',
+                          row['product_id']?.toString() ?? '',
+                          row['backend_id']?.toString() ?? '',
+                          row['server_id']?.toString() ?? '',
+                        };
+                        if (productIds.any(localIds.contains)) return true;
+                        return sku.isEmpty &&
+                            sameNameLocalCount == 1 &&
+                            normalizedName.isNotEmpty &&
+                            (row['product_name'] ?? row['name'] ?? '').toString().trim().toLowerCase() == normalizedName;
+                      }, orElse: () => '');
+
                       if (localKey.isNotEmpty && local[localKey] is Map) {
-                        final localRecord = Map<String,dynamic>.from(local[localKey] as Map);
+                        final localRecord = Map<String, dynamic>.from(local[localKey] as Map);
                         localRecord['image_url'] = imageUrl;
                         localRecord['local_updated_at'] = timestamp;
                         localRecord['sync_status'] = 'pending';
                         local[localKey] = localRecord;
                         await LocalStorageService.saveLocalProducts(local);
                       }
-                      if (rawId != null && rawId > 0 && _userId != null) {
-                        final operationId = 'PRODUCT_IMAGE_UPDATE_' + rawId.toString() + '_' + DateTime.now().microsecondsSinceEpoch.toString();
+
+                      if (backendProductId != null && backendProductId > 0 && _userId != null) {
+                        final operationId = 'PRODUCT_IMAGE_UPDATE_' + backendProductId.toString() + '_' + DateTime.now().microsecondsSinceEpoch.toString();
                         await CacheConsistencyService.markLocalMutation('inventory', operationId: operationId);
                         await SyncQueueManager.enqueue('update_local_product', {
                           'operation_id': operationId,
-                          'id': rawId,
+                          'id': backendProductId,
                           'user_id': _userId,
                           'payload': {'image_url': imageUrl, 'local_updated_at': timestamp},
                         });
                         unawaited(SyncService.processQueueSafe());
-                      } else if (sku.isNotEmpty && localKey.isNotEmpty && _userId != null) {
-                        // The existing durable PRODUCT_CREATE operation will read the newest
-                        // local snapshot (including image_url) before its first server POST.
-                        // Do not create a separate cache mutation with no matching outbox item.
+                      } else if (localKey.isEmpty) {
+                        throw StateError('Could not match this product to a saved inventory record. Refresh Inventory and try again.');
                       }
                       if (mounted) {
                         setState(() {
-                          final index = _products.indexWhere((item) =>
-                            (rawId != null && item['id']?.toString() == rawId.toString()) ||
-                            (sku.isNotEmpty && (item['sku'] ?? item['barcode'])?.toString() == sku));
+                          updated['id'] ??= backendProductId;
+                          final index = _products.indexWhere((item) {
+                            final itemId = _resolveBackendProductId(item, cachedProducts: backendProducts);
+                            if (backendProductId != null && itemId == backendProductId) return true;
+                            if (sku.isNotEmpty && (item['sku'] ?? item['barcode'])?.toString() == sku) return true;
+                            return sku.isEmpty &&
+                                sameNameLocalCount == 1 &&
+                                (item['product_name'] ?? item['name'] ?? '').toString().trim().toLowerCase() == normalizedName;
+                          });
                           if (index >= 0) _products[index] = updated;
                         });
                         Navigator.pop(sheetContext);
