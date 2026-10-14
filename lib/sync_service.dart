@@ -438,10 +438,40 @@ class SyncService {
   }) async {
     try {
       final connection = await Connectivity().checkConnectivity();
-      final offline = connection == ConnectivityResult.none;
-      if (offline) return false;
+      if (connection == ConnectivityResult.none) return false;
 
-      final success = await checkOutWorker(workerId);
+      final parsedWorkerId = int.tryParse(workerId);
+      if (parsedWorkerId == null || parsedWorkerId <= 0) return false;
+      final today = DateTime.now().toIso8601String().split('T').first;
+      final localRecords = await OfflineAttendanceService.loadLocalRecords();
+      Map<String, dynamic>? latestSession;
+      for (final record in localRecords) {
+        final recordWorkerId =
+            (record['worker_id'] ?? record['employee_id'])?.toString();
+        final recordDate =
+            (record['attendance_date'] ?? '').toString().split('T').first;
+        if (recordWorkerId != workerId || recordDate != today) continue;
+        if (record['check_in_time'] == null || record['check_out_time'] == null) {
+          continue;
+        }
+        final index = int.tryParse((record['session_index'] ?? 0).toString()) ?? 0;
+        final previousIndex = int.tryParse(
+              (latestSession?['session_index'] ?? -1).toString(),
+            ) ??
+            -1;
+        if (index > previousIndex) latestSession = record;
+      }
+      if (latestSession == null) return false;
+
+      // Use the same timestamp-preserving endpoint as queue retries. Do not
+      // remove the queued write after the legacy check-out endpoint accepts it.
+      final success = await _syncAttendanceSessionSnapshot({
+        ...latestSession,
+        'worker_id': parsedWorkerId,
+        'employee_id': parsedWorkerId,
+        'operation_id': operationId,
+        'idempotency_key': operationId,
+      });
       if (!success) return false;
 
       await SyncQueueManager.removeByBusinessIdentifier(
@@ -587,88 +617,131 @@ class SyncService {
   /// `employee_id` or `worker_id`. Normalize both here and reuse the same
   /// authenticated endpoint used by the live check-in flow so offline
   /// check-ins are persisted to the backend when connectivity returns.
-  static Future<bool> _syncAttendanceCheckInItem(
+  /// Persist one offline attendance session using its original local timestamps.
+  /// A queue item may only contain IDs/date from an older app version, so the
+  /// durable local session record is the compatibility fallback for its details.
+  static Future<bool> _syncAttendanceSessionSnapshot(
     Map<String, dynamic> data,
   ) async {
     try {
-      final rawEmployeeId =
-          data['employee_id'] ??
-          data['worker_id'] ??
-          data['workerId'] ??
-          data['id'];
-
-      final employeeId = rawEmployeeId?.toString().trim() ?? '';
-      if (employeeId.isEmpty) {
+      final rawWorkerId =
+          data['worker_id'] ?? data['workerId'] ?? data['employee_id'] ?? data['id'];
+      final workerId = rawWorkerId?.toString().trim() ?? '';
+      if (workerId.isEmpty) {
         await ErrorLogHelper.logMessage(
-          'Queued attendance check-in missing employee_id/worker_id',
+          'Queued attendance session missing worker_id',
           level: 'ERROR',
-          attributes: {'data': jsonEncode(data)},
         );
         return false;
       }
 
-      final success = await checkInWorker(employeeId);
-      if (!success) return false;
+      final date = (data['attendance_date'] ??
+              DateTime.now().toIso8601String().split('T').first)
+          .toString()
+          .split('T')
+          .first;
+      final sessionIndex = int.tryParse(
+            (data['session_index'] ?? data['sessionIndex'] ?? '0').toString(),
+          ) ??
+          0;
 
-      final date = data['attendance_date']?.toString().split('T').first ??
-          DateTime.now().toIso8601String().split('T').first;
-      final sessionIndex =
-          int.tryParse(data['session_index']?.toString() ?? '') ?? 0;
+      final localRecords = await OfflineAttendanceService.loadLocalRecords();
+      Map<String, dynamic>? localSession;
+      for (final candidate in localRecords) {
+        final candidateWorker =
+            (candidate['worker_id'] ?? candidate['employee_id'])?.toString();
+        final candidateDate =
+            (candidate['attendance_date'] ?? '').toString().split('T').first;
+        final candidateIndex =
+            int.tryParse((candidate['session_index'] ?? 0).toString()) ?? 0;
+        if (candidateWorker == workerId &&
+            candidateDate == date &&
+            candidateIndex == sessionIndex) {
+          localSession = candidate;
+          break;
+        }
+      }
+
+      final checkInTime =
+          data['check_in_time'] ?? localSession?['check_in_time'];
+      final checkOutTime =
+          data['check_out_time'] ?? localSession?['check_out_time'];
+      final workingHours =
+          data['working_hours'] ?? localSession?['working_hours'];
+      if (checkInTime == null) {
+        await ErrorLogHelper.logMessage(
+          'Queued attendance session lacks its original check-in timestamp',
+          level: 'ERROR',
+          attributes: {
+            'workerId': workerId,
+            'date': date,
+            'sessionIndex': sessionIndex.toString(),
+          },
+        );
+        return false;
+      }
+
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return false;
+      final response = await ApiClient.postJson(
+        '/api/attendance/sync-session',
+        {
+          'worker_id': int.parse(workerId),
+          'attendance_date': date,
+          'session_index': sessionIndex,
+          'check_in_time': checkInTime.toString(),
+          'check_out_time': checkOutTime?.toString(),
+          'working_hours': workingHours,
+          'status': (data['status'] ?? localSession?['status'] ?? 'PRESENT')
+              .toString(),
+          'operation_id': data['operation_id'] ??
+              data['idempotency_key'] ??
+              data['action_id'],
+        },
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 12));
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        await ErrorLogHelper.logMessage(
+          'Offline attendance session sync failed: ' + response.statusCode.toString(),
+          level: 'ERROR',
+          attributes: {
+            'workerId': workerId,
+            'date': date,
+            'sessionIndex': sessionIndex.toString(),
+            'response': response.body,
+          },
+        );
+        return false;
+      }
 
       await OfflineAttendanceService.markSynced(
-        employeeId: int.tryParse(employeeId) ?? 0,
-        workerId: int.tryParse(employeeId),
+        employeeId: int.parse(workerId),
+        workerId: int.parse(workerId),
         date: date,
         sessionIndex: sessionIndex,
       );
-
       return true;
     } catch (e, stackTrace) {
       await ErrorLogHelper.logException(
         e,
         stackTrace,
-        context: 'SyncService._syncAttendanceCheckInItem',
+        context: 'SyncService._syncAttendanceSessionSnapshot',
         attributes: {'data': jsonEncode(data)},
       );
       return false;
     }
   }
 
-  /// Syncs a queued attendance check-out event to the backend.
-  ///
-  /// Uses the exact same authenticated endpoint as the live check-out flow,
-  /// ensuring queued offline events are not silently dropped.
+  static Future<bool> _syncAttendanceCheckInItem(
+    Map<String, dynamic> data,
+  ) =>
+      _syncAttendanceSessionSnapshot(data);
+
   static Future<bool> _syncAttendanceCheckOutItem(
     Map<String, dynamic> data,
-  ) async {
-    try {
-      final rawEmployeeId =
-          data['employee_id'] ??
-          data['worker_id'] ??
-          data['workerId'] ??
-          data['id'];
-
-      final employeeId = rawEmployeeId?.toString().trim() ?? '';
-      if (employeeId.isEmpty) {
-        await ErrorLogHelper.logMessage(
-          'Queued attendance check-out missing employee_id/worker_id',
-          level: 'ERROR',
-          attributes: {'data': jsonEncode(data)},
-        );
-        return false;
-      }
-
-      return await checkOutWorker(employeeId);
-    } catch (e, stackTrace) {
-      await ErrorLogHelper.logException(
-        e,
-        stackTrace,
-        context: 'SyncService._syncAttendanceCheckOutItem',
-        attributes: {'data': jsonEncode(data)},
-      );
-      return false;
-    }
-  }
+  ) =>
+      _syncAttendanceSessionSnapshot(data);
 
   /// Syncs worker profile data to the backend
   static Future<bool> syncWorkerProfile(Map<String, dynamic> workerData) async {

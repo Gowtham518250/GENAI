@@ -111,6 +111,11 @@ class OfflineAttendanceService {
         'worker_id':workerId,
         'attendance_date':date,
         'session_index':nextIndex,
+        // Include the original local timestamp so offline sync does not
+        // create attendance at the time the request eventually reaches server.
+        'check_in_time':now.toUtc().toIso8601String(),
+        'check_out_time':null,
+        'status':'PRESENT',
       },
     );
     if(!queued){
@@ -162,6 +167,12 @@ class OfflineAttendanceService {
         'worker_id':workerId,
         'attendance_date':date,
         'session_index':sessionIndex,
+        // Send a full session snapshot. Both queued IN/OUT operations can then
+        // safely sync the same final state even if the user was offline all day.
+        'check_in_time':open['check_in_time'],
+        'check_out_time':now.toUtc().toIso8601String(),
+        'working_hours':hours,
+        'status':'PRESENT',
       },
     );
     if(!queued){
