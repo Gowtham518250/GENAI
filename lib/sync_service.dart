@@ -2274,8 +2274,17 @@ static Future<bool> _saveCustomerItem(Map<String, dynamic> data) async {
         final id = data['id']?.toString() ?? '';
         final payload = data['payload'];
         final key = local.keys.firstWhere(
-          (k) => k.toString() == id ||
-              (local[k] is Map && local[k]['id']?.toString() == id),
+          (k) {
+            if (k.toString() == id) return true;
+            final raw = local[k];
+            if (raw is! Map) return false;
+            return <dynamic>[
+              raw['id'],
+              raw['product_id'],
+              raw['backend_id'],
+              raw['server_id'],
+            ].any((candidate) => candidate?.toString() == id);
+          },
           orElse: () => '',
         );
         if (key.isNotEmpty && local[key] is Map) {
@@ -2306,7 +2315,12 @@ static Future<bool> _saveCustomerItem(Map<String, dynamic> data) async {
         final payload = data['payload'];
         final backendProducts = await LocalStorageService.loadBackendProducts();
         final backendIndex = backendProducts.indexWhere((item) =>
-            (item['id'] ?? item['product_id'] ?? item['backend_id'])?.toString() == id);
+            <dynamic>[
+              item['id'],
+              item['product_id'],
+              item['backend_id'],
+              item['server_id'],
+            ].any((candidate) => candidate?.toString() == id));
         if (backendIndex >= 0) {
           final cachedProduct =
               Map<String, dynamic>.from(backendProducts[backendIndex]);
