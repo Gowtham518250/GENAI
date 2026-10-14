@@ -942,7 +942,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     _imageUrlC.clear();
     _selectedProductImageBytes = null;
     _selectedProductImageDataUrl = null;
-    _imageLookupLoading = false
+    _imageLookupLoading = false;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
