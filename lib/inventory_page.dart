@@ -497,6 +497,18 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
 
   Future<void> _addProduct() async {
     final purchasePrice = double.tryParse(_purchasePriceC.text);
+    final imageUrlValue = _selectedProductImageDataUrl ??
+        (_imageUrlC.text.trim().isEmpty ? null : _imageUrlC.text.trim());
+    if (imageUrlValue != null &&
+        (imageUrlValue.length > 120000 ||
+         (!imageUrlValue.startsWith('https://') &&
+          !imageUrlValue.startsWith('http://') &&
+          !imageUrlValue.startsWith('data:image/')))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Use an http(s) image URL or upload a supported image.')),
+      );
+      return;
+    }
     if (_nameC.text.isEmpty || _priceC.text.isEmpty || purchasePrice == null || !purchasePrice.isFinite || purchasePrice <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Product name, selling price, and purchase cost (greater than zero) are required')));
@@ -513,7 +525,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       'min_stock': int.tryParse(_minStockC.text) ?? 10,
       'category': _catC.text.trim().isNotEmpty ? _catC.text.trim() : 'General',
       'unit': _unitC.text.trim().isNotEmpty ? _unitC.text.trim() : 'pcs',
-      'image_url': _selectedProductImageDataUrl ?? (_imageUrlC.text.trim().isEmpty ? null : _imageUrlC.text.trim()),
+      'image_url': imageUrlValue,
     };
 
     try {
@@ -928,6 +940,10 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
 
   void _showAddDialog() {
     _isAddingProduct = false; // reset in case a previous sheet left it stuck
+    _imageUrlC.clear();
+    _selectedProductImageBytes = null;
+    _selectedProductImageDataUrl = null;
+    _imageLookupLoading = false
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
