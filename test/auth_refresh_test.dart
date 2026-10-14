@@ -367,6 +367,24 @@ void main() {
     });
 
     test(
+      'coalesces direct startup/resume autoLogin calls into one refresh',
+      () async {
+        final results = await Future.wait(
+          List.generate(3, (_) => SessionManagementService.autoLogin()),
+        );
+
+        expect(refreshRequestCount, 1);
+        expect(results, everyElement(isNotNull));
+        expect(
+          results.every((result) => result?['success'] == true),
+          isTrue,
+        );
+        expect(await SecureTokenStorage.getToken(), newAccessToken);
+        expect(await SecureTokenStorage.getRefreshToken(), newRefreshToken);
+      },
+    );
+
+    test(
       'refreshes, stores rotated tokens, and retries the original request',
       () async {
         final response = await HttpOverrides.runWithHttpOverrides(

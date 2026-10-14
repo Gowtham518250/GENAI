@@ -363,7 +363,28 @@ class SessionManagementService {
     }
   }
 
-  static Future<Map<String, dynamic>?> autoLogin() async {
+  // All refresh callers (startup, resume and API 401 handling) share one
+  // refresh operation. This prevents concurrent refresh responses racing while
+  // rotated tokens are being persisted, which could otherwise clear a valid session.
+  static Future<Map<String, dynamic>?>? _autoLoginInFlight;
+
+  static Future<Map<String, dynamic>?> autoLogin() {
+    final running = _autoLoginInFlight;
+    if (running != null) {
+      if (kDebugMode) debugPrint('[AUTH] Reusing in-flight refresh request');
+      return running;
+    }
+
+    final task = _autoLoginOnce();
+    _autoLoginInFlight = task;
+    return task.whenComplete(() {
+      if (identical(_autoLoginInFlight, task)) {
+        _autoLoginInFlight = null;
+      }
+    });
+  }
+
+  static Future<Map<String, dynamic>?> _autoLoginOnce() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final refreshToken = await SecureTokenStorage.getRefreshToken();
