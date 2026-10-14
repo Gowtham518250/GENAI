@@ -105,6 +105,7 @@ void main() {
     _mockSecureStorage.clear();
     _setupMockSecureStorage();
     SharedPreferences.setMockInitialValues({});
+    ApiClient.resetRateLimitersForTesting();
   });
 
   tearDown(() async {
@@ -369,8 +370,11 @@ void main() {
     test(
       'coalesces direct startup/resume autoLogin calls into one refresh',
       () async {
-        final results = await Future.wait(
-          List.generate(3, (_) => SessionManagementService.autoLogin()),
+        final results = await HttpOverrides.runWithHttpOverrides(
+          () => Future.wait(
+            List.generate(3, (_) => SessionManagementService.autoLogin()),
+          ),
+          _RealHttpOverrides(),
         );
 
         expect(refreshRequestCount, 1);

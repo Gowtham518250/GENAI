@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'session_management.dart';
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, visibleForTesting;
 import 'package:http/http.dart' as http;
 import 'package:synchronized/synchronized.dart';
 import 'rate_limiter.dart';
@@ -34,6 +34,13 @@ class ApiClient {
   static Completer<bool>? _refreshCompleter; // Safe lock for race conditions
   static DateTime? _refreshStartTime; // Track refresh start time for timeout
   static const Duration _refreshTimeout = Duration(seconds: 70);
+
+  /// Isolates rate-limit state between deterministic tests.
+  @visibleForTesting
+  static void resetRateLimitersForTesting() {
+    _rateLimiter.resetAll();
+    _authRateLimiter.resetAll();
+  }
 
   // Order of addresses to try
   // Build with: flutter build apk --dart-define=API_BASE_URL=https://your-production-url.railway.app
