@@ -85,6 +85,56 @@ void main() {
       expect(result.single['pending_amount'], 0.0);
     });
 
+    test('standalone sales do not become unpaid invoices', () {
+      final result = InvoiceDedupHelper.canonicalizeInvoiceLedger(
+        [
+          {
+            'invoice_number': 'MANUAL-001',
+            'total_amount': 36.0,
+            'paid_amount': 0.0,
+            'customer_phone': '9876543210',
+          },
+        ],
+        [
+          {
+            'sale_id': 'SALE-001',
+            'total_amount': 85.0,
+            'created_at': '2026-10-14T10:00:00Z',
+          },
+        ],
+      );
+
+      expect(result, hasLength(1));
+      expect(result.single['invoice_number'], 'MANUAL-001');
+      expect(result.single['total_amount'], 36.0);
+    });
+
+    test('a sale mirror is merged when it matches a real invoice', () {
+      final result = InvoiceDedupHelper.canonicalizeInvoiceLedger(
+        [
+          {
+            'invoice_number': 'BILL-0042',
+            'id': 42,
+            'total_amount': 100.0,
+            'paid_amount': 0.0,
+          },
+        ],
+        [
+          {
+            'sale_id': 'SALE-42',
+            'invoice_id': 42,
+            'total_amount': 100.0,
+            'paid_amount': 100.0,
+            'payment_status': 'PAID',
+          },
+        ],
+      );
+
+      expect(result, hasLength(1));
+      expect(result.single['paid_amount'], 100.0);
+      expect(result.single['payment_status'], 'PAID');
+    });
+
     test('legacy PAID row without paid_amount infers full settlement', () {
       final result = InvoiceDedupHelper.canonicalizeInvoices([
         {
