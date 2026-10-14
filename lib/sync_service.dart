@@ -438,10 +438,40 @@ class SyncService {
   }) async {
     try {
       final connection = await Connectivity().checkConnectivity();
-      final offline = connection == ConnectivityResult.none;
-      if (offline) return false;
+      if (connection == ConnectivityResult.none) return false;
 
-      final success = await checkOutWorker(workerId);
+      final parsedWorkerId = int.tryParse(workerId);
+      if (parsedWorkerId == null || parsedWorkerId <= 0) return false;
+      final today = DateTime.now().toIso8601String().split('T').first;
+      final localRecords = await OfflineAttendanceService.loadLocalRecords();
+      Map<String, dynamic>? latestSession;
+      for (final record in localRecords) {
+        final recordWorkerId =
+            (record['worker_id'] ?? record['employee_id'])?.toString();
+        final recordDate =
+            (record['attendance_date'] ?? '').toString().split('T').first;
+        if (recordWorkerId != workerId || recordDate != today) continue;
+        if (record['check_in_time'] == null || record['check_out_time'] == null) {
+          continue;
+        }
+        final index = int.tryParse((record['session_index'] ?? 0).toString()) ?? 0;
+        final previousIndex = int.tryParse(
+              (latestSession?['session_index'] ?? -1).toString(),
+            ) ??
+            -1;
+        if (index > previousIndex) latestSession = record;
+      }
+      if (latestSession == null) return false;
+
+      // Use the same timestamp-preserving endpoint as queue retries. Do not
+      // remove the queued write after the legacy check-out endpoint accepts it.
+      final success = await _syncAttendanceSessionSnapshot({
+        ...latestSession,
+        'worker_id': parsedWorkerId,
+        'employee_id': parsedWorkerId,
+        'operation_id': operationId,
+        'idempotency_key': operationId,
+      });
       if (!success) return false;
 
       await SyncQueueManager.removeByBusinessIdentifier(
