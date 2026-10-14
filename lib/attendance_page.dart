@@ -520,6 +520,32 @@ class _AttendancePageState extends State<AttendancePage>
     return totalHours;
   }
 
+  double _hourlyRateForWorker(Worker worker) =>
+      worker.salary > 0 ? worker.salary / 200.0 : 0.0;
+
+  double _calculateWorkerEstimatedSalary(Worker worker) {
+    final workerId = int.tryParse(worker.id) ?? 0;
+    return _calculateWorkerMonthlyHours(workerId) * _hourlyRateForWorker(worker);
+  }
+
+  bool _workerAttendanceSyncPending(int workerId) {
+    final now = DateTime.now();
+    return _records.any((raw) {
+      if (raw is! Map || raw['local_pending'] != true) return false;
+      final recordWorkerId = raw['worker_id'] ?? raw['employee_id'];
+      if (recordWorkerId == null ||
+          recordWorkerId.toString() != workerId.toString()) {
+        return false;
+      }
+      final rawDate =
+          (raw['attendance_date'] ?? '').toString().split('T').first.trim();
+      final recordDate = DateTime.tryParse(rawDate);
+      return recordDate != null &&
+          recordDate.year == now.year &&
+          recordDate.month == now.month;
+    });
+  }
+
   Future<void> _openWorkerManagement({required bool openAddWorker}) async {
     await Navigator.pushNamed(
       context,
@@ -1207,7 +1233,8 @@ class _AttendancePageState extends State<AttendancePage>
         // Calculate monthly hours from backend records
     final workerId = int.tryParse(worker.id) ?? 0;
     final monthlyHours = _calculateWorkerMonthlyHours(workerId);
-    final predictedSalary = worker.salary > 0 ? (monthlyHours / 200.0) * worker.salary : 0.0;
+    final predictedSalary = _calculateWorkerEstimatedSalary(worker);
+    final attendanceSyncPending = _workerAttendanceSyncPending(workerId);
     final isLateToday = workerRecord != null && _isLateCheckIn(workerRecord);
     final isCurrentSession = sessionKey == null || sessionKey == currentSessionKey;
     final canChange = sessionKey == null ||
@@ -1306,8 +1333,23 @@ class _AttendancePageState extends State<AttendancePage>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Predicted Salary:', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey)),
-                  Text('₹${predictedSalary.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: _primary)),
+                  Text(
+                    attendanceSyncPending
+                        ? 'Predicted Salary · sync pending'
+                        : 'Predicted Salary:',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: attendanceSyncPending ? Colors.orange.shade700 : Colors.grey,
+                    ),
+                  ),
+                  Text(
+                    '₹${predictedSalary.toStringAsFixed(2)}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: _primary,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1627,10 +1669,16 @@ class _AttendancePageState extends State<AttendancePage>
     final rows = _staff.map((w) {
       final workerId = int.tryParse(w.id) ?? 0;
       final hours = _calculateWorkerMonthlyHours(workerId);
-      final rate = w.salary > 0 ? w.salary / 200.0 : 0.0;
+      final rate = _hourlyRateForWorker(w);
       final amount = hours * rate;
       totalPayroll += amount;
-      return (worker: w, hours: hours, rate: rate, amount: amount);
+      return (
+        worker: w,
+        hours: hours,
+        rate: rate,
+        amount: amount,
+        syncPending: _workerAttendanceSyncPending(workerId),
+      );
     }).toList();
 
     return ListView(
@@ -1672,8 +1720,14 @@ class _AttendancePageState extends State<AttendancePage>
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(r.worker.name, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
-                      Text('${r.hours.toStringAsFixed(1)} hrs × ₹${r.rate.toStringAsFixed(2)}/hr',
-                          style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade500)),
+                      Text(
+                        '${r.hours.toStringAsFixed(1)} hrs × ₹${r.rate.toStringAsFixed(2)}/hr${r.syncPending ? ' · SYNC PENDING' : ''}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: r.syncPending ? Colors.orange.shade700 : Colors.grey.shade500,
+                          fontWeight: r.syncPending ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
                     ]),
                   ),
                   Text('₹${r.amount.toStringAsFixed(0)}',
