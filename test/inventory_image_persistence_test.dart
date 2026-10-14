@@ -1,9 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../lib/cache_consistency_service.dart';
 import '../lib/inventory_stock_helper.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+
   group('inventory product image cache reconciliation', () {
     test('keeps a locally uploaded image while its sync is pending', () {
       const localImage = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/';
