@@ -109,6 +109,34 @@ void main() {
       expect(result.single['total_amount'], 36.0);
     });
 
+    test('same numeric sale and invoice IDs do not make a sale an invoice mirror', () {
+      final result = InvoiceDedupHelper.canonicalizeInvoiceLedger(
+        [
+          {
+            'id': 1,
+            'invoice_number': 'MANUAL-001',
+            'total_amount': 36.0,
+            'paid_amount': 36.0,
+            'payment_status': 'PAID',
+          },
+        ],
+        [
+          {
+            'id': 1,
+            'sale_id': 'SALE-001',
+            'total_amount': 85.0,
+            'paid_amount': 85.0,
+            'payment_status': 'PAID',
+          },
+        ],
+      );
+
+      expect(result, hasLength(1));
+      expect(result.single['invoice_number'], 'MANUAL-001');
+      expect(result.single['total_amount'], 36.0);
+      expect(result.single['paid_amount'], 36.0);
+    });
+
     test('a sale mirror is merged when it matches a real invoice', () {
       final result = InvoiceDedupHelper.canonicalizeInvoiceLedger(
         [
