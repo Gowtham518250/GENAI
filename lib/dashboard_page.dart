@@ -37,6 +37,7 @@ import 'invoices_page.dart' hide Expanded;
 import 'gift_card_page.dart';
 import 'visual_widgets.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:notification_listener_service/notification_listener_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'language_provider.dart';
@@ -13169,6 +13170,68 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
+  Future<void> _pickPaymentQrImage(StateSetter setDlgState) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+        allowMultiple: false,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.first;
+      final bytes = file.bytes;
+      if (bytes == null || bytes.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not read the selected QR image. Please try another image.')),
+          );
+        }
+        return;
+      }
+
+      var isValidQr = file.path == null;
+      if (file.path != null) {
+        MobileScannerController? controller;
+        try {
+          controller = MobileScannerController();
+          final capture = await controller.analyzeImage(file.path!);
+          isValidQr = capture != null &&
+              capture.barcodes.any((barcode) => barcode.format == BarcodeFormat.qrCode);
+        } catch (error) {
+          if (kDebugMode) debugPrint('Payment QR verification failed: ${error.runtimeType}');
+        } finally {
+          controller?.dispose();
+        }
+      }
+
+      if (!isValidQr) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('The selected image does not contain a valid QR code. Please upload a QR code image.'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+        return;
+      }
+
+      final encoded = base64Encode(bytes);
+      await ScopedSharedPreferences.setString('payment_qr_b64', encoded);
+      // Persist to the encrypted source that _loadQr() reads on app restart.
+      await SecurePreferencesService.setPaymentQrB64(encoded);
+      if (!mounted) return;
+      setState(() => _qrImageBytes = bytes);
+      setDlgState(() {});
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save the QR image: ${error.toString()}')),
+        );
+      }
+    }
+  }
+
   void _showPaymentQrDialog() {
     showDialog(
       context: context,
@@ -13214,7 +13277,9 @@ class _DashboardPageState extends State<DashboardPage>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Upload your UPI / bank QR code so customers can scan and pay you directly.',
+                    _upiId.trim().isNotEmpty
+                        ? 'Scan this QR to pay your saved UPI ID, or upload an existing bank QR.'
+                        : 'Add your UPI ID in Shop Settings or upload an existing UPI / bank QR.',
                     style: GoogleFonts.poppins(
                       color: const Color(0xFF6B7280),
                       fontSize: 13,
@@ -13243,74 +13308,48 @@ class _DashboardPageState extends State<DashboardPage>
                       padding: const EdgeInsets.all(12),
                       child: Image.memory(_qrImageBytes!, fit: BoxFit.contain),
                     )
+                  else if (_upiId.trim().isNotEmpty)
+                    Container(
+                      width: 220,
+                      height: 220,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF22C55E).withValues(alpha: 0.3),
+                            blurRadius: 20,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: QrImageView(
+                        data: 'upi://pay?pa=${Uri.encodeComponent(_upiId.trim())}&pn=${Uri.encodeComponent(shopName.trim().isEmpty ? 'Retail Shop' : shopName.trim())}&cu=INR',
+                        version: QrVersions.auto,
+                        size: 196,
+                        backgroundColor: Colors.white,
+                        eyeStyle: const QrEyeStyle(
+                          eyeShape: QrEyeShape.square,
+                          color: Color(0xFF1E293B),
+                        ),
+                        dataModuleStyle: const QrDataModuleStyle(
+                          dataModuleShape: QrDataModuleShape.square,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                    )
                   else
                     GestureDetector(
-                      onTap: () async {
-                        final result = await FilePicker.platform.pickFiles(
-                          type: FileType.image,
-                          withData: true,
-                          allowMultiple: false,
-                        );
-                        if (result != null && result.files.isNotEmpty) {
-                          final file = result.files.first;
-                          final bytes = file.bytes;
-                          final path = file.path;
-
-                          if (bytes != null) {
-                            bool isValidQr = false;
-                            if (path != null) {
-                              MobileScannerController? controller;
-                              try {
-                                controller = MobileScannerController();
-                                final capture = await controller.analyzeImage(
-                                  path,
-                                );
-                                if (capture != null &&
-                                    capture.barcodes.any(
-                                      (b) => b.format == BarcodeFormat.qrCode,
-                                    )) {
-                                  isValidQr = true;
-                                }
-                              } catch (e) {
-                                if (kDebugMode)
-                                  debugPrint("Verification error: $e");
-                              } finally {
-                                // Ensure controller is disposed in all cases
-                                controller?.dispose();
-                              }
-                            } else {
-                              isValidQr = true; // Fallback
-                            }
-
-                            if (isValidQr) {
-                              // 🔒 SECURITY: Use scoped SharedPreferences for payment QR
-                              await ScopedSharedPreferences.setString(
-                                'payment_qr_b64',
-                                base64Encode(bytes),
-                              );
-                              setState(() => _qrImageBytes = bytes);
-                              setDlgState(() {});
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    "The selected image does not contain a valid QR code. Please upload a QR code image.",
-                                  ),
-                                  backgroundColor: Colors.redAccent,
-                                ),
-                              );
-                            }
-                          }
-                        }
-                      },
+                      onTap: () => _pickPaymentQrImage(setDlgState),
                       child: Container(
                         width: 220,
                         height: 180,
                         decoration: BoxDecoration(
-                          color: Color(0xFF22C55E).withValues(alpha: 0.07),
+                          color: const Color(0xFF22C55E).withValues(alpha: 0.07),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Color(0xFF22C55E).withValues(alpha: 0.4),
+                            color: const Color(0xFF22C55E).withValues(alpha: 0.4),
                             width: 2,
                             strokeAlign: BorderSide.strokeAlignInside,
                           ),
@@ -13344,6 +13383,12 @@ class _DashboardPageState extends State<DashboardPage>
                           ],
                         ),
                       ),
+                    ),
+                  if (_upiId.trim().isNotEmpty && _qrImageBytes == null)
+                    TextButton.icon(
+                      onPressed: () => _pickPaymentQrImage(setDlgState),
+                      icon: const Icon(Icons.upload_file_rounded),
+                      label: const Text('Upload existing bank QR instead'),
                     ),
                   const SizedBox(height: 16),
 
