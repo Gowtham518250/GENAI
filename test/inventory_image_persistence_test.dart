@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import '../lib/cache_consistency_service.dart';
+import '../lib/inventory_stock_helper.dart';
 
 void main() {
   group('inventory product image cache reconciliation', () {
@@ -24,6 +25,34 @@ void main() {
       expect(merged['image_url'], localImage);
       expect(merged['sync_status'], 'pending');
       expect(merged['conflict_state'], 'local_pending');
+    });
+
+    test('preserves an uploaded image when API uses product_id instead of id', () {
+      const localImage = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/';
+      final merged = InventoryStockHelper.mergeApiWithLocalCache(
+        [
+          {
+            'product_id': 12,
+            'product_name': 'Tamarind',
+            'image_url': null,
+            'current_stock': 7,
+          },
+        ],
+        [
+          {
+            'id': 12,
+            'product_name': 'Tamarind',
+            'image_url': localImage,
+            'sync_status': 'pending',
+            'local_updated_at': '2026-10-14T10:00:00.000Z',
+          },
+        ],
+      );
+
+      expect(merged, hasLength(1));
+      expect(merged.single['id'], 12);
+      expect(merged.single['image_url'], localImage);
+      expect(merged.single['sync_status'], 'pending');
     });
 
     test('uses the server image after the local image update is acknowledged', () {
