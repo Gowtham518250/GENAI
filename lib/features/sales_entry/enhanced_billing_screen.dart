@@ -519,7 +519,22 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                 color: const Color(0xFFF59E0B),
                 onPressed: () async {
                   HapticFeedback.mediumImpact();
-                  await provider.saveAsCredit();
+                  final saved = await provider.saveAsCredit();
+                  if (!context.mounted) return;
+                  final message = saved
+                      ? 'Credit sale saved. Outstanding balance is tracked in Khata; cloud sync will retry when online.'
+                      : (provider.lastCreditError ?? 'Credit sale could not be saved.');
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(message),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: saved
+                            ? const Color(0xFF166534)
+                            : const Color(0xFFB91C1C),
+                      ),
+                    );
                 },
               ),
             ),

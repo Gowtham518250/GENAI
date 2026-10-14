@@ -1088,42 +1088,56 @@ class LocalStorageService {
 
     final Map<String, Map<String, dynamic>> unified = {};
 
-    String customerKey({
-      dynamic customerId,
-      dynamic phone,
-    }) {
-      final id = customerId?.toString().trim() ?? '';
-      if (id.isNotEmpty && id != '0' && id.toLowerCase() != 'null') {
-        return 'id:$id';
+    String normalizePhone(dynamic value) {
+      var digits = (value?.toString() ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.length == 12 && digits.startsWith('91')) {
+        digits = digits.substring(2);
+      } else if (digits.length == 11 && digits.startsWith('0')) {
+        digits = digits.substring(1);
       }
-      final normalizedPhone = phone?.toString().trim() ?? '';
-      if (normalizedPhone.isNotEmpty) {
-        return 'phone:$normalizedPhone';
+      if (digits.length == 10 && RegExp(r'^[6-9][0-9]{9}$').hasMatch(digits)) {
+        return digits;
       }
       return '';
     }
 
-    // Tracks phone -> the canonical unified-ledger key that phone resolved
-    // to. Without this, a customer who has an id-keyed entry (built from
-    // their invoices) and ALSO a legacy phone-only Khata adjustment ends up
-    // as two disconnected ledger rows: the id-keyed row keeps the invoice
-    // balance untouched, and the phone-keyed row silently absorbs any
-    // payment made against it. Since only positive balances are shown
-    // (`bal > 0.01`), a payment that only reduced the orphaned phone row
-    // makes the money "vanish" — the visible total never goes down even
-    // though the payment really was recorded. This index lets legacy
-    // Khata-balance adjustments always land on the SAME row the invoices use.
-    final Map<String, String> phoneToKey = {};
+    String customerKey({
+      dynamic customerId,
+      dynamic phone,
+      dynamic name,
+    }) {
+      // Phone is the stable cross-device key when available; backend and local
+      // customer IDs may differ after offline sync or cloud restoration.
+      final normalizedPhone = normalizePhone(phone);
+      if (normalizedPhone.isNotEmpty) return 'phone:$normalizedPhone';
+
+      final id = customerId?.toString().trim() ?? '';
+      if (id.isNotEmpty && id != '0' && id.toLowerCase() != 'null') {
+        return 'id:$id';
+      }
+
+      final normalizedName = (name?.toString() ?? '')
+          .trim()
+          .toLowerCase()
+          .replaceAll(RegExp(r'\s+'), ' ');
+      const genericNames = {
+        '', 'customer', 'cash customer', 'walk-in customer',
+        'guest customer', 'unknown', 'unknown customer',
+      };
+      if (!genericNames.contains(normalizedName)) return 'name:$normalizedName';
+      return '';
+    }
 
     Map<String, dynamic> ensureCustomer({
       dynamic customerId,
       dynamic phone,
       dynamic name,
     }) {
-      final key = customerKey(customerId: customerId, phone: phone);
+      final key = customerKey(customerId: customerId, phone: phone, name: name);
       if (key.isEmpty) return {};
 
-      final normalizedPhone = phone?.toString().trim() ?? '';
+      if (key.isEmpty) return {};
+      final normalizedPhone = normalizePhone(phone);
       if (normalizedPhone.isNotEmpty) {
         phoneToKey.putIfAbsent(normalizedPhone, () => key);
       }
@@ -1223,7 +1237,8 @@ class LocalStorageService {
     // never shows in the pending list, making the payment look like it had
     // no effect on the customer's outstanding total.
     for (final pair in khataBalances.entries) {
-      final key = phoneToKey[pair.key.trim()] ?? customerKey(phone: pair.key);
+      final normalizedBalancePhone = normalizePhone(pair.key);
+      final key = phoneToKey[normalizedBalancePhone] ?? customerKey(phone: pair.key);
       if (key.isEmpty) continue;
 
       final entry = unified.putIfAbsent(

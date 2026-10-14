@@ -513,10 +513,17 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
 
     final today = DateTime.now();
     for (var c in unified) {
-      // Khata is customer-credit only: an invoice/customer must have a valid
-      // mobile number to appear in this screen.
+      // Show an outstanding invoice for a named customer even without a phone.
+      // Phone-based calling/WhatsApp actions remain unavailable without a valid mobile.
       final customerPhone = (c['phone'] ?? c['customer_phone'] ?? '').toString().trim();
-      if (!_isValidCustomerPhone(customerPhone)) {
+      final customerName = (c['name'] ?? c['customer_name'] ?? '').toString().trim();
+      final normalizedName = customerName.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+      const genericNames = {
+        '', 'customer', 'cash customer', 'walk-in customer',
+        'guest customer', 'unknown', 'unknown customer',
+      };
+      final hasUsableName = !genericNames.contains(normalizedName);
+      if (!_isValidCustomerPhone(customerPhone) && !hasUsableName) {
         continue;
       }
 
@@ -531,7 +538,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
               (c['balance'] as num?)?.toDouble() ?? 0.0;
       if (bal > 0.01) {
         final deadlineKey =
-            (c['customer_id'] ?? c['phone'] ?? '').toString().trim();
+            (c['customer_id'] ?? c['phone'] ?? c['name'] ?? '').toString().trim();
         final storedDueDate = deadlineKey.isNotEmpty
             ? await LocalStorageService.loadKhataDeadline(deadlineKey)
             : null;

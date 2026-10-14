@@ -35,6 +35,7 @@ class SalesEntryProvider extends ChangeNotifier {
   String shopEmail = '';
   String? _draftBillNumber;
   String? lastCompletedBillNumber;
+  String? lastCreditError;
 
   String? get draftBillNumber => _draftBillNumber;
 
@@ -488,10 +489,53 @@ class SalesEntryProvider extends ChangeNotifier {
     }
   }
 
+  String? _normalizeKhataPhone(String value) {
+    var digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length == 12 && digits.startsWith('91')) {
+      digits = digits.substring(2);
+    } else if (digits.length == 11 && digits.startsWith('0')) {
+      digits = digits.substring(1);
+    }
+    if (digits.isEmpty) return null;
+    if (digits.length != 10 || !RegExp(r'^[6-9][0-9]{9}$').hasMatch(digits)) {
+      return null;
+    }
+    return digits;
+  }
+
   Future<bool> saveAsCredit() async {
-    if (entries.isEmpty) return false;
-    if (!_validateSaleDraftPrices()) return false;
-    if (totalAmount <= 0) return false;
+    lastCreditError = null;
+    if (isSaving) {
+      lastCreditError = 'A sale is already being saved. Please wait.';
+      return false;
+    }
+    if (entries.isEmpty) {
+      lastCreditError = 'Add at least one item before saving a credit sale.';
+      return false;
+    }
+    if (!_validateSaleDraftPrices()) {
+      lastCreditError = 'Check the item quantities and prices before saving.';
+      return false;
+    }
+    if (totalAmount <= 0) {
+      lastCreditError = 'The credit sale total must be greater than zero.';
+      return false;
+    }
+
+    final customerName = customerNameController.text.trim();
+    final rawPhone = customerPhoneController.text.trim();
+    final normalizedPhone = _normalizeKhataPhone(rawPhone);
+    if (customerName.isEmpty) {
+      lastCreditError = 'Enter the customer name for a Credit / Borrow sale.';
+      return false;
+    }
+    if (rawPhone.isNotEmpty && normalizedPhone == null) {
+      lastCreditError = 'Enter a valid 10-digit Indian mobile number, or leave phone blank.';
+      return false;
+    }
+    // Name-only customers are supported by Khata. When present, a phone is
+    // stored in canonical 10-digit form so invoices and customer rows reconcile.
+    final customerPhone = normalizedPhone ?? '';
 
     isSaving = true;
     notifyListeners();
@@ -521,7 +565,7 @@ class SalesEntryProvider extends ChangeNotifier {
       }
 
       if (itemsPayload.isEmpty) {
-        print('No valid items to submit');
+        lastCreditError = 'Add a valid product with a positive price and quantity.';
         return false;
       }
 
@@ -531,8 +575,8 @@ class SalesEntryProvider extends ChangeNotifier {
         items: itemsPayload,
         grandTotal: totalAmount,
         paidAmount: 0.0,
-        customerName: customerNameController.text.trim(),
-        customerPhone: customerPhoneController.text.trim(),
+        customerName: customerName,
+        customerPhone: customerPhone,
         withTax: withTax,
         totals: {
           'subtotal': subtotalAmount,
@@ -546,18 +590,30 @@ class SalesEntryProvider extends ChangeNotifier {
 
       if (result['success'] == true) {
         lastCompletedBillNumber = (result['invoiceNumber'] ?? result['invoice_number'] ?? billNumber).toString();
-        await _addToCustomerLedger(
-          customerName: customerNameController.text.trim(),
-          customerPhone: customerPhoneController.text.trim(),
-          amount: totalAmount,
-          saleId: result['saleId']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        );
+        // Invoice outstanding is the canonical debt balance. Keep the legacy
+        // phone-based customer mirror only when a real phone is available.
+        if (customerPhone.isNotEmpty) {
+          await _addToCustomerLedger(
+            customerName: customerName,
+            customerPhone: customerPhone,
+            amount: totalAmount,
+            saleId: result['saleId']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+          );
+        }
         _clearForm();
         return true;
       }
+
+      lastCreditError = (result['message'] ?? result['error'] ?? 'Credit sale could not be saved. Please try again.')
+          .toString()
+          .trim();
+      if (lastCreditError!.isEmpty) {
+        lastCreditError = 'Credit sale could not be saved. Please try again.';
+      }
       return false;
     } catch (e) {
-      print('Error saving sale as credit: ');
+      lastCreditError = 'Credit sale could not be saved. Check your connection and try again.';
+      if (kDebugMode) debugPrint('Error saving sale as credit: $e');
       return false;
     } finally {
       isSaving = false;

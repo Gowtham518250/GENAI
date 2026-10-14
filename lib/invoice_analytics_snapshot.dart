@@ -57,36 +57,47 @@ class InvoiceAnalyticsSnapshot {
             row['paid'] ??
             row['received_amount'],
       ).clamp(0.0, total).toDouble();
-      final pending = (total - paid).clamp(0.0, double.infinity).toDouble();
-      final status = total > 0 && paid >= total - 0.01
-          ? 'PAID'
-          : (paid > 0 ? 'PARTIAL' : 'UNPAID');
+      final documentStatus =
+          (row['status'] ?? '').toString().split('.').last.toUpperCase();
+      final isNonReceivable =
+          const {'DRAFT', 'CANCELLED', 'VOID', 'DELETED'}.contains(documentStatus);
+      final pending = isNonReceivable
+          ? 0.0
+          : (total - paid).clamp(0.0, double.infinity).toDouble();
+      final status = isNonReceivable
+          ? documentStatus
+          : (total > 0 && paid >= total - 0.01
+              ? 'PAID'
+              : (paid > 0 ? 'PARTIAL' : 'UNPAID'));
 
       final invoice = <String, dynamic>{
         ...row,
+        'document_status': documentStatus,
         'total_amount': total,
         'paid_amount': paid,
         'pending_amount': pending,
         'payment_status': status,
       };
 
-      // Do not discard paid rows: they are essential to invoice analytics,
-      // payment-status filters, collected totals and the historical invoice list.
+      // Keep drafts/cancellations in the historical invoice list, but never
+      // count them as billed revenue or collectible Khata balances.
       invoices.add(invoice);
-      totalInvoiced += total;
-      totalPaid += paid;
-      totalPending += pending;
+      if (!isNonReceivable) {
+        totalInvoiced += total;
+        totalPaid += paid;
+        totalPending += pending;
 
-      switch (status) {
-        case 'PAID':
-          paidCount++;
-          break;
-        case 'PARTIAL':
-          partialCount++;
-          break;
-        default:
-          unpaidCount++;
-          break;
+        switch (status) {
+          case 'PAID':
+            paidCount++;
+            break;
+          case 'PARTIAL':
+            partialCount++;
+            break;
+          default:
+            unpaidCount++;
+            break;
+        }
       }
 
       final phone = (invoice['customer_phone'] ??
