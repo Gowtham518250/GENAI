@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 import 'api_client.dart';
 
 class RetailGrowthSuitePage extends StatefulWidget {
@@ -121,6 +122,380 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
     }catch(e){ if(mounted)setState(()=>error=e.toString()); }
   }
 
+
+  Future<void> _showCreateCouponDialog() async {
+    final codeController = TextEditingController();
+    final valueController = TextEditingController(text: '10');
+    final minimumController = TextEditingController(text: '0');
+    final maximumController = TextEditingController();
+    final usageController = TextEditingController();
+    String discountType = 'PERCENT';
+    DateTime? expiryDate;
+    bool saving = false;
+    String dialogError = '';
+
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: !saving,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            final isPercent = discountType == 'PERCENT';
+            final expiryLabel = expiryDate == null
+                ? 'Add expiry date (optional)'
+                : 'Expires ' + expiryDate!.day.toString().padLeft(2, '0') + '/' +
+                    expiryDate!.month.toString().padLeft(2, '0') + '/' +
+                    expiryDate!.year.toString();
+            return AlertDialog(
+              title: Row(children: [
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFCE7F3),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(Icons.local_offer_rounded, color: Color(0xFFDB2777)),
+                ),
+                const SizedBox(width: 11),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Create shop coupon', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 17)),
+                    Text('Customers can redeem it at your online shop.', style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF64748B))),
+                  ],
+                )),
+              ]),
+              content: SizedBox(
+                width: 440,
+                child: SingleChildScrollView(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    TextField(
+                      controller: codeController,
+                      textCapitalization: TextCapitalization.characters,
+                      maxLength: 50,
+                      decoration: InputDecoration(
+                        labelText: 'Coupon code',
+                        hintText: 'e.g. GOWTHAM10',
+                        prefixIcon: const Icon(Icons.confirmation_number_outlined),
+                        counterText: '',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: discountType,
+                      decoration: InputDecoration(
+                        labelText: 'Discount type',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'PERCENT', child: Text('Percentage discount')),
+                        DropdownMenuItem(value: 'FIXED', child: Text('Fixed amount discount')),
+                      ],
+                      onChanged: saving ? null : (value) {
+                        if (value != null) setDialogState(() => discountType = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: valueController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: isPercent ? 'Discount (%)' : 'Discount amount (₹)',
+                        prefixIcon: Icon(isPercent ? Icons.percent_rounded : Icons.currency_rupee_rounded),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: minimumController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Minimum order amount (₹)',
+                        helperText: 'Set this above zero to reward larger orders.',
+                        prefixIcon: const Icon(Icons.shopping_bag_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    if (isPercent) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: maximumController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: 'Maximum discount (₹, optional)',
+                          prefixIcon: const Icon(Icons.savings_outlined),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: usageController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Maximum redemptions (optional)',
+                        hintText: 'Unlimited if left blank',
+                        prefixIcon: const Icon(Icons.group_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: saving ? null : () async {
+                        final now = DateTime.now();
+                        final selected = await showDatePicker(
+                          context: dialogContext,
+                          initialDate: expiryDate ?? now.add(const Duration(days: 30)),
+                          firstDate: DateTime(now.year, now.month, now.day),
+                          lastDate: DateTime(now.year + 5),
+                          helpText: 'Last day to use this coupon',
+                        );
+                        if (selected != null) setDialogState(() => expiryDate = selected);
+                      },
+                      icon: const Icon(Icons.calendar_month_rounded),
+                      label: Text(expiryLabel),
+                    ),
+                    if (expiryDate != null)
+                      TextButton(
+                        onPressed: saving ? null : () => setDialogState(() => expiryDate = null),
+                        child: const Text('Remove expiry date'),
+                      ),
+                    if (dialogError.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Align(alignment: Alignment.centerLeft, child: Text(dialogError, style: GoogleFonts.poppins(color: const Color(0xFFBE123C), fontSize: 11))),
+                    ],
+                  ]),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: saving ? null : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton.icon(
+                  onPressed: saving ? null : () async {
+                    final code = codeController.text.trim().toUpperCase();
+                    final value = double.tryParse(valueController.text.trim());
+                    final minimum = double.tryParse(minimumController.text.trim());
+                    final maximum = double.tryParse(maximumController.text.trim());
+                    final usageText = usageController.text.trim();
+                    final usage = usageText.isEmpty ? null : int.tryParse(usageText);
+                    if (code.length < 3) {
+                      setDialogState(() => dialogError = 'Coupon code must contain at least 3 characters.');
+                      return;
+                    }
+                    if (value == null || !value.isFinite || value <= 0 || (isPercent && value > 100)) {
+                      setDialogState(() => dialogError = isPercent
+                        ? 'Enter a percentage from 0.01 to 100.'
+                        : 'Enter a discount amount greater than zero.');
+                      return;
+                    }
+                    if (minimum == null || !minimum.isFinite || minimum < 0) {
+                      setDialogState(() => dialogError = 'Minimum order must be zero or higher.');
+                      return;
+                    }
+                    if (maximumController.text.trim().isNotEmpty &&
+                        (maximum == null || !maximum.isFinite || maximum <= 0)) {
+                      setDialogState(() => dialogError = 'Maximum discount must be greater than zero.');
+                      return;
+                    }
+                    if (usageText.isNotEmpty && (usage == null || usage <= 0)) {
+                      setDialogState(() => dialogError = 'Maximum redemptions must be a positive whole number.');
+                      return;
+                    }
+
+                    setDialogState(() { saving = true; dialogError = ''; });
+                    try {
+                      final payload = <String, dynamic>{
+                        'code': code,
+                        'discount_type': discountType,
+                        'discount_value': value,
+                        'minimum_order_amount': minimum,
+                        'maximum_discount': isPercent && maximumController.text.trim().isNotEmpty ? maximum : null,
+                        'usage_limit': usage,
+                        'expires_at': expiryDate == null
+                          ? null
+                          : DateTime(expiryDate!.year, expiryDate!.month, expiryDate!.day, 23, 59, 59).toUtc().toIso8601String(),
+                      };
+                      final response = await ApiClient.postJson('/growth/coupons', payload);
+                      if (response.statusCode < 200 || response.statusCode >= 300) {
+                        String detail = 'Unable to create coupon (HTTP ' + response.statusCode.toString() + ').';
+                        try {
+                          final parsed = jsonDecode(response.body);
+                          if (parsed is Map && parsed['detail'] != null) detail = parsed['detail'].toString();
+                        } catch (_) {}
+                        throw Exception(detail);
+                      }
+                      if (!dialogContext.mounted) return;
+                      Navigator.of(dialogContext).pop();
+                      await _load();
+                      if (!mounted) return;
+                      final discountText = isPercent
+                        ? value.toStringAsFixed(0) + '% off'
+                        : '₹' + value.toStringAsFixed(2) + ' off';
+                      final shareText = 'Shop offer: use coupon ' + code + ' at checkout. ' +
+                        discountText +
+                        (minimum > 0 ? ' on orders of ₹' + minimum.toStringAsFixed(0) + ' or more' : '') +
+                        (expiryDate != null
+                          ? ' · Valid through ' + expiryDate!.day.toString().padLeft(2, '0') + '/' +
+                              expiryDate!.month.toString().padLeft(2, '0') + '/' + expiryDate!.year.toString()
+                          : '') + '.';
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Coupon ' + code + ' created. Share the code with customers.'),
+                          backgroundColor: const Color(0xFF15803D),
+                          action: SnackBarAction(
+                            label: 'Share',
+                            textColor: Colors.white,
+                            onPressed: () => Share.share(shareText, subject: 'Retail Mind shop coupon'),
+                          ),
+                        ),
+                      );
+                    } catch (error) {
+                      if (dialogContext.mounted) {
+                        setDialogState(() {
+                          saving = false;
+                          dialogError = error.toString().replaceFirst('Exception: ', '');
+                        });
+                      }
+                    }
+                  },
+                  icon: saving
+                    ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.add_rounded),
+                  label: Text(saving ? 'Creating…' : 'Create coupon'),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    } finally {
+      codeController.dispose();
+      valueController.dispose();
+      minimumController.dispose();
+      maximumController.dispose();
+      usageController.dispose();
+    }
+  }
+
+  Widget _couponsPanel() {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFFFFF), Color(0xFFFFF8FC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF3D5E6)),
+        boxShadow: const [BoxShadow(color: Color(0x0BDB2777), blurRadius: 20, offset: Offset(0, 8))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(color: const Color(0xFFFCE7F3), borderRadius: BorderRadius.circular(14)),
+            child: const Icon(Icons.local_offer_rounded, color: Color(0xFFDB2777)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Reward bigger baskets', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 14, color: const Color(0xFF831843)),
+            ),
+            const SizedBox(height: 3),
+            Text('Create shop-only discount codes with minimum spend and redemption limits.', style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF9D6681), height: 1.35)),
+          ])),
+        ]),
+        const SizedBox(height: 13),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: _showCreateCouponDialog,
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('Create coupon for my shop'),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFBE185D),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+            ),
+          ),
+        ),
+        if (coupons.isEmpty) ...[
+          const SizedBox(height: 12),
+          _empty('No coupons yet. Create a code and share it with your customers.'),
+        ] else ...[
+          const SizedBox(height: 13),
+          ...coupons.map((raw) {
+            final item = Map<String, dynamic>.from(raw as Map);
+            final code = item['code']?.toString() ?? '';
+            final type = item['discount_type']?.toString().toUpperCase() ?? 'PERCENT';
+            final value = d(item['discount_value']);
+            final minimum = d(item['minimum_order_amount']);
+            final used = n(item['used_count']);
+            final limit = item['usage_limit'] == null ? null : n(item['usage_limit']);
+            final expired = item['expired'] == true;
+            final active = item['is_active'] == true && !expired && (limit == null || used < limit);
+            final detail = type == 'FIXED'
+              ? '₹' + value.toStringAsFixed(2) + ' off'
+              : value.toStringAsFixed(0) + '% off' + (item['maximum_discount'] != null ? ' · max ₹' + d(item['maximum_discount']).toStringAsFixed(0) : '');
+            return Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: const Color(0xFFF0DCE6)),
+              ),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(color: const Color(0xFFFFF1F7), borderRadius: BorderRadius.circular(11)),
+                  child: const Icon(Icons.confirmation_number_rounded, color: Color(0xFFBE185D), size: 19),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Expanded(child: Text(code, style: GoogleFonts.poppins(fontWeight: FontWeight.w900, letterSpacing: .7, color: const Color(0xFF831843))),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: active ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(active ? 'ACTIVE' : expired ? 'EXPIRED' : 'INACTIVE',
+                        style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: active ? const Color(0xFF166534) : const Color(0xFF64748B))),
+                    ),
+                  ]),
+                  const SizedBox(height: 4),
+                  Text(detail, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF1F2937))),
+                  const SizedBox(height: 3),
+                  Text(
+                    (minimum > 0 ? 'Min. order ₹' + minimum.toStringAsFixed(0) : 'Any order') +
+                    ' · ' + (limit == null ? 'Unlimited uses' : used.toString() + ' / ' + limit.toString() + ' uses'),
+                    style: GoogleFonts.poppins(fontSize: 9.5, color: const Color(0xFF64748B)),
+                  ),
+                ])),
+                IconButton(
+                  tooltip: 'Share coupon',
+                  onPressed: () => Share.share(
+                    'Shop offer: use coupon ' + code + ' at checkout. ' + detail +
+                    (minimum > 0 ? ' on orders of ₹' + minimum.toStringAsFixed(0) + ' or more' : '') + '.',
+                    subject: 'Retail Mind shop coupon',
+                  ),
+                  icon: const Icon(Icons.share_rounded, color: Color(0xFFBE185D)),
+                ),
+              ]),
+            );
+          }),
+        ],
+      ]),
+    );
+  }
+
   int n(dynamic v)=>(v as num?)?.toInt()??0;
   double d(dynamic v)=>(v as num?)?.toDouble()??0;
 
@@ -171,9 +546,10 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
         const SizedBox(height:10),
         _security(),
         const SizedBox(height:20),
-        _title('Promotions',coupons.length.toString()+' coupons'),
+        _title('Shop coupons',coupons.length.toString()+' codes'),
         const SizedBox(height:10),
-        _feature(Icons.local_offer_rounded,'Coupons & promotions','Online checkout discounts are now supported.',const Color(0xFFEC4899)),
+        _couponsPanel(),
+        const SizedBox(height:10),
         _feature(Icons.assignment_return_rounded,'Returns & refunds','Customer return workflow with stock restoration.',const Color(0xFFEF4444)),
         _feature(Icons.card_giftcard_rounded,'Loyalty & rewards','Delivered online orders can earn points.',const Color(0xFF0F766E)),
         _feature(Icons.delivery_dining_rounded,'Delivery management','Assign drivers and track online deliveries.',const Color(0xFF2563EB)),
