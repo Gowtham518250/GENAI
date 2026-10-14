@@ -673,7 +673,7 @@ class SyncService {
 
       if (response.statusCode != 200 && response.statusCode != 201) {
         await ErrorLogHelper.logMessage(
-          'Offline attendance session sync failed: \${response.statusCode}',
+          'Offline attendance session sync failed: ' + response.statusCode.toString(),
           level: 'ERROR',
           attributes: {
             'workerId': workerId,
