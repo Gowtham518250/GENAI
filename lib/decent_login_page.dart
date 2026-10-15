@@ -76,25 +76,11 @@ class _DecentLoginPageState extends State<DecentLoginPage>
       if (!mounted) return;
 
       if (result.success) {
-        if (result.token == null || result.token!.isEmpty) {
-          final prefs = await SharedPreferences.getInstance();
-          final hadOwner =
-              (prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0) > 0;
-          if (hadOwner) {
-            await UserDataClearService.clearAllUserData();
-            await SecureTokenStorage.clearAll();
-            await LocalStorageService.clearOrphanSalesBoxes();
-          } else {
-            await SecureTokenStorage.clearAll();
-          }
-        }
-
-        if (result.isFallback && result.email != null) {
-          Navigator.pushNamed(
-            context,
-            '/register',
-            arguments: {'email': result.email, 'name': result.name},
-          );
+        if (result.token == null || result.token!.trim().isEmpty) {
+          setState(() {
+            errorMessage =
+                'Google sign-in did not return a verified Retail Mind session. Please try again.';
+          });
           return;
         }
 
