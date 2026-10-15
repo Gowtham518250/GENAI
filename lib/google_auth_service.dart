@@ -11,7 +11,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Result of a Google Sign-In attempt.
 class GoogleSignInResult {
   final bool success;
-  final bool isFallback; // true = backend doesn't support /auth/google yet, profile pre-filled
   final bool isNewUser;
   final String? token;
   final String? email;
@@ -21,7 +20,6 @@ class GoogleSignInResult {
 
   const GoogleSignInResult({
     required this.success,
-    this.isFallback = false,
     this.isNewUser = false,
     this.token,
     this.email,
@@ -35,7 +33,7 @@ class GoogleAuthService {
   // Load Google OAuth Client ID from environment - never hardcode
   static const String _googleClientId = String.fromEnvironment(
     'GOOGLE_OAUTH_CLIENT_ID',
-    defaultValue: '', // If empty, fallback sign-in will be used
+    defaultValue: '', // Set to the Google Web OAuth client ID at build time.
   );
 
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
