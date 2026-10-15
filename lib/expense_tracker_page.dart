@@ -677,7 +677,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                       }
                       serverSaved = true;
                       if (kDebugMode) debugPrint('Expense saved to backend.');
-                    } catch (networkError) {
+                    } catch (_) {
                       // The server might have committed before the response was lost.
                       // Queue the exact same key/payload so the retry cannot duplicate it.
                       queuedForSync = await SyncService.queueExpense(payload);
