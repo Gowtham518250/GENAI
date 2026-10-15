@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
@@ -40,6 +41,70 @@ class InventorySyncService {
   static String? parseStockReference(dynamic raw) {
     final value = raw?.toString().trim() ?? '';
     return value.isEmpty || value.toLowerCase() == 'null' ? null : value;
+  }
+
+  /// Prepare stable per-invoice/per-product deductions. Duplicate invoice lines
+  /// for the same product are aggregated so a shared idempotency key cannot
+  /// silently omit the second line's quantity.
+  static Map<String, dynamic> prepareBatchStockUpdates(
+    List<Map<String, dynamic>> items,
+  ) {
+    final errors = <String>[];
+    final grouped = <String, Map<String, dynamic>>{};
+
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      final productId = parseProductId(item['product_id'] ?? item['id']);
+      final quantity = parsePositiveQuantity(item['qty'] ?? item['quantity']);
+      final referenceId = parseStockReference(
+        item['reference_id'] ?? item['invoice_number'],
+      );
+
+      if (productId == null) {
+        errors.add('Item $i has an invalid product ID.');
+        continue;
+      }
+      if (quantity == null) {
+        errors.add(
+          'Item $i must have a positive quantity with at most three decimal places.',
+        );
+        continue;
+      }
+      if (referenceId == null) {
+        errors.add('Item $i is missing a stock reference ID.');
+        continue;
+      }
+
+      final groupKey = jsonEncode([productId, referenceId]);
+      final existing = grouped[groupKey];
+      if (existing != null) {
+        final combined = (existing['quantity'] as num) + quantity;
+        final scaled = combined * 1000;
+        if (!combined.isFinite ||
+            combined <= 0 ||
+            (scaled - scaled.roundToDouble()).abs() > 0.000001) {
+          errors.add('Combined quantity for product $productId exceeds supported precision.');
+          continue;
+        }
+        existing['quantity'] = combined;
+      } else {
+        grouped[groupKey] = {
+          'product_id': productId,
+          'quantity': quantity,
+          'reason': 'INVOICE_SYNC',
+          'reference_id': referenceId,
+          'idempotency_key': sha256
+              .convert(utf8.encode('INVOICE_SYNC|$productId|$referenceId'))
+              .toString(),
+        };
+      }
+    }
+
+    return {
+      'valid': errors.isEmpty && grouped.isNotEmpty,
+      'errors': errors,
+      'updates': grouped.values.toList(growable: false),
+    };
   }
   
   /// Deduct stock via backend with idempotency protection
@@ -181,60 +246,24 @@ class InventorySyncService {
         };
       }
       
-      // Validate product IDs, references, and three-decimal quantities before
-      // posting. Avoid converting 1.75 to 1 or letting "1.25" become 1.
-      final validationErrors = <String>[];
-      final updates = <Map<String, dynamic>>[];
-      for (int i = 0; i < items.length; i++) {
-        final item = items[i];
-        final productId = parseProductId(item['product_id'] ?? item['id']);
-        final quantity = parsePositiveQuantity(item['qty'] ?? item['quantity']);
-        final referenceId = parseStockReference(
-          item['reference_id'] ?? item['invoice_number'],
-        );
+      final prepared = prepareBatchStockUpdates(items);
+      final validationErrors = List<String>.from(prepared['errors'] as List);
+      final updates = List<Map<String, dynamic>>.from(
+        (prepared['updates'] as List).map(
+          (value) => Map<String, dynamic>.from(value as Map),
+        ),
+      );
 
-        if (productId == null) {
-          validationErrors.add('Item $i has an invalid product ID.');
-          continue;
-        }
-        if (quantity == null) {
-          validationErrors.add(
-            'Item $i must have a positive quantity with at most three decimal places.',
-          );
-          continue;
-        }
-        if (referenceId == null) {
-          validationErrors.add('Item $i is missing a stock reference ID.');
-          continue;
-        }
-
-        updates.add({
-          'product_id': productId,
-          'quantity': quantity,
-          'reason': 'INVOICE_SYNC',
-          'reference_id': referenceId,
-          // Keep key consistent with the resolved fallback IDs and use the
-          // same deterministic value for every retry of this invoice line.
-          'idempotency_key': '${productId}_${referenceId}_INVOICE_SYNC',
-        });
-      }
-
-      if (validationErrors.isNotEmpty) {
+      if (prepared['valid'] != true) {
         if (kDebugMode) {
-          debugPrint('Batch validation failed for ${validationErrors.length} item(s).');
+          debugPrint('Batch stock validation failed for ${validationErrors.length} item(s).');
         }
         return {
           'success': false,
           'error': 'VALIDATION_ERROR',
-          'message': validationErrors.join('; '),
-        };
-      }
-
-      if (updates.isEmpty) {
-        return {
-          'success': false,
-          'error': 'VALIDATION_ERROR',
-          'message': 'At least one valid stock update is required.',
+          'message': validationErrors.isEmpty
+              ? 'At least one valid stock update is required.'
+              : validationErrors.join('; '),
         };
       }
 
