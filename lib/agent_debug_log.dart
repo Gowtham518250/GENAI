@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, kIsWeb;
@@ -33,17 +34,32 @@ class AgentDebugLog {
     final line = jsonEncode(payload);
     debugPrint('[DBG-6d3a75] $line');
     _appendFile(line);
-    http
-        .post(
-          Uri.parse(_ingestUrl),
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Debug-Session-Id': _sessionId,
-          },
-          body: line,
-        )
-        .timeout(const Duration(seconds: 2))
-        .catchError((_) => http.Response('', 0));
+    unawaited(_upload(line));
+  }
+
+  static Future<void> _upload(String line) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse(_ingestUrl),
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Debug-Session-Id': _sessionId,
+            },
+            body: line,
+          )
+          .timeout(const Duration(seconds: 2));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        debugPrint(
+          '[DBG-$_sessionId] upload failed with HTTP ${response.statusCode}',
+        );
+      }
+    } on TimeoutException {
+      debugPrint('[DBG-$_sessionId] upload timed out');
+    } catch (error) {
+      // A failed transport is not an HTTP response; do not synthesize status 0.
+      debugPrint('[DBG-$_sessionId] upload failed: $error');
+    }
   }
 
   static void _appendFile(String line) {

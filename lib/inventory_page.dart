@@ -374,7 +374,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
           for (final attemptTimeout in const [Duration(seconds: 10), Duration(seconds: 25)]) {
             try {
               res = await ApiClient.getJson(
-                '${ApiClient.inventoryPrefix}/products',
+                '${ApiClient.inventoryPrefix}/products?skip=0&limit=1000',
                 headers: {'Authorization': 'Bearer $token'},
               ).timeout(attemptTimeout);
               break; // got a response, stop retrying
@@ -385,23 +385,12 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
           }
           if (res != null && res.statusCode == 200) {
             final decoded = json.decode(res.body);
-            final productsData = decoded is List
-                ? decoded
-                : (decoded is Map && decoded['products'] is List)
-                    ? decoded['products']
-                    : <dynamic>[];
-
-            final apiProducts = productsData
-                .whereType<Map>()
-                .map((e) => Map<String, dynamic>.from(e))
-                .toList();
-
-            // Never interpret an empty successful response as inventory
-            // deletion when we already have a durable non-empty cache.
-            final effectiveApiProducts =
-                apiProducts.isEmpty && cachedBackend.isNotEmpty
-                    ? cachedBackend
-                    : apiProducts;
+            // The shared parser handles direct lists and supported API envelopes.
+            final apiProducts =
+                InventoryStockHelper.parseProductsResponse(decoded);
+            // A valid empty response is authoritative. The merge helper retains
+            // only pending local mutations rather than resurrecting deleted stock.
+            final effectiveApiProducts = apiProducts;
 
             final merged = InventoryStockHelper.mergeApiWithLocalCache(
               effectiveApiProducts,

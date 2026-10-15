@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'api_client.dart';
-import 'secure_token_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:convert';
 import 'ai_features_service.dart';
 
 class ChatbotPage extends StatefulWidget {
@@ -25,8 +22,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
     _loadGreeting();
   }
   
-  void _loadGreeting() async {
+  Future<void> _loadGreeting() async {
     final greeting = await ChatbotContextService.getPersonalizedGreeting();
+    if (!mounted) return;
     setState(() {
       _messages[0] = {'msg': greeting, 'isMe': false};
     });
@@ -58,6 +56,12 @@ class _ChatbotPageState extends State<ChatbotPage> {
         });
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _msgController.dispose();
+    super.dispose();
   }
 
   @override
