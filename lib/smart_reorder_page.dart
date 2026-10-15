@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'api_client.dart';
 import 'local_storage_service.dart';
+import 'inventory_stock_helper.dart';
 import 'smart_reorder_ai.dart';
 
 /// Demand-based reorder suggestions. Forecasts use seven days of local sale
@@ -58,28 +59,25 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
       }
 
       final decoded = jsonDecode(response.body);
-      if (decoded is List) {
-        inventory = decoded
-            .whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item))
-            .toList();
-      } else if (decoded is Map && decoded['products'] is List) {
-        inventory = (decoded['products'] as List)
-            .whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item))
-            .toList();
-      } else {
-        throw const FormatException('Inventory response was not a product list.');
-      }
+      inventory = InventoryStockHelper.parseProductsResponse(decoded);
     } catch (error) {
       // The screen remains useful offline by using the owner's local cache.
       try {
         final local = await LocalStorageService.loadLocalProducts();
-        // loadLocalProducts() returns a map keyed by product ID/name.
-        inventory = local.values
+        final cachedBackend = await LocalStorageService.loadBackendProducts();
+        // Keep both acknowledged server cache and pending offline products usable
+        // when the backend read fails.
+        final offlineProducts = local.values
             .whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item))
+            .map((item) => <String, dynamic>{
+                  ...Map<String, dynamic>.from(item),
+                  'is_offline': true,
+                })
             .toList();
+        inventory = InventoryStockHelper.mergeApiWithLocalCache(
+          InventoryStockHelper.normalizeProducts(cachedBackend),
+          offlineProducts,
+        );
         usingLocalCache = inventory.isNotEmpty;
         if (!usingLocalCache) {
           _error = 'Could not load inventory. Check the connection and try again.';
