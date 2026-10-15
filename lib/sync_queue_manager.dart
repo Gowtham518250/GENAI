@@ -744,6 +744,32 @@ class SyncQueueManager {
     });
   }
 
+  /// Re-arm one queued operation without changing its id or payload.
+  static Future<bool> makeActionRetryableNow(String actionId) async {
+    if (actionId.trim().isEmpty) return false;
+    return _queueLock.synchronized(() async {
+      try {
+        final box = await _getBoxUnlocked();
+        final raw = box.get(actionId);
+        if (raw is! Map) return false;
+        final item = Map<String, dynamic>.from(raw);
+        final status = (item['status']?.toString() ?? 'PENDING').toUpperCase();
+        if (status == 'SYNCED' || status == 'DONE') return false;
+        final now = DateTime.now().toUtc().toIso8601String();
+        item['status'] = 'PENDING';
+        item['next_attempt_at'] = now;
+        item['updated_at'] = now;
+        item['manual_retry_requested_at'] = now;
+        item['needs_attention'] = false;
+        await box.put(actionId, item);
+        return true;
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ [SyncQueue] Single-item retry preparation failed: $e');
+        return false;
+      }
+    });
+  }
+
   static Future<int> getQueueSize() async {
     return _queueLock.synchronized(() async {
       final box = await _getBoxUnlocked();

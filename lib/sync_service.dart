@@ -1575,7 +1575,24 @@ class SyncService {
         }
       }
 
-      _syncStatusController.add(await SyncQueueManager.getQueueSize());
+      final queueSize = await SyncQueueManager.getQueueSize();
+      final completedAt = DateTime.now().toUtc();
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('retail_mind_sync_center_summary_v1', jsonEncode({
+          'completed_at': completedAt.toIso8601String(),
+          'successful_operations': successCount,
+          'failed_attempts': failureCount,
+          'pending_queue_count': queueSize,
+          'online': !isOffline,
+        }));
+        if (!isOffline && failureCount == 0) {
+          await prefs.setString('retail_mind_last_successful_sync_at', completedAt.toIso8601String());
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Could not save Sync Center summary: $e');
+      }
+      _syncStatusController.add(queueSize);
       
       if (kDebugMode) {
         debugPrint('✅ Sync complete: $successCount succeeded, $failureCount failed');
@@ -1607,6 +1624,18 @@ class SyncService {
       'update_invoice_paid',
       'update_invoice_unpaid',
       'record_khata_payment',
+      'update_khata_deadline',
+      'create_purchase_order',
+      'update_purchase_order_status',
+      'create_local_product',
+      'update_local_product',
+      'delete_product',
+      'decrease_stock',
+      'customer_place_order',
+      'save_customer',
+      'create_customer',
+      'attendance_check_in',
+      'attendance_check_out',
     };
 
     // Claim the sync flag before the first await. Otherwise the 30-second
@@ -1636,6 +1665,22 @@ class SyncService {
   }
 
   /// Sync one or many line items for a single bill (idempotent).
+  /// Retry one durable queue operation without regenerating its identity.
+  static Future<bool> retryQueuedActionNow(String actionId) async {
+    if (SyncQueueManager.isSyncing) return false;
+    SyncQueueManager.isSyncing = true;
+    try {
+      return await _syncLock.synchronized(() async {
+        final prepared = await SyncQueueManager.makeActionRetryableNow(actionId);
+        if (!prepared) return false;
+        await _processQueueImpl();
+        return true;
+      });
+    } finally {
+      SyncQueueManager.isSyncing = false;
+    }
+  }
+
   static Future<bool> _syncSaleBatchItem(Map<String, dynamic> data) async {
     // ONE sale sync path: /api/invoices/sync. It is the authoritative atomic
     // transaction for invoice + lines + backend inventory deduction.
@@ -2087,7 +2132,7 @@ static Future<bool> _createPurchaseOrderItem(Map<String, dynamic> data) async {
         }
       }
       if (normalizedItems.isEmpty) return false;
-      final payload = {...data, 'supplier_name': (data['supplier_name'] ?? data['supplier'] ?? '').toString().trim(), 'items': normalizedItems};
+      final payload = {...data, 'supplier_name': (data['supplier_name'] ?? data['supplier'] ?? '').toString().trim(), 'items': normalizedItems, 'idempotency_key': (data['idempotency_key'] ?? data['operation_id'] ?? '').toString()};
       final res = await ApiClient.postJson('/purchase-orders/', payload, headers: {'Authorization': 'Bearer $token'}).timeout(const Duration(seconds: 20));
       final success = res.statusCode == 200 || res.statusCode == 201;
 
@@ -2139,50 +2184,68 @@ static Future<bool> _updatePurchaseOrderStatusItem(Map<String, dynamic> data) as
     try {
       final token = await SecureTokenStorage.getToken() ?? '';
       if (token.isEmpty) return false;
-
       final poId = data['po_id'];
-      final action = data['po_action']; // 'mark-delivered' or 'cancel'
-
+      final action = data['po_action']?.toString() ?? 'cancel';
+      Map<String, dynamic> payload = {};
+      if (action == 'receive') {
+        final items = data['received_items'];
+        final receiptId = (data['receipt_id'] ?? data['operation_id'] ?? '').toString().trim();
+        if (items is! List || items.isEmpty || receiptId.length < 8) return false;
+        payload = {'idempotency_key': receiptId, 'items': items};
+      }
       final res = await ApiClient.postJson(
         '/purchase-orders/$poId/$action',
-        {},
+        payload,
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 20));
-
-      final success = res.statusCode == 200 || res.statusCode == 201;
-      if (success) {
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          final raw = prefs.getString('purchase_orders_data');
-          if (raw != null && raw.isNotEmpty) {
-            final decoded = jsonDecode(raw);
-            if (decoded is List) {
-              final list = decoded.toList();
-              final targetStatus = action == 'mark-delivered' ? 'DELIVERED' : 'CANCELLED';
-              for (var i = 0; i < list.length; i++) {
-                final value = list[i];
-                if (value is! Map) continue;
-                if (value['id']?.toString() == poId.toString() ||
-                    value['server_id']?.toString() == poId.toString()) {
-                  list[i] = {
-                    ...Map<String, dynamic>.from(value),
-                    'status': targetStatus,
-                    'sync_status': 'synced',
-                  };
-                }
+      if (res.statusCode != 200 && res.statusCode != 201) {
+        if (kDebugMode) debugPrint('❌ Purchase order status sync rejected: ${res.statusCode} ${res.body}');
+        return false;
+      }
+      Map<String, dynamic> responseData = {};
+      try {
+        final decoded = jsonDecode(res.body);
+        if (decoded is Map) responseData = Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+      var targetStatus = action == 'cancel' ? 'CANCELLED' : 'RECEIVED';
+      if (action == 'mark-ordered') targetStatus = 'ORDERED';
+      if (action == 'receive') targetStatus = (responseData['status'] ?? 'PARTIALLY_RECEIVED').toString().toUpperCase();
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('purchase_orders_data');
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          final list = decoded.toList();
+          for (var i = 0; i < list.length; i++) {
+            final value = list[i];
+            if (value is! Map) continue;
+            if (value['id']?.toString() == poId.toString() || value['server_id']?.toString() == poId.toString()) {
+              final updated = {
+                ...Map<String, dynamic>.from(value),
+                'status': targetStatus,
+                'sync_status': 'synced',
+                'last_ack_at': DateTime.now().toUtc().toIso8601String(),
+              };
+              if (responseData['items_json'] is String) {
+                updated['items_json'] = responseData['items_json'];
+                try {
+                  final rows = jsonDecode(responseData['items_json'] as String);
+                  if (rows is List) updated['items'] = rows;
+                } catch (_) {}
               }
-              await prefs.setString('purchase_orders_data', jsonEncode(list));
+              list[i] = updated;
             }
           }
-        } catch (_) {}
+          await prefs.setString('purchase_orders_data', jsonEncode(list));
+        }
       }
-      return success;
+      SyncService.triggerDashboardRefresh();
+      return true;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error updating purchase order status: $e');
       return false;
     }
   }
-
 
 static Future<bool> _updateKhataDeadlineItem(Map<String, dynamic> data) async {
     try {
