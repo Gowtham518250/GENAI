@@ -2471,12 +2471,51 @@ class _DashboardPageState extends State<DashboardPage>
 
             setIfMissing('business_date', businessDate);
             setIfMissing('date', businessDate ?? eventTimestamp);
-            setIfMissing('created_at', eventTimestamp);
-            setIfMissing('sale_timestamp', eventTimestamp);
-            setIfMissing('invoice_timestamp', eventTimestamp);
+
+            // Backend invoice.created_at is the canonical event time. Replace
+            // stale midnight timestamps in old local snapshots rather than
+            // preserving them as if they were the sale's actual hour.
+            void setCanonicalTimestamp(String key, dynamic value) {
+              if (value == null) return;
+              if (row[key]?.toString() != value.toString()) {
+                row[key] = value;
+                rowChanged = true;
+              }
+            }
+            setCanonicalTimestamp('created_at', eventTimestamp);
+            setCanonicalTimestamp(
+              'sale_timestamp',
+              firstItem['sale_timestamp'] ?? eventTimestamp,
+            );
+            setCanonicalTimestamp(
+              'invoice_timestamp',
+              firstItem['invoice_timestamp'] ?? eventTimestamp,
+            );
+
+            bool hasUsableProductLines(dynamic value) {
+              if (value is! List) return false;
+              for (final rawLine in value) {
+                if (rawLine is! Map) continue;
+                final name = (rawLine['product_name'] ??
+                        rawLine['product'] ??
+                        rawLine['item'] ??
+                        rawLine['description'] ??
+                        '')
+                    .toString()
+                    .trim();
+                if (name.isNotEmpty &&
+                    !AnalyticsEngine.isPlaceholderProductName(name)) {
+                  return true;
+                }
+              }
+              return false;
+            }
+
             final cachedLines = row['items'] ?? row['line_items'];
-            if ((cachedLines is! List || cachedLines.isEmpty) &&
-                processedItems.isNotEmpty) {
+            if (!hasUsableProductLines(cachedLines) &&
+                processedItems.any((line) => !AnalyticsEngine
+                    .isPlaceholderProductName(
+                        (line['product_name'] ?? '').toString()))) {
               row['items'] = processedItems;
               rowChanged = true;
             }
