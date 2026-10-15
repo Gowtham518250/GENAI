@@ -43,103 +43,148 @@ class GoogleAuthService {
     serverClientId: _googleClientId.isNotEmpty ? _googleClientId : null,
   );
 
-  /// Sign in with Google and attempt backend authentication.
-  /// Returns a [GoogleSignInResult] describing the outcome.
+  /// Sign in with Google and exchange the verified Google ID token for a Retail Mind session.
+  ///
+  /// The Google ID token is verified by the backend. Profile data sent by the
+  /// client is only for display and must never be treated as proof of identity.
   static Future<GoogleSignInResult> signIn() async {
     try {
-      // 1. Trigger native Google account picker
       final GoogleSignInAccount? account = await _googleSignIn.signIn();
       if (account == null) {
         return const GoogleSignInResult(
           success: false,
-          error: 'Sign-in was cancelled',
+          error: 'Google sign-in was cancelled.',
         );
       }
 
       final GoogleSignInAuthentication auth = await account.authentication;
       final String? idToken = auth.idToken;
-      final String email = account.email;
-      final String name = account.displayName ?? '';
+      final String email = account.email.trim();
+      final String name = (account.displayName ?? '').trim();
       final String? photoUrl = account.photoUrl;
 
+      if (idToken == null || idToken.trim().isEmpty) {
+        return GoogleSignInResult(
+          success: false,
+          error: _googleClientId.isEmpty
+              ? 'Google sign-in is not configured. Add the real Web OAuth client ID to GOOGLE_OAUTH_CLIENT_ID and verify the Android Firebase configuration.'
+              : 'Google did not return an ID token. Check the Web OAuth client ID and Android SHA-1/SHA-256 configuration.',
+        );
+      }
+
+      if (email.isEmpty) {
+        return const GoogleSignInResult(
+          success: false,
+          error: 'Google did not provide an email address. Please try another account.',
+        );
+      }
+
       if (kDebugMode) {
-        debugPrint('✅ Google Sign-In: $email');
+        debugPrint('Google account selected; exchanging ID token with Retail Mind backend.');
       }
 
-      // 2. Try backend Google auth endpoint
-      try {
-        final response = await ApiClient.postJson('/auth/google', {
-          'google_token': idToken ?? '',
-          'email': email,
-          'name': name,
-          'photo_url': photoUrl ?? '',
-        });
+      final response = await ApiClient.postJson('/auth/google', {
+        'google_token': idToken,
+        // These fields are display hints only. The backend must use the
+        // claims from the verified ID token as the identity source.
+        'email': email,
+        'name': name,
+        'photo_url': photoUrl ?? '',
+      });
 
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          final token = (data['token'] ?? data['access_token'])?.toString();
+      if (response.statusCode != 200) {
+        var message = response.statusCode == 404
+            ? 'Google authentication is not available on the Retail Mind backend yet.'
+            : 'Retail Mind could not authenticate this Google account (HTTP ${response.statusCode}).';
 
-          if (token != null && token.isNotEmpty) {
-            if (kDebugMode) debugPrint('🧹 Clearing old user data before Google login...');
-            await UserDataClearService.clearAllUserData();
-            await LocalStorageService.clearOrphanSalesBoxes();
-
-            final extractedUserId = data['user_id'] != null
-                ? int.tryParse(data['user_id'].toString()) ?? 0
-                : 0;
-
-            final deviceId = await SessionManagementService.getDeviceId();
-            await SessionManagementService.initializeSession(
-              userId: extractedUserId,
-              accessToken: token,
-              refreshToken: data['refresh_token']?.toString(),
-              userName: name,
-              userEmail: email,
-              role: data['role']?.toString() ?? 'OWNER',
-              deviceId: deviceId,
-            );
-
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('user_name', name);
-            await prefs.setString('email', email);
-            if (data['shop_name'] != null) {
-              await prefs.setString('shop_name', data['shop_name'].toString());
+        try {
+          final dynamic decoded = json.decode(response.body);
+          if (decoded is Map) {
+            final detail = decoded['detail'] ?? decoded['message'];
+            if (detail is String && detail.trim().isNotEmpty) {
+              message = detail.trim();
             }
-
-            return GoogleSignInResult(
-              success: true,
-              isNewUser: data['is_new_user'] == true,
-              token: token,
-              email: email,
-              name: name,
-              photoUrl: photoUrl,
-            );
           }
+        } catch (_) {
+          // Keep the safe status-based message if the response is not JSON.
         }
 
-        // Backend returned non-200 — handle gracefully
         if (kDebugMode) {
-          debugPrint('⚠️ Backend /auth/google returned ${response.statusCode}, using fallback');
+          debugPrint('Retail Mind Google authentication rejected with HTTP ${response.statusCode}.');
         }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('⚠️ Backend Google auth error: $e — using profile pre-fill fallback');
-        }
+        return GoogleSignInResult(success: false, error: message);
       }
 
-      // 3. Fallback: If backend doesn't support /auth/google yet, we route to register
+      final dynamic decoded = json.decode(response.body);
+      if (decoded is! Map) {
+        return const GoogleSignInResult(
+          success: false,
+          error: 'Retail Mind returned an invalid authentication response.',
+        );
+      }
+      final data = Map<String, dynamic>.from(decoded);
+      final String? token =
+          (data['access_token'] ?? data['token'])?.toString();
+      if (token == null || token.trim().isEmpty) {
+        return const GoogleSignInResult(
+          success: false,
+          error: 'Retail Mind did not return a session token. Please try again.',
+        );
+      }
+
+      final returnedName =
+          (data['username'] ?? data['user_name'] ?? name).toString().trim();
+      final returnedEmail = (data['email'] ?? email).toString().trim();
+      final userId = int.tryParse(
+            (data['user_id'] ?? data['id'] ?? '').toString(),
+          ) ??
+          0;
+      final role =
+          (data['role'] ?? data['user_type'] ?? 'OWNER').toString();
+
+      // Clear stale data only after the backend has verified the Google token
+      // and issued a Retail Mind session.
+      await UserDataClearService.clearAllUserData();
+      await LocalStorageService.clearOrphanSalesBoxes();
+
+      final deviceId = await SessionManagementService.getDeviceId();
+      await SessionManagementService.initializeSession(
+        userId: userId,
+        accessToken: token,
+        refreshToken: data['refresh_token']?.toString(),
+        userName: returnedName,
+        userEmail: returnedEmail,
+        role: role,
+        deviceId: deviceId,
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_name', returnedName);
+      await prefs.setString('email', returnedEmail);
+
+      final dynamic profile = data['shop_profile'];
+      final dynamic profileShopName =
+          profile is Map ? profile['shop_name'] : null;
+      final shopName = data['shop_name'] ?? profileShopName;
+      if (shopName != null && shopName.toString().trim().isNotEmpty) {
+        await prefs.setString('shop_name', shopName.toString());
+      }
+
       return GoogleSignInResult(
         success: true,
-        isFallback: true,
-        email: email,
-        name: name,
+        isNewUser: data['is_new_user'] == true,
+        token: token,
+        email: returnedEmail,
+        name: returnedName,
         photoUrl: photoUrl,
       );
-    } on Exception catch (e) {
-      if (kDebugMode) debugPrint('❌ Google Sign-In error: $e');
-      return GoogleSignInResult(
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Retail Mind Google sign-in exception: $e');
+      }
+      return const GoogleSignInResult(
         success: false,
-        error: 'Google Sign-In failed. Please try again.',
+        error: 'Google sign-in failed. Check your connection and Google OAuth configuration, then try again.',
       );
     }
   }
