@@ -38,6 +38,14 @@ subprojects {
                     targetCompatibility = JavaVersion.VERSION_1_8
                 }
             }
+            // receive_sharing_intent's Kotlin task targets JVM 17. Match its
+            // Java compile target to prevent Gradle's target-validation failure.
+            if (moduleName == "receive_sharing_intent") {
+                compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_17
+                    targetCompatibility = JavaVersion.VERSION_17
+                }
+            }
         }
         extensions.configure<com.android.build.api.variant.LibraryAndroidComponentsExtension> {
             finalizeDsl { libraryExtension ->
