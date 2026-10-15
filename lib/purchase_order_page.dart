@@ -27,30 +27,39 @@ class _PurchaseOrderPageState extends State<PurchaseOrderPage> {
   }
 
   Future<void> _loadOrders() async {
+    if (!mounted) return;
     setState(() => _loading = true);
+
     final localOrders = await LocalStorageService.loadPurchaseOrders();
+    if (!mounted) return;
     setState(() => _orders = List<dynamic>.from(localOrders));
 
     try {
       final token = await SecureTokenStorage.getToken() ?? '';
       if (token.isNotEmpty) {
         final response = await ApiClient.getJson(
-          '/api/purchase-orders',
+          '/purchase-orders/',
           headers: {'Authorization': 'Bearer $token'},
         ).timeout(const Duration(seconds: 10));
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          final backendOrders = (data is List) ? data : data['orders'] ?? [];
+          final backendOrders = data is List
+              ? data
+              : (data is Map && data['orders'] is List)
+                  ? data['orders']
+                  : const <dynamic>[];
           final parsed = List<dynamic>.from(backendOrders);
+          if (!mounted) return;
           setState(() => _orders = parsed);
           await LocalStorageService.savePurchaseOrders(parsed);
         }
       }
-    } catch (_) {
-      // ignore network failures and keep cached orders.
+    } catch (error) {
+      // Keep cached purchase orders if the network is unavailable.
+      debugPrint('Purchase-order refresh failed; keeping local data: $error');
     }
-    setState(() => _loading = false);
+    if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _saveLocalOrder(Map<String, dynamic> order) async {
@@ -192,7 +201,7 @@ class _PurchaseOrderPageState extends State<PurchaseOrderPage> {
       });
       try {
         final response = await ApiClient.getJson(
-          '/api/purchase-orders/reorder-recommendations?lookup_online=true&limit=12',
+          '/purchase-orders/reorder-recommendations?lookup_online=true&limit=12',
           headers: {'Authorization': 'Bearer $token'},
         ).timeout(const Duration(seconds: 65));
         if (response.statusCode != 200) {
