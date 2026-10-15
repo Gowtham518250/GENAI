@@ -25,8 +25,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
     _loadGreeting();
   }
   
-  void _loadGreeting() async {
+  Future<void> _loadGreeting() async {
     final greeting = await ChatbotContextService.getPersonalizedGreeting();
+    if (!mounted) return;
     setState(() {
       _messages[0] = {'msg': greeting, 'isMe': false};
     });
@@ -58,6 +59,12 @@ class _ChatbotPageState extends State<ChatbotPage> {
         });
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _msgController.dispose();
+    super.dispose();
   }
 
   @override
