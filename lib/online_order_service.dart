@@ -96,6 +96,7 @@ class OnlineOrderService {
       'totalPaidCount': 0,
       'rejectedCount': 0,
       'cancelledCount': 0,
+      'available': false,
     };
 
     if (shopId.isEmpty || shopId == '0') return Map<String, dynamic>.from(empty);
@@ -230,6 +231,7 @@ class OnlineOrderService {
         'totalPaidCount': totalPaidCount,
         'rejectedCount': rejectedCount,
         'cancelledCount': cancelledCount,
+        'available': true,
       };
     } catch (e) {
       if (kDebugMode) debugPrint('getAnalytics: ' + e.toString());
