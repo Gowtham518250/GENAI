@@ -657,19 +657,34 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                         headers: {'Authorization': 'Bearer ' + token},
                       ).timeout(const Duration(seconds: 20));
                       if (response.statusCode < 200 || response.statusCode >= 300) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Expense was not accepted (HTTP ' +
-                                  response.statusCode.toString() +
-                                  '). Check the details and retry.',
+                        if (response.statusCode >= 500) {
+                          // A server error can follow a committed write. Retry the same key
+                          // through the durable outbox rather than generating a new expense.
+                          queuedForSync = await SyncService.queueExpense(payload);
+                          if (!queuedForSync) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Server error and expense could not be queued. Please retry.'),
+                              ),
+                            );
+                            return;
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Expense was not accepted (HTTP ' +
+                                    response.statusCode.toString() +
+                                    '). Check the details and retry.',
+                              ),
                             ),
-                          ),
-                        );
-                        return;
+                          );
+                          return;
+                        }
+                      } else {
+                        serverSaved = true;
+                        if (kDebugMode) debugPrint('Expense saved to backend.');
                       }
-                      serverSaved = true;
-                      if (kDebugMode) debugPrint('Expense saved to backend.');
                     } catch (_) {
                       // The server might have committed before the response was lost.
                       // Queue the exact same key/payload so the retry cannot duplicate it.
