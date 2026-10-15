@@ -102,6 +102,8 @@ class ApiClient {
   static const String customerRegister = '/store/customer/register';
   static const String myOrders = '/store/my-orders';
   static const String salesEndpoint = '/api/invoices/sync';
+  // Read-only compatibility feed with sale-shaped records. Never GET the POST-only invoice sync route.
+  static const String salesListEndpoint = '/auth/sales';
 
   // Sales Restore Service (NEW - Phase 1-10 Production Fixes)
   static const String salesRestoreRestoreAll = '/api/sales-restore/restore-all';
