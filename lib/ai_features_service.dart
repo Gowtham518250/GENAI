@@ -2,7 +2,6 @@
 /// Show "stock up" banner 7-14 days before Indian festivals
 
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
 
