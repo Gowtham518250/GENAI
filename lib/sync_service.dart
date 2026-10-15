@@ -2431,7 +2431,7 @@ static Future<bool> _saveCustomerItem(Map<String, dynamic> data) async {
       if (token.isEmpty) return false;
 
       final response = await ApiClient.getJson(
-        ApiClient.salesEndpoint,
+        ApiClient.salesListEndpoint,
         headers: {'Authorization': 'Bearer $token'},
       ).timeout(const Duration(seconds: 12));
 
@@ -2610,7 +2610,7 @@ static Future<Map<String, dynamic>> verifySyncState() async {
       // -----------------------------
       try {
         final salesResponse = await ApiClient.getJson(
-          ApiClient.salesEndpoint,
+          ApiClient.salesListEndpoint,
           headers: {
             'Authorization': 'Bearer $token',
           },
