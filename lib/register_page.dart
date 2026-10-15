@@ -118,18 +118,6 @@ class _RegisterPageState extends State<RegisterPage>
       return;
     }
 
-    if (result.isFallback && result.email != null) {
-      // Pre-fill fields with Google profile
-      nameController.text = result.name ?? '';
-      emailController.text = result.email!;
-      setState(() {
-        successMessage =
-            '✅ Google profile loaded! Fill in the remaining fields to complete registration.';
-        _isGoogleLoading = false;
-      });
-      return;
-    }
-
     setState(() {
       errorMessage = result.error ?? 'Google Sign-In failed. Please try again.';
       _isGoogleLoading = false;
