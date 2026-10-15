@@ -19,6 +19,28 @@ import 'notification_service.dart';
 /// This fixes the critical bug where stock was lost after app data clear
 /// 
 class InventorySyncService {
+  /// Parse a positive stock quantity without truncating fractional retail units.
+  /// The backend Numeric column currently supports at most three decimal places.
+  static num? parsePositiveQuantity(dynamic raw) {
+    final num? quantity = raw is num
+        ? raw
+        : num.tryParse(raw?.toString().trim() ?? '');
+    if (quantity == null || !quantity.isFinite || quantity <= 0) return null;
+    final scaled = quantity * 1000;
+    if ((scaled - scaled.roundToDouble()).abs() > 0.000001) return null;
+    return quantity;
+  }
+
+  static int? parseProductId(dynamic raw) {
+    if (raw is int) return raw > 0 ? raw : null;
+    final parsed = int.tryParse(raw?.toString().trim() ?? '');
+    return parsed != null && parsed > 0 ? parsed : null;
+  }
+
+  static String? parseStockReference(dynamic raw) {
+    final value = raw?.toString().trim() ?? '';
+    return value.isEmpty || value.toLowerCase() == 'null' ? null : value;
+  }
   
   /// Deduct stock via backend with idempotency protection
   /// This is the ONLY way to deduct stock - local changes are forbidden
@@ -159,35 +181,63 @@ class InventorySyncService {
         };
       }
       
-      // 🔒 PHASE 5 FIX: Validate quantities before batch deduction
+      // Validate product IDs, references, and three-decimal quantities before
+      // posting. Avoid converting 1.75 to 1 or letting "1.25" become 1.
       final validationErrors = <String>[];
+      final updates = <Map<String, dynamic>>[];
       for (int i = 0; i < items.length; i++) {
-        final qty = items[i]['qty'] ?? items[i]['quantity'];
-        final qtyInt = qty is int ? qty : (qty is double ? qty.toInt() : int.tryParse(qty?.toString() ?? '0'));
-        
-        if (qtyInt == null || qtyInt <= 0) {
-          validationErrors.add('Item $i has invalid quantity: $qty');
+        final item = items[i];
+        final productId = parseProductId(item['product_id'] ?? item['id']);
+        final quantity = parsePositiveQuantity(item['qty'] ?? item['quantity']);
+        final referenceId = parseStockReference(
+          item['reference_id'] ?? item['invoice_number'],
+        );
+
+        if (productId == null) {
+          validationErrors.add('Item $i has an invalid product ID.');
+          continue;
         }
+        if (quantity == null) {
+          validationErrors.add(
+            'Item $i must have a positive quantity with at most three decimal places.',
+          );
+          continue;
+        }
+        if (referenceId == null) {
+          validationErrors.add('Item $i is missing a stock reference ID.');
+          continue;
+        }
+
+        updates.add({
+          'product_id': productId,
+          'quantity': quantity,
+          'reason': 'INVOICE_SYNC',
+          'reference_id': referenceId,
+          // Keep key consistent with the resolved fallback IDs and use the
+          // same deterministic value for every retry of this invoice line.
+          'idempotency_key': '${productId}_${referenceId}_INVOICE_SYNC',
+        });
       }
-      
+
       if (validationErrors.isNotEmpty) {
-        if (kDebugMode) debugPrint('❌ Batch validation failed: ${validationErrors.join(', ')}');
+        if (kDebugMode) {
+          debugPrint('Batch validation failed for ${validationErrors.length} item(s).');
+        }
         return {
           'success': false,
           'error': 'VALIDATION_ERROR',
           'message': validationErrors.join('; '),
         };
       }
-      
-      // Prepare batch request
-      final updates = items.map((item) => {
-        'product_id': item['product_id'] ?? item['id'],
-        'quantity': item['qty'] ?? item['quantity'],
-        'reason': 'INVOICE_SYNC',
-        'reference_id': item['reference_id'] ?? item['invoice_number'],
-        'idempotency_key': '${item['product_id']}_${item['reference_id']}',
-      }).toList();
-      
+
+      if (updates.isEmpty) {
+        return {
+          'success': false,
+          'error': 'VALIDATION_ERROR',
+          'message': 'At least one valid stock update is required.',
+        };
+      }
+
       final response = await ApiClient.postJson(
         '/api/inventory-sync/deduct-stock-batch',
         {'updates': updates},
