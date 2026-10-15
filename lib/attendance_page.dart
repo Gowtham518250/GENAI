@@ -1236,8 +1236,12 @@ class _AttendancePageState extends State<AttendancePage>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4)]
       ),
-      child: Column(
-        children: [
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
           ListTile(
             onTap: () => Navigator.push(
               context,
@@ -1341,7 +1345,8 @@ class _AttendancePageState extends State<AttendancePage>
                 ],
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
