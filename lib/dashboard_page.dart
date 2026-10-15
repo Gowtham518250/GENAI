@@ -5874,7 +5874,7 @@ class _DashboardPageState extends State<DashboardPage>
       {
         'lbl':
             'Online Orders', // 🔒 CHANGED: From "Avg Order" to "Online Orders"
-        'val': '${_cachedTotalOnlineOrders ?? engine.totalOnlineOrders}',
+        'val': '${_cachedTotalOnlineOrders ?? _calculateTotalOnlineOrders()}',
         'chg': gText,
       },
       {
@@ -12167,34 +12167,7 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   int _calculateTotalOnlineOrders() {
-    final Set<String> onlineInvoices = {};
-
-    for (final sale in sales) {
-      try {
-        final invoiceKey =
-            sale['invoice_number']?.toString() ??
-            sale['sale_id']?.toString() ??
-            sale['_bill_id']?.toString() ??
-            sale['id']?.toString() ??
-            sale['created_at']?.toString() ??
-            '';
-
-        final String source =
-            (sale['source'] ?? sale['order_source'] ?? 'OFFLINE')
-                .toString()
-                .toUpperCase();
-
-        // Count as online if source is online OR if invoice starts with ONL
-        if (source == 'ONLINE' ||
-            source == 'WEB' ||
-            source == 'APP' ||
-            invoiceKey.toUpperCase().startsWith('ONL')) {
-          if (invoiceKey.isNotEmpty) onlineInvoices.add(invoiceKey);
-        }
-      } catch (_) {}
-    }
-
-    return onlineInvoices.length;
+    return OnlineOrderService.countDistinctOnlineOrdersFromSales(sales);
   }
 
   String _monthShort(int m) {
