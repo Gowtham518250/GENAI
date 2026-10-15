@@ -115,6 +115,7 @@ const Color kPrimaryColor = Color(0xFF6366F1);
 const Color kSecondaryColor = Color(0xFF10B981); // Emerald instead of Cyan
 const Color kAccentColor = Color(0xFFF59E0B); // Amber
 const Color kInfoColor = Color(0xFF3B82F6); // Blue
+const String kRetailMindCustomerStoreUrl = 'https://retail-mind-web.onrender.com';
 
 // dashboard theme tokens - REDESIGNED FOR CLEAN WHITE BACKGROUND
 const Color bg = Color(0xFFFFFFFF); // Changed from #0F172A to white
@@ -1769,6 +1770,42 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
+  Future<void> _openOnlineStoreUrl() async {
+    final uri = Uri.parse(kRetailMindCustomerStoreUrl);
+    try {
+      final opened = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open your online shop link.')),
+        );
+      }
+    } catch (error) {
+      if (kDebugMode) debugPrint('Unable to open online shop URL: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open your online shop link.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _copyOnlineStoreUrl() async {
+    try {
+      await Clipboard.setData(
+        const ClipboardData(text: kRetailMindCustomerStoreUrl),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Shop link copied to clipboard.')),
+      );
+    } catch (error) {
+      if (kDebugMode) debugPrint('Unable to copy online shop URL: $error');
+    }
+  }
+
   Widget _buildOnlineStoreStatusCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1815,7 +1852,150 @@ class _DashboardPageState extends State<DashboardPage>
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF052E1A)
+                  : const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFF16A34A).withValues(alpha: 0.32),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF16A34A),
+                      size: 21,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Your shop is live at',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF166534),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF16A34A).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'LIVE',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: isDark
+                              ? const Color(0xFF86EFAC)
+                              : const Color(0xFF15803D),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Share this link with customers so they can visit your online store.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    height: 1.45,
+                    color: isDark
+                        ? Colors.white70
+                        : const Color(0xFF4B5563),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.only(
+                    left: 11,
+                    right: 4,
+                    top: 4,
+                    bottom: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.18)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF16A34A).withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.language_rounded,
+                        size: 19,
+                        color: Color(0xFF16A34A),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: InkWell(
+                          onTap: _openOnlineStoreUrl,
+                          borderRadius: BorderRadius.circular(6),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                              kRetailMindCustomerStoreUrl,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? const Color(0xFF86EFAC)
+                                    : const Color(0xFF166534),
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Copy shop URL',
+                        onPressed: _copyOnlineStoreUrl,
+                        icon: const Icon(Icons.copy_rounded, size: 19),
+                        color: const Color(0xFF16A34A),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: _openOnlineStoreUrl,
+                    icon: const Icon(Icons.open_in_new_rounded, size: 17),
+                    label: Text(
+                      'Open store',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           OnlineAnalyticsCard(
             pendingOrders: _onlinePendingOrders,
             totalOrders: _onlineTotalOrders,
