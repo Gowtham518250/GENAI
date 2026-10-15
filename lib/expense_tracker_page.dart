@@ -7,7 +7,7 @@ import 'local_storage_service.dart';
 import 'api_client.dart';
 import 'secure_token_storage.dart';
 import 'sync_service.dart';
-import 'package:uuid/uuid.dart';
+import 'expense_submission_identity.dart';
 
 enum ExpenseCategory {
   rent,
@@ -556,8 +556,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
     final descriptionController = TextEditingController();
     final amountController = TextEditingController();
     var selectedCategory = ExpenseCategory.other;
-    var currentIdempotencyKey = const Uuid().v4();
-    String? lastAttemptFingerprint;
+    final submissionIdentity = ExpenseSubmissionIdentity();
 
     showDialog(
       context: context,
@@ -629,19 +628,13 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                     'expense_date': expenseDate,
                     'payment_method': 'cash',
                   };
-                  final fingerprint = jsonEncode(<String, String>{
-                    'category': selectedCategory.name,
-                    'amount': amount.toStringAsFixed(2),
-                    'description': description,
-                    'expense_date': expenseDate,
-                    'payment_method': 'cash',
-                  });
-                  // Preserve the key if the same submission is retried after a timeout.
-                  // If the user edits the payload, it becomes a new expense operation.
-                  if (lastAttemptFingerprint != fingerprint) {
-                    currentIdempotencyKey = const Uuid().v4();
-                    lastAttemptFingerprint = fingerprint;
-                  }
+                  final currentIdempotencyKey = submissionIdentity.keyFor(
+                    category: selectedCategory.name,
+                    amount: amount,
+                    description: description,
+                    expenseDate: expenseDate,
+                    paymentMethod: 'cash',
+                  );
                   payload['idempotency_key'] = currentIdempotencyKey;
 
                   final expense = Expense(
