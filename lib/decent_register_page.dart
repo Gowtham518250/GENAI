@@ -110,17 +110,54 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
       final data = _decodeResponseMap(response);
 
       if (response.statusCode == 200) {
-        // Backend returns access_token directly on successful registration
-        // (auto-login) — see the "return {...}" at the end of /register.
-        final token = data['access_token']?.toString() ?? '';
+        // Keep the registration session as durable as a normal login session.
+        // Older backend versions returned only an access token, so obtain a
+        // refresh token via the ordinary login endpoint as a compatibility
+        // fallback instead of silently creating a short-lived session.
+        var token = data['access_token']?.toString() ?? '';
+        var refreshToken = data['refresh_token']?.toString() ?? '';
         final userId = data['user_id'] is int
             ? data['user_id'] as int
             : int.tryParse(data['user_id']?.toString() ?? '') ?? 0;
+
+        if (token.isNotEmpty && refreshToken.isEmpty) {
+          try {
+            final loginResponse = await ApiClient.postJson(
+              ApiClient.loginEndpoint,
+              {'email': email, 'password': password},
+            ).timeout(const Duration(seconds: 20));
+            final loginData = _decodeResponseMap(loginResponse);
+            if (loginResponse.statusCode == 200) {
+              final loginAccess = loginData['access_token']?.toString() ?? '';
+              final loginRefresh = loginData['refresh_token']?.toString() ?? '';
+              if (loginAccess.isNotEmpty && loginRefresh.isNotEmpty) {
+                token = loginAccess;
+                refreshToken = loginRefresh;
+              }
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('⚠️ Registration session exchange failed: ${e.runtimeType}');
+            }
+          }
+        }
+
+        if (userId <= 0 || token.isEmpty || refreshToken.isEmpty) {
+          if (mounted) {
+            setState(() {
+              isLoading = false;
+              errorMessage =
+                  'Your account was created, but automatic sign-in could not be completed. Please log in once to finish setting up your session.';
+            });
+          }
+          return;
+        }
 
         await UserDataClearService.clearAllUserData();
         await SessionManagementService.initializeSession(
           userId: userId,
           accessToken: token,
+          refreshToken: refreshToken,
           userName: data['username']?.toString() ?? username,
           userEmail: email,
           role: data['role']?.toString() ?? 'OWNER',
