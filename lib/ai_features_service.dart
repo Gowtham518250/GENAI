@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
 
 class FestivalStockPredictorService {
@@ -55,61 +56,81 @@ class FestivalStockPredictorService {
 
 
 class ChatbotContextService {
-  /// Get chatbot system prompt with shop context
+  static Future<Map<String, String>> _localShopContext() async {
+    final prefs = await SharedPreferences.getInstance();
+    final shopName = (prefs.getString('shop_name') ??
+            prefs.getString('shopName') ??
+            prefs.getString('business_name') ??
+            'your shop')
+        .trim();
+    final role = (prefs.getString('user_type') ??
+            prefs.getString('role') ??
+            'shop owner')
+        .trim();
+    return {
+      'shop_name': shopName.isEmpty ? 'your shop' : shopName,
+      'role': role.isEmpty ? 'shop owner' : role,
+    };
+  }
+
+  /// Build the assistant context locally. No /api/chatbot endpoint is needed.
   static Future<String> getChatbotSystemPrompt() async {
-    try {
-      final response = await ApiClient.getJson('/api/chatbot/context');
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['system_prompt'] ?? '';
-      }
-      return '';
-    } catch (e) {
-      return '';
-    }
+    final context = await _localShopContext();
+    return 'You are the Retail Mind assistant for ${context['shop_name']}. '
+        'The signed-in user role is ${context['role']}. '
+        'Help with sales, invoices, inventory, attendance, and shop operations. '
+        'For live business figures, use the authenticated Retail Mind query service '
+        'rather than guessing values.';
   }
-  
-  /// Get greeting with shop name
+
+  /// Build a personalized greeting using locally saved shop information.
   static Future<String> getPersonalizedGreeting() async {
-    try {
-      final response = await ApiClient.getJson('/api/chatbot/greeting');
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['greeting'] ?? 'Hello! How can I help you?';
-      }
-      return 'Hello! How can I help you?';
-    } catch (e) {
-      return 'Hello! How can I help you?';
-    }
+    final context = await _localShopContext();
+    return "Hello! I'm your Retail Mind assistant for ${context['shop_name']}. "
+        'Ask a question about your sales, invoices, inventory, or shop operations.';
   }
-  
-  /// Send message with context to chatbot API
+
+  /// Send business questions through the available, authenticated ask-query API.
+  /// The backend scopes the query to the authenticated owner's shop.
   static Future<String> sendMessageWithContext(String userMessage) async {
+    final question = userMessage.trim();
+    if (question.isEmpty) return 'Please enter a question.';
+
     try {
-      final contextResponse = await ApiClient.getJson('/api/chatbot/context');
-      
-      if (contextResponse.statusCode != 200) {
-        return 'Unable to load shop context';
+      final response = await ApiClient.postForm(
+        ApiClient.askQueryEndpoint,
+        {
+          'query': question,
+          'language_code': 'en',
+        },
+      );
+
+      dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {
+        decoded = null;
       }
-      
-      final context = jsonDecode(contextResponse.body);
-      
-      // Send to LLM with context
-      final response = await ApiClient.postJson(ApiClient.chatbotEndpoint, {
-        'message': userMessage,
-        'context': context,
-      });
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['response'] ?? 'No response';
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        if (decoded is Map) {
+          final answer = decoded['answer'] ?? decoded['message'];
+          if (answer != null && answer.toString().trim().isNotEmpty) {
+            return answer.toString();
+          }
+        }
+        return 'The assistant returned an empty answer. Please try rephrasing your question.';
       }
-      
-      return 'Error getting response';
-    } catch (e) {
-      return 'Error: $e';
+
+      if (decoded is Map) {
+        final detail = decoded['detail'] ?? decoded['message'] ?? decoded['error'];
+        if (detail != null && detail.toString().trim().isNotEmpty) {
+          return detail.toString();
+        }
+      }
+      return 'The assistant service is temporarily unavailable (HTTP ${response.statusCode}).';
+    } catch (error) {
+      return 'Could not reach the assistant service. Check your connection and try again.';
     }
   }
 }
