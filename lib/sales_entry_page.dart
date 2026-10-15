@@ -3303,7 +3303,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     }
 
     final totals = calculateTotal() as Map<String, dynamic>;
-    final grandTotal = totals['total'] ?? 0.0;
+    final double grandTotal = (totals['total'] as num?)?.toDouble() ?? 0.0;
 
     if (!_validateSaleInputs(grandTotal)) {
       // FIX: reset isLoading here too — same reason as above.
