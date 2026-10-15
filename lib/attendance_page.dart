@@ -153,6 +153,7 @@ class _AttendancePageState extends State<AttendancePage>
 
           // Backend success becomes the durable offline roster.
           await WorkerLocalStorage.saveWorkers(_userId ?? 0, syncedWorkers);
+          if (!mounted) return;
 
           setState(() {
             _staff = syncedWorkers;
@@ -174,6 +175,7 @@ class _AttendancePageState extends State<AttendancePage>
   }
 
   Future<void> _fetch() async {
+    if (!mounted) return;
     setState(() => _loading = true);
     try {
       // Local-first: render persisted attendance immediately, even offline.
@@ -290,6 +292,7 @@ class _AttendancePageState extends State<AttendancePage>
         _showSnack('Failed to load attendance data', _absent);
       }
     }
+    if (!mounted) return;
     setState(() => _loading = false);
     await _refreshMySession();
     await _updateLiveHours();
