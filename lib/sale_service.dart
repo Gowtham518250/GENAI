@@ -77,7 +77,6 @@ class SaleService {
     String paymentMethod = 'Cash',
     bool isBorrow = false,
     String? invoiceNumber,
-    bool isBorrow = false,
   }) async {
     const String context = 'SALE_SUBMIT';
 
@@ -560,6 +559,7 @@ try {
     String paymentMethod = 'Cash',
     String syncStatus = 'synced',
     String? invoiceNumber,
+    bool isBorrow = false,
   }) async {
     List<dynamic> history = await LocalStorageService.loadSales();
 
