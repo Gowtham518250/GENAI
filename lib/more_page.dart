@@ -13,6 +13,7 @@ class MorePage extends StatelessWidget {
     _MoreAction(title: 'Shop profile', subtitle: 'Business details', icon: Icons.storefront_rounded, color: Color(0xFF4F46E5), route: '/shop-profile'),
     _MoreAction(title: 'Purchase orders', subtitle: 'Supplier orders and receiving', icon: Icons.local_shipping_rounded, color: Color(0xFFF59E0B), route: '/purchase-orders'),
     _MoreAction(title: 'Offline Sync Center', subtitle: 'Pending and failed changes', icon: Icons.cloud_sync_rounded, color: Color(0xFF0D9488), route: '/sync-center'),
+    _MoreAction(title: 'Bank reconciliation', subtitle: 'Compare collections and deposits', icon: Icons.account_balance_rounded, color: Color(0xFF16A34A), route: '/bank-recon'),
     _MoreAction(title: 'Online store', subtitle: 'Manage your storefront', icon: Icons.shopping_bag_rounded, color: Color(0xFF0D9488), route: '/online-store'),
     _MoreAction(title: 'Store settings', subtitle: 'Shopping preferences', icon: Icons.tune_rounded, color: Color(0xFF7C3AED), route: '/online-shopping-config'),
     _MoreAction(title: 'Staff & workers', subtitle: 'Team management', icon: Icons.groups_rounded, color: Color(0xFF2563EB), route: '/worker-management'),
