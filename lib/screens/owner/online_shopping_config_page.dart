@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
 import '../../online_store_service.dart';
+import '../../inventory_stock_helper.dart';
 import '../../visual_widgets.dart';
 
 class OnlineShoppingConfigPage extends StatefulWidget {
@@ -34,7 +35,8 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
 
   Future<void> _loadShopData() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('user_id') ?? 0;
+    if (!mounted) return;
+    final userId = prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
     _shopId = userId.toString();
 
     if (_shopId == '0') {
@@ -53,12 +55,14 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
       }
 
       final res = await ApiClient.getJson(
-        '/api/inventory/products?shop_id=$_shopId&user_id=$_shopId',
+        '${ApiClient.inventoryProducts}?skip=0&limit=1000',
       );
       if (res.statusCode == 200 && mounted) {
-        final List data = json.decode(res.body);
+        final data = InventoryStockHelper.parseProductsResponse(
+          json.decode(res.body),
+        );
         setState(() {
-          _inventory = List<Map<String, dynamic>>.from(data);
+          _inventory = data;
         });
       }
     } catch (e) {
