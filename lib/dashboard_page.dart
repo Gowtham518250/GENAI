@@ -2341,7 +2341,9 @@ class _DashboardPageState extends State<DashboardPage>
         }
       }
 
-      bool added = false;
+      bool changed = false;
+      var addedNewBills = 0;
+      var repairedExistingBills = 0;
 
       // Group by canonical invoice_number first, then fall back to sale_id.
       final Map<String, List<dynamic>> grouped = {};
@@ -2361,91 +2363,195 @@ class _DashboardPageState extends State<DashboardPage>
       for (var entry in grouped.entries) {
         final id = entry.key;
         final items = entry.value;
-        if (!existingIds.contains(id.toLowerCase())) {
-          final firstItem = items.first;
-          // Get line items (handle both line_items and items keys)
-          // 🔧 FIX: previously this fell back to `items` (the raw grouped
-          // invoice-level records for this id) when neither firstItem
-          // ['line_items'] nor firstItem['items'] existed — e.g. for borrow
-          // invoices, which store a flat 'product' string, not a nested
-          // line-items array. That fallback then ran the invoice records
-          // themselves through the line-item mapper below, which has no
-          // 'product_name'/'price' keys to read, so every default fired:
-          // product_name -> 'Product', price -> 0, and this phantom record
-          // got permanently saved as a duplicate "sale". Only treat a real
-          // line-items array as line items; otherwise synthesize a single
-          // line item from the invoice's own total/product fields.
-          final rawLineItemsField =
-              firstItem['line_items'] ?? firstItem['items'];
-          final List rawLineItems;
-          if (rawLineItemsField is List && rawLineItemsField.isNotEmpty) {
-            rawLineItems = rawLineItemsField;
-          } else {
-            final fallbackTotal =
-                firstItem['total_amount'] ??
-                firstItem['total'] ??
-                firstItem['grand_total'] ??
-                firstItem['invoice_total'] ??
-                0;
-            rawLineItems = [
-              {
-                'product_name':
-                    (firstItem['product'] ??
-                            firstItem['product_name'] ??
-                            'Invoice')
-                        .toString(),
-                'price': fallbackTotal,
-                'quantity': 1,
-                'total': fallbackTotal,
-              },
-            ];
-          }
-          final processedItems = rawLineItems.map((s) {
-            final rawName =
-                (s['product_name'] ??
-                        s['product'] ??
-                        s['name'] ??
-                        s['description'] ??
+        final firstItem = items.first;
+
+        // Keep the business date (for daily/monthly grouping) separate from
+        // the actual event timestamp (for hourly performance analytics).
+        final businessDate = firstItem['business_date'] ??
+            firstItem['invoice_date'] ??
+            firstItem['sale_date'] ??
+            firstItem['date'];
+        final eventTimestamp = firstItem['sale_timestamp'] ??
+            firstItem['invoice_timestamp'] ??
+            firstItem['created_at'] ??
+            firstItem['createdAt'] ??
+            firstItem['timestamp'];
+
+        // Extract true line items once so both fresh invoices and older local
+        // cache rows can use the same product/revenue facts.
+        final rawLineItemsField =
+            firstItem['line_items'] ?? firstItem['items'];
+        final List rawLineItems;
+        if (rawLineItemsField is List && rawLineItemsField.isNotEmpty) {
+          rawLineItems = rawLineItemsField;
+        } else {
+          final fallbackTotal =
+              firstItem['total_amount'] ??
+              firstItem['total'] ??
+              firstItem['grand_total'] ??
+              firstItem['invoice_total'] ??
+              0;
+          rawLineItems = [
+            {
+              'product_name':
+                  (firstItem['product'] ??
+                          firstItem['product_name'] ??
+                          'Invoice')
+                      .toString(),
+              'price': fallbackTotal,
+              'quantity': 1,
+              'total': fallbackTotal,
+            },
+          ];
+        }
+
+        final List<Map<String, dynamic>> processedItems =
+            rawLineItems.whereType<Map>().map((rawLine) {
+          final line = Map<String, dynamic>.from(rawLine);
+          final rawName = (line['product_name'] ??
+                  line['product'] ??
+                  line['item'] ??
+                  line['name'] ??
+                  line['description'] ??
+                  '')
+              .toString()
+              .trim();
+          final displayName =
+              rawName.isEmpty || rawName.toLowerCase() == 'product'
+              ? 'Unknown Product'
+              : AnalyticsEngine.formatProductName(rawName);
+          return <String, dynamic>{
+            'product_id': line['product_id'] ?? line['id'],
+            'product_name': displayName,
+            'product': displayName,
+            'description': line['description'] ?? rawName,
+            'price': line['unit_price'] ?? line['price'] ?? 0,
+            'unit_price': line['unit_price'] ?? line['price'] ?? 0,
+            'quantity': line['quantity'] ?? line['qty'] ?? 1,
+            'line_total': line['line_total'] ??
+                line['total_with_tax'] ??
+                line['total'] ??
+                0,
+            'total': line['line_total'] ??
+                line['total_with_tax'] ??
+                line['total'] ??
+                0,
+          };
+        }).toList();
+
+        final existingKey = id.toLowerCase();
+        if (existingIds.contains(existingKey)) {
+          // Repair legacy local copies without replacing sales/payment facts
+          // already recorded offline. This restores the event time and product
+          // lines needed by the performance overview after a backend refresh.
+          for (var index = 0; index < currentLocal.length; index++) {
+            final raw = currentLocal[index];
+            if (raw is! Map) continue;
+            final row = Map<String, dynamic>.from(raw);
+            final matches = const [
+              'invoice_number',
+              'sale_id',
+              'offline_id',
+              'id',
+            ].any((key) =>
+                row[key]?.toString().trim().toLowerCase() == existingKey);
+            if (!matches) continue;
+
+            var rowChanged = false;
+            void setIfMissing(String key, dynamic value) {
+              if (value == null) return;
+              final oldValue = row[key];
+              if (oldValue == null ||
+                  oldValue.toString().trim().isEmpty ||
+                  oldValue.toString().trim() == 'null') {
+                row[key] = value;
+                rowChanged = true;
+              }
+            }
+
+            setIfMissing('business_date', businessDate);
+            setIfMissing('date', businessDate ?? eventTimestamp);
+
+            // Backend invoice.created_at is the canonical event time. Replace
+            // stale midnight timestamps in old local snapshots rather than
+            // preserving them as if they were the sale's actual hour.
+            void setCanonicalTimestamp(String key, dynamic value) {
+              if (value == null) return;
+              if (row[key]?.toString() != value.toString()) {
+                row[key] = value;
+                rowChanged = true;
+              }
+            }
+            setCanonicalTimestamp('created_at', eventTimestamp);
+            setCanonicalTimestamp(
+              'sale_timestamp',
+              firstItem['sale_timestamp'] ?? eventTimestamp,
+            );
+            setCanonicalTimestamp(
+              'invoice_timestamp',
+              firstItem['invoice_timestamp'] ?? eventTimestamp,
+            );
+
+            bool hasUsableProductLines(dynamic value) {
+              if (value is! List) return false;
+              for (final rawLine in value) {
+                if (rawLine is! Map) continue;
+                final name = (rawLine['product_name'] ??
+                        rawLine['product'] ??
+                        rawLine['item'] ??
+                        rawLine['description'] ??
                         '')
                     .toString()
                     .trim();
-            final displayName =
-                rawName.isEmpty || rawName.toLowerCase() == 'product'
-                ? 'Unknown Product'
-                : AnalyticsEngine.formatProductName(rawName);
-            return {
-              'product_id': s['product_id'] ?? s['id'],
-              'product_name': displayName,
-              'product': displayName,
-              'price': s['price'] ?? s['unit_price'] ?? 0,
-              'quantity': s['quantity'] ?? s['qty'] ?? 1,
-              'total': s['total'] ?? s['line_total'] ?? 0,
-            };
-          }).toList();
+                if (name.isNotEmpty &&
+                    !AnalyticsEngine.isPlaceholderProductName(name)) {
+                  return true;
+                }
+              }
+              return false;
+            }
 
-          currentLocal.add({
-            'sale_id': id,
-            'invoice_number': id,
-            'date':
-                firstItem['date'] ??
-                firstItem['created_at'] ??
-                firstItem['invoice_date'],
-            'items': processedItems,
-            'customer_name': firstItem['customer_name'] ?? '',
-            'customer_phone': firstItem['customer_phone'] ?? '',
-            'total':
-                firstItem['totalAmount']?.toString() ??
-                firstItem['total']?.toString() ??
-                firstItem['total_amount']?.toString(),
-            'payment_method': firstItem['payment_method'] ?? 'CASH',
-            'payment_status': firstItem['payment_status'] ?? 'PAID',
-            'sync_status': 'synced',
-          });
-          added = true;
+            final cachedLines = row['items'] ?? row['line_items'];
+            if (!hasUsableProductLines(cachedLines) &&
+                processedItems.any((line) => !AnalyticsEngine
+                    .isPlaceholderProductName(
+                        (line['product_name'] ?? '').toString()))) {
+              row['items'] = processedItems;
+              rowChanged = true;
+            }
+
+            if (rowChanged) {
+              currentLocal[index] = row;
+              changed = true;
+              repairedExistingBills++;
+            }
+          }
+          continue;
         }
+
+        currentLocal.add({
+          'sale_id': id,
+          'invoice_number': id,
+          'business_date': businessDate ?? eventTimestamp,
+          'date': businessDate ?? eventTimestamp,
+          'created_at': eventTimestamp,
+          'sale_timestamp': eventTimestamp,
+          'invoice_timestamp': firstItem['invoice_timestamp'] ?? eventTimestamp,
+          'items': processedItems,
+          'customer_name': firstItem['customer_name'] ?? '',
+          'customer_phone': firstItem['customer_phone'] ?? '',
+          'total': firstItem['totalAmount']?.toString() ??
+              firstItem['total']?.toString() ??
+              firstItem['total_amount']?.toString(),
+          'payment_method': firstItem['payment_method'] ?? 'CASH',
+          'payment_status': firstItem['payment_status'] ?? 'PAID',
+          'sync_status': 'synced',
+        });
+        changed = true;
+        addedNewBills++;
       }
 
-      if (added) {
+      if (changed) {
         await LocalStorageService.saveSales(currentLocal);
       }
 
@@ -2457,12 +2563,13 @@ class _DashboardPageState extends State<DashboardPage>
         data: {
           'apiItemCount': allItems.length,
           'groupedBills': grouped.length,
-          'addedNewBills': added,
+          'addedNewBills': addedNewBills,
+          'repairedExistingBills': repairedExistingBills,
         },
       );
       // #endregion
 
-      return added;
+      return changed;
     } catch (e) {
       if (kDebugMode) debugPrint('Failed to fetch sales/invoices: $e');
       return false;
