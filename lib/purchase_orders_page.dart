@@ -966,8 +966,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     if (rawOrder is! Map) return false;
     final status = (rawOrder['status'] ?? 'PENDING').toString().toUpperCase();
     switch (filter ?? _orderFilter) {
-      case 'Pending': return status == 'PENDING';
-      case 'Received': return status == 'DELIVERED' || status == 'RECEIVED' || status == 'PARTIALLY_RECEIVED';
+      case 'Pending': return status == 'PENDING' || status == 'SENT' || status == 'ORDERED';
+      case 'Partial': return status == 'PARTIALLY_RECEIVED';
+      case 'Received': return status == 'DELIVERED' || status == 'RECEIVED';
       case 'Cancelled': return status == 'CANCELLED';
       default: return true;
     }
@@ -1041,8 +1042,13 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
 
   Widget _buildOrderCard(dynamic po, int i) {
     final status = (po['status'] ?? 'PENDING').toString().toUpperCase();
-    final statusLabel = status == 'DELIVERED' ? 'RECEIVED' : status;
+    final statusLabel = status == 'DELIVERED'
+        ? 'RECEIVED'
+        : ((status == 'PENDING' || status == 'SENT') ? 'ORDERED' : status);
     final statusColor = _statusColor(status);
+    final orderLines = _orderItems(po);
+    final totalQuantity = orderLines.fold<double>(0, (sum, item) => sum + _number(item['quantity']));
+    final receivedQuantity = orderLines.fold<double>(0, (sum, item) => sum + _number(item['received_quantity']));
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -1067,16 +1073,38 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         Text(po['supplier_name']?.toString() ?? 'Supplier', style: GoogleFonts.poppins(color: _muted)),
         const SizedBox(height: 4),
         Text('₹${po['total_cost']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: const Color(0xFF079579), fontWeight: FontWeight.w800, fontSize: 18)),
-        if (status == 'PENDING') ...[
+        if (orderLines.isNotEmpty) ...[
+          const SizedBox(height: 5),
+          Text('${receivedQuantity.toString()} of ${totalQuantity.toString()} units received',
+              style: GoogleFonts.poppins(color: _muted, fontSize: 10.5)),
+        ],
+        if (status == 'DRAFT') ...[
           const SizedBox(height: 12),
-          Row(children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _markOrderOrdered(po['server_id'] ?? po['id']),
+              icon: const Icon(Icons.send_rounded, size: 16),
+              label: const Text('Mark ordered'),
+            ),
+          ),
+        ] else if (status == 'PENDING' || status == 'SENT' || status == 'ORDERED' || status == 'PARTIALLY_RECEIVED') ...[
+          const SizedBox(height: 12),
+          if (po['sync_status']?.toString() == 'pending' && po['server_id'] == null && int.tryParse((po['id'] ?? '').toString()) == null)
+            Text('Waiting for purchase order sync before receiving stock.',
+                style: GoogleFonts.poppins(color: const Color(0xFFB45309), fontSize: 10.5))
+          else Row(children: [
             Expanded(child: ElevatedButton.icon(
-              onPressed: () => _markDelivered(po['id']), icon: const Icon(Icons.check_rounded, size: 16), label: const Text('Mark received'),
+              onPressed: () => _showReceiveDialog(Map<String, dynamic>.from(po as Map)),
+              icon: const Icon(Icons.inventory_rounded, size: 16),
+              label: const Text('Receive items'),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16885E), foregroundColor: Colors.white),
             )),
             const SizedBox(width: 8),
             Expanded(child: ElevatedButton.icon(
-              onPressed: () => _cancelPO(po['id']), icon: const Icon(Icons.close, size: 16), label: const Text('Cancel'),
+              onPressed: () => _cancelPO(po['server_id'] ?? po['id']),
+              icon: const Icon(Icons.close_rounded, size: 16),
+              label: const Text('Cancel'),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC4C58), foregroundColor: Colors.white),
             )),
           ]),
@@ -1148,51 +1176,179 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
 
   Color _statusColor(String status) {
     switch (status.toUpperCase()) {
+      case 'RECEIVED':
       case 'DELIVERED': return const Color(0xFF16885E);
+      case 'PARTIALLY_RECEIVED': return const Color(0xFF2563EB);
       case 'CANCELLED': return const Color(0xFFDC4C58);
       default: return const Color(0xFFCA8A04);
     }
   }
 
-  Future<void> _markDelivered(dynamic poId) async {
+  List<Map<String, dynamic>> _orderItems(dynamic rawOrder) {
+    if (rawOrder is! Map) return <Map<String, dynamic>>[];
+    final order = Map<String, dynamic>.from(rawOrder);
+    if (order['items'] is List) {
+      final direct = (order['items'] as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList();
+      if (direct.isNotEmpty) return direct;
+    }
+    final rawJson = order['items_json'];
+    if (rawJson is String && rawJson.trim().isNotEmpty) {
+      try {
+        final rows = jsonDecode(rawJson);
+        if (rows is List) return rows.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList();
+      } catch (_) {}
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  Future<void> _showReceiveDialog(Map<String, dynamic> order) async {
+    final poId = int.tryParse((order['server_id'] ?? order['id'] ?? '').toString());
+    if (poId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Wait for this order to sync before receiving stock.')));
+      return;
+    }
+    final lines = _orderItems(order);
+    final pending = <Map<String, dynamic>>[];
+    for (var index = 0; index < lines.length; index++) {
+      final remaining = _number(lines[index]['quantity']) - _number(lines[index]['received_quantity']);
+      if (remaining > 0) pending.add({'item_index': index, 'item': lines[index], 'remaining': remaining});
+    }
+    if (pending.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All ordered quantities have been received.')));
+      return;
+    }
+    final controllers = pending.map((line) => TextEditingController(text: line['remaining'].toString())).toList();
+    final selections = await showDialog<List<Map<String, dynamic>>>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Receive purchase order', style: GoogleFonts.poppins(fontWeight: FontWeight.w800)),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text('Enter the actual quantity delivered now. You can receive the remaining items later.', style: GoogleFonts.poppins(fontSize: 12, color: _muted)),
+              const SizedBox(height: 12),
+              ...pending.asMap().entries.map((entry) {
+                final position = entry.key;
+                final row = entry.value;
+                final item = row['item'] as Map<String, dynamic>;
+                final name = (item['product_name'] ?? item['name'] ?? item['product'] ?? 'Product').toString();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(name, style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 12)),
+                    Text('Ordered ${_number(item['quantity'])} · Received ${_number(item['received_quantity'])} · Remaining ${row['remaining']}',
+                        style: GoogleFonts.poppins(color: _muted, fontSize: 10)),
+                    TextField(
+                      controller: controllers[position],
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(labelText: 'Quantity received now', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    ),
+                  ]),
+                );
+              }),
+            ]),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              final result = <Map<String, dynamic>>[];
+              for (var i = 0; i < pending.length; i++) {
+                final quantity = double.tryParse(controllers[i].text.trim()) ?? 0;
+                final remaining = _number(pending[i]['remaining']);
+                if (quantity < 0 || quantity > remaining) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Enter a quantity between 0 and $remaining.')));
+                  return;
+                }
+                if (quantity > 0) result.add({'item_index': pending[i]['item_index'], 'quantity': quantity});
+              }
+              if (result.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter at least one positive quantity.')));
+                return;
+              }
+              Navigator.pop(dialogContext, result);
+            },
+            child: const Text('Confirm receipt'),
+          ),
+        ],
+      ),
+    );
+    for (final controller in controllers) { controller.dispose(); }
+    if (!mounted || selections == null || selections.isEmpty) return;
+
+    final receiptId = 'PO_RECEIPT_${poId}_${DateTime.now().microsecondsSinceEpoch}';
+    final queued = await SyncQueueManager.enqueue('update_purchase_order_status', {
+      'operation_id': receiptId,
+      'po_id': poId,
+      'po_action': 'receive',
+      'receipt_id': receiptId,
+      'received_items': selections,
+    });
+    if (!queued) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Receipt could not be queued. Please retry.')));
+      return;
+    }
+
+    // Keep the local view responsive. Stock itself is updated only by the server receipt transaction.
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString('purchase_orders_data');
-      final list = <dynamic>[];
-      if (raw != null && raw.isNotEmpty) {
-        final decoded = jsonDecode(raw);
-        if (decoded is List) list.addAll(decoded);
-      }
-
-      var changed = false;
-      for (var i = 0; i < list.length; i++) {
-        final value = list[i];
-        if (value is! Map) continue;
-        if (value['id'].toString() == poId.toString()) {
-          list[i] = {...Map<String, dynamic>.from(value), 'status': 'DELIVERED', 'sync_status': 'pending'};
-          changed = true;
-          break;
+      final decoded = raw == null || raw.isEmpty ? <dynamic>[] : jsonDecode(raw);
+      final stored = decoded is List ? decoded.toList() : <dynamic>[];
+      for (var i = 0; i < stored.length; i++) {
+        if (stored[i] is! Map) continue;
+        final local = Map<String, dynamic>.from(stored[i]);
+        if ((local['server_id'] ?? local['id'])?.toString() != poId.toString()) continue;
+        final localLines = _orderItems(local);
+        for (final receipt in selections) {
+          final idx = (receipt['item_index'] as num).toInt();
+          if (idx >= 0 && idx < localLines.length) {
+            localLines[idx]['received_quantity'] = _number(localLines[idx]['received_quantity']) + _number(receipt['quantity']);
+          }
         }
+        final complete = localLines.every((line) => _number(line['received_quantity']) >= _number(line['quantity']));
+        final any = localLines.any((line) => _number(line['received_quantity']) > 0);
+        local['items'] = localLines;
+        local['items_json'] = jsonEncode(localLines);
+        local['status'] = complete ? 'RECEIVED' : (any ? 'PARTIALLY_RECEIVED' : 'ORDERED');
+        local['sync_status'] = 'pending';
+        stored[i] = local;
       }
-
-      if (!changed) throw StateError('Purchase order not found locally: $poId');
-      await prefs.setString('purchase_orders_data', jsonEncode(list));
-      if (mounted) setState(() => _orders = list);
-
-      await SyncQueueManager.enqueue('update_purchase_order_status', {
-        'operation_id': 'PO_STATUS_${poId}_delivered',
-        'po_id': poId,
-        'po_action': 'mark-delivered',
-      });
-      unawaited(SyncService.processQueueSafe());
+      await prefs.setString('purchase_orders_data', jsonEncode(stored));
+      if (mounted) setState(() => _orders = stored);
     } catch (e) {
-      debugPrint('❌ Failed to update local PO status: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not update purchase order: $e')),
-        );
+      if (kDebugMode) debugPrint('⚠️ Could not update local PO receipt preview: $e');
+    }
+    unawaited(SyncService.processQueueSafe());
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Receipt queued; stock updates after server confirmation.')));
+  }
+
+  Future<void> _markOrderOrdered(dynamic rawId) async {
+    final poId = int.tryParse(rawId?.toString() ?? '');
+    if (poId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Wait for this draft to sync before marking it ordered.')));
+      return;
+    }
+    final operationId = 'PO_STATUS_${poId}_ordered_${DateTime.now().microsecondsSinceEpoch}';
+    final queued = await SyncQueueManager.enqueue('update_purchase_order_status', {
+      'operation_id': operationId, 'po_id': poId, 'po_action': 'mark-ordered',
+    });
+    if (!queued) return;
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('purchase_orders_data');
+    final decoded = raw == null || raw.isEmpty ? <dynamic>[] : jsonDecode(raw);
+    final stored = decoded is List ? decoded.toList() : <dynamic>[];
+    for (var i = 0; i < stored.length; i++) {
+      final row = stored[i];
+      if (row is Map && (row['id']?.toString() == poId.toString() || row['server_id']?.toString() == poId.toString())) {
+        stored[i] = {...Map<String, dynamic>.from(row), 'status': 'ORDERED', 'sync_status': 'pending'};
       }
     }
+    await prefs.setString('purchase_orders_data', jsonEncode(stored));
+    if (mounted) setState(() => _orders = stored);
+    unawaited(SyncService.processQueueSafe());
   }
 
   Future<void> _cancelPO(dynamic poId) async {
@@ -1209,7 +1365,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       for (var i = 0; i < list.length; i++) {
         final value = list[i];
         if (value is! Map) continue;
-        if (value['id'].toString() == poId.toString()) {
+        if (value['id'].toString() == poId.toString() || value['server_id']?.toString() == poId.toString()) {
           list[i] = {...Map<String, dynamic>.from(value), 'status': 'CANCELLED', 'sync_status': 'pending'};
           changed = true;
           break;
@@ -1257,7 +1413,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       final localOrder = {
         ...payload,
         'id': 'LOCAL-PO-${DateTime.now().millisecondsSinceEpoch}',
-        'status': 'PENDING',
+        'status': (payload['status'] ?? 'ORDERED').toString().toUpperCase(),
         'created_at': DateTime.now().toIso8601String(),
         'sync_status': 'pending',
         'operation_id': operationId,
@@ -1269,7 +1425,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
 
       await SyncQueueManager.enqueue('create_purchase_order', {
         ...payload,
+        'status': (payload['status'] ?? 'ORDERED').toString().toUpperCase(),
         'operation_id': operationId,
+        'idempotency_key': operationId,
         'local_id': localOrder['id'],
       });
 
@@ -1309,6 +1467,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         'unit_cost': suggestedCost,
       },
     ];
+    String initialStatus = 'ORDERED';
 
     showModalBottomSheet(
       context: context,
@@ -1394,6 +1553,17 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                   _field(supplierC, 'Supplier Name'),
                   const SizedBox(height: 12),
                   _field(notesC, 'Notes (optional)'),
+                  const SizedBox(height: 12),
+                  Text('Order status', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 7),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment<String>(value: 'DRAFT', label: Text('Save draft')),
+                      ButtonSegment<String>(value: 'ORDERED', label: Text('Order now')),
+                    ],
+                    selected: {initialStatus},
+                    onSelectionChanged: (selection) => setModalState(() => initialStatus = selection.first),
+                  ),
                   const SizedBox(height: 16),
                   Text('Items (at least one required)', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
@@ -1442,6 +1612,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                         final payload = {
                           'supplier_name': supplierName,
                           'items': orderItems,
+                          'status': initialStatus,
                           if (notesC.text.trim().isNotEmpty) 'notes': notesC.text.trim(),
                         };
                         if (ctx.mounted) Navigator.pop(ctx);
@@ -1585,6 +1756,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                     child: Row(children: [
                       _orderFilterChip('All'),
                       _orderFilterChip('Pending'),
+                      _orderFilterChip('Partial'),
                       _orderFilterChip('Received'),
                       _orderFilterChip('Cancelled'),
                     ]),
