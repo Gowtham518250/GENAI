@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'scoped_shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'api_client.dart';
+import 'attendance_time_parser.dart';
 import 'app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'language_provider.dart';
@@ -370,24 +371,8 @@ class _AttendancePageState extends State<AttendancePage>
     if (mounted) setState(() => _mySession = open);
   }
 
-  /// Attendance timestamps are stored by the backend as Asia/Kolkata
-  /// wall-clock values. Older API responses may omit the timezone suffix;
-  /// those values must therefore be treated as local IST time rather than UTC.
-  /// Newer responses include an explicit +05:30 offset and are parsed normally.
-  DateTime? _parseServerTime(dynamic raw) {
-    if (raw == null) return null;
-    final str = raw.toString().trim();
-    if (str.isEmpty) return null;
-    final parsed = DateTime.tryParse(str);
-    if (parsed == null) return null;
-
-    // No suffix means the attendance API's legacy IST-naive timestamp.
-    if (!str.contains('Z') && !RegExp(r'[+-]\d{2}:\d{2}$').hasMatch(str)) {
-      return parsed;
-    }
-    return parsed.toLocal();
-  }
-
+  DateTime? _parseServerTime(dynamic raw) =>
+      AttendanceTimeParser.parseServerTime(raw);
   bool _isLateCheckIn(Map r) {
     final cin = _parseServerTime(r['check_in_time']);
     if (cin == null) return false;
