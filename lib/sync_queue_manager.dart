@@ -36,6 +36,7 @@ class SyncQueueManager {
     'delete_product',
     'create_purchase_order',
     'update_purchase_order_status',
+    'create_expense',
     'attendance_check_in',
     'attendance_check_out',
   };
