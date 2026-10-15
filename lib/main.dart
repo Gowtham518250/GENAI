@@ -51,6 +51,7 @@ import 'language_provider.dart';
 import 'app_theme_controller.dart';
 import 'providers/setup.dart';
 import 'session_management.dart';
+import 'scoped_shared_preferences.dart';
 import 'startup_route_policy.dart';
 // Conditional import: use the real scanner on native, stub on web to avoid web plugin errors
 import 'qr_scanner_page_stub.dart' if (dart.library.io) 'qr_scanner_page.dart';
