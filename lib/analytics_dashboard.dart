@@ -96,7 +96,11 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
 
       for (final rawSale in _engine.sales) {
         final s = Map<String, dynamic>.from(rawSale as Map);
-        final dt = _engine.getLocalDate(s); // same IST-forced parsing as the engine
+        // Use the business date to decide which reporting period contains this
+        // sale, but use the event timestamp for the hourly chart. Invoice dates
+        // are often date-only values, which parse as 00:00 by design.
+        final dt = _engine.getLocalDate(s);
+        final eventDt = _engine.getEventDate(s);
         final day = DateTime(dt.year, dt.month, dt.day);
         final daysAgo = DateTime(now.year, now.month, now.day).difference(day).inDays;
 
@@ -114,19 +118,31 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
         // separately by the engine.
         final amount = _toDouble(s['gross_revenue'] ?? s['total_amount'] ?? s['total']);
 
-        if (s['items'] is List) {
-          for (final rawItem in s['items'] as List) {
-            final item = Map<String, dynamic>.from(rawItem as Map);
-            final qty = _toDouble(item['quantity'] ?? item['qty'] ?? 1);
-            final itemCost = _toDouble(item['cost_price']);
-            totalCost += itemCost * qty;
+        final rawItems = s['items'] is List
+            ? s['items'] as List
+            : (s['line_items'] is List
+                ? s['line_items'] as List
+                : const <dynamic>[]);
+        for (final rawItem in rawItems) {
+          if (rawItem is! Map) continue;
+          final item = Map<String, dynamic>.from(rawItem);
+          final qty = _toDouble(item['quantity'] ?? item['qty'] ?? 1);
+          final itemCost = _toDouble(item['cost_price']);
+          totalCost += itemCost * qty;
 
-            final itemName = (item['product_name'] ?? item['product'] ?? item['item'] ?? 'Unknown').toString();
+          final itemName = (item['product_name'] ??
+                  item['product'] ??
+                  item['item'] ??
+                  item['description'] ??
+                  'Unknown')
+              .toString()
+              .trim();
+          if (itemName.isNotEmpty && itemName.toLowerCase() != 'unknown') {
             itemsSold[itemName] = (itemsSold[itemName] ?? 0) + qty.round();
           }
         }
 
-        final hkey = dt.hour.toString().padLeft(2, '0');
+        final hkey = eventDt.hour.toString().padLeft(2, '0');
         hourlyDistribution[hkey] = (hourlyDistribution[hkey] ?? 0) + amount;
       }
 
