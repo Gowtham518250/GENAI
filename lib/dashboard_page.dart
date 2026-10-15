@@ -1678,6 +1678,9 @@ class _DashboardPageState extends State<DashboardPage>
           .toString();
       final metrics = await OnlineOrderService.getAnalytics(shopId);
       if (!mounted) return;
+      // Do not replace the last known counts with false zeros when the API is
+      // unavailable. An empty successful result is different from a failed read.
+      if (metrics['available'] == false) return;
       setState(() {
         _onlinePendingOrders = (metrics['pending'] as num?)?.toInt() ?? 0;
         _onlineTodayOrders = (metrics['todayCount'] as num?)?.toInt() ?? 0;
