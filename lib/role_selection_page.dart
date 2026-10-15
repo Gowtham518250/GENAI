@@ -11,6 +11,7 @@ import 'api_client.dart';
 import 'secure_token_storage.dart';
 import 'scoped_shared_preferences.dart';
 import 'security_service.dart';
+import 'session_management.dart';
 
 class RoleSelectionPage extends StatefulWidget {
   final String email;
@@ -195,6 +196,14 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
           matchedWorker['id'].toString(),
         );
       }
+
+      // Verification is process-local: persisted PIN/session data must not
+      // silently authorize Staff Mode after a fresh app/tab launch.
+      await SessionManagementService.markIdentityVerified(
+        userId: userId,
+        role: 'STAFF',
+      );
+
       // Never change the account role here. Staff Mode is a scoped UI mode
       // inside the owner's account, not a different authenticated account.
       if (mounted) Navigator.pushReplacementNamed(context, '/dashboard');
@@ -275,7 +284,13 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_role', 'OWNER');
         await ScopedSharedPreferences.setBool('is_staff_mode', false);
-        
+        final verifiedUserId =
+            prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
+        await SessionManagementService.markIdentityVerified(
+          userId: verifiedUserId,
+          role: 'OWNER',
+        );
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -408,6 +423,12 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_role', 'OWNER');
       await ScopedSharedPreferences.setBool('is_staff_mode', false);
+      final verifiedUserId =
+          prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
+      await SessionManagementService.markIdentityVerified(
+        userId: verifiedUserId,
+        role: 'OWNER',
+      );
       if (!mounted) return;
       if (await SecurityService.shouldShowOwnerBiometricGate()) {
         if (!mounted) return;
