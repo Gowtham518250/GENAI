@@ -1179,6 +1179,30 @@ class SyncService {
     }
   }
 
+  /// Queue an expense durably so network failures never lose the write.
+  /// The caller must pass a stable idempotency_key generated for the form attempt.
+  static Future<bool> queueExpense(Map<String, dynamic> expense) async {
+    final payload = Map<String, dynamic>.from(expense);
+    final key = (payload['idempotency_key'] ?? '').toString().trim();
+    if (key.length < 8) return false;
+    payload['idempotency_key'] = key;
+
+    try {
+      final queued = await SyncQueueManager.enqueue('create_expense', payload);
+      if (!queued) return false;
+      _syncStatusController.add(await SyncQueueManager.getQueueSize());
+      await processQueueSafe();
+      return true;
+    } catch (e) {
+      await ErrorLogHelper.logException(
+        e,
+        StackTrace.current,
+        context: 'SyncService.queueExpense',
+      );
+      return false;
+    }
+  }
+
   /// Update payment status - queued for offline safety
   static Future<void> updateSalePayment(
     String saleId,
@@ -1360,6 +1384,10 @@ class SyncService {
 
             case 'delete_product':
               success = await _deleteProductItem(data);
+              break;
+
+            case 'create_expense':
+              success = await _createExpenseItem(data);
               break;
 
             case 'create_purchase_order':
@@ -1627,6 +1655,7 @@ class SyncService {
       'update_khata_deadline',
       'create_purchase_order',
       'update_purchase_order_status',
+      'create_expense',
       'create_local_product',
       'update_local_product',
       'delete_product',
@@ -2114,6 +2143,47 @@ static Future<bool> _customerPlaceOrderItem(Map<String, dynamic> data) async {
       return false;
     }
   }
+static Future<bool> _createExpenseItem(Map<String, dynamic> data) async {
+    try {
+      final token = await SecureTokenStorage.getToken() ?? '';
+      if (token.isEmpty) return false;
+
+      final key = (data['idempotency_key'] ?? '').toString().trim();
+      if (key.length < 8) return false;
+      final amount = double.tryParse(data['amount']?.toString() ?? '');
+      final category = (data['category'] ?? '').toString().trim();
+      final expenseDate = (data['expense_date'] ?? '').toString().trim();
+      if (amount == null || !amount.isFinite || amount <= 0 ||
+          category.length < 2 || expenseDate.isEmpty) {
+        if (kDebugMode) debugPrint('Expense queue item has invalid required fields.');
+        return false;
+      }
+
+      final payload = <String, dynamic>{
+        'category': category,
+        'amount': amount,
+        'description': (data['description'] ?? '').toString().trim(),
+        'expense_date': expenseDate,
+        'payment_method': (data['payment_method'] ?? 'cash').toString(),
+        'idempotency_key': key,
+      };
+      final res = await ApiClient.postJson(
+        '/expenses',
+        payload,
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 20));
+      if (res.statusCode == 200 || res.statusCode == 201) return true;
+
+      if (kDebugMode) {
+        debugPrint('Expense sync rejected: ' + res.statusCode.toString());
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('Expense sync deferred: $e');
+      return false;
+    }
+  }
+
 static Future<bool> _createPurchaseOrderItem(Map<String, dynamic> data) async {
     try {
       final token = await SecureTokenStorage.getToken() ?? '';
