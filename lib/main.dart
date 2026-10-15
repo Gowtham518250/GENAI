@@ -14,6 +14,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'app_localizations.dart';
 import 'enterprise_pnl_page.dart';
 import 'purchase_orders_page.dart';
+import 'more_page.dart';
 import 'bank_recon_page.dart';
 import 'gift_cards_page.dart';
 import 'system_management_page.dart';
@@ -1691,6 +1692,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                             const OnlineShoppingConfigPage(),
                         '/register': (context) => const DecentRegisterPage(),
                         '/dashboard': (context) => const DashboardPage(),
+                        '/more': (context) => const MorePage(),
                         '/enterprise-pnl': (context) =>
                             const EnterprisePnlPage(),
                         '/purchase-orders': (context) =>

@@ -33,6 +33,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   double _shoppingRadiusKm = 10;
   int _selectedBottomNavigation = 0;
   String _activeDiscoverySection = 'online';
+  String _orderFilter = 'All';
   final GlobalKey _shoppingTopKey = GlobalKey();
   final GlobalKey _discoveryResultsKey = GlobalKey();
   final GlobalKey _lowStockKey = GlobalKey();
@@ -961,8 +962,86 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     );
   }
 
+  bool _matchesOrderFilter(dynamic rawOrder, [String? filter]) {
+    if (rawOrder is! Map) return false;
+    final status = (rawOrder['status'] ?? 'PENDING').toString().toUpperCase();
+    switch (filter ?? _orderFilter) {
+      case 'Pending': return status == 'PENDING';
+      case 'Received': return status == 'DELIVERED' || status == 'RECEIVED' || status == 'PARTIALLY_RECEIVED';
+      case 'Cancelled': return status == 'CANCELLED';
+      default: return true;
+    }
+  }
+
+  int _orderCount(String filter) {
+    if (filter == 'All') return _orders.length;
+    return _orders.where((order) => _matchesOrderFilter(order, filter)).length;
+  }
+
+  Widget _buildOrderOverview() {
+    Widget metric(String label, int count, IconData icon, Color color) {
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _border),
+            boxShadow: [BoxShadow(color: const Color(0xFF263B78).withValues(alpha: 0.035), blurRadius: 12, offset: const Offset(0, 4))],
+          ),
+          child: Row(
+            children: [
+              Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withValues(alpha: 0.11), borderRadius: BorderRadius.circular(11)), child: Icon(icon, color: color, size: 18)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(count.toString(), style: GoogleFonts.poppins(fontSize: 19, height: 1.1, fontWeight: FontWeight.w800, color: _ink)),
+                    const SizedBox(height: 3),
+                    Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 9.5, color: _muted)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(children: [
+        metric('All orders', _orderCount('All'), Icons.receipt_long_rounded, _primary),
+        const SizedBox(width: 8),
+        metric('Pending', _orderCount('Pending'), Icons.schedule_rounded, const Color(0xFFD97706)),
+        const SizedBox(width: 8),
+        metric('Received', _orderCount('Received'), Icons.check_circle_rounded, const Color(0xFF059669)),
+      ]),
+    );
+  }
+
+  Widget _orderFilterChip(String filter) {
+    final selected = _orderFilter == filter;
+    return Padding(
+      padding: const EdgeInsets.only(right: 7),
+      child: ChoiceChip(
+        label: Text('$filter (' + _orderCount(filter).toString() + ')'),
+        selected: selected,
+        onSelected: (_) => setState(() => _orderFilter = filter),
+        showCheckmark: false,
+        selectedColor: const Color(0xFFEDEAFF),
+        backgroundColor: const Color(0xFFF7F8FC),
+        side: BorderSide(color: selected ? _primary.withValues(alpha: 0.28) : const Color(0xFFE7EBF4)),
+        labelStyle: GoogleFonts.poppins(color: selected ? _primary : _muted, fontSize: 10.5, fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      ),
+    );
+  }
+
   Widget _buildOrderCard(dynamic po, int i) {
     final status = (po['status'] ?? 'PENDING').toString().toUpperCase();
+    final statusLabel = status == 'DELIVERED' ? 'RECEIVED' : status;
     final statusColor = _statusColor(status);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -981,7 +1060,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
-            child: Text(status, style: GoogleFonts.poppins(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+            child: Text(statusLabel, style: GoogleFonts.poppins(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
           ),
         ]),
         const SizedBox(height: 8),
@@ -992,7 +1071,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: ElevatedButton.icon(
-              onPressed: () => _markDelivered(po['id']), icon: const Icon(Icons.check, size: 16), label: const Text('Delivered'),
+              onPressed: () => _markDelivered(po['id']), icon: const Icon(Icons.check_rounded, size: 16), label: const Text('Mark received'),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16885E), foregroundColor: Colors.white),
             )),
             const SizedBox(width: 8),
@@ -1444,13 +1523,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 112),
           children: [
-            _buildPurchaseShoppingChat(),
-            _buildDiscoveryNavigation(),
-            _buildDiscoveryResultsSection(),
-            KeyedSubtree(
-              key: _lowStockKey,
-              child: _buildReorderSuggestions(),
-            ),
+            _buildOrderOverview(),
             Container(
               key: _ordersSectionKey,
               margin: const EdgeInsets.only(bottom: 12),
@@ -1505,6 +1578,17 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                         ),
                     ],
                   ),
+                  const SizedBox(height: 14),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(children: [
+                      _orderFilterChip('All'),
+                      _orderFilterChip('Pending'),
+                      _orderFilterChip('Received'),
+                      _orderFilterChip('Cancelled'),
+                    ]),
+                  ),
                   const SizedBox(height: 12),
                   if (_loading && _orders.isEmpty)
                     const Padding(
@@ -1536,11 +1620,32 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                         ],
                       ),
                     )
+                  else if (_orders.where((order) => _matchesOrderFilter(order)).isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 12),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.filter_alt_off_rounded, color: Color(0xFF94A3B8), size: 30),
+                          const SizedBox(height: 8),
+                          Text('No ' + _orderFilter.toLowerCase() + ' orders', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 4),
+                          Text('Choose another status to view your purchase orders.', textAlign: TextAlign.center, style: GoogleFonts.poppins(color: _muted, fontSize: 10.5)),
+                        ],
+                      ),
+                    )
                   else
-                    ..._orders.asMap().entries.map((entry) => _buildOrderCard(entry.value, entry.key)),
+                    ..._orders.asMap().entries.where((entry) => _matchesOrderFilter(entry.value)).map((entry) => _buildOrderCard(entry.value, entry.key)),
                 ],
               ),
             ),
+            _buildPurchaseShoppingChat(),
+            _buildDiscoveryNavigation(),
+            _buildDiscoveryResultsSection(),
+            KeyedSubtree(
+              key: _lowStockKey,
+              child: _buildReorderSuggestions(),
+            ),
+
           ],
         ),
       ),

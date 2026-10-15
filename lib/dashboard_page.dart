@@ -14075,6 +14075,15 @@ class _DashboardPageState extends State<DashboardPage>
               }
             },
           ),
+          _buildSidebarItem(
+            Icons.grid_view_rounded,
+            'More & Settings',
+            false,
+            () {
+              Navigator.pushNamed(context, '/more');
+              setState(() => _isSidebarOpen = false);
+            },
+          ),
           if (showInsight)
             _buildSidebarItem(
               Icons.lightbulb_outline,
@@ -14901,6 +14910,23 @@ class _DashboardPageState extends State<DashboardPage>
                         color: Color(0xFF10B981),
                         size: 22,
                       ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // More & Settings
+                GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/more'),
+                  child: Tooltip(
+                    message: 'More & Settings',
+                    child: Container(
+                      padding: const EdgeInsets.all(11),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF334155).withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFF334155).withValues(alpha: 0.20)),
+                      ),
+                      child: const Icon(Icons.grid_view_rounded, semanticLabel: 'More and Settings', color: Color(0xFF334155), size: 22),
                     ),
                   ),
                 ),

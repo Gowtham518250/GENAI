@@ -440,7 +440,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF203A68),
+        backgroundColor: const Color(0xFF4F46E5),
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
@@ -464,7 +464,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Ask Retail Mind', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
-                  Text('Your AI business assistant', style: GoogleFonts.inter(fontSize: 10.5, color: Colors.white70, fontWeight: FontWeight.w500)),
+                  Text('Sales · Stock · Attendance insights', style: GoogleFonts.inter(fontSize: 10.5, color: Colors.white70, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),

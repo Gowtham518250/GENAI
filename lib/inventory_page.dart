@@ -42,6 +42,8 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
 
   bool _loading = true;
   List<dynamic> _products = [];
+  String _inventorySearch = '';
+  String _stockFilter = 'All';
   int? _userId;
   // 🔧 FIX: distinguishes "backend confirmed 0 products" from "we couldn't
   // reach the backend" (e.g. slow/flaky 5G) so we never show the scary
@@ -1320,16 +1322,20 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final lowStock = _products.where((p) =>
-        (p['current_stock'] as num) <= (p['min_stock'] as num)).length;
+    final lowStock = _products.where((p) {
+      final stock = _stockNumber(p['current_stock']);
+      final minimum = _stockNumber(p['min_stock'], fallback: 10);
+      return stock > 0 && stock <= minimum;
+    }).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).inventory, style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w700, color: Colors.white)),
-        backgroundColor: _primary,
-        foregroundColor: Colors.white,
+            fontWeight: FontWeight.w800, color: const Color(0xFF172554))),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF172554),
+        surfaceTintColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
@@ -1546,52 +1552,186 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     );
   }
 
-  Widget _buildList(int lowStock) {
-    return Column(children: [
-      // Stats bar
-      Container(
-        color: _primary,
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Row(children: [
-          _statChip('Total', '${_products.length}', Icons.inventory_2),
-          const SizedBox(width: 12),
-          _statChip('Low Stock', '$lowStock', Icons.warning_amber,
-              color: lowStock > 0 ? _warning : _success),
-        ]),
-      ),
-      Expanded(
-        child: ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: _products.length,
-          itemBuilder: (_, i) => _productCard(_products[i]),
-        ),
-      ),
-    ]);
+  double _stockNumber(dynamic value, {double fallback = 0}) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? fallback;
   }
 
-  Widget _statChip(String label, String val, IconData icon,
-      {Color color = Colors.white}) {
+  int _inventoryFilterCount(String filter) {
+    return _products.where((raw) {
+      if (raw is! Map) return false;
+      final product = Map<String, dynamic>.from(raw);
+      final stock = _stockNumber(product['current_stock']);
+      final minimum = _stockNumber(product['min_stock'], fallback: 10);
+      switch (filter) {
+        case 'Low Stock': return stock > 0 && stock <= minimum;
+        case 'Out of Stock': return stock <= 0;
+        case 'In Stock': return stock > minimum;
+        default: return true;
+      }
+    }).length;
+  }
+
+  Widget _stockFilterChip(String filter) {
+    final selected = _stockFilter == filter;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text('$filter (' + _inventoryFilterCount(filter).toString() + ')'),
+        selected: selected,
+        onSelected: (_) => setState(() => _stockFilter = filter),
+        showCheckmark: false,
+        selectedColor: const Color(0xFFEDE9FE),
+        backgroundColor: const Color(0xFFF7F8FC),
+        side: BorderSide(color: selected ? _primary.withValues(alpha: 0.3) : const Color(0xFFE5E7EB)),
+        labelStyle: GoogleFonts.poppins(color: selected ? _primary : const Color(0xFF64748B), fontSize: 11, fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      ),
+    );
+  }
+
+  Widget _buildList(int lowStock) {
+    final outOfStock = _inventoryFilterCount('Out of Stock');
+    final filteredProducts = _products.where((raw) {
+      if (raw is! Map) return false;
+      final product = Map<String, dynamic>.from(raw);
+      final stock = _stockNumber(product['current_stock']);
+      final minimum = _stockNumber(product['min_stock'], fallback: 10);
+      final search = _inventorySearch.trim().toLowerCase();
+      final searchable = [product['product_name'], product['category'], product['sku'], product['barcode']]
+          .where((value) => value != null).join(' ').toLowerCase();
+      final matchesSearch = search.isEmpty || searchable.contains(search);
+      var matchesFilter = true;
+      if (_stockFilter == 'Low Stock') {
+        matchesFilter = stock > 0 && stock <= minimum;
+      } else if (_stockFilter == 'Out of Stock') {
+        matchesFilter = stock <= 0;
+      } else if (_stockFilter == 'In Stock') {
+        matchesFilter = stock > minimum;
+      }
+      return matchesSearch && matchesFilter;
+    }).map((raw) => Map<String, dynamic>.from(raw as Map)).toList();
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+          decoration: const BoxDecoration(color: Colors.white, border: Border(bottom: BorderSide(color: Color(0xFFE8ECF4)))),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: _statChip('Products', _products.length.toString(), Icons.inventory_2_rounded, color: _primary)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _statChip('Low stock', lowStock.toString(), Icons.warning_amber_rounded, color: lowStock > 0 ? _warning : _success)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _statChip('Out of stock', outOfStock.toString(), Icons.remove_shopping_cart_rounded, color: outOfStock > 0 ? const Color(0xFFDC2626) : _success)),
+                ],
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                onChanged: (value) => setState(() => _inventorySearch = value),
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Search products, barcode, or category',
+                  hintStyle: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF94A3B8)),
+                  prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 21),
+                  suffixIcon: _inventorySearch.isEmpty ? null : IconButton(
+                    tooltip: 'Clear search',
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    onPressed: () => setState(() => _inventorySearch = ''),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: _primary, width: 1.5)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(children: [
+                  _stockFilterChip('All'),
+                  _stockFilterChip('Low Stock'),
+                  _stockFilterChip('Out of Stock'),
+                  _stockFilterChip('In Stock'),
+                ]),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: filteredProducts.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(padding: const EdgeInsets.all(18), decoration: const BoxDecoration(color: Color(0xFFEDE9FE), shape: BoxShape.circle), child: const Icon(Icons.search_off_rounded, color: _primary, size: 34)),
+                        const SizedBox(height: 14),
+                        Text('No matching products', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF172554))),
+                        const SizedBox(height: 5),
+                        Text('Try another search or stock filter.', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF64748B))),
+                        const SizedBox(height: 12),
+                        TextButton.icon(
+                          onPressed: () => setState(() { _inventorySearch = ''; _stockFilter = 'All'; }),
+                          icon: const Icon(Icons.refresh_rounded, size: 17),
+                          label: const Text('Reset filters'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 110),
+                  itemCount: filteredProducts.length,
+                  itemBuilder: (_, i) => _productCard(filteredProducts[i]),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _statChip(String label, String val, IconData icon, {Color color = _primary}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
       decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(12)),
-      child: Row(children: [
-        Icon(icon, size: 18, color: color),
-        const SizedBox(width: 6),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(val, style: GoogleFonts.poppins(
-              fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
-          Text(label, style: GoogleFonts.poppins(
-              fontSize: 10, color: Colors.white70)),
-        ]),
-      ]),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: const Color(0xFFE8ECF4)),
+        boxShadow: [BoxShadow(color: const Color(0xFF172554).withValues(alpha: 0.035), blurRadius: 10, offset: const Offset(0, 3))],
+      ),
+      child: Row(
+        children: [
+          Container(padding: const EdgeInsets.all(7), decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(10)), child: Icon(icon, size: 17, color: color)),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(val, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 17, height: 1.2, fontWeight: FontWeight.w800, color: const Color(0xFF172554))),
+                const SizedBox(height: 2),
+                Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 9.5, color: const Color(0xFF64748B), fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _productCard(Map<String, dynamic> p) {
-    final isLow = (p['current_stock'] as num) <= (p['min_stock'] as num);
-    final isOut = (p['current_stock'] as num) == 0;
+    final stock = _stockNumber(p['current_stock']);
+    final minimum = _stockNumber(p['min_stock'], fallback: 10);
+    final isLow = stock <= minimum;
+    final isOut = stock <= 0;
     final statusColor = isOut ? Colors.red : (isLow ? _warning : _success);
     final statusText = isOut ? 'OUT' : (isLow ? 'LOW' : 'OK');
 
