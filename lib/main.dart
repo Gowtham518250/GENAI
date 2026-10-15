@@ -51,6 +51,8 @@ import 'language_provider.dart';
 import 'app_theme_controller.dart';
 import 'providers/setup.dart';
 import 'session_management.dart';
+import 'scoped_shared_preferences.dart';
+import 'startup_route_policy.dart';
 // Conditional import: use the real scanner on native, stub on web to avoid web plugin errors
 import 'qr_scanner_page_stub.dart' if (dart.library.io) 'qr_scanner_page.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
@@ -1407,43 +1409,44 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               final authed = snapshot.hasData && snapshot.data == true;
               String initialRoute = '/login';
               if (!booting && authed) {
-                // A valid login session is not enough to open a protected shop
-                // area. The resolver below checks identity verification first.
                 initialRoute = '/identity-verification';
               } else if (booting) {
                 initialRoute = '/_boot';
               }
               return FutureBuilder<String>(
                 future: (() async {
-                  if (booting) return '/_boot';
-                  if (!authed) return '/login';
-
-                  final routePrefs = await SharedPreferences.getInstance();
-                  final rawRole = routePrefs.getString('user_role') ?? 'OWNER';
-                  final role = rawRole.trim().toUpperCase();
+                  final prefs = await SharedPreferences.getInstance();
+                  final role = (prefs.getString('user_role') ??
+                          prefs.getString('user_type') ??
+                          prefs.getString('role') ??
+                          '')
+                      .trim()
+                      .toUpperCase();
                   final userId =
-                      routePrefs.getInt('user_id') ??
-                      routePrefs.getInt('userId') ??
-                      0;
+                      prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
 
-                  if (role == 'CUSTOMER') return '/customer-marketplace';
+                  final shopDetailsRequired = userId > 0 &&
+                      (prefs.getBool('shop_details_required_$userId') ?? false);
+                  final staffMode =
+                      (await ScopedSharedPreferences.getBool('is_staff_mode')) ??
+                          false;
+                  final identityRole = staffMode
+                      ? 'STAFF'
+                      : (role == 'WORKER' ? 'WORKER' : 'OWNER');
+                  final identityVerified = await SessionManagementService
+                      .isIdentityVerified(userId: userId, role: identityRole);
 
-                  // Shop Details is a registration-only onboarding step.
-                  // Existing authenticated users must never be forced back into
-                  // the form just because a legacy completion flag is missing.
-                  // Registration sets this explicit per-user requirement and
-                  // ShopDetailsPage clears it after a successful save.
-                  final shopDetailsRequired =
-                      routePrefs.getBool('shop_details_required_$userId') ??
-                      false;
-                  if (shopDetailsRequired) return '/shop-details';
-
-                  // Identity verification is intentionally handled by the
-                  // explicit login/registration flow (RoleSelectionPage).
-                  // Auto-login after reopening the app should go straight to
-                  // the dashboard; it must not show verification again.
-                  if (role == 'WORKER') return '/attendance';
-                  return '/dashboard';
+                  // A valid stored token is not enough to grant owner/staff
+                  // dashboard access on a fresh app/tab process. Only the
+                  // identity verification completed in this process unlocks it.
+                  return resolveStartupRoute(
+                    booting: booting,
+                    authenticated: authed,
+                    role: role,
+                    shopDetailsRequired: shopDetailsRequired,
+                    identityVerified: identityVerified,
+                    staffMode: staffMode,
+                  );
                 })(),
                 builder: (context, routeSnapshot) {
                   final resolvedRoute = routeSnapshot.data ?? initialRoute;
