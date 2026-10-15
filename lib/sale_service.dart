@@ -251,6 +251,7 @@ try {
       'paid_amount': paidAmount.toString(),
       'gst_applied': withTax,
       'payment_method': paymentMethod,
+      'is_borrow': isBorrow,
       'sync_status': 'pending',
       'pending_sync': true,
     });
@@ -271,6 +272,8 @@ try {
     'customer_phone': customerPhone.isNotEmpty ? customerPhone : null,
     'total_amount': grandTotal,
     'paid_amount': paidAmount,
+    'payment_method': paymentMethod,
+    'is_borrow': isBorrow,
     'tax': withTax ? (totals['tax'] ?? 0.0) : 0.0,
     'payment_status': paymentStatusFor(paidAmount, grandTotal),
     'invoice_date': saleTimestampIso.split('T')[0],
@@ -294,6 +297,7 @@ try {
     paymentMethod: paymentMethod,
     syncStatus: 'pending',
     invoiceNumber: canonicalInvoiceNumber,
+    isBorrow: isBorrow,
   );
 
   final bool queueEnqueued = await SyncQueueManager.enqueue('save_sale', {
@@ -555,6 +559,7 @@ try {
     String paymentMethod = 'Cash',
     String syncStatus = 'synced',
     String? invoiceNumber,
+    bool isBorrow = false,
   }) async {
     List<dynamic> history = await LocalStorageService.loadSales();
 
@@ -637,6 +642,10 @@ try {
       'payment_status': paymentStatusFor(paidAmount, grandTotal),
       'gst_applied': withTax,
       'payment_method': paymentMethod,
+      'is_borrow': isBorrow,
+      'notes': isBorrow
+          ? 'Payment via $paymentMethod - Borrow Invoice'
+          : 'Payment via $paymentMethod - Regular Sale',
     };
 
     if (existingIndex >= 0) {

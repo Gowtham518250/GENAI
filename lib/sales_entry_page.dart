@@ -42,6 +42,7 @@ import 'printer_settings_page.dart';
 import 'package:blue_thermal_printer/blue_thermal_printer.dart';
 import 'inventory_management_service.dart';
 import 'sale_service.dart';
+import 'sale_payment_policy.dart';
 import 'analytics_engine.dart';
 import 'format_helper.dart';
 import 'local_storage_service.dart';
@@ -3302,7 +3303,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     }
 
     final totals = calculateTotal() as Map<String, dynamic>;
-    final grandTotal = totals['total'] ?? 0.0;
+    final double grandTotal = (totals['total'] as num?)?.toDouble() ?? 0.0;
 
     if (!_validateSaleInputs(grandTotal)) {
       // FIX: reset isLoading here too — same reason as above.
@@ -3321,11 +3322,18 @@ class _SalesEntryPageState extends State<SalesEntryPage>
 
     try {
       final items = _getProcessedItems();
+      final paidAmountForSubmission = SalePaymentPolicy.resolvePaidAmount(
+        totalAmount: (grandTotal as num).toDouble(),
+        enteredPaidAmount: _paidAmount,
+        isBorrow: isBorrow,
+        isCashPayment: !_isOnlinePayment,
+        paymentConfirmed: _paymentConfirmed,
+      );
       final result = await SaleService.submitSale(
         saleId: saleId,
         items: items,
-        grandTotal: grandTotal,
-        paidAmount: isBorrow ? 0.0 : _paidAmount, // Borrow: paidAmount = 0
+        grandTotal: (grandTotal as num).toDouble(),
+        paidAmount: paidAmountForSubmission,
         customerName: customerNameController.text.trim(),
         customerPhone: customerPhoneController.text.trim(),
         withTax: _withTax,
