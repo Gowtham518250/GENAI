@@ -54,6 +54,9 @@ jobs:
       - name: Resolve packages
         run: flutter pub get
 
+      - name: Run Flutter tests
+        run: flutter test --reporter expanded
+
       - name: Compile Android debug APK
         run: flutter build apk --debug --no-pub
 
