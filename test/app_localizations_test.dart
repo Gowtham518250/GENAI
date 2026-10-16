@@ -19,6 +19,12 @@ void main() {
             reason: 'password reset label must resolve for ${locale.languageCode}');
         expect(l.translate('phoneTenDigits'), isNot('phoneTenDigits'),
             reason: 'phone label must resolve for ${locale.languageCode}');
+        expect(l.translate('generateBill'), isNot('Generate Bill'),
+            reason: 'billing action must be translated for ${locale.languageCode}');
+        expect(l.translate('paymentMethod'), isNot('Payment Method'),
+            reason: 'payment label must be translated for ${locale.languageCode}');
+        expect(l.translate('salesByMonth'), isNot('Sales by Month'),
+            reason: 'sales analytics label must be translated for ${locale.languageCode}');
       }
     });
   });
