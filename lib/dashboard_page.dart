@@ -37,6 +37,7 @@ import 'invoices_page.dart' hide Expanded;
 import 'gift_card_page.dart';
 import 'visual_widgets.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:notification_listener_service/notification_listener_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'language_provider.dart';
