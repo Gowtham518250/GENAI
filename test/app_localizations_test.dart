@@ -9,6 +9,10 @@ void main() {
         final l = AppLocalizations(locale);
         expect(l.translate('dashboard'), isNot('dashboard'),
             reason: 'dashboard must resolve for ${locale.languageCode}');
+        if (locale.languageCode != 'en') {
+          expect(l.translate('dashboard'), isNot('Dashboard'),
+              reason: 'dashboard should be translated for ${locale.languageCode}');
+        }
         expect(l.translate('backToHome'), isNot('backToHome'),
             reason: 'backToHome must resolve for ${locale.languageCode}');
         expect(l.translate('resetCustomerPassword'), isNot('resetCustomerPassword'),
