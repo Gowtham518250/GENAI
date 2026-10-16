@@ -294,6 +294,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     final total = order['total_amount'] ?? order['total'] ?? order['amount'] ?? 0;
     final createdAt = order['created_at'] ?? '';
     final items = order['items'] as List<dynamic>? ?? [];
+    final paymentMethod = (order['payment_method'] ?? '').toString().trim().toUpperCase();
+    final paymentStatus = (order['payment_status'] ?? '').toString().trim().toUpperCase();
+    final paymentConfirmationSource =
+        (order['payment_confirmation_source'] ?? '').toString().trim().toUpperCase();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -342,7 +346,52 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 color: const Color(0xFF6B7280),
               ),
             ),
-          const SizedBox(height: 12),
+          if (paymentMethod.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Payment: $paymentMethod · ${paymentStatus.isEmpty ? 'PENDING' : paymentStatus}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF334155),
+                    ),
+                  ),
+                  if (paymentConfirmationSource == 'OWNER_DEVICE_NOTIFICATION_MATCH')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Matched from a shop-device notification. This is not a payment-provider webhook confirmation; keep the UPI reference for reconciliation.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: const Color(0xFF92400E),
+                        ),
+                      ),
+                    )
+                  else if (paymentMethod == 'UPI' && paymentStatus != 'PAID')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Payment is still pending a matching confirmation. Returning from the UPI app does not mark this order paid.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: const Color(0xFF92400E),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           // Total and actions
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
