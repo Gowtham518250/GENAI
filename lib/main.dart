@@ -1309,6 +1309,36 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final loginPrefs = await SharedPreferences.getInstance();
     _hasSeenOnboarding = loginPrefs.getBool('has_seen_onboarding') ?? false;
 
+    // Customer sessions use a separate encrypted token and must not be
+    // validated as owner/staff sessions. Restore the marketplace directly on
+    // cold start instead of falling through to owner access-token validation.
+    final storedRole = (loginPrefs.getString('user_role') ??
+            loginPrefs.getString('user_type') ??
+            loginPrefs.getString('role') ??
+            '')
+        .trim()
+        .toUpperCase();
+    if (storedRole == 'CUSTOMER') {
+      final customerToken = await SecureTokenStorage.getCustomerToken();
+      final customerId = await SecureTokenStorage.getUserId() ??
+          int.tryParse(
+            loginPrefs.getString('customer_id') ??
+                loginPrefs.getString('user_id') ??
+                '',
+          ) ??
+          0;
+      if ((customerToken ?? '').isNotEmpty && customerId > 0) {
+        if (kDebugMode) {
+          debugPrint('[AUTH] Restored customer marketplace session');
+        }
+        return true;
+      }
+      if (kDebugMode) {
+        debugPrint('[AUTH] Customer session is incomplete; returning to login');
+      }
+      return false;
+    }
+
     // The local seven-day timestamp is a cache guard, not the only login
     // path. If it expires, try the persisted refresh token before showing Login.
     // A rejected/expired refresh token is cleared by autoLogin(); a network or
