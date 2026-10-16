@@ -31,7 +31,7 @@ class CustomerShopService {
       final raw = body is Map && body['products'] is List ? body['products'] as List : <dynamic>[];
       final products = raw
           .whereType<Map>()
-          .map((p) => _normalizeProduct(Map<String, dynamic>.from(p)))
+          .map((p) => normalizeProduct(Map<String, dynamic>.from(p)))
           .toList();
 
       return _filterInStock(products);
@@ -86,7 +86,7 @@ class CustomerShopService {
     return 'Shop';
   }
 
-  static Map<String, dynamic> _normalizeProduct(Map raw) {
+  static Map<String, dynamic> normalizeProduct(Map raw) {
     final name = (raw['product_name'] ?? raw['name'] ?? raw['product'] ?? 'Item').toString();
     final price = double.tryParse(
           (raw['price'] ?? raw['selling_price'] ?? raw['unit_price'] ?? '0')
@@ -96,16 +96,19 @@ class CustomerShopService {
     // The online-store API calls available inventory stock_available.
     // Without this alias, every API product normalized to stock=0 and the
     // storefront filtered the entire catalogue out as unavailable.
-    final stock = int.tryParse(
-          (raw['stock'] ??
-                  raw['stock_available'] ??
-                  raw['current_stock'] ??
-                  raw['available_quantity'] ??
-                  raw['quantity'] ??
-                  '0')
-              .toString(),
-        ) ??
+    final rawStock = raw['stock'] ??
+        raw['stock_available'] ??
+        raw['current_stock'] ??
+        raw['available_quantity'] ??
+        raw['quantity'] ??
         0;
+    // The API/DB may serialize an integral Numeric inventory quantity as 8.0.
+    // The UI currently sells whole units, so convert numeric strings safely.
+    final stock = rawStock is num
+        ? rawStock.floor()
+        : (int.tryParse(rawStock.toString()) ??
+            double.tryParse(rawStock.toString())?.floor() ??
+            0);
     final id = (raw['id'] ?? raw['product_id'] ?? '').toString().trim();
     final imageUrl = (raw['image_url'] ?? raw['imageUrl'] ?? raw['photo'] ?? '').toString();
     return {
