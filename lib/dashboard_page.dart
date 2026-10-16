@@ -13506,6 +13506,29 @@ class _DashboardPageState extends State<DashboardPage>
                       padding: const EdgeInsets.all(12),
                       child: Image.memory(_qrImageBytes!, fit: BoxFit.contain),
                     )
+                  else if (_upiId.trim().isNotEmpty)
+                    Container(
+                      width: 220,
+                      height: 220,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF22C55E).withValues(alpha: 0.24),
+                            blurRadius: 18,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: QrImageView(
+                        data: 'upi://pay?pa=${Uri.encodeComponent(_upiId.trim())}&pn=${Uri.encodeComponent(shopName.trim().isEmpty ? 'Retail Shop' : shopName.trim())}&cu=INR',
+                        version: QrVersions.auto,
+                        size: 196,
+                        backgroundColor: Colors.white,
+                      ),
+                    )
                   else
                     GestureDetector(
                       onTap: () async {
