@@ -135,9 +135,13 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       'shop_name': shopNameController.text.trim(),
       'location': locationController.text.trim(),
       'shop_type': shopTypeController.text.trim(),
+      // Backend ShopProfileCreate/Update accept `phone` and `upi_id`.
+      // Keep legacy aliases for older clients, but send the canonical API keys too.
+      'phone': phoneController.text.trim(),
       'shop_phone': phoneController.text.trim(),
       'website': websiteController.text.trim(),
       'shop_tagline': taglineController.text.trim(),
+      'upi_id': upiIdController.text.trim(),
       'primary_upi_id': upiIdController.text.trim(),
       'gst_number': gstController.text.trim(),
       'state': _scannedStateCode ?? '',
@@ -396,9 +400,13 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
 
       final expectedName = (payload['shop_name'] ?? '').toString().trim();
       final returnedName = (profile['shop_name'] ?? '').toString().trim();
+      final expectedUpi = (payload['upi_id'] ?? payload['primary_upi_id'] ?? '').toString().trim();
+      final returnedUpi = (profile['upi_id'] ?? profile['primary_upi_id'] ?? '').toString().trim();
 
       final identityMatches = returnedUserId == expectedUserId;
       final nameMatches = expectedName.isEmpty || returnedName == expectedName;
+      // Do not report a successful save if the server silently dropped the UPI ID.
+      final upiMatches = expectedUpi.isEmpty || returnedUpi == expectedUpi;
 
       if (kDebugMode) {
         debugPrint(
@@ -407,7 +415,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
         );
       }
 
-      return identityMatches && nameMatches;
+      return identityMatches && nameMatches && upiMatches;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Persisted profile verification error: $e');
       return false;

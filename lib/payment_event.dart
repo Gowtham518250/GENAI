@@ -170,32 +170,11 @@ class PaymentEvent {
   /// same Android notification may be delivered more than once with slightly
   /// different metadata. The actual notification text is therefore included.
   String get voiceFingerprint {
-    final direction = _transactionDirection(rawText);
-
-    if (referenceId != null && referenceId!.isNotEmpty) {
-      return 'voice_utr_${amount.toStringAsFixed(2)}_$referenceId';
-    }
-
-    var normalized = rawText
-        .toLowerCase()
-        .replaceAll(RegExp(r'\d{1,2}:\d{2}(?::\d{2})?'), '')
-        .replaceAll(RegExp(r'\b(?:today|yesterday|just\s+now)\b'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
-    // Keep the key bounded. If a very large notification contains unrelated
-    // footer/legal text, that text should not create a unique voice event.
-    if (normalized.length > 260) {
-      normalized = normalized.substring(0, 260);
-    }
-
-    final payload =
-        '${amount.toStringAsFixed(2)}_'
-        '${direction}_'
-        '${_appFamily(app)}_'
-        '$normalized';
-
-    return 'voice_${md5.convert(utf8.encode(payload))}';
+    // Use the same stable transaction identity as accounting deduplication.
+    // Raw notification text often changes between grouped notifications for
+    // one payment (e.g. sender-name variant vs. "amount received"), so hashing
+    // the full text caused the same credit to be spoken twice.
+    return 'voice_${fingerprint}';
   }
 
   ConfidenceTier get confidenceTier {

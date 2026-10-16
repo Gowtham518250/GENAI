@@ -72,7 +72,13 @@ class PaymentProcessingManager {
       // SyncQueueManager instead of using the legacy payment queue.
       try {
         final invoiceNumber = payment.saleId?.trim() ?? '';
-        if (invoiceNumber.isNotEmpty) {
+        // Keep the exception fallback subject to the same financial-safety
+        // gate as the normal path; logging failures must never promote an
+        // unconfirmed notification into a recorded payment.
+        if (payment.decision == PaymentDecision.confirmed &&
+            !payment.isDuplicate &&
+            !payment.isFailed &&
+            invoiceNumber.isNotEmpty) {
           await LocalStorageService.recordUnifiedPayment(
             '',
             payment.amount,
@@ -111,6 +117,24 @@ class PaymentProcessingManager {
   
   /// Process payment with automatic retry
   Future<void> _processPaymentOnline(PaymentEvent payment) async {
+    // A notification is only a signal, not proof of settlement. Never mutate
+    // the invoice ledger or queue a financial write for LIKELY/rejected or
+    // already-duplicate events; those remain visible for merchant review.
+    if (payment.decision != PaymentDecision.confirmed || payment.isDuplicate || payment.isFailed) {
+      await _errorLogger.logPaymentError(
+        detectionSource: payment.detectionSource,
+        errorReason: 'Automatic payment recording skipped: event is not a unique confirmed credit',
+        paymentDetails: {
+          'amount': payment.amount,
+          'decision': payment.decision.name,
+          'is_duplicate': payment.isDuplicate,
+          'is_failed': payment.isFailed,
+          'reference_id': payment.referenceId,
+        },
+      );
+      return;
+    }
+
     final invoiceNumber = payment.saleId?.trim() ?? '';
     if (invoiceNumber.isEmpty) {
       await _errorLogger.logPaymentError(
