@@ -164,17 +164,18 @@ class PaymentEvent {
   }
   /// Voice-only deduplication key.
   ///
-  /// Accounting/idempotency fingerprints intentionally normalize aggressively
-  /// so notifications, accessibility events and bank SMS can refer to the
-  /// same payment. Voice dedup needs a second, stricter identity because the
-  /// same Android notification may be delivered more than once with slightly
-  /// different metadata. The actual notification text is therefore included.
+  /// Accounting fingerprints normalize aggressively across notification
+  /// variants. Voice dedup is intentionally stricter: identical notification
+  /// text delivered repeatedly is suppressed, but different text is not assumed
+  /// to be the same spoken event merely because amount/time/app match.
   String get voiceFingerprint {
-    // Use the same stable transaction identity as accounting deduplication.
-    // Raw notification text often changes between grouped notifications for
-    // one payment (e.g. sender-name variant vs. "amount received"), so hashing
-    // the full text caused the same credit to be spoken twice.
-    return 'voice_${fingerprint}';
+    final normalizedText = rawText
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\\s+'), ' ');
+    final voicePayload = '${fingerprint}_${normalizedText}';
+    return 'voice_${md5.convert(utf8.encode(voicePayload))}';
   }
 
   ConfidenceTier get confidenceTier {
