@@ -13570,10 +13570,14 @@ class _DashboardPageState extends State<DashboardPage>
 
                             if (isValidQr) {
                               // 🔒 SECURITY: Use scoped SharedPreferences for payment QR
+                              final qrBase64 = base64Encode(bytes);
                               await ScopedSharedPreferences.setString(
                                 'payment_qr_b64',
-                                base64Encode(bytes),
+                                qrBase64,
                               );
+                              // Startup restores the QR from encrypted storage,
+                              // so keep this write in sync with the scoped cache.
+                              await SecurePreferencesService.setPaymentQrB64(qrBase64);
                               setState(() => _qrImageBytes = bytes);
                               setDlgState(() {});
                             } else {
