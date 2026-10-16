@@ -2520,7 +2520,31 @@ class _SalesEntryPageState extends State<SalesEntryPage>
           return;
         }
 
-        // 🛑 CRITICAL: Deduplicate payment events (Idempotency)
+        // A LIKELY/rejected notification is not proof that money arrived.
+        // Do not change the paid amount or consume its accounting fingerprint:
+        // the same event may later be upgraded after SMS/UTR confirmation.
+        if (event.isFailed) {
+          if (kDebugMode) {
+            debugPrint('⚠️ Failed payment notification ignored for accounting: ${event.fingerprint}');
+          }
+          return;
+        }
+        final eventDirection = VoiceBuilder.detectDirection(event.rawText);
+        if (event.decision != PaymentDecision.confirmed ||
+            event.isDuplicate ||
+            eventDirection != PaymentDirection.credited) {
+          if (kDebugMode) {
+            debugPrint(
+              '⚠️ Payment requires verification; no paid amount updated '
+              '(decision=${event.decision.name}, direction=${eventDirection.name}, '
+              'duplicate=${event.isDuplicate}): ${event.fingerprint}',
+            );
+          }
+          return;
+        }
+
+        // Deduplicate only confirmed, unique incoming credits. A LIKELY event
+        // above must not block a later confirmation for the same transaction.
         if (_processedPaymentIds.contains(event.fingerprint)) {
           if (kDebugMode) debugPrint('⚠️ Payment event already processed: ${event.fingerprint}');
           return;
