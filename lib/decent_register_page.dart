@@ -110,21 +110,51 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
       final data = _decodeResponseMap(response);
 
       if (response.statusCode == 200) {
-        // Backend returns access_token directly on successful registration
-        // (auto-login) — see the "return {...}" at the end of /register.
-        final token = data['access_token']?.toString() ?? '';
-        final userId = data['user_id'] is int
-            ? data['user_id'] as int
-            : int.tryParse(data['user_id']?.toString() ?? '') ?? 0;
+        // Registration should establish the same durable session as login.
+        // Older deployed backends may return only an access token, so retry the
+        // just-created credentials against /auth/login to obtain refresh_token.
+        var sessionData = Map<String, dynamic>.from(data);
+        var token = sessionData['access_token']?.toString() ?? '';
+        var refreshToken = sessionData['refresh_token']?.toString();
+        var userId = int.tryParse(sessionData['user_id']?.toString() ?? '') ?? 0;
+
+        if (token.isEmpty || refreshToken == null || refreshToken.isEmpty || userId <= 0) {
+          final loginResponse = await ApiClient.postJson('/auth/login', {
+            'email': email,
+            'password': password,
+          });
+          final loginData = _decodeResponseMap(loginResponse);
+          if (loginResponse.statusCode == 200) {
+            sessionData = {...sessionData, ...loginData};
+            token = loginData['access_token']?.toString().isNotEmpty == true
+                ? loginData['access_token'].toString()
+                : token;
+            refreshToken = loginData['refresh_token']?.toString() ?? refreshToken;
+            userId = int.tryParse(
+                  loginData['user_id']?.toString() ??
+                      sessionData['user_id']?.toString() ??
+                      '',
+                ) ??
+                userId;
+          }
+        }
+
+        if (token.isEmpty || userId <= 0 || (refreshToken ?? '').isEmpty) {
+          if (mounted) {
+            setState(() => errorMessage =
+                'Account may have been created, but a persistent session could not be established. Please sign in with your new credentials.');
+          }
+          return;
+        }
 
         await UserDataClearService.clearAllUserData();
         await SessionManagementService.initializeSession(
           userId: userId,
           accessToken: token,
-          refreshToken: data['refresh_token']?.toString(),
-          userName: data['username']?.toString() ?? username,
+          refreshToken: refreshToken,
+          userName: sessionData['username']?.toString() ?? username,
           userEmail: email,
-          role: data['role']?.toString() ?? 'OWNER',
+          role: sessionData['role']?.toString() ?? 'OWNER',
         );
 
         final prefs = await SharedPreferences.getInstance();
