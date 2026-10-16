@@ -230,6 +230,36 @@ void main() {
       );
     });
 
+    test('supports incoming payment direction in Indian scripts', () {
+      expect(
+        VoiceBuilder.detectDirection('మీ ఖాతాలో ₹500 జమ అయింది'),
+        equals(PaymentDirection.credited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('आपके खाते में ₹500 जमा'),
+        equals(PaymentDirection.credited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('உங்கள் கணக்கில் ₹500 வரவு'),
+        equals(PaymentDirection.credited),
+      );
+    });
+
+    test('supports outgoing payment direction in Indian scripts', () {
+      expect(
+        VoiceBuilder.detectDirection('మీ ఖాతా నుండి ₹500 డెబిట్'),
+        equals(PaymentDirection.debited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('आपके खाते से ₹500 डेबिट'),
+        equals(PaymentDirection.debited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('உங்கள் கணக்கில் ₹500 பற்று'),
+        equals(PaymentDirection.debited),
+      );
+    });
+
     test('ambiguous text is never mislabeled as credit or debit', () {
       expect(
         VoiceBuilder.detectDirection('Payment of INR 1000'),
