@@ -88,15 +88,32 @@ class CustomerShopService {
 
   static Map<String, dynamic> _normalizeProduct(Map raw) {
     final name = (raw['product_name'] ?? raw['name'] ?? raw['product'] ?? 'Item').toString();
-    final price = double.tryParse(raw['price']?.toString() ?? raw['selling_price']?.toString() ?? '0') ?? 0;
-    final stock = int.tryParse(raw['stock']?.toString() ?? raw['quantity']?.toString() ?? '0') ?? 0;
-    final id = (raw['id'] ?? raw['product_id'] ?? name).toString();
+    final price = double.tryParse(
+          (raw['price'] ?? raw['selling_price'] ?? raw['unit_price'] ?? '0')
+              .toString(),
+        ) ??
+        0;
+    // The online-store API calls available inventory stock_available.
+    // Without this alias, every API product normalized to stock=0 and the
+    // storefront filtered the entire catalogue out as unavailable.
+    final stock = int.tryParse(
+          (raw['stock'] ??
+                  raw['stock_available'] ??
+                  raw['current_stock'] ??
+                  raw['available_quantity'] ??
+                  raw['quantity'] ??
+                  '0')
+              .toString(),
+        ) ??
+        0;
+    final id = (raw['id'] ?? raw['product_id'] ?? '').toString().trim();
     final imageUrl = (raw['image_url'] ?? raw['imageUrl'] ?? raw['photo'] ?? '').toString();
     return {
       'id': id,
       'name': name,
       'price': price,
       'stock': stock,
+      'stock_available': stock,
       'category': raw['category']?.toString() ?? 'General',
       'image_url': imageUrl,
     };
