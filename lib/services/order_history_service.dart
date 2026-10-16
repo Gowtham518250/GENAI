@@ -13,10 +13,11 @@ class OrderHistoryService {
   static Future<String> _scopedKey(String base) async {
     final prefs = await SharedPreferences.getInstance();
     final role = (prefs.getString('user_type') ?? prefs.getString('role') ?? 'CUSTOMER').trim().toUpperCase();
-    final intUserId = prefs.getInt('user_id') ?? prefs.getInt('userId');
-    final userId = intUserId?.toString() ??
-        prefs.getString('user_id') ??
-        prefs.getString('userId') ??
+    // SharedPreferences keys were historically written as both int and
+    // String across registration flows. getInt() throws if the stored value
+    // is a String, so read dynamically and normalize without a type cast.
+    final rawUserId = prefs.get('user_id') ?? prefs.get('userId');
+    final userId = rawUserId?.toString() ??
         prefs.getString('user_email') ??
         'anonymous';
     return base + '_' + role + '_' + userId;
