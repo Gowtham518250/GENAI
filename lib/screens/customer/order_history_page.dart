@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/order_history_service.dart';
+import '../../api_client.dart';
 import '../../visual_widgets.dart';
 
 /// 🔧 FLIPKART-LEVEL: Order History Page
@@ -26,35 +29,73 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   }
 
   Future<void> _loadOrders() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
-    
+
+    // Keep cached orders visible when offline, but reconcile with the
+    // authenticated customer's server history whenever the backend is reachable.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final role = (prefs.getString('user_role') ??
+              prefs.getString('user_type') ??
+              prefs.getString('role') ??
+              '')
+          .trim()
+          .toUpperCase();
+      if (role == 'CUSTOMER') {
+        final response = await ApiClient.getJson('/store/my-orders')
+            .timeout(const Duration(seconds: 12));
+        if (response.statusCode == 200) {
+          final body = jsonDecode(response.body);
+          final rawOrders = body is Map ? body['orders'] : null;
+          if (rawOrders is List) {
+            final remoteOrders = rawOrders
+                .whereType<Map>()
+                .map((order) => Map<String, dynamic>.from(order))
+                .toList();
+            await OrderHistoryService.mergeRemoteOrders(remoteOrders);
+          }
+        } else if (kDebugMode) {
+          debugPrint('Customer order refresh returned a non-success HTTP response.');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('Customer order refresh unavailable; showing cached orders: $e');
+    }
+
     final orders = await OrderHistoryService.getAllOrders();
-    
+    if (!mounted) return;
     setState(() {
       _orders = orders;
-      _filteredOrders = orders;
+      _applyCurrentFilters();
       _isLoading = false;
     });
   }
 
+  void _applyCurrentFilters() {
+    final query = _searchController.text.trim().toLowerCase();
+    _filteredOrders = _orders.where((order) {
+      final status = (order['status'] ?? 'PENDING').toString().toUpperCase();
+      final matchesStatus = _selectedFilter == 'ALL' || status == _selectedFilter;
+      final searchable = [
+        order['order_id'],
+        order['server_order_id'],
+        order['shop_name'],
+        order['customer_name'],
+        order['customer_phone'],
+      ].whereType<Object>().join(' ').toLowerCase();
+      return matchesStatus && (query.isEmpty || searchable.contains(query));
+    }).toList();
+  }
+
   Future<void> _filterOrders() async {
-    if (_selectedFilter == 'ALL') {
-      setState(() => _filteredOrders = _orders);
-      return;
-    }
-    
-    final filtered = await OrderHistoryService.getOrdersByStatus(_selectedFilter);
-    setState(() => _filteredOrders = filtered);
+    if (!mounted) return;
+    setState(_applyCurrentFilters);
   }
 
   Future<void> _searchOrders(String query) async {
-    if (query.isEmpty) {
-      await _filterOrders();
-      return;
-    }
-    
-    final results = await OrderHistoryService.searchOrders(query);
-    setState(() => _filteredOrders = results);
+    if (!mounted) return;
+    setState(_applyCurrentFilters);
   }
 
   Future<void> _cancelOrder(String orderId) async {
@@ -249,7 +290,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   Widget _buildOrderCard(Map<String, dynamic> order) {
     final orderId = order['order_id'] ?? 'Unknown';
     final status = order['status'] ?? 'PLACED';
-    final total = order['total'] ?? order['amount'] ?? 0;
+    final total = order['total_amount'] ?? order['total'] ?? order['amount'] ?? 0;
     final createdAt = order['created_at'] ?? '';
     final items = order['items'] as List<dynamic>? ?? [];
 
@@ -375,7 +416,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   }
 
   bool _isCancellable(String status) {
-    return ['PLACED', 'CONFIRMED', 'PROCESSING'].contains(status);
+    return const ['PENDING', 'ACCEPTED'].contains(status.toUpperCase());
   }
 
   String _formatDate(String dateString) {
