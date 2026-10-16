@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../cache_consistency_service.dart';
+import '../api_client.dart';
 
 /// 🔧 FLIPKART-LEVEL: Order History Service
 /// Manages order history, tracking, and status updates
@@ -57,6 +58,89 @@ class OrderHistoryService {
     await prefs.setString(await _scopedKey(_ordersKey), ordersJson);
     // Saving local state is not evidence of a successful backend read/sync.
     // The explicit remote reconciliation path owns this timestamp.
+  }
+
+  /// Merge authenticated server orders into the local, role-scoped cache.
+  /// Local-only orders remain visible when they have not synced yet or the
+  /// server is temporarily unavailable.
+  static Future<List<Map<String, dynamic>>> mergeRemoteOrders(
+    List<Map<String, dynamic>> remoteOrders,
+  ) async {
+    final localOrders = await getAllOrders();
+    final consumedLocalIndexes = <int>{};
+    final merged = <Map<String, dynamic>>[];
+
+    for (final rawRemote in remoteOrders) {
+      final remote = Map<String, dynamic>.from(rawRemote);
+      final remoteId = (remote['order_id'] ?? remote['id'] ?? '').toString().trim();
+      if (remoteId.isEmpty) continue;
+
+      var localIndex = -1;
+      for (var i = 0; i < localOrders.length; i++) {
+        if (consumedLocalIndexes.contains(i)) continue;
+        final local = localOrders[i];
+        final existingServerId =
+            (local['server_order_id'] ?? local['order_id'] ?? '').toString();
+        if (existingServerId == remoteId) {
+          localIndex = i;
+          break;
+        }
+      }
+
+      final existing = localIndex >= 0
+          ? localOrders[localIndex]
+          : <String, dynamic>{};
+      if (localIndex >= 0) consumedLocalIndexes.add(localIndex);
+
+      final rawCreatedAt = remote['created_at'] ?? existing['created_at'] ?? '';
+      final rawItems = remote['items'] ?? existing['items'];
+      final status = (remote['status'] ?? existing['status'] ?? 'PENDING')
+          .toString()
+          .trim()
+          .toUpperCase();
+      final total = remote['total_amount'] ??
+          remote['total'] ??
+          existing['total_amount'] ??
+          existing['total'] ??
+          existing['amount'] ??
+          0;
+
+      merged.add({
+        ...existing,
+        ...remote,
+        'order_id': remoteId,
+        'server_order_id': remoteId,
+        'local_order_id': existing['local_order_id'] ?? remoteId,
+        'sync_status': 'synced',
+        'status': status,
+        'total_amount': total,
+        'total': total,
+        'created_at': rawCreatedAt.toString(),
+        'items': rawItems is List ? rawItems : <dynamic>[],
+      });
+    }
+
+    // Do not delete locally-created orders just because they are absent from
+    // the server response. They may be waiting in the offline outbox.
+    for (var i = 0; i < localOrders.length; i++) {
+      if (!consumedLocalIndexes.contains(i)) {
+        merged.add(localOrders[i]);
+      }
+    }
+
+    merged.sort((a, b) {
+      final aDate = DateTime.tryParse((a['created_at'] ?? '').toString());
+      final bDate = DateTime.tryParse((b['created_at'] ?? '').toString());
+      if (aDate == null && bDate == null) return 0;
+      if (aDate == null) return 1;
+      if (bDate == null) return -1;
+      return bDate.compareTo(aDate);
+    });
+
+    await saveOrders(merged);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_ordersSyncKey, DateTime.now().millisecondsSinceEpoch);
+    return merged;
   }
 
   /// 🔧 FLIPKART-LEVEL: Add new order
@@ -154,20 +238,42 @@ class OrderHistoryService {
     }).toList();
   }
 
-  /// 🔧 FLIPKART-LEVEL: Cancel order
+  /// Cancel a server-backed order through the backend so inventory and
+  /// order status are updated atomically. The endpoint only permits PENDING
+  /// and ACCEPTED orders; local state changes only after server success.
   static Future<bool> cancelOrder(String orderId) async {
     final order = await getOrderById(orderId);
     if (order == null) return false;
-    
-    final currentStatus = order['status'] as String?;
-    if (currentStatus == null) return false;
-    
-    // Can only cancel orders in certain statuses
-    final cancellableStatuses = ['PLACED', 'CONFIRMED', 'PROCESSING'];
-    if (!cancellableStatuses.contains(currentStatus)) return false;
-    
-    await updateOrderStatus(orderId, 'CANCELLED');
-    return true;
+
+    final currentStatus = (order['status'] ?? '').toString().trim().toUpperCase();
+    if (!const {'PENDING', 'ACCEPTED'}.contains(currentStatus)) return false;
+
+    final serverOrderId =
+        (order['server_order_id'] ?? order['order_id'] ?? orderId).toString();
+    if (int.tryParse(serverOrderId) == null) {
+      // A local-only ID has not been accepted by the backend.
+      return false;
+    }
+
+    try {
+      final response = await ApiClient.postJson(
+        '/store/order/$serverOrderId/cancel',
+        <String, dynamic>{},
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        if (kDebugMode) {
+          debugPrint(
+            'Order cancellation rejected by backend: HTTP \${response.statusCode}',
+          );
+        }
+        return false;
+      }
+      await updateOrderStatus(serverOrderId, 'CANCELLED');
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('Order cancellation request failed: $e');
+      return false;
+    }
   }
 
   /// 🔧 FLIPKART-LEVEL: Return order
