@@ -184,7 +184,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
             keyboardType: TextInputType.number,
             maxLength: 6,
             autofocus: true,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: l.translate('otpSixDigits'),
               counterText: '',
             ),
@@ -235,7 +235,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
             controller: passwordController,
             obscureText: true,
             autofocus: true,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: l.translate('newPasswordAtLeast8'),
             ),
           ),
@@ -281,7 +281,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(l.translate('passwordUpdatedLogin')),
             backgroundColor: Colors.green,
           ),
