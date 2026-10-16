@@ -2539,12 +2539,12 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         final eventDirection = VoiceBuilder.detectDirection(event.rawText);
         if (event.decision != PaymentDecision.confirmed ||
             event.isDuplicate ||
-            eventDirection != PaymentDirection.credited) {
+            eventDirection != PaymentDirection.credited ||
+            !event.isBillMatch) {
           if (kDebugMode) {
             debugPrint(
-              '⚠️ Payment requires verification; no paid amount updated '
-              '(decision=${event.decision.name}, direction=${eventDirection.name}, '
-              'duplicate=${event.isDuplicate}): ${event.fingerprint}',
+              '⚠️ Payment requires verification or does not match the active bill; '
+              'no paid amount updated.',
             );
           }
           return;
