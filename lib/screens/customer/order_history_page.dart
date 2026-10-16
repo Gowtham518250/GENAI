@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/order_history_service.dart';
 import '../../api_client.dart';
 import '../../visual_widgets.dart';
+import '../../app_localizations.dart';
 
 /// 🔧 FLIPKART-LEVEL: Order History Page
 /// Comprehensive order management with tracking and status updates
@@ -298,6 +299,21 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     final paymentStatus = (order['payment_status'] ?? '').toString().trim().toUpperCase();
     final paymentConfirmationSource =
         (order['payment_confirmation_source'] ?? '').toString().trim().toUpperCase();
+    final localizations = AppLocalizations.of(context);
+    final paymentStatusLabel = <String, String>{
+      'PAID': localizations.translate('paymentStatusPaid'),
+      'PENDING': localizations.translate('paymentStatusPending'),
+      'UNPAID': localizations.translate('paymentStatusPending'),
+      'COD': localizations.translate('paymentStatusCodDue'),
+      'COD_DUE': localizations.translate('paymentStatusCodDue'),
+      'FAILED': localizations.translate('paymentStatusFailed'),
+      'REFUND': localizations.translate('paymentStatusRefund'),
+      'REFUNDED': localizations.translate('paymentStatusRefund'),
+      'PARTIAL': localizations.translate('paymentStatusPartial'),
+    }[paymentStatus] ??
+        (paymentStatus.isEmpty
+            ? localizations.translate('paymentStatusPending')
+            : paymentStatus);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -358,7 +374,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Payment: $paymentMethod · ${paymentStatus.isEmpty ? 'PENDING' : paymentStatus}',
+                    localizations
+                        .translate('paymentStatusLine')
+                        .replaceAll('{method}', paymentMethod)
+                        .replaceAll('{status}', paymentStatusLabel),
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -369,7 +388,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Matched from a shop-device notification. This is not a payment-provider webhook confirmation; keep the UPI reference for reconciliation.',
+                        localizations.translate('paymentMatchedNotificationHint'),
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           color: const Color(0xFF92400E),
@@ -380,7 +399,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Payment is still pending a matching confirmation. Returning from the UPI app does not mark this order paid.',
+                        localizations.translate('paymentPendingHint'),
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           color: const Color(0xFF92400E),
