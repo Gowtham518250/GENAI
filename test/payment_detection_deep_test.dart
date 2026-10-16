@@ -243,6 +243,22 @@ void main() {
         VoiceBuilder.detectDirection('உங்கள் கணக்கில் ₹500 வரவு'),
         equals(PaymentDirection.credited),
       );
+      expect(
+        VoiceBuilder.detectDirection('તમારા ખાતામાં ₹500 જમા'),
+        equals(PaymentDirection.credited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('আপনার অ্যাকাউন্টে ₹500 জমা'),
+        equals(PaymentDirection.credited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('ਤੁਹਾਡੇ ਖਾਤੇ ਵਿੱਚ ₹500 ਜਮ੍ਹਾ'),
+        equals(PaymentDirection.credited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('നിങ്ങളുടെ അക്കൗണ്ടിൽ ₹500 ലഭിച്ചു'),
+        equals(PaymentDirection.credited),
+      );
     });
 
     test('supports outgoing payment direction in Indian scripts', () {
@@ -255,7 +271,23 @@ void main() {
         equals(PaymentDirection.debited),
       );
       expect(
-        VoiceBuilder.detectDirection('உங்கள் கணக்கில் ₹500 பற்று'),
+        VoiceBuilder.detectDirection('உங்கள் கணக்கിൽ ₹500 பற்று'),
+        equals(PaymentDirection.debited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('તમારા ખાતામાં ₹500 ડેબિટ'),
+        equals(PaymentDirection.debited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('আপনার অ্যাকাউন্টে ₹500 ডেবিট'),
+        equals(PaymentDirection.debited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('ਤੁਹਾਡੇ ਖਾਤੇ ਵਿੱਚ ₹500 ਡੈਬਿਟ'),
+        equals(PaymentDirection.debited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('നിങ്ങളുടെ അക്കൗണ്ടിൽ ₹500 ഡെബിറ്റ്'),
         equals(PaymentDirection.debited),
       );
     });
