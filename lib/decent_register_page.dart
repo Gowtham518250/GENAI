@@ -121,6 +121,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
         await SessionManagementService.initializeSession(
           userId: userId,
           accessToken: token,
+          refreshToken: data['refresh_token']?.toString(),
           userName: data['username']?.toString() ?? username,
           userEmail: email,
           role: data['role']?.toString() ?? 'OWNER',
