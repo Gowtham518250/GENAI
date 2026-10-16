@@ -1327,14 +1327,30 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 '',
           ) ??
           0;
-      if ((customerToken ?? '').isNotEmpty && customerId > 0) {
+      var customerTokenIsUsable = false;
+      final tokenParts = (customerToken ?? '').split('.');
+      if (tokenParts.length == 3) {
+        try {
+          final payload = json.decode(
+            utf8.decode(base64Url.decode(base64Url.normalize(tokenParts[1]))),
+          );
+          final expiry = payload is Map ? payload['exp'] : null;
+          if (expiry is num) {
+            customerTokenIsUsable =
+                DateTime.now().millisecondsSinceEpoch < expiry * 1000;
+          }
+        } catch (_) {
+          customerTokenIsUsable = false;
+        }
+      }
+      if (customerTokenIsUsable && customerId > 0) {
         if (kDebugMode) {
-          debugPrint('[AUTH] Restored customer marketplace session');
+          debugPrint('[AUTH] Restored unexpired customer marketplace session');
         }
         return true;
       }
       if (kDebugMode) {
-        debugPrint('[AUTH] Customer session is incomplete; returning to login');
+        debugPrint('[AUTH] Customer session is missing, invalid, or expired; returning to customer login');
       }
       return false;
     }
