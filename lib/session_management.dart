@@ -368,6 +368,11 @@ class SessionManagementService {
   // rotated tokens are being persisted, which could otherwise clear a valid session.
   static Future<Map<String, dynamic>?>? _autoLoginInFlight;
 
+  // Distinguish a definitive authentication rejection from transient failures
+  // (timeouts, offline state, 5xx). Callers must not log the user out on 5xx.
+  static bool _lastRefreshWasRejected = false;
+  static bool get lastRefreshWasRejected => _lastRefreshWasRejected;
+
   static Future<Map<String, dynamic>?> autoLogin() {
     final running = _autoLoginInFlight;
     if (running != null) {
@@ -385,12 +390,14 @@ class SessionManagementService {
   }
 
   static Future<Map<String, dynamic>?> _autoLoginOnce() async {
+    _lastRefreshWasRejected = false;
     try {
       final prefs = await SharedPreferences.getInstance();
       final refreshToken = await SecureTokenStorage.getRefreshToken();
       final deviceId = prefs.getString(_deviceIdKey);
       if (refreshToken == null || refreshToken.isEmpty) {
         if (kDebugMode) debugPrint('[AUTH] Refresh token available: false');
+        _lastRefreshWasRejected = true;
         await clearTokens();
         return null;
       }
@@ -481,6 +488,7 @@ class SessionManagementService {
           };
         }
         if (response.statusCode == 401 || response.statusCode == 403) {
+          _lastRefreshWasRejected = true;
           if (kDebugMode)
             debugPrint(
               '[AUTH] Refresh attempt failed with authentication status ${response.statusCode}',
