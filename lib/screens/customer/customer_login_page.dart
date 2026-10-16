@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
 import '../../app_localizations.dart';
+import '../../language_provider.dart';
 import '../../secure_token_storage.dart';
 import '../../session_logout_service.dart';
 import 'customer_marketplace_page.dart';
@@ -84,6 +85,9 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           await prefs.setString('role', 'customer');
           await prefs.setString('user_type', 'CUSTOMER');
           await prefs.setString('user_role', 'CUSTOMER');
+          // Bind the pre-login locale to this customer so a shared device
+          // restores this customer's language choice on the next app launch.
+          await LanguageProvider.persistCurrentLanguageForAccount();
           await prefs.setString('user_name', data['name'] ?? data['user_name'] ?? '');
           await prefs.setString('customer_name', data['name'] ?? data['user_name'] ?? '');
           await prefs.setString('user_email', data['email'] ?? _emailController.text.trim());
