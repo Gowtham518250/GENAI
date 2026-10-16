@@ -285,8 +285,10 @@ class SessionManagementService {
   static Future<void> clearIdentityVerification({int? userId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final resolvedUserId =
-          userId ?? prefs.getInt(_userIdKey) ?? prefs.getInt('userId') ?? 0;
+      final storedUserId = prefs.get(_userIdKey) ?? prefs.get('userId');
+      final resolvedUserId = userId ??
+          int.tryParse(storedUserId?.toString() ?? '') ??
+          0;
       if (resolvedUserId <= 0) return;
       _processIdentityVerification.remove(resolvedUserId);
       await prefs.remove(_identityVerificationKey(resolvedUserId));
@@ -566,7 +568,8 @@ class SessionManagementService {
   static Future<Map<String, dynamic>?> getUserInfo() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt(_userIdKey);
+      final rawUserId = prefs.get(_userIdKey) ?? prefs.get('userId');
+      final userId = int.tryParse(rawUserId?.toString() ?? '');
       final userName = prefs.getString(_userNameKey);
       final userEmail = prefs.getString(_userEmailKey);
       if (userId != null) {
@@ -582,7 +585,8 @@ class SessionManagementService {
   static Future<int?> getCurrentUserId() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getInt(_userIdKey) ?? prefs.getInt('userId');
+      final rawUserId = prefs.get(_userIdKey) ?? prefs.get('userId');
+      return int.tryParse(rawUserId?.toString() ?? '');
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Error getting current user ID: $e');
       return null;
@@ -709,7 +713,8 @@ class SessionManagementService {
 
   static Future<String> _offlineQueueKey() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
+    final rawUserId = prefs.get('user_id') ?? prefs.get('userId');
+    final userId = int.tryParse(rawUserId?.toString() ?? '') ?? 0;
     return userId > 0
         ? 'offline_queue_$userId'
         : 'offline_queue_unauthenticated';
