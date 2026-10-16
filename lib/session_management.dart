@@ -21,6 +21,7 @@ import 'error_log_helper.dart';
 import 'user_data_clear_service.dart';
 import 'scoped_shared_preferences.dart';
 import 'secure_preferences_service.dart';
+import 'language_provider.dart';
 
 class SessionManagementService {
   static const String _refreshTokenKey = 'refresh_token';
@@ -361,6 +362,9 @@ class SessionManagementService {
     if (role.isNotEmpty) {
       await prefs.setString('user_role', role);
     }
+    // Persist a language picked before login into this account's preference
+    // after its user ID and role are available.
+    await LanguageProvider.persistCurrentLanguageForAccount();
   }
 
   // All refresh callers (startup, resume and API 401 handling) share one
