@@ -10,17 +10,53 @@ class LanguageProvider extends ChangeNotifier {
     _loadSavedLanguage();
   }
 
+  static String _preferenceKeyFor(SharedPreferences prefs) {
+    final role = (prefs.getString('user_role') ??
+            prefs.getString('user_type') ??
+            prefs.getString('role') ??
+            '')
+        .trim()
+        .toUpperCase();
+
+    // Customer sessions sometimes keep their ID in customer_id while owner
+    // sessions use user_id/userId. Include the role to prevent collisions.
+    final rawId = role == 'CUSTOMER'
+        ? (prefs.get('customer_id') ?? prefs.get('user_id') ?? prefs.get('userId'))
+        : (prefs.get('user_id') ?? prefs.get('userId'));
+    final userId = int.tryParse(rawId?.toString() ?? '') ?? 0;
+    if (userId > 0 && role.isNotEmpty) {
+      return 'language_code_${role}_$userId';
+    }
+    // Before login there is no account identity yet, so keep a device-level
+    // preference; it is copied into the account scope on the next app launch.
+    return 'language_code';
+  }
+
+  static bool _isSupported(String languageCode) =>
+      languages.any((language) => language['code'] == languageCode);
+
   Future<void> _loadSavedLanguage() async {
     final prefs = await SharedPreferences.getInstance();
-    final languageCode = prefs.getString('language_code') ?? 'en';
+    final key = _preferenceKeyFor(prefs);
+    final saved = prefs.getString(key) ?? prefs.getString('language_code') ?? 'en';
+    final languageCode = _isSupported(saved) ? saved : 'en';
     _locale = Locale(languageCode);
+
+    if (key != 'language_code' && prefs.getString(key) == null) {
+      await prefs.setString(key, languageCode);
+    }
     notifyListeners();
   }
 
   Future<void> setLanguage(String languageCode) async {
-    _locale = Locale(languageCode);
+    final safeCode = _isSupported(languageCode) ? languageCode : 'en';
+    _locale = Locale(safeCode);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('language_code', languageCode);
+    await prefs.setString('language_code', safeCode);
+    final scopedKey = _preferenceKeyFor(prefs);
+    if (scopedKey != 'language_code') {
+      await prefs.setString(scopedKey, safeCode);
+    }
     notifyListeners();
   }
 
