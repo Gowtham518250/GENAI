@@ -195,7 +195,102 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
       );
       otpController.dispose();
       if (otp == null || !mounted) return;
-      if (!RegExp(r'^\\d{6}    return Scaffold(
+      if (!RegExp(r'^\d{6}$').hasMatch(otp)) {
+        throw Exception('Enter the 6-digit OTP sent to your email.');
+      }
+
+      final verification = await ApiClient.postJson(
+        '/store/customer/verify-password-reset-otp',
+        {'email': email, 'otp': otp},
+      );
+      final verificationBody = json.decode(verification.body);
+      if (verification.statusCode != 200 ||
+          verificationBody is! Map ||
+          verificationBody['reset_token'] == null) {
+        throw Exception(
+          verificationBody is Map
+              ? (verificationBody['detail'] ?? 'Invalid or expired OTP.').toString()
+              : 'Unable to verify the OTP.',
+        );
+      }
+
+      final passwordController = TextEditingController();
+      final newPassword = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Choose a new password'),
+          content: TextField(
+            controller: passwordController,
+            obscureText: true,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'New password (at least 8 characters)',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                passwordController.text,
+              ),
+              child: const Text('Update password'),
+            ),
+          ],
+        ),
+      );
+      passwordController.dispose();
+      if (newPassword == null || !mounted) return;
+      if (newPassword.length < 8) {
+        throw Exception('Your new password must contain at least 8 characters.');
+      }
+
+      final reset = await ApiClient.postJson(
+        '/store/customer/reset-password',
+        {
+          'reset_token': verificationBody['reset_token'].toString(),
+          'new_password': newPassword,
+        },
+      );
+      final resetBody = json.decode(reset.body);
+      if (reset.statusCode != 200 ||
+          resetBody is! Map ||
+          resetBody['success'] == false) {
+        throw Exception(
+          resetBody is Map
+              ? (resetBody['detail'] ?? 'Password reset failed. Request a new OTP.')
+                  .toString()
+              : 'Password reset failed. Request a new OTP.',
+        );
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password updated. Please log in with your new password.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
       backgroundColor: Colors.teal.shade50,
       body: SafeArea(
         child: Center(
