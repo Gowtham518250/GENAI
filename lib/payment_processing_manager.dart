@@ -72,7 +72,13 @@ class PaymentProcessingManager {
       // SyncQueueManager instead of using the legacy payment queue.
       try {
         final invoiceNumber = payment.saleId?.trim() ?? '';
-        if (invoiceNumber.isNotEmpty) {
+        // Keep the exception fallback subject to the same financial-safety
+        // gate as the normal path; logging failures must never promote an
+        // unconfirmed notification into a recorded payment.
+        if (payment.decision == PaymentDecision.confirmed &&
+            !payment.isDuplicate &&
+            !payment.isFailed &&
+            invoiceNumber.isNotEmpty) {
           await LocalStorageService.recordUnifiedPayment(
             '',
             payment.amount,
