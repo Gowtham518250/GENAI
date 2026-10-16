@@ -173,7 +173,7 @@ class PaymentEvent {
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
         .trim()
-        .replaceAll(RegExp(r'\\s+'), ' ');
+        .replaceAll(RegExp(r'\s+'), ' ');
     final voicePayload = '${fingerprint}_${normalizedText}';
     return 'voice_${md5.convert(utf8.encode(voicePayload))}';
   }
