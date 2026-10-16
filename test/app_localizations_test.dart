@@ -34,8 +34,6 @@ void main() {
       }
     });
   });
-}
-
 
   test('payment status and payment-provenance copy exists in every supported locale', () {
     const keys = [
@@ -63,3 +61,4 @@ void main() {
       }
     }
   });
+}
