@@ -111,6 +111,275 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
     }
   }
 
+  Future<void> _showForgotPasswordFlow() async {
+    final emailController = TextEditingController(
+      text: _emailController.text.trim(),
+    );
+    final email = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Reset customer password'),
+        content: TextField(
+          controller: emailController,
+          keyboardType: TextInputType.emailAddress,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Account email'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              emailController.text.trim().toLowerCase(),
+            ),
+            child: const Text('Send OTP'),
+          ),
+        ],
+      ),
+    );
+    emailController.dispose();
+    if (email == null || email.isEmpty || !mounted) return;
+
+    try {
+      final request = await ApiClient.postJson(
+        '/store/customer/request-password-reset-otp',
+        {'email': email},
+      );
+      final requestBody = json.decode(request.body);
+      if (request.statusCode != 200 ||
+          requestBody is! Map ||
+          requestBody['success'] != true) {
+        throw Exception(
+          requestBody is Map
+              ? (requestBody['detail'] ??
+                      requestBody['message'] ??
+                      'If this account exists, a reset code may be sent. Please check your email.')
+                  .toString()
+              : 'Unable to request a password reset right now.',
+        );
+      }
+
+      final otpController = TextEditingController();
+      final otp = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Enter verification code'),
+          content: TextField(
+            controller: otpController,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: '6-digit OTP',
+              counterText: '',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                otpController.text.trim(),
+              ),
+              child: const Text('Verify'),
+            ),
+          ],
+        ),
+      );
+      otpController.dispose();
+      if (otp == null || !mounted) return;
+      if (!RegExp(r'^\\d{6}    return Scaffold(
+      backgroundColor: Colors.teal.shade50,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.shopping_bag_rounded, size: 80, color: Colors.teal.shade600),
+                const SizedBox(height: 16),
+                Text('Retail Mind Market', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.teal.shade900)),
+                Text(_isLogin ? 'Welcome back, shopper!' : 'Create your account', style: GoogleFonts.poppins(color: Colors.teal.shade700)),
+                const SizedBox(height: 40),
+                
+                Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      children: [
+                        if (!_isLogin) ...[
+                          TextField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline)),
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(labelText: 'Phone (10 digits)', prefixIcon: Icon(Icons.phone_outlined)),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        TextField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined)),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.teal.shade600,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: _isLoading ? null : _submit,
+                            child: _isLoading 
+                              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white))
+                              : Text(_isLogin ? 'Login' : 'Register', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        if (_isLogin)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: _isLoading ? null : _showForgotPasswordFlow,
+                              child: const Text('Forgot password?'),
+                            ),
+                          ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: () => setState(() => _isLogin = !_isLogin),
+                          child: Text(_isLogin ? 'Need an account? Register' : 'Already have an account? Login', style: TextStyle(color: Colors.teal.shade700)),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('Back to Home', style: TextStyle(color: Colors.grey.shade600)),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+).hasMatch(otp)) {
+        throw Exception('Enter the 6-digit OTP sent to your email.');
+      }
+
+      final verification = await ApiClient.postJson(
+        '/store/customer/verify-password-reset-otp',
+        {'email': email, 'otp': otp},
+      );
+      final verificationBody = json.decode(verification.body);
+      if (verification.statusCode != 200 ||
+          verificationBody is! Map ||
+          verificationBody['reset_token'] == null) {
+        throw Exception(
+          verificationBody is Map
+              ? (verificationBody['detail'] ?? 'Invalid or expired OTP.').toString()
+              : 'Unable to verify the OTP.',
+        );
+      }
+
+      final passwordController = TextEditingController();
+      final newPassword = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Choose a new password'),
+          content: TextField(
+            controller: passwordController,
+            obscureText: true,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'New password (at least 8 characters)',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                passwordController.text,
+              ),
+              child: const Text('Update password'),
+            ),
+          ],
+        ),
+      );
+      passwordController.dispose();
+      if (newPassword == null || !mounted) return;
+      if (newPassword.length < 8) {
+        throw Exception('Your new password must contain at least 8 characters.');
+      }
+
+      final reset = await ApiClient.postJson(
+        '/store/customer/reset-password',
+        {
+          'reset_token': verificationBody['reset_token'].toString(),
+          'new_password': newPassword,
+        },
+      );
+      final resetBody = json.decode(reset.body);
+      if (reset.statusCode != 200 ||
+          resetBody is! Map ||
+          resetBody['success'] == false) {
+        throw Exception(
+          resetBody is Map
+              ? (resetBody['detail'] ?? 'Password reset failed. Request a new OTP.')
+                  .toString()
+              : 'Password reset failed. Request a new OTP.',
+        );
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password updated. Please log in with your new password.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
