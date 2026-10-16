@@ -1452,8 +1452,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                           '')
                       .trim()
                       .toUpperCase();
-                  final userId =
-                      prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
+                  final storedUserId =
+                      prefs.get('user_id') ?? prefs.get('userId');
+                  final userId = storedUserId is int
+                      ? storedUserId
+                      : int.tryParse(storedUserId?.toString() ?? '') ?? 0;
 
                   final shopDetailsRequired = userId > 0 &&
                       (prefs.getBool('shop_details_required_$userId') ?? false);
