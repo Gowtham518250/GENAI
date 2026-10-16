@@ -24,6 +24,8 @@ class OrderHistoryService {
 
   /// 🔧 FLIPKART-LEVEL: Order status enum
   static const List<String> orderStatuses = [
+    'PENDING',
+    'ACCEPTED',
     'PLACED',
     'CONFIRMED',
     'PROCESSING',
@@ -80,8 +82,9 @@ class OrderHistoryService {
         if (consumedLocalIndexes.contains(i)) continue;
         final local = localOrders[i];
         final existingServerId =
-            (local['server_order_id'] ?? local['order_id'] ?? '').toString();
-        if (existingServerId == remoteId) {
+            (local['server_order_id'] ?? '').toString();
+        final existingOrderId = (local['order_id'] ?? '').toString();
+        if (existingServerId == remoteId || existingOrderId == remoteId) {
           localIndex = i;
           break;
         }
@@ -269,6 +272,10 @@ class OrderHistoryService {
         return false;
       }
       await updateOrderStatus(serverOrderId, 'CANCELLED');
+      await CacheConsistencyService.markLocalMutationAcknowledged(
+        'customer_orders',
+        operationId: serverOrderId,
+      );
       return true;
     } catch (e) {
       if (kDebugMode) debugPrint('Order cancellation request failed: $e');
