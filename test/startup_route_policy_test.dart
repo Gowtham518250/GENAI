@@ -31,6 +31,20 @@ void main() {
       );
     });
 
+    test('expired customer session returns to customer login, not owner login', () {
+      expect(
+        resolveStartupRoute(
+          booting: false,
+          authenticated: false,
+          role: 'CUSTOMER',
+          shopDetailsRequired: false,
+          identityVerified: false,
+          staffMode: false,
+        ),
+        '/customer-login',
+      );
+    });
+
     test('a persisted owner token alone does not bypass owner verification', () {
       expect(
         resolveStartupRoute(
