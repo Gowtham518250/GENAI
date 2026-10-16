@@ -130,13 +130,21 @@ class PaymentEvent {
   static String _transactionDirection(String text) {
     final t = text.toLowerCase();
 
-    final credit = RegExp(
+    final englishCredit = RegExp(
       r'\b(?:credited|credit|received|deposited|money\s+received|amount\s+received|payment\s+received|added\s+to|sent\s+to\s+your|paid\s+to\s+your|has\s+sent)\b',
     ).hasMatch(t);
+    final nativeCredit = RegExp(
+      r'(जमा|क्रेडिट|प्राप्त|પૈસા મળ્યા|જમા|ક્રેડિટ|జమ|క్రెడిట్|అందింది|வரவு|பெறப்பட்டது|কয়েডিট|জমা|ক্রেডিট|জমা|ਜਮ੍ਹਾ|ਕ੍ਰੈਡਿਟ|വരവ്|ക്രെഡിറ്റ്|ലഭിച്ചു|ಜಮಾ|ಕ್ರೆಡಿಟ್)',
+    ).hasMatch(t);
+    final credit = englishCredit || nativeCredit;
 
-    final debit = RegExp(
+    final englishDebit = RegExp(
       r'\b(?:debited|debit|sent|you\s+sent|paid|payment\s+to|deducted|withdrawn|spent|purchase|transferred\s+to)\b',
     ).hasMatch(t);
+    final nativeDebit = RegExp(
+      r'(डेबिट|કાપવામાં આવ્યા|ડેબિટ|డెబిట్|పంపబడింది|பற்று|எடுக்கப்பட்டது|ডেবিট|কেটে নেওয়া|ਡੈਬਿਟ|ਕੱਟੇ|ഡെബിറ്റ്|പണം അയച്ചു|ಡೆബಿಟ್|ಕಡಿತ)',
+    ).hasMatch(t);
+    final debit = englishDebit || nativeDebit;
 
     if (credit && !debit) return 'credit';
     if (debit && !credit) return 'debit';
@@ -174,7 +182,9 @@ class PaymentEvent {
   String get voiceFingerprint {
     final normalizedText = rawText
         .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        // Retain non-ASCII scripts so Hindi/Telugu/Tamil/etc. wording is not
+        // reduced to an empty string before voice deduplication.
+        .replaceAll(RegExp(r'[^a-z0-9\u0080-\uFFFF]+'), ' ')
         .trim()
         .replaceAll(RegExp(r'\s+'), ' ');
     final voicePayload = '${fingerprint}_${normalizedText}';
