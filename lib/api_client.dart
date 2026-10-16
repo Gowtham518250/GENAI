@@ -1151,11 +1151,14 @@ class ApiClient {
             '⚠️ Refresh failed (offline or server error) - keeping local session',
           );
 
-        // However, if the refresh failed with an Auth error (401/403),
-        // autoLogin() in SessionManagementService would have cleared the local tokens.
-        // We MUST notify the app to log the user out to prevent a zombie state where sales crash.
+        // Only a definitive refresh-token rejection (401/403, or no refresh
+        // token at all) ends the session. An expired access token plus a 5xx or
+        // network timeout must not trigger a logout while the server is unavailable.
         final hasLocalSession = await SecureTokenStorage.isSessionValid();
-        if (!hasLocalSession && ownsRefresh && !_sessionExpiryNotified) {
+        if (!hasLocalSession &&
+            ownsRefresh &&
+            SessionManagementService.lastRefreshWasRejected &&
+            !_sessionExpiryNotified) {
           _sessionExpiryNotified = true;
           if (kDebugMode)
             debugPrint(
