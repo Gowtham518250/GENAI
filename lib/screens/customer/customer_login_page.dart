@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
+import '../../app_localizations.dart';
 import '../../secure_token_storage.dart';
 import '../../session_logout_service.dart';
 import 'customer_marketplace_page.dart';
@@ -52,7 +53,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           final customerId = int.tryParse(data['customer_id']?.toString() ?? '');
           if (tokenValue == null || tokenValue.toString().trim().isEmpty ||
               customerId == null || customerId <= 0) {
-            throw Exception('Customer login returned an invalid session.');
+            throw Exception(AppLocalizations.of(context).translate('customerLoginInvalidSession'));
           }
 
           // Switch through the shared isolation path before saving the
@@ -101,11 +102,11 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           // Registered successfully, now login
           setState(() => _isLogin = true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registration successful! Please login.'), backgroundColor: Colors.green),
+            SnackBar(content: Text(AppLocalizations.of(context).translate('registrationSuccessLogin')), backgroundColor: Colors.green),
           );
         }
       } else {
-        throw Exception(json.decode(response.body)['detail'] ?? 'Authentication failed');
+        throw Exception(json.decode(response.body)['detail'] ?? AppLocalizations.of(context).translate('authenticationFailed'));
       }
     } catch (e) {
       if (mounted) {
@@ -121,30 +122,31 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
   }
 
   Future<void> _showForgotPasswordFlow() async {
+    final l = AppLocalizations.of(context);
     final emailController = TextEditingController(
       text: _emailController.text.trim(),
     );
     final email = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Reset customer password'),
+        title: Text(l.translate('resetCustomerPassword')),
         content: TextField(
           controller: emailController,
           keyboardType: TextInputType.emailAddress,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Account email'),
+          decoration: InputDecoration(labelText: l.translate('accountEmail')),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(l.translate('cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(
               dialogContext,
               emailController.text.trim().toLowerCase(),
             ),
-            child: const Text('Send OTP'),
+            child: Text(l.translate('sendOtp')),
           ),
         ],
       ),
@@ -176,14 +178,14 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Enter verification code'),
+          title: Text(l.translate('enterVerificationCode')),
           content: TextField(
             controller: otpController,
             keyboardType: TextInputType.number,
             maxLength: 6,
             autofocus: true,
             decoration: const InputDecoration(
-              labelText: '6-digit OTP',
+              labelText: l.translate('otpSixDigits'),
               counterText: '',
             ),
           ),
@@ -197,7 +199,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                 dialogContext,
                 otpController.text.trim(),
               ),
-              child: const Text('Verify'),
+              child: Text(l.translate('verify')),
             ),
           ],
         ),
@@ -205,7 +207,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
       otpController.dispose();
       if (otp == null || !mounted) return;
       if (!RegExp(r'^\d{6}$').hasMatch(otp)) {
-        throw Exception('Enter the 6-digit OTP sent to your email.');
+        throw Exception(l.translate('enterOtpPrompt'));
       }
 
       final verification = await ApiClient.postJson(
@@ -218,8 +220,8 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           verificationBody['reset_token'] == null) {
         throw Exception(
           verificationBody is Map
-              ? (verificationBody['detail'] ?? 'Invalid or expired OTP.').toString()
-              : 'Unable to verify the OTP.',
+              ? (verificationBody['detail'] ?? l.translate('invalidExpiredOtp')).toString()
+              : l.translate('otpUnavailable'),
         );
       }
 
@@ -228,13 +230,13 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Choose a new password'),
+          title: Text(l.translate('chooseNewPassword')),
           content: TextField(
             controller: passwordController,
             obscureText: true,
             autofocus: true,
             decoration: const InputDecoration(
-              labelText: 'New password (at least 8 characters)',
+              labelText: l.translate('newPasswordAtLeast8'),
             ),
           ),
           actions: [
@@ -247,7 +249,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                 dialogContext,
                 passwordController.text,
               ),
-              child: const Text('Update password'),
+              child: Text(l.translate('updatePassword')),
             ),
           ],
         ),
@@ -255,7 +257,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
       passwordController.dispose();
       if (newPassword == null || !mounted) return;
       if (newPassword.length < 8) {
-        throw Exception('Your new password must contain at least 8 characters.');
+        throw Exception(l.translate('passwordMinLength'));
       }
 
       final reset = await ApiClient.postJson(
@@ -271,16 +273,16 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           resetBody['success'] == false) {
         throw Exception(
           resetBody is Map
-              ? (resetBody['detail'] ?? 'Password reset failed. Request a new OTP.')
+              ? (resetBody['detail'] ?? l.translate('passwordResetFailed'))
                   .toString()
-              : 'Password reset failed. Request a new OTP.',
+              : l.translate('passwordResetFailed'),
         );
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Password updated. Please log in with your new password.'),
+            content: Text(l.translate('passwordUpdatedLogin')),
             backgroundColor: Colors.green,
           ),
         );
@@ -299,6 +301,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.teal.shade50,
       body: SafeArea(
@@ -311,7 +314,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                 Icon(Icons.shopping_bag_rounded, size: 80, color: Colors.teal.shade600),
                 const SizedBox(height: 16),
                 Text('Retail Mind Market', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.teal.shade900)),
-                Text(_isLogin ? 'Welcome back, shopper!' : 'Create your account', style: GoogleFonts.poppins(color: Colors.teal.shade700)),
+                Text(_isLogin ? l.translate('welcomeBackShopper') : l.translate('createYourAccount'), style: GoogleFonts.poppins(color: Colors.teal.shade700)),
                 const SizedBox(height: 40),
                 
                 Card(
@@ -324,26 +327,26 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                         if (!_isLogin) ...[
                           TextField(
                             controller: _nameController,
-                            decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline)),
+                            decoration: InputDecoration(labelText: l.fullName, prefixIcon: const Icon(Icons.person_outline)),
                           ),
                           const SizedBox(height: 16),
                           TextField(
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(labelText: 'Phone (10 digits)', prefixIcon: Icon(Icons.phone_outlined)),
+                            decoration: InputDecoration(labelText: l.translate('phoneTenDigits'), prefixIcon: const Icon(Icons.phone_outlined)),
                           ),
                           const SizedBox(height: 16),
                         ],
                         TextField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined)),
+                          decoration: InputDecoration(labelText: l.emailAddress, prefixIcon: const Icon(Icons.email_outlined)),
                         ),
                         const SizedBox(height: 16),
                         TextField(
                           controller: _passwordController,
                           obscureText: true,
-                          decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
+                          decoration: InputDecoration(labelText: l.password, prefixIcon: const Icon(Icons.lock_outline)),
                         ),
                         const SizedBox(height: 24),
                         SizedBox(
@@ -358,7 +361,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                             onPressed: _isLoading ? null : _submit,
                             child: _isLoading 
                               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white))
-                              : Text(_isLogin ? 'Login' : 'Register', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                               : Text(_isLogin ? l.login : l.register, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
                         ),
                         if (_isLogin)
@@ -366,18 +369,18 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: _isLoading ? null : _showForgotPasswordFlow,
-                              child: const Text('Forgot password?'),
+                              child: Text(l.forgotPassword),
                             ),
                           ),
                         const SizedBox(height: 16),
                         TextButton(
                           onPressed: () => setState(() => _isLogin = !_isLogin),
-                          child: Text(_isLogin ? 'Need an account? Register' : 'Already have an account? Login', style: TextStyle(color: Colors.teal.shade700)),
+                          child: Text(_isLogin ? l.translate('needAccountRegister') : l.translate('alreadyHaveAccountLogin'), style: TextStyle(color: Colors.teal.shade700)),
                         ),
                         const SizedBox(height: 8),
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: Text('Back to Home', style: TextStyle(color: Colors.grey.shade600)),
+                          child: Text(l.translate('backToHome'), style: TextStyle(color: Colors.grey.shade600)),
                         )
                       ],
                     ),

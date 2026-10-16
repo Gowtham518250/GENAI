@@ -368,7 +368,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                                                 .withValues(alpha: 0.28),
                                           ),
                                         ),
-                                        child: const Row(
+                                        child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Icon(
@@ -378,7 +378,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                                             ),
                                             SizedBox(width: 4),
                                             Text(
-                                              'Secure',
+                                              l.translate('secure'),
                                               style: TextStyle(
                                                 color: Color(0xFF99F6E4),
                                                 fontSize: 9.5,
@@ -445,8 +445,8 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                                       fontWeight: FontWeight.w500,
                                     ),
                                     decoration: _fieldDecoration(
-                                      label: 'Username',
-                                      hint: 'Choose a username',
+                                      label: l.translate('username'),
+                                      hint: l.translate('chooseUsername'),
                                       icon: Icons.person_outline_rounded,
                                     ),
                                   ),
@@ -459,8 +459,8 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                                       fontWeight: FontWeight.w500,
                                     ),
                                     decoration: _fieldDecoration(
-                                      label: '${l.shopName} (optional)',
-                                      hint: 'Your shop display name',
+                                      label: '${l.shopName} (${l.translate('optional')})',
+                                      hint: l.translate('shopDisplayName'),
                                       icon: Icons.storefront_outlined,
                                     ),
                                   ),
