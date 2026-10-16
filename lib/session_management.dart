@@ -425,6 +425,7 @@ class SessionManagementService {
                 '[AUTH] Refresh response parsing failed: ${e.runtimeType}',
               );
             }
+            _lastRefreshWasRejected = true;
             await clearTokens();
             return null;
           }
@@ -433,6 +434,7 @@ class SessionManagementService {
               debugPrint(
                 '[AUTH] Refresh response parsing failed: expected JSON object',
               );
+            _lastRefreshWasRejected = true;
             await clearTokens();
             return null;
           }
@@ -443,6 +445,7 @@ class SessionManagementService {
               debugPrint(
                 '[AUTH] Refresh response parsing failed: access_token missing',
               );
+            _lastRefreshWasRejected = true;
             await clearTokens();
             return null;
           }
@@ -474,6 +477,7 @@ class SessionManagementService {
               debugPrint(
                 '[AUTH] Refreshed credentials were not stored successfully',
               );
+            _lastRefreshWasRejected = true;
             await clearTokens();
             return null;
           }
