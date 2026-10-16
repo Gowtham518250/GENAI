@@ -235,14 +235,14 @@ abstract class VoiceBuilder {
   static PaymentDirection detectDirection(String text) {
     final t = text.toLowerCase();
 
-    // Keep this direction classifier conservative because it gates automatic
-    // accounting writes. Native-script matches intentionally avoid \\b:
-    // Dart's regular-expression word-boundary behavior is ASCII-oriented.
+    // This conservative direction classifier gates automatic accounting writes.
+    // Keep native-script matches free of \b because regex word boundaries can
+    // be ASCII-oriented in Dart.
     final englishCredit = RegExp(
-      r'\\b(credited|credit|received|payment received|money received|deposited|added to|cashback)\\b',
+      r'\b(credited|credit|received|payment received|money received|deposited|added to|cashback)\b',
     ).hasMatch(t);
     final romanizedCredit = RegExp(
-      r'\\b(jama(?:\\s+hua|\\s+ho gaya)?|prapt|paise\\s+aaye|paisa\\s+aaya|mil\\s+gaya|credit\\s+hua)\\b',
+      r'\b(jama(?:\s+hua|\s+ho gaya)?|prapt|paise\s+aaye|paisa\s+aaya|mil\s+gaya|credit\s+hua)\b',
     ).hasMatch(t);
     final nativeCredit = RegExp(
       r'(जमा|क्रेडिट|प्राप्त|पैसे मिले|पैसा आया|మొత్తం జమ|జమయింది|జమైంది|జమ|క్రెడిట్|అందింది|పేమెంట్ వచ్చింది|பணம் வரவு|வரவு வைக்கப்பட்டது|வரவு|பெறப்பட்டது|கிடைத்தது|ஜமா|வரவு வந்தது|ಜಮಾ|ಕ್ರೆಡಿಟ್|ಪಾವತಿ ಬಂದಿದೆ|ಪಡೆದಿದೆ)',
@@ -250,18 +250,18 @@ abstract class VoiceBuilder {
     final credit = englishCredit || romanizedCredit || nativeCredit;
 
     final englishDebit = RegExp(
-      r'\\b(debited|debit|sent|paid|payment to|deducted|withdrawn|spent|transferred to)\\b',
+      r'\b(debited|debit|sent|paid|payment to|deducted|withdrawn|spent|transferred to)\b',
     ).hasMatch(t);
     final romanizedDebit = RegExp(
-      r'\\b(kata(?:\\s+gaya)?|kat gaya|nikala|bheja gaya|paise bheje|debit hua|paise kate)\\b',
+      r'\b(kata(?:\s+gaya)?|kat gaya|nikala|bheja gaya|paise bheje|debit hua|paise kate)\b',
     ).hasMatch(t);
     final nativeDebit = RegExp(
       r'(डेबिट|निकाले गए|काट लिया|कटौती|भेजा गया|भुगतान किया|డెబిట్|తీసివేయబడింది|తీసేశారు|కట్ అయింది|పంపబడింది|చెల్లించబడింది|பற்று|பற்றானது|செலுத்தப்பட்டது|எடுக்கப்பட்டது|கழிக்கப்பட்டது|பணம் அனுப்பப்பட்டது|ಡೆಬಿಟ್|ಕಡಿತ|ಹಣ ಕಳುಹಿಸಲಾಗಿದೆ|ಪಾವತಿಸಲಾಗಿದೆ)',
     ).hasMatch(t);
     final debit = englishDebit || romanizedDebit || nativeDebit;
 
-    // Conflicting cues and notifications without explicit direction remain
-    // unclassified; never turn them into automatic payment credits.
+    // Conflicting cues and notifications without explicit direction stay
+    // unclassified; never turn ambiguous text into an automatic credit.
     if (credit == debit) return PaymentDirection.unknown;
     return credit ? PaymentDirection.credited : PaymentDirection.debited;
   }
