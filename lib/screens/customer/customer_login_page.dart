@@ -192,7 +192,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              child: Text(l.translate('cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(
@@ -242,7 +242,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              child: Text(l.translate('cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(
