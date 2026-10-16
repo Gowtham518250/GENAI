@@ -98,7 +98,7 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
       if (_paymentMode == 'upi' && _shopUpi != null && _shopUpi!.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Order placed! Pay via UPI — we will confirm when payment is received.'),
+            content: Text('Order placed. UPI payment remains pending until Retail Mind records a matching confirmation; opening or returning from the UPI app alone does not mark it paid.'),
             duration: Duration(seconds: 4),
           ),
         );

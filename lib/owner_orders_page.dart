@@ -8,6 +8,7 @@ import 'realtime_client.dart';
 import 'secure_token_storage.dart';
 import 'sync_service.dart';
 import 'otp_service.dart';
+import 'app_localizations.dart';
 
 class OwnerOrdersPage extends StatefulWidget {
   const OwnerOrdersPage({super.key});
@@ -584,6 +585,27 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                         final items = o['items'] as List<dynamic>? ?? [];
                         final orderId = o['id'] ?? o['order_id'] ?? i + 1;
                         final phone = o['customer_phone']?.toString() ?? '';
+                        final paymentMethod =
+                            (o['payment_method'] ?? '').toString().trim().toUpperCase();
+                        final paymentStatus =
+                            (o['payment_status'] ?? '').toString().trim().toUpperCase();
+                        final paymentConfirmationSource =
+                            (o['payment_confirmation_source'] ?? '').toString().trim().toUpperCase();
+                        final localizations = AppLocalizations.of(context);
+                        final paymentStatusLabel = <String, String>{
+                          'PAID': localizations.translate('paymentStatusPaid'),
+                          'PENDING': localizations.translate('paymentStatusPending'),
+                          'UNPAID': localizations.translate('paymentStatusPending'),
+                          'COD': localizations.translate('paymentStatusCodDue'),
+                          'COD_DUE': localizations.translate('paymentStatusCodDue'),
+                          'FAILED': localizations.translate('paymentStatusFailed'),
+                          'REFUND': localizations.translate('paymentStatusRefund'),
+                          'REFUNDED': localizations.translate('paymentStatusRefund'),
+                          'PARTIAL': localizations.translate('paymentStatusPartial'),
+                        }[paymentStatus] ??
+                            (paymentStatus.isEmpty
+                                ? localizations.translate('paymentStatusPending')
+                                : paymentStatus);
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 14),
@@ -667,6 +689,60 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                   ],
                                 ),
                               ),
+
+                              // Payment status and provenance: notification matches are not
+                              // provider settlement confirmations, so make that distinction visible.
+                              if (paymentMethod.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: _card,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.white10),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          localizations
+                                              .translate('paymentStatusLine')
+                                              .replaceAll('{method}', paymentMethod)
+                                              .replaceAll('{status}', paymentStatusLabel),
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white70,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        if (paymentConfirmationSource == 'OWNER_DEVICE_NOTIFICATION_MATCH')
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 4),
+                                            child: Text(
+                                              localizations.translate('paymentMatchedNotificationHint'),
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.orangeAccent,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          )
+                                        else if (paymentMethod == 'UPI' && paymentStatus != 'PAID')
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 4),
+                                            child: Text(
+                                              localizations.translate('paymentPendingHint'),
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.orangeAccent,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
 
                               // Delivery address
                               if (o['delivery_address'] != null)

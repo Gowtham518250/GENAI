@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/order_history_service.dart';
 import '../../api_client.dart';
 import '../../visual_widgets.dart';
+import '../../app_localizations.dart';
 
 /// 🔧 FLIPKART-LEVEL: Order History Page
 /// Comprehensive order management with tracking and status updates
@@ -294,6 +295,25 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     final total = order['total_amount'] ?? order['total'] ?? order['amount'] ?? 0;
     final createdAt = order['created_at'] ?? '';
     final items = order['items'] as List<dynamic>? ?? [];
+    final paymentMethod = (order['payment_method'] ?? '').toString().trim().toUpperCase();
+    final paymentStatus = (order['payment_status'] ?? '').toString().trim().toUpperCase();
+    final paymentConfirmationSource =
+        (order['payment_confirmation_source'] ?? '').toString().trim().toUpperCase();
+    final localizations = AppLocalizations.of(context);
+    final paymentStatusLabel = <String, String>{
+      'PAID': localizations.translate('paymentStatusPaid'),
+      'PENDING': localizations.translate('paymentStatusPending'),
+      'UNPAID': localizations.translate('paymentStatusPending'),
+      'COD': localizations.translate('paymentStatusCodDue'),
+      'COD_DUE': localizations.translate('paymentStatusCodDue'),
+      'FAILED': localizations.translate('paymentStatusFailed'),
+      'REFUND': localizations.translate('paymentStatusRefund'),
+      'REFUNDED': localizations.translate('paymentStatusRefund'),
+      'PARTIAL': localizations.translate('paymentStatusPartial'),
+    }[paymentStatus] ??
+        (paymentStatus.isEmpty
+            ? localizations.translate('paymentStatusPending')
+            : paymentStatus);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -342,7 +362,55 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 color: const Color(0xFF6B7280),
               ),
             ),
-          const SizedBox(height: 12),
+          if (paymentMethod.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    localizations
+                        .translate('paymentStatusLine')
+                        .replaceAll('{method}', paymentMethod)
+                        .replaceAll('{status}', paymentStatusLabel),
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF334155),
+                    ),
+                  ),
+                  if (paymentConfirmationSource == 'OWNER_DEVICE_NOTIFICATION_MATCH')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        localizations.translate('paymentMatchedNotificationHint'),
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: const Color(0xFF92400E),
+                        ),
+                      ),
+                    )
+                  else if (paymentMethod == 'UPI' && paymentStatus != 'PAID')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        localizations.translate('paymentPendingHint'),
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: const Color(0xFF92400E),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           // Total and actions
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
