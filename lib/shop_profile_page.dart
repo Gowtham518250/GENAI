@@ -120,7 +120,8 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
     if (scopedId != null && scopedId > 0) return scopedId;
 
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
+    final rawUserId = prefs.get('user_id') ?? prefs.get('userId');
+    return int.tryParse(rawUserId?.toString() ?? '') ?? 0;
   }
 
   Future<String> _resolveAuthToken() async {
