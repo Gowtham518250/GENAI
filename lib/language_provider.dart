@@ -68,6 +68,20 @@ class LanguageProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Copy the currently selected device/login language to the newly
+  /// authenticated account after login or registration has saved its role/ID.
+  /// This prevents the next account on a shared device inheriting the previous
+  /// account's language choice.
+  static Future<void> persistCurrentLanguageForAccount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final scopedKey = _preferenceKeyFor(prefs);
+    if (scopedKey == 'language_code') return;
+
+    final selected = prefs.getString('language_code') ?? 'en';
+    final safeCode = _isSupported(selected) ? selected : 'en';
+    await prefs.setString(scopedKey, safeCode);
+  }
+
   /// Locale registry shared by the UI and voice stack.
   /// The UI can safely load any of these locales; untranslated keys fall back
   /// to the English getter defaults in AppLocalizations.
