@@ -39,6 +39,7 @@ import 'screens/customer/nearby_shops_page.dart';
 import 'screens/customer/customer_marketplace_page.dart';
 import 'screens/customer/customer_ai_shopping_page.dart';
 import 'screens/customer/customer_home_page.dart';
+import 'screens/customer/order_history_page.dart';
 import 'screens/customer/cart_checkout_page.dart';
 import 'screens/owner/online_orders_tab.dart';
 import 'screens/owner/online_shopping_config_page.dart';
@@ -582,8 +583,10 @@ void main() async {
       // 1. Move the heavy DB purging here so it doesn't block the UI thread
       await LocalStorageService.validateAndMigrateSchema();
       await LocalStorageService.purgeLegacyUnscopedHiveBoxes();
-      final startupUserId =
-          appPrefs.getInt('user_id') ?? appPrefs.getInt('userId') ?? 0;
+      final rawStartupUserId = appPrefs.get('user_id') ?? appPrefs.get('userId');
+      final startupUserId = rawStartupUserId is int
+          ? rawStartupUserId
+          : int.tryParse(rawStartupUserId?.toString() ?? '') ?? 0;
       if (startupUserId > 0) {
         await LocalStorageService.clearOrphanSalesBoxes();
         await LocalStorageService.purgeLegacyPrefsSales();
@@ -655,8 +658,10 @@ void main() async {
       // 🔧 FIX: Auto-refresh session on app startup - OFFLINE-FIRST MODE
       // Try to refresh session if online, but don't force logout if offline
       try {
-        final startupUserId =
-            appPrefs.getInt('user_id') ?? appPrefs.getInt('userId') ?? 0;
+        final rawStartupUserId = appPrefs.get('user_id') ?? appPrefs.get('userId');
+      final startupUserId = rawStartupUserId is int
+          ? rawStartupUserId
+          : int.tryParse(rawStartupUserId?.toString() ?? '') ?? 0;
         if (startupUserId > 0) {
           // Check if user has a valid local session (token exists)
           final hasValidSession = await SessionManagementService.isTokenValid();
@@ -859,6 +864,38 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // Don't auto-logout on network issues or temporary server problems
     ApiClient.onSessionExpired.listen((_) async {
       if (!mounted) return;
+
+      // Customer tokens are stored separately from owner/staff access tokens.
+      // Handle their expiry in the customer flow instead of redirecting a
+      // shopper to the owner login screen or leaving an expired token active.
+      final prefs = await SharedPreferences.getInstance();
+      final activeRole = (prefs.getString('user_role') ??
+              prefs.getString('user_type') ??
+              prefs.getString('role') ??
+              '')
+          .trim()
+          .toUpperCase();
+      if (activeRole == 'CUSTOMER') {
+        await SecureTokenStorage.clearAll();
+        for (final key in [
+          'auth_token',
+          'customer_token',
+          'refresh_token',
+          'customer_id',
+          'user_id',
+          'userId',
+        ]) {
+          await prefs.remove(key);
+        }
+        await ApiClient.resetAuthRuntimeState();
+        if (!mounted) return;
+        globalNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/customer-login',
+          (_) => false,
+        );
+        return;
+      }
+
       // Check if user still has a valid local session before forcing logout
       final hasLocalSession = await SecureTokenStorage.isSessionValid();
       if (hasLocalSession) {
@@ -1309,6 +1346,52 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final loginPrefs = await SharedPreferences.getInstance();
     _hasSeenOnboarding = loginPrefs.getBool('has_seen_onboarding') ?? false;
 
+    // Customer sessions use a separate encrypted token and must not be
+    // validated as owner/staff sessions. Restore the marketplace directly on
+    // cold start instead of falling through to owner access-token validation.
+    final storedRole = (loginPrefs.getString('user_role') ??
+            loginPrefs.getString('user_type') ??
+            loginPrefs.getString('role') ??
+            '')
+        .trim()
+        .toUpperCase();
+    if (storedRole == 'CUSTOMER') {
+      final customerToken = await SecureTokenStorage.getCustomerToken();
+      final customerId = await SecureTokenStorage.getUserId() ??
+          int.tryParse(
+            loginPrefs.getString('customer_id') ??
+                loginPrefs.getString('user_id') ??
+                '',
+          ) ??
+          0;
+      var customerTokenIsUsable = false;
+      final tokenParts = (customerToken ?? '').split('.');
+      if (tokenParts.length == 3) {
+        try {
+          final payload = json.decode(
+            utf8.decode(base64Url.decode(base64Url.normalize(tokenParts[1]))),
+          );
+          final expiry = payload is Map ? payload['exp'] : null;
+          if (expiry is num) {
+            customerTokenIsUsable =
+                DateTime.now().millisecondsSinceEpoch < expiry * 1000;
+          }
+        } catch (_) {
+          customerTokenIsUsable = false;
+        }
+      }
+      if (customerTokenIsUsable && customerId > 0) {
+        if (kDebugMode) {
+          debugPrint('[AUTH] Restored unexpired customer marketplace session');
+        }
+        return true;
+      }
+      if (kDebugMode) {
+        debugPrint('[AUTH] Customer session is missing, invalid, or expired; returning to customer login');
+      }
+      return false;
+    }
+
     // The local seven-day timestamp is a cache guard, not the only login
     // path. If it expires, try the persisted refresh token before showing Login.
     // A rejected/expired refresh token is cleared by autoLogin(); a network or
@@ -1366,8 +1449,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
 
     if (isValid) {
-      final userId =
-          loginPrefs.getInt('user_id') ?? loginPrefs.getInt('userId') ?? 0;
+      final rawUserId = loginPrefs.get('user_id') ?? loginPrefs.get('userId');
+      final userId = rawUserId is int
+          ? rawUserId
+          : int.tryParse(rawUserId?.toString() ?? '') ?? 0;
       if (userId <= 0) {
         await SessionLogoutService.performFullLogout(notifyServer: false);
         return false;
@@ -1376,6 +1461,53 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
 
     return isValid;
+  }
+
+  final Map<String, Future<String>> _startupRouteFutures =
+      <String, Future<String>>{};
+
+  Future<String> _startupRouteFuture({
+    required bool booting,
+    required bool authenticated,
+  }) {
+    final cacheKey = '${booting}:${authenticated}';
+    return _startupRouteFutures.putIfAbsent(cacheKey, () async {
+      final prefs = await SharedPreferences.getInstance();
+      final role = (prefs.getString('user_role') ??
+              prefs.getString('user_type') ??
+              prefs.getString('role') ??
+              '')
+          .trim()
+          .toUpperCase();
+      final storedUserId =
+          prefs.get('user_id') ?? prefs.get('userId');
+      final userId = storedUserId is int
+          ? storedUserId
+          : int.tryParse(storedUserId?.toString() ?? '') ?? 0;
+      
+      final shopDetailsRequired = userId > 0 &&
+          (prefs.getBool('shop_details_required_$userId') ?? false);
+      final staffMode =
+          (await ScopedSharedPreferences.getBool('is_staff_mode')) ??
+              false;
+      final identityRole = staffMode
+          ? 'STAFF'
+          : (role == 'WORKER' ? 'WORKER' : 'OWNER');
+      final identityVerified = await SessionManagementService
+          .isIdentityVerified(userId: userId, role: identityRole);
+      
+      // A valid stored token is not enough to grant owner/staff
+      // dashboard access on a fresh app/tab process. Only the
+      // identity verification completed in this process unlocks it.
+      return resolveStartupRoute(
+        booting: booting,
+        authenticated: authenticated,
+        role: role,
+        shopDetailsRequired: shopDetailsRequired,
+        identityVerified: identityVerified,
+        staffMode: staffMode,
+      );
+    });
   }
 
   @override
@@ -1414,40 +1546,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 initialRoute = '/_boot';
               }
               return FutureBuilder<String>(
-                future: (() async {
-                  final prefs = await SharedPreferences.getInstance();
-                  final role = (prefs.getString('user_role') ??
-                          prefs.getString('user_type') ??
-                          prefs.getString('role') ??
-                          '')
-                      .trim()
-                      .toUpperCase();
-                  final userId =
-                      prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
-
-                  final shopDetailsRequired = userId > 0 &&
-                      (prefs.getBool('shop_details_required_$userId') ?? false);
-                  final staffMode =
-                      (await ScopedSharedPreferences.getBool('is_staff_mode')) ??
-                          false;
-                  final identityRole = staffMode
-                      ? 'STAFF'
-                      : (role == 'WORKER' ? 'WORKER' : 'OWNER');
-                  final identityVerified = await SessionManagementService
-                      .isIdentityVerified(userId: userId, role: identityRole);
-
-                  // A valid stored token is not enough to grant owner/staff
-                  // dashboard access on a fresh app/tab process. Only the
-                  // identity verification completed in this process unlocks it.
-                  return resolveStartupRoute(
-                    booting: booting,
-                    authenticated: authed,
-                    role: role,
-                    shopDetailsRequired: shopDetailsRequired,
-                    identityVerified: identityVerified,
-                    staffMode: staffMode,
-                  );
-                })(),
+                future: _startupRouteFuture(
+                  booting: booting,
+                  authenticated: authed,
+                ),
                 builder: (context, routeSnapshot) {
                   final resolvedRoute = routeSnapshot.data ?? initialRoute;
                   return MaterialApp(
@@ -1668,6 +1770,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                             const CustomerAiShoppingPage(),
                         '/nearby-shops': (context) => const NearbyShopsPage(),
                         '/customer-home': (context) => const CustomerHomePage(),
+                        // Checkout previously navigated to this missing route,
+                        // which showed the generic Not found page after a successful order.
+                        '/order-tracking': (context) => const OrderHistoryPage(),
+                        '/customer-orders': (context) => const OrderHistoryPage(),
                         '/customer-cart': (context) {
                           final args = ModalRoute.of(
                             context,

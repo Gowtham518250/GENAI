@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
+import '../../app_localizations.dart';
+import '../../language_provider.dart';
 import '../../secure_token_storage.dart';
+import '../../session_logout_service.dart';
 import 'customer_marketplace_page.dart';
 
 class CustomerLoginPage extends StatefulWidget {
@@ -51,8 +54,16 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           final customerId = int.tryParse(data['customer_id']?.toString() ?? '');
           if (tokenValue == null || tokenValue.toString().trim().isEmpty ||
               customerId == null || customerId <= 0) {
-            throw Exception('Customer login returned an invalid session.');
+            throw Exception(AppLocalizations.of(context).translate('customerLoginInvalidSession'));
           }
+
+          // Switch through the shared isolation path before saving the
+          // customer credentials. This clears owner tokens/preferences without
+          // deleting other users' scoped offline business data.
+          await SessionLogoutService.enterCustomerMode(
+            customerName: (data['name'] ?? data['user_name'] ?? '').toString(),
+            customerPhone: (data['phone'] ?? _phoneController.text).toString(),
+          );
 
           // Keep customer credentials separate from the owner's JWT. Offline
           // customer orders are synced later by SyncService, so they must use
@@ -74,6 +85,9 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           await prefs.setString('role', 'customer');
           await prefs.setString('user_type', 'CUSTOMER');
           await prefs.setString('user_role', 'CUSTOMER');
+          // Bind the pre-login locale to this customer so a shared device
+          // restores this customer's language choice on the next app launch.
+          await LanguageProvider.persistCurrentLanguageForAccount();
           await prefs.setString('user_name', data['name'] ?? data['user_name'] ?? '');
           await prefs.setString('customer_name', data['name'] ?? data['user_name'] ?? '');
           await prefs.setString('user_email', data['email'] ?? _emailController.text.trim());
@@ -92,11 +106,11 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           // Registered successfully, now login
           setState(() => _isLogin = true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registration successful! Please login.'), backgroundColor: Colors.green),
+            SnackBar(content: Text(AppLocalizations.of(context).translate('registrationSuccessLogin')), backgroundColor: Colors.green),
           );
         }
       } else {
-        throw Exception(json.decode(response.body)['detail'] ?? 'Authentication failed');
+        throw Exception(json.decode(response.body)['detail'] ?? AppLocalizations.of(context).translate('authenticationFailed'));
       }
     } catch (e) {
       if (mounted) {
@@ -111,8 +125,187 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
     }
   }
 
+  Future<void> _showForgotPasswordFlow() async {
+    final l = AppLocalizations.of(context);
+    final emailController = TextEditingController(
+      text: _emailController.text.trim(),
+    );
+    final email = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l.translate('resetCustomerPassword')),
+        content: TextField(
+          controller: emailController,
+          keyboardType: TextInputType.emailAddress,
+          autofocus: true,
+          decoration: InputDecoration(labelText: l.translate('accountEmail')),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l.translate('cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              emailController.text.trim().toLowerCase(),
+            ),
+            child: Text(l.translate('sendOtp')),
+          ),
+        ],
+      ),
+    );
+    emailController.dispose();
+    if (email == null || email.isEmpty || !mounted) return;
+
+    try {
+      final request = await ApiClient.postJson(
+        '/store/customer/request-password-reset-otp',
+        {'email': email},
+      );
+      final requestBody = json.decode(request.body);
+      if (request.statusCode != 200 ||
+          requestBody is! Map ||
+          requestBody['success'] != true) {
+        throw Exception(
+          requestBody is Map
+              ? (requestBody['detail'] ??
+                      requestBody['message'] ??
+                      'If this account exists, a reset code may be sent. Please check your email.')
+                  .toString()
+              : 'Unable to request a password reset right now.',
+        );
+      }
+
+      final otpController = TextEditingController();
+      final otp = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l.translate('enterVerificationCode')),
+          content: TextField(
+            controller: otpController,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: l.translate('otpSixDigits'),
+              counterText: '',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(l.translate('cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                otpController.text.trim(),
+              ),
+              child: Text(l.translate('verify')),
+            ),
+          ],
+        ),
+      );
+      otpController.dispose();
+      if (otp == null || !mounted) return;
+      if (!RegExp(r'^\d{6}$').hasMatch(otp)) {
+        throw Exception(l.translate('enterOtpPrompt'));
+      }
+
+      final verification = await ApiClient.postJson(
+        '/store/customer/verify-password-reset-otp',
+        {'email': email, 'otp': otp},
+      );
+      final verificationBody = json.decode(verification.body);
+      if (verification.statusCode != 200 ||
+          verificationBody is! Map ||
+          verificationBody['reset_token'] == null) {
+        throw Exception(
+          verificationBody is Map
+              ? (verificationBody['detail'] ?? l.translate('invalidExpiredOtp')).toString()
+              : l.translate('otpUnavailable'),
+        );
+      }
+
+      final passwordController = TextEditingController();
+      final newPassword = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l.translate('chooseNewPassword')),
+          content: TextField(
+            controller: passwordController,
+            obscureText: true,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: l.translate('newPasswordAtLeast8'),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(l.translate('cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                passwordController.text,
+              ),
+              child: Text(l.translate('updatePassword')),
+            ),
+          ],
+        ),
+      );
+      passwordController.dispose();
+      if (newPassword == null || !mounted) return;
+      if (newPassword.length < 8) {
+        throw Exception(l.translate('passwordMinLength'));
+      }
+
+      final reset = await ApiClient.postJson(
+        '/store/customer/reset-password',
+        {
+          'reset_token': verificationBody['reset_token'].toString(),
+          'new_password': newPassword,
+        },
+      );
+      final resetBody = json.decode(reset.body);
+      if (reset.statusCode != 200 ||
+          resetBody is! Map ||
+          resetBody['success'] == false) {
+        throw Exception(
+          resetBody is Map
+              ? (resetBody['detail'] ?? l.translate('passwordResetFailed'))
+                  .toString()
+              : l.translate('passwordResetFailed'),
+        );
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l.translate('passwordUpdatedLogin')),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.teal.shade50,
       body: SafeArea(
@@ -125,7 +318,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                 Icon(Icons.shopping_bag_rounded, size: 80, color: Colors.teal.shade600),
                 const SizedBox(height: 16),
                 Text('Retail Mind Market', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.teal.shade900)),
-                Text(_isLogin ? 'Welcome back, shopper!' : 'Create your account', style: GoogleFonts.poppins(color: Colors.teal.shade700)),
+                Text(_isLogin ? l.translate('welcomeBackShopper') : l.translate('createYourAccount'), style: GoogleFonts.poppins(color: Colors.teal.shade700)),
                 const SizedBox(height: 40),
                 
                 Card(
@@ -138,26 +331,26 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                         if (!_isLogin) ...[
                           TextField(
                             controller: _nameController,
-                            decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline)),
+                            decoration: InputDecoration(labelText: l.fullName, prefixIcon: const Icon(Icons.person_outline)),
                           ),
                           const SizedBox(height: 16),
                           TextField(
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(labelText: 'Phone (10 digits)', prefixIcon: Icon(Icons.phone_outlined)),
+                            decoration: InputDecoration(labelText: l.translate('phoneTenDigits'), prefixIcon: const Icon(Icons.phone_outlined)),
                           ),
                           const SizedBox(height: 16),
                         ],
                         TextField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined)),
+                          decoration: InputDecoration(labelText: l.emailAddress, prefixIcon: const Icon(Icons.email_outlined)),
                         ),
                         const SizedBox(height: 16),
                         TextField(
                           controller: _passwordController,
                           obscureText: true,
-                          decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
+                          decoration: InputDecoration(labelText: l.password, prefixIcon: const Icon(Icons.lock_outline)),
                         ),
                         const SizedBox(height: 24),
                         SizedBox(
@@ -172,18 +365,26 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                             onPressed: _isLoading ? null : _submit,
                             child: _isLoading 
                               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white))
-                              : Text(_isLogin ? 'Login' : 'Register', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                               : Text(_isLogin ? l.login : l.register, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
                         ),
+                        if (_isLogin)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: _isLoading ? null : _showForgotPasswordFlow,
+                              child: Text(l.forgotPassword),
+                            ),
+                          ),
                         const SizedBox(height: 16),
                         TextButton(
                           onPressed: () => setState(() => _isLogin = !_isLogin),
-                          child: Text(_isLogin ? 'Need an account? Register' : 'Already have an account? Login', style: TextStyle(color: Colors.teal.shade700)),
+                          child: Text(_isLogin ? l.translate('needAccountRegister') : l.translate('alreadyHaveAccountLogin'), style: TextStyle(color: Colors.teal.shade700)),
                         ),
                         const SizedBox(height: 8),
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: Text('Back to Home', style: TextStyle(color: Colors.grey.shade600)),
+                          child: Text(l.translate('backToHome'), style: TextStyle(color: Colors.grey.shade600)),
                         )
                       ],
                     ),

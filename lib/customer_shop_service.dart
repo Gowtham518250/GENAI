@@ -31,7 +31,7 @@ class CustomerShopService {
       final raw = body is Map && body['products'] is List ? body['products'] as List : <dynamic>[];
       final products = raw
           .whereType<Map>()
-          .map((p) => _normalizeProduct(Map<String, dynamic>.from(p)))
+          .map((p) => normalizeProduct(Map<String, dynamic>.from(p)))
           .toList();
 
       return _filterInStock(products);
@@ -86,17 +86,37 @@ class CustomerShopService {
     return 'Shop';
   }
 
-  static Map<String, dynamic> _normalizeProduct(Map raw) {
+  static Map<String, dynamic> normalizeProduct(Map raw) {
     final name = (raw['product_name'] ?? raw['name'] ?? raw['product'] ?? 'Item').toString();
-    final price = double.tryParse(raw['price']?.toString() ?? raw['selling_price']?.toString() ?? '0') ?? 0;
-    final stock = int.tryParse(raw['stock']?.toString() ?? raw['quantity']?.toString() ?? '0') ?? 0;
-    final id = (raw['id'] ?? raw['product_id'] ?? name).toString();
+    final price = double.tryParse(
+          (raw['price'] ?? raw['selling_price'] ?? raw['unit_price'] ?? '0')
+              .toString(),
+        ) ??
+        0;
+    // The online-store API calls available inventory stock_available.
+    // Without this alias, every API product normalized to stock=0 and the
+    // storefront filtered the entire catalogue out as unavailable.
+    final rawStock = raw['stock'] ??
+        raw['stock_available'] ??
+        raw['current_stock'] ??
+        raw['available_quantity'] ??
+        raw['quantity'] ??
+        0;
+    // The API/DB may serialize an integral Numeric inventory quantity as 8.0.
+    // The UI currently sells whole units, so convert numeric strings safely.
+    final stock = rawStock is num
+        ? rawStock.floor()
+        : (int.tryParse(rawStock.toString()) ??
+            double.tryParse(rawStock.toString())?.floor() ??
+            0);
+    final id = (raw['id'] ?? raw['product_id'] ?? '').toString().trim();
     final imageUrl = (raw['image_url'] ?? raw['imageUrl'] ?? raw['photo'] ?? '').toString();
     return {
       'id': id,
       'name': name,
       'price': price,
       'stock': stock,
+      'stock_available': stock,
       'category': raw['category']?.toString() ?? 'General',
       'image_url': imageUrl,
     };
@@ -111,6 +131,8 @@ class CustomerShopService {
     required double totalAmount,
     required String paymentMethod,
     String paymentStatus = 'pending',
+    String fulfillmentMethod = 'PICKUP',
+    String deliveryAddress = 'Store Pickup',
   }) async {
     final localOrderId = 'LOCAL_ORDER_${DateTime.now().microsecondsSinceEpoch}';
     final now = DateTime.now().toIso8601String();
@@ -129,6 +151,8 @@ class CustomerShopService {
       'total_amount': totalAmount,
       'payment_method': paymentMethod,
       'payment_status': paymentStatus,
+      'fulfillment_method': fulfillmentMethod.toUpperCase(),
+      'delivery_address': deliveryAddress,
       'status': 'PENDING_SYNC',
       'sync_status': 'pending',
       'created_at': now,
@@ -149,7 +173,8 @@ class CustomerShopService {
       'local_order_id': localOrderId,
       'shop_id': int.tryParse(shopId) ?? 0,
       'items': apiItems,
-      'delivery_address': 'Store Pickup',
+      'delivery_address': deliveryAddress,
+      'fulfillment_method': fulfillmentMethod.toUpperCase(),
       'customer_email': customerEmail,
       'payment_method': paymentMethod.toUpperCase() == 'UPI' ? 'UPI' : 'COD',
       'payment_status': paymentStatus.toUpperCase(),

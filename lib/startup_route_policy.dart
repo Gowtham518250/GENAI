@@ -12,9 +12,14 @@ String resolveStartupRoute({
   required bool staffMode,
 }) {
   if (booting) return '/_boot';
-  if (!authenticated) return '/login';
 
   final normalizedRole = (role ?? '').trim().toUpperCase();
+  if (!authenticated) {
+    // Keep an expired customer session in the customer auth flow rather than
+    // unexpectedly redirecting the shopper to the owner/staff login screen.
+    if (normalizedRole == 'CUSTOMER') return '/customer-login';
+    return '/login';
+  }
   if (normalizedRole == 'CUSTOMER') return '/customer-marketplace';
 
   // Never infer OWNER from a missing role or a persisted token alone.

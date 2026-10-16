@@ -37,6 +37,7 @@ import 'invoices_page.dart' hide Expanded;
 import 'gift_card_page.dart';
 import 'visual_widgets.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:notification_listener_service/notification_listener_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'language_provider.dart';
@@ -13506,6 +13507,29 @@ class _DashboardPageState extends State<DashboardPage>
                       padding: const EdgeInsets.all(12),
                       child: Image.memory(_qrImageBytes!, fit: BoxFit.contain),
                     )
+                  else if (_upiId.trim().isNotEmpty)
+                    Container(
+                      width: 220,
+                      height: 220,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF22C55E).withValues(alpha: 0.24),
+                            blurRadius: 18,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: QrImageView(
+                        data: 'upi://pay?pa=${Uri.encodeComponent(_upiId.trim())}&pn=${Uri.encodeComponent(shopName.trim().isEmpty ? 'Retail Shop' : shopName.trim())}&cu=INR',
+                        version: QrVersions.auto,
+                        size: 196,
+                        backgroundColor: Colors.white,
+                      ),
+                    )
                   else
                     GestureDetector(
                       onTap: () async {
@@ -13547,10 +13571,14 @@ class _DashboardPageState extends State<DashboardPage>
 
                             if (isValidQr) {
                               // 🔒 SECURITY: Use scoped SharedPreferences for payment QR
+                              final qrBase64 = base64Encode(bytes);
                               await ScopedSharedPreferences.setString(
                                 'payment_qr_b64',
-                                base64Encode(bytes),
+                                qrBase64,
                               );
+                              // Startup restores the QR from encrypted storage,
+                              // so keep this write in sync with the scoped cache.
+                              await SecurePreferencesService.setPaymentQrB64(qrBase64);
                               setState(() => _qrImageBytes = bytes);
                               setDlgState(() {});
                             } else {

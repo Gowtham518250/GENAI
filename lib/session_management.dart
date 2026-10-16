@@ -21,6 +21,7 @@ import 'error_log_helper.dart';
 import 'user_data_clear_service.dart';
 import 'scoped_shared_preferences.dart';
 import 'secure_preferences_service.dart';
+import 'language_provider.dart';
 
 class SessionManagementService {
   static const String _refreshTokenKey = 'refresh_token';
@@ -284,8 +285,10 @@ class SessionManagementService {
   static Future<void> clearIdentityVerification({int? userId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final resolvedUserId =
-          userId ?? prefs.getInt(_userIdKey) ?? prefs.getInt('userId') ?? 0;
+      final storedUserId = prefs.get(_userIdKey) ?? prefs.get('userId');
+      final resolvedUserId = userId ??
+          int.tryParse(storedUserId?.toString() ?? '') ??
+          0;
       if (resolvedUserId <= 0) return;
       _processIdentityVerification.remove(resolvedUserId);
       await prefs.remove(_identityVerificationKey(resolvedUserId));
@@ -361,12 +364,20 @@ class SessionManagementService {
     if (role.isNotEmpty) {
       await prefs.setString('user_role', role);
     }
+    // Persist a language picked before login into this account's preference
+    // after its user ID and role are available.
+    await LanguageProvider.persistCurrentLanguageForAccount();
   }
 
   // All refresh callers (startup, resume and API 401 handling) share one
   // refresh operation. This prevents concurrent refresh responses racing while
   // rotated tokens are being persisted, which could otherwise clear a valid session.
   static Future<Map<String, dynamic>?>? _autoLoginInFlight;
+
+  // Distinguish a definitive authentication rejection from transient failures
+  // (timeouts, offline state, 5xx). Callers must not log the user out on 5xx.
+  static bool _lastRefreshWasRejected = false;
+  static bool get lastRefreshWasRejected => _lastRefreshWasRejected;
 
   static Future<Map<String, dynamic>?> autoLogin() {
     final running = _autoLoginInFlight;
@@ -385,12 +396,14 @@ class SessionManagementService {
   }
 
   static Future<Map<String, dynamic>?> _autoLoginOnce() async {
+    _lastRefreshWasRejected = false;
     try {
       final prefs = await SharedPreferences.getInstance();
       final refreshToken = await SecureTokenStorage.getRefreshToken();
       final deviceId = prefs.getString(_deviceIdKey);
       if (refreshToken == null || refreshToken.isEmpty) {
         if (kDebugMode) debugPrint('[AUTH] Refresh token available: false');
+        _lastRefreshWasRejected = true;
         await clearTokens();
         return null;
       }
@@ -418,6 +431,7 @@ class SessionManagementService {
                 '[AUTH] Refresh response parsing failed: ${e.runtimeType}',
               );
             }
+            _lastRefreshWasRejected = true;
             await clearTokens();
             return null;
           }
@@ -426,6 +440,7 @@ class SessionManagementService {
               debugPrint(
                 '[AUTH] Refresh response parsing failed: expected JSON object',
               );
+            _lastRefreshWasRejected = true;
             await clearTokens();
             return null;
           }
@@ -436,6 +451,7 @@ class SessionManagementService {
               debugPrint(
                 '[AUTH] Refresh response parsing failed: access_token missing',
               );
+            _lastRefreshWasRejected = true;
             await clearTokens();
             return null;
           }
@@ -445,6 +461,14 @@ class SessionManagementService {
               int.tryParse(data['user_id']?.toString() ?? '') ??
               (await getCurrentUserId()) ??
               0;
+          if (userId <= 0) {
+            if (kDebugMode) {
+              debugPrint('[AUTH] Refresh response missing a valid user ID');
+            }
+            _lastRefreshWasRejected = true;
+            await clearTokens();
+            return null;
+          }
           await saveTokens(
             refreshToken: rotatedRefreshToken,
             accessToken: accessToken,
@@ -467,6 +491,7 @@ class SessionManagementService {
               debugPrint(
                 '[AUTH] Refreshed credentials were not stored successfully',
               );
+            _lastRefreshWasRejected = true;
             await clearTokens();
             return null;
           }
@@ -481,6 +506,7 @@ class SessionManagementService {
           };
         }
         if (response.statusCode == 401 || response.statusCode == 403) {
+          _lastRefreshWasRejected = true;
           if (kDebugMode)
             debugPrint(
               '[AUTH] Refresh attempt failed with authentication status ${response.statusCode}',
@@ -542,7 +568,8 @@ class SessionManagementService {
   static Future<Map<String, dynamic>?> getUserInfo() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt(_userIdKey);
+      final rawUserId = prefs.get(_userIdKey) ?? prefs.get('userId');
+      final userId = int.tryParse(rawUserId?.toString() ?? '');
       final userName = prefs.getString(_userNameKey);
       final userEmail = prefs.getString(_userEmailKey);
       if (userId != null) {
@@ -558,7 +585,8 @@ class SessionManagementService {
   static Future<int?> getCurrentUserId() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getInt(_userIdKey) ?? prefs.getInt('userId');
+      final rawUserId = prefs.get(_userIdKey) ?? prefs.get('userId');
+      return int.tryParse(rawUserId?.toString() ?? '');
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Error getting current user ID: $e');
       return null;
@@ -685,7 +713,8 @@ class SessionManagementService {
 
   static Future<String> _offlineQueueKey() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
+    final rawUserId = prefs.get('user_id') ?? prefs.get('userId');
+    final userId = int.tryParse(rawUserId?.toString() ?? '') ?? 0;
     return userId > 0
         ? 'offline_queue_$userId'
         : 'offline_queue_unauthenticated';

@@ -37,6 +37,8 @@ class PaymentEvent {
   final bool   isDuplicate;
   final bool   isPartialPayment;
   final double remainingAmount; // Only meaningful when isPartialPayment = true
+  // True only when the detector matched this event to the currently expected bill.
+  final bool   isBillMatch;
 
   // ── Debug / Audit ─────────────────────────────────────────────────────────────
   final String rawText;
@@ -61,6 +63,7 @@ class PaymentEvent {
     this.isDuplicate       = false,
     this.isPartialPayment  = false,
     this.remainingAmount   = 0.0,
+    this.isBillMatch       = false,
     this.rawText           = '',
     this.confidenceScore   = 0.0,
     this.detectionSource   = 'notification',
@@ -127,13 +130,21 @@ class PaymentEvent {
   static String _transactionDirection(String text) {
     final t = text.toLowerCase();
 
-    final credit = RegExp(
+    final englishCredit = RegExp(
       r'\b(?:credited|credit|received|deposited|money\s+received|amount\s+received|payment\s+received|added\s+to|sent\s+to\s+your|paid\s+to\s+your|has\s+sent)\b',
     ).hasMatch(t);
+    final nativeCredit = RegExp(
+      r'(जमा|क्रेडिट|प्राप्त|પૈસા મળ્યા|જમા|ક્રેડિટ|జమ|క్రెడిట్|అందింది|வரவு|பெறப்பட்டது|কয়েডিট|জমা|ক্রেডিট|জমা|ਜਮ੍ਹਾ|ਕ੍ਰੈਡਿਟ|വരവ്|ക്രെഡിറ്റ്|ലഭിച്ചു|ಜಮಾ|ಕ್ರೆಡಿಟ್)',
+    ).hasMatch(t);
+    final credit = englishCredit || nativeCredit;
 
-    final debit = RegExp(
+    final englishDebit = RegExp(
       r'\b(?:debited|debit|sent|you\s+sent|paid|payment\s+to|deducted|withdrawn|spent|purchase|transferred\s+to)\b',
     ).hasMatch(t);
+    final nativeDebit = RegExp(
+      r'(डेबिट|કાપવામાં આવ્યા|ડેબિટ|డెబిట్|పంపబడింది|பற்று|எடுக்கப்பட்டது|ডেবিট|কেটে নেওয়া|ਡੈਬਿਟ|ਕੱਟੇ|ഡെബിറ്റ്|പണം അയച്ചു|ಡೆബಿಟ್|ಕಡಿತ)',
+    ).hasMatch(t);
+    final debit = englishDebit || nativeDebit;
 
     if (credit && !debit) return 'credit';
     if (debit && !credit) return 'debit';
@@ -164,17 +175,20 @@ class PaymentEvent {
   }
   /// Voice-only deduplication key.
   ///
-  /// Accounting/idempotency fingerprints intentionally normalize aggressively
-  /// so notifications, accessibility events and bank SMS can refer to the
-  /// same payment. Voice dedup needs a second, stricter identity because the
-  /// same Android notification may be delivered more than once with slightly
-  /// different metadata. The actual notification text is therefore included.
+  /// Accounting fingerprints normalize aggressively across notification
+  /// variants. Voice dedup is intentionally stricter: identical notification
+  /// text delivered repeatedly is suppressed, but different text is not assumed
+  /// to be the same spoken event merely because amount/time/app match.
   String get voiceFingerprint {
-    // Use the same stable transaction identity as accounting deduplication.
-    // Raw notification text often changes between grouped notifications for
-    // one payment (e.g. sender-name variant vs. "amount received"), so hashing
-    // the full text caused the same credit to be spoken twice.
-    return 'voice_${fingerprint}';
+    final normalizedText = rawText
+        .toLowerCase()
+        // Retain non-ASCII scripts so Hindi/Telugu/Tamil/etc. wording is not
+        // reduced to an empty string before voice deduplication.
+        .replaceAll(RegExp(r'[^a-z0-9\u0080-\uFFFF]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
+    final voicePayload = '${fingerprint}_${normalizedText}';
+    return 'voice_${md5.convert(utf8.encode(voicePayload))}';
   }
 
   ConfidenceTier get confidenceTier {
@@ -212,7 +226,7 @@ class PaymentEvent {
     String? payerName, String? referenceId, String? vpa,
     String? accountSuffix, String? bankName, bool? isFailed,
     bool? isDuplicate, bool? isPartialPayment, double? remainingAmount,
-    String? rawText, double? confidenceScore,
+    bool? isBillMatch, String? rawText, double? confidenceScore,
     String? detectionSource, String? id, PaymentDecision? decision,
     String? saleId, int? version, DateTime? updatedAt,
   }) {
@@ -229,6 +243,7 @@ class PaymentEvent {
       isDuplicate:      isDuplicate     ?? this.isDuplicate,
       isPartialPayment: isPartialPayment ?? this.isPartialPayment,
       remainingAmount:  remainingAmount ?? this.remainingAmount,
+      isBillMatch:      isBillMatch     ?? this.isBillMatch,
       rawText:          rawText         ?? this.rawText,
       confidenceScore:  confidenceScore ?? this.confidenceScore,
       detectionSource:  detectionSource ?? this.detectionSource,
@@ -255,6 +270,7 @@ class PaymentEvent {
         'isDuplicate':      isDuplicate,
         'isPartialPayment': isPartialPayment,
         'remainingAmount':  remainingAmount,
+        'isBillMatch':      isBillMatch,
         'confidenceScore':  confidenceScore,
         'confidenceTier':   confidenceTier.name,
         'detectionSource':  detectionSource,
@@ -282,6 +298,7 @@ class PaymentEvent {
         isDuplicate:      json['isDuplicate']       ?? false,
         isPartialPayment: json['isPartialPayment']  ?? false,
         remainingAmount:  (json['remainingAmount'] as num?)?.toDouble() ?? 0.0,
+        isBillMatch:      json['isBillMatch']        ?? false,
         rawText:          json['rawText']           ?? '',
         confidenceScore:  (json['confidenceScore'] as num?)?.toDouble() ?? 0.0,
         detectionSource:  json['detectionSource']   ?? 'notification',
