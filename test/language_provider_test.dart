@@ -49,5 +49,17 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('language_code'), 'en');
     });
+
+    test('binds the pre-login language to the authenticated account', () async {
+      SharedPreferences.setMockInitialValues({
+        'language_code': 'te',
+        'user_id': 73,
+        'user_role': 'CUSTOMER',
+      });
+
+      await LanguageProvider.persistCurrentLanguageForAccount();
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('language_code_CUSTOMER_73'), 'te');
+    });
   });
 }
