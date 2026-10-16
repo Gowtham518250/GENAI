@@ -455,6 +455,14 @@ class SessionManagementService {
               int.tryParse(data['user_id']?.toString() ?? '') ??
               (await getCurrentUserId()) ??
               0;
+          if (userId <= 0) {
+            if (kDebugMode) {
+              debugPrint('[AUTH] Refresh response missing a valid user ID');
+            }
+            _lastRefreshWasRejected = true;
+            await clearTokens();
+            return null;
+          }
           await saveTokens(
             refreshToken: rotatedRefreshToken,
             accessToken: accessToken,
