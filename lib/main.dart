@@ -1466,72 +1466,84 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }) {
     final cacheKey = '${booting}:${authenticated}';
     return _startupRouteFutures.putIfAbsent(cacheKey, () async {
+      final prefs = await SharedPreferences.getInstance();
+      final role = (prefs.getString('user_role') ??
+              prefs.getString('user_type') ??
+              prefs.getString('role') ??
+              '')
+          .trim()
+          .toUpperCase();
+      final storedUserId =
+          prefs.get('user_id') ?? prefs.get('userId');
+      final userId = storedUserId is int
+          ? storedUserId
+          : int.tryParse(storedUserId?.toString() ?? '') ?? 0;
+      
+      final shopDetailsRequired = userId > 0 &&
+          (prefs.getBool('shop_details_required_$userId') ?? false);
+      final staffMode =
+          (await ScopedSharedPreferences.getBool('is_staff_mode')) ??
+              false;
+      final identityRole = staffMode
+          ? 'STAFF'
+          : (role == 'WORKER' ? 'WORKER' : 'OWNER');
+      final identityVerified = await SessionManagementService
+          .isIdentityVerified(userId: userId, role: identityRole);
+      
+      // A valid stored token is not enough to grant owner/staff
+      // dashboard access on a fresh app/tab process. Only the
+      // identity verification completed in this process unlocks it.
+      return resolveStartupRoute(
+        booting: booting,
+        authenticated: authenticated,
+        role: role,
+        shopDetailsRequired: shopDetailsRequired,
+        identityVerified: identityVerified,
+        staffMode: staffMode,
+      );
+    });
+  }
 
-                  final prefs = await SharedPreferences.getInstance();
-                  final role = (prefs.getString('user_role') ??
-                          prefs.getString('user_type') ??
-                          prefs.getString('role') ??
-                          '')
-                      .trim()
-                      .toUpperCase();
-                  final storedUserId =
-                      prefs.get('user_id') ?? prefs.get('userId');
-                  final userId = storedUserId is int
-                      ? storedUserId
-                      : int.tryParse(storedUserId?.toString() ?? '') ?? 0;
+  @override
+  Widget build(BuildContext context) {
+    if (widget.testMode) {
+      return const MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Text('Retail Mind test shell'),
+          ),
+        ),
+      );
+    }
 
-                  final shopDetailsRequired = userId > 0 &&
-                      (prefs.getBool('shop_details_required_$userId') ?? false);
-                  final staffMode =
-                      (await ScopedSharedPreferences.getBool('is_staff_mode')) ??
-                                          future: _startupRouteFuture(
-                  booting: booting,
-                  authenticated: authed,
-                ),
-                builder: (context, routeSnapshot)e = '/login';
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LanguageProvider>(
+          create: (_) => LanguageProvider(),
+        ),
+        ChangeNotifierProvider<AppThemeController>(
+          create: (_) => AppThemeController(),
+        ),
+      ],
+      child: Consumer2<LanguageProvider, AppThemeController>(
+        builder: (context, languageProvider, themeController, _) {
+          return FutureBuilder<bool>(
+            future: _loggedInFuture,
+            builder: (context, snapshot) {
+              final booting =
+                  snapshot.connectionState == ConnectionState.waiting;
+              final authed = snapshot.hasData && snapshot.data == true;
+              String initialRoute = '/login';
               if (!booting && authed) {
                 initialRoute = '/identity-verification';
               } else if (booting) {
                 initialRoute = '/_boot';
               }
               return FutureBuilder<String>(
-                future: (() async {
-                  final prefs = await SharedPreferences.getInstance();
-                  final role = (prefs.getString('user_role') ??
-                          prefs.getString('user_type') ??
-                          prefs.getString('role') ??
-                          '')
-                      .trim()
-                      .toUpperCase();
-                  final storedUserId =
-                      prefs.get('user_id') ?? prefs.get('userId');
-                  final userId = storedUserId is int
-                      ? storedUserId
-                      : int.tryParse(storedUserId?.toString() ?? '') ?? 0;
-
-                  final shopDetailsRequired = userId > 0 &&
-                      (prefs.getBool('shop_details_required_$userId') ?? false);
-                  final staffMode =
-                      (await ScopedSharedPreferences.getBool('is_staff_mode')) ??
-                          false;
-                  final identityRole = staffMode
-                      ? 'STAFF'
-                      : (role == 'WORKER' ? 'WORKER' : 'OWNER');
-                  final identityVerified = await SessionManagementService
-                      .isIdentityVerified(userId: userId, role: identityRole);
-
-                  // A valid stored token is not enough to grant owner/staff
-                  // dashboard access on a fresh app/tab process. Only the
-                  // identity verification completed in this process unlocks it.
-                  return resolveStartupRoute(
-                    booting: booting,
-                    authenticated: authed,
-                    role: role,
-                    shopDetailsRequired: shopDetailsRequired,
-                    identityVerified: identityVerified,
-                    staffMode: staffMode,
-                  );
-                })(),
+                future: _startupRouteFuture(
+                  booting: booting,
+                  authenticated: authed,
+                ),
                 builder: (context, routeSnapshot) {
                   final resolvedRoute = routeSnapshot.data ?? initialRoute;
                   return MaterialApp(
