@@ -12,6 +12,27 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
+  // Notification IDs must not be based on DateTime.now().millisecond (0-999),
+  // because closely spaced notifications would overwrite one another.
+  static int _lastAllocatedNotificationId =
+      DateTime.now().millisecondsSinceEpoch & 0x7fffffff;
+
+  static int _nextLocalNotificationId() {
+    final nowId = DateTime.now().millisecondsSinceEpoch & 0x7fffffff;
+    if (nowId > _lastAllocatedNotificationId) {
+      _lastAllocatedNotificationId = nowId;
+    } else {
+      _lastAllocatedNotificationId =
+          _lastAllocatedNotificationId >= 0x7ffffffe
+              ? 1000
+              : _lastAllocatedNotificationId + 1;
+    }
+    return _lastAllocatedNotificationId;
+  }
+
+  @visibleForTesting
+  static int allocateNotificationIdForTesting() => _nextLocalNotificationId();
+
   // 🔒 CRITICAL: Track initialization state to prevent re-entry
   bool _isInitialized = false;
   bool _isInitializing = false;
@@ -163,7 +184,7 @@ class NotificationService {
         );
 
         await NotificationService()._notificationsPlugin.show(
-          DateTime.now().millisecond, // unique ID
+          _nextLocalNotificationId(),
           title,
           body,
           platformChannelSpecifics,
