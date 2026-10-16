@@ -8,6 +8,7 @@ import 'realtime_client.dart';
 import 'secure_token_storage.dart';
 import 'sync_service.dart';
 import 'otp_service.dart';
+import 'app_localizations.dart';
 
 class OwnerOrdersPage extends StatefulWidget {
   const OwnerOrdersPage({super.key});
@@ -590,6 +591,21 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                             (o['payment_status'] ?? '').toString().trim().toUpperCase();
                         final paymentConfirmationSource =
                             (o['payment_confirmation_source'] ?? '').toString().trim().toUpperCase();
+                        final localizations = AppLocalizations.of(context);
+                        final paymentStatusLabel = <String, String>{
+                          'PAID': localizations.translate('paymentStatusPaid'),
+                          'PENDING': localizations.translate('paymentStatusPending'),
+                          'UNPAID': localizations.translate('paymentStatusPending'),
+                          'COD': localizations.translate('paymentStatusCodDue'),
+                          'COD_DUE': localizations.translate('paymentStatusCodDue'),
+                          'FAILED': localizations.translate('paymentStatusFailed'),
+                          'REFUND': localizations.translate('paymentStatusRefund'),
+                          'REFUNDED': localizations.translate('paymentStatusRefund'),
+                          'PARTIAL': localizations.translate('paymentStatusPartial'),
+                        }[paymentStatus] ??
+                            (paymentStatus.isEmpty
+                                ? localizations.translate('paymentStatusPending')
+                                : paymentStatus);
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 14),
@@ -691,7 +707,10 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Payment: $paymentMethod · ${paymentStatus.isEmpty ? 'PENDING' : paymentStatus}',
+                                          localizations
+                                              .translate('paymentStatusLine')
+                                              .replaceAll('{method}', paymentMethod)
+                                              .replaceAll('{status}', paymentStatusLabel),
                                           style: GoogleFonts.poppins(
                                             color: Colors.white70,
                                             fontSize: 12,
@@ -702,7 +721,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                           Padding(
                                             padding: const EdgeInsets.only(top: 4),
                                             child: Text(
-                                              'Matched from an owner-device notification. Reconcile the transaction reference against the UPI/bank record; this is not a payment-provider webhook confirmation.',
+                                              localizations.translate('paymentMatchedNotificationHint'),
                                               style: GoogleFonts.poppins(
                                                 color: Colors.orangeAccent,
                                                 fontSize: 11,
@@ -713,7 +732,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                           Padding(
                                             padding: const EdgeInsets.only(top: 4),
                                             child: Text(
-                                              'Awaiting a matching transaction notification. Returning from the UPI app alone does not mark the order paid.',
+                                              localizations.translate('paymentPendingHint'),
                                               style: GoogleFonts.poppins(
                                                 color: Colors.orangeAccent,
                                                 fontSize: 11,
