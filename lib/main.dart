@@ -859,6 +859,38 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     // Don't auto-logout on network issues or temporary server problems
     ApiClient.onSessionExpired.listen((_) async {
       if (!mounted) return;
+
+      // Customer tokens are stored separately from owner/staff access tokens.
+      // Handle their expiry in the customer flow instead of redirecting a
+      // shopper to the owner login screen or leaving an expired token active.
+      final prefs = await SharedPreferences.getInstance();
+      final activeRole = (prefs.getString('user_role') ??
+              prefs.getString('user_type') ??
+              prefs.getString('role') ??
+              '')
+          .trim()
+          .toUpperCase();
+      if (activeRole == 'CUSTOMER') {
+        await SecureTokenStorage.clearAll();
+        for (final key in [
+          'auth_token',
+          'customer_token',
+          'refresh_token',
+          'customer_id',
+          'user_id',
+          'userId',
+        ]) {
+          await prefs.remove(key);
+        }
+        await ApiClient.resetAuthRuntimeState();
+        if (!mounted) return;
+        globalNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/customer-login',
+          (_) => false,
+        );
+        return;
+      }
+
       // Check if user still has a valid local session before forcing logout
       final hasLocalSession = await SecureTokenStorage.isSessionValid();
       if (hasLocalSession) {
