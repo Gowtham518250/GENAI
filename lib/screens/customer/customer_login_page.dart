@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_client.dart';
 import '../../secure_token_storage.dart';
+import '../../session_logout_service.dart';
 import 'customer_marketplace_page.dart';
 
 class CustomerLoginPage extends StatefulWidget {
@@ -53,6 +54,14 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
               customerId == null || customerId <= 0) {
             throw Exception('Customer login returned an invalid session.');
           }
+
+          // Switch through the shared isolation path before saving the
+          // customer credentials. This clears owner tokens/preferences without
+          // deleting other users' scoped offline business data.
+          await SessionLogoutService.enterCustomerMode(
+            customerName: (data['name'] ?? data['user_name'] ?? '').toString(),
+            customerPhone: (data['phone'] ?? _phoneController.text).toString(),
+          );
 
           // Keep customer credentials separate from the owner's JWT. Offline
           // customer orders are synced later by SyncService, so they must use
