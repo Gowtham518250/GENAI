@@ -583,8 +583,10 @@ void main() async {
       // 1. Move the heavy DB purging here so it doesn't block the UI thread
       await LocalStorageService.validateAndMigrateSchema();
       await LocalStorageService.purgeLegacyUnscopedHiveBoxes();
-      final startupUserId =
-          appPrefs.getInt('user_id') ?? appPrefs.getInt('userId') ?? 0;
+      final rawStartupUserId = appPrefs.get('user_id') ?? appPrefs.get('userId');
+      final startupUserId = rawStartupUserId is int
+          ? rawStartupUserId
+          : int.tryParse(rawStartupUserId?.toString() ?? '') ?? 0;
       if (startupUserId > 0) {
         await LocalStorageService.clearOrphanSalesBoxes();
         await LocalStorageService.purgeLegacyPrefsSales();
@@ -656,8 +658,10 @@ void main() async {
       // 🔧 FIX: Auto-refresh session on app startup - OFFLINE-FIRST MODE
       // Try to refresh session if online, but don't force logout if offline
       try {
-        final startupUserId =
-            appPrefs.getInt('user_id') ?? appPrefs.getInt('userId') ?? 0;
+        final rawStartupUserId = appPrefs.get('user_id') ?? appPrefs.get('userId');
+      final startupUserId = rawStartupUserId is int
+          ? rawStartupUserId
+          : int.tryParse(rawStartupUserId?.toString() ?? '') ?? 0;
         if (startupUserId > 0) {
           // Check if user has a valid local session (token exists)
           final hasValidSession = await SessionManagementService.isTokenValid();
@@ -1445,8 +1449,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
 
     if (isValid) {
-      final userId =
-          loginPrefs.getInt('user_id') ?? loginPrefs.getInt('userId') ?? 0;
+      final rawUserId = loginPrefs.get('user_id') ?? loginPrefs.get('userId');
+      final userId = rawUserId is int
+          ? rawUserId
+          : int.tryParse(rawUserId?.toString() ?? '') ?? 0;
       if (userId <= 0) {
         await SessionLogoutService.performFullLogout(notifyServer: false);
         return false;
