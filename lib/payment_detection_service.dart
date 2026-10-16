@@ -3580,12 +3580,13 @@ class PaymentDetectionService {
     final matchedSaleId = await _tryAutoSettleInvoice(event);
     final isSettled = isBillSettlement || matchedSaleId != null;
 
-    PaymentEvent finalEvent = matchedSaleId != null
-        ? event.copyWith(
-            decision: PaymentDecision.confirmed,
-            saleId: matchedSaleId,
-          )
-        : event;
+    PaymentEvent finalEvent = (matchedSaleId != null
+            ? event.copyWith(
+                decision: PaymentDecision.confirmed,
+                saleId: matchedSaleId,
+              )
+            : event)
+        .copyWith(isBillMatch: isBillSettlement);
     PaymentUiState finalUi = ui;
     if (matchedSaleId != null) {
       finalUi = ui.copyWith(
