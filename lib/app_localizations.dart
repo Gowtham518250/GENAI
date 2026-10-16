@@ -879,7 +879,9 @@ class AppLocalizations {
   };
 
   String translate(String key) {
-    return translations[locale.languageCode]?[key] ?? key;
+    return translations[locale.languageCode]?[key] ??
+        translations['en']?[key] ??
+        key;
   }
 
   String get appTitle => translations[locale.languageCode]?['appTitle'] ?? translations['en']?['appTitle'] ?? 'RETAIL MIND';
