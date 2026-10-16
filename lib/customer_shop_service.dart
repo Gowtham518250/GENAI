@@ -131,6 +131,8 @@ class CustomerShopService {
     required double totalAmount,
     required String paymentMethod,
     String paymentStatus = 'pending',
+    String fulfillmentMethod = 'PICKUP',
+    String deliveryAddress = 'Store Pickup',
   }) async {
     final localOrderId = 'LOCAL_ORDER_${DateTime.now().microsecondsSinceEpoch}';
     final now = DateTime.now().toIso8601String();
@@ -149,6 +151,8 @@ class CustomerShopService {
       'total_amount': totalAmount,
       'payment_method': paymentMethod,
       'payment_status': paymentStatus,
+      'fulfillment_method': fulfillmentMethod.toUpperCase(),
+      'delivery_address': deliveryAddress,
       'status': 'PENDING_SYNC',
       'sync_status': 'pending',
       'created_at': now,
@@ -169,7 +173,8 @@ class CustomerShopService {
       'local_order_id': localOrderId,
       'shop_id': int.tryParse(shopId) ?? 0,
       'items': apiItems,
-      'delivery_address': 'Store Pickup',
+      'delivery_address': deliveryAddress,
+      'fulfillment_method': fulfillmentMethod.toUpperCase(),
       'customer_email': customerEmail,
       'payment_method': paymentMethod.toUpperCase() == 'UPI' ? 'UPI' : 'COD',
       'payment_status': paymentStatus.toUpperCase(),
