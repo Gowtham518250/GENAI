@@ -37,6 +37,8 @@ class PaymentEvent {
   final bool   isDuplicate;
   final bool   isPartialPayment;
   final double remainingAmount; // Only meaningful when isPartialPayment = true
+  // True only when the detector matched this event to the currently expected bill.
+  final bool   isBillMatch;
 
   // ── Debug / Audit ─────────────────────────────────────────────────────────────
   final String rawText;
@@ -61,6 +63,7 @@ class PaymentEvent {
     this.isDuplicate       = false,
     this.isPartialPayment  = false,
     this.remainingAmount   = 0.0,
+    this.isBillMatch       = false,
     this.rawText           = '',
     this.confidenceScore   = 0.0,
     this.detectionSource   = 'notification',
@@ -213,7 +216,7 @@ class PaymentEvent {
     String? payerName, String? referenceId, String? vpa,
     String? accountSuffix, String? bankName, bool? isFailed,
     bool? isDuplicate, bool? isPartialPayment, double? remainingAmount,
-    String? rawText, double? confidenceScore,
+    bool? isBillMatch, String? rawText, double? confidenceScore,
     String? detectionSource, String? id, PaymentDecision? decision,
     String? saleId, int? version, DateTime? updatedAt,
   }) {
@@ -230,6 +233,7 @@ class PaymentEvent {
       isDuplicate:      isDuplicate     ?? this.isDuplicate,
       isPartialPayment: isPartialPayment ?? this.isPartialPayment,
       remainingAmount:  remainingAmount ?? this.remainingAmount,
+      isBillMatch:      isBillMatch     ?? this.isBillMatch,
       rawText:          rawText         ?? this.rawText,
       confidenceScore:  confidenceScore ?? this.confidenceScore,
       detectionSource:  detectionSource ?? this.detectionSource,
@@ -256,6 +260,7 @@ class PaymentEvent {
         'isDuplicate':      isDuplicate,
         'isPartialPayment': isPartialPayment,
         'remainingAmount':  remainingAmount,
+        'isBillMatch':      isBillMatch,
         'confidenceScore':  confidenceScore,
         'confidenceTier':   confidenceTier.name,
         'detectionSource':  detectionSource,
@@ -283,6 +288,7 @@ class PaymentEvent {
         isDuplicate:      json['isDuplicate']       ?? false,
         isPartialPayment: json['isPartialPayment']  ?? false,
         remainingAmount:  (json['remainingAmount'] as num?)?.toDouble() ?? 0.0,
+        isBillMatch:      json['isBillMatch']        ?? false,
         rawText:          json['rawText']           ?? '',
         confidenceScore:  (json['confidenceScore'] as num?)?.toDouble() ?? 0.0,
         detectionSource:  json['detectionSource']   ?? 'notification',
