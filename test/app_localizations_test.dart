@@ -35,3 +35,31 @@ void main() {
     });
   });
 }
+
+
+  test('payment status and payment-provenance copy exists in every supported locale', () {
+    const keys = [
+      'paymentStatusLine',
+      'paymentMatchedNotificationHint',
+      'paymentPendingHint',
+      'paymentStatusPaid',
+      'paymentStatusPending',
+      'paymentStatusCodDue',
+      'paymentStatusFailed',
+      'paymentStatusRefund',
+      'paymentStatusPartial',
+    ];
+    final english = AppLocalizations(const Locale('en'));
+    for (final locale in AppLocalizations.supportedLocales) {
+      final localizations = AppLocalizations(locale);
+      for (final key in keys) {
+        final translated = localizations.translate(key);
+        expect(translated, isNot(key),
+            reason: '$key must resolve for ${locale.languageCode}');
+        if (locale.languageCode != 'en') {
+          expect(translated, isNot(english.translate(key)),
+              reason: '$key must not silently fall back to English for ${locale.languageCode}');
+        }
+      }
+    }
+  });
