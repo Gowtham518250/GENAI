@@ -2479,14 +2479,21 @@ class _SalesEntryPageState extends State<SalesEntryPage>
 
   Future<void> _loadPaymentConfig() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+
+    final modeIndex = prefs.getInt('announcement_mode') ?? 1; // 1 = shopkeeper
+    final modes = AnnouncementMode.values;
+    final safeModeIndex = modeIndex >= 0 && modeIndex < modes.length
+        ? modeIndex
+        : (modes.length > 1 ? 1 : 0);
+
     setState(() {
       _upiId = prefs.getString('upi_id');
       _shopNameForDynamicQr = prefs.getString('shop_name') ?? 'Retail Shop';
       _paymentSoundEnabled = prefs.getBool('payment_sound_enabled') ?? true;
       _paymentSoundLang = prefs.getString('payment_sound_lang') ?? 'en-US';
       _speechInputLang = prefs.getString('speech_input_lang') ?? _paymentSoundLang;
-      final modeIndex = prefs.getInt('announcement_mode') ?? 1; // 1 = shopkeeper
-      _announcementMode = AnnouncementMode.values[modeIndex];
+      _announcementMode = modes[safeModeIndex];
     });
 
     // Start automatic payment detection (Singleton Stream)
