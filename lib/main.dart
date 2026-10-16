@@ -1457,36 +1457,38 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     return isValid;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (widget.testMode) {
-      return const MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: Text('Retail Mind test shell'),
-          ),
-        ),
-      );
-    }
+  final Map<String, Future<String>> _startupRouteFutures =
+      <String, Future<String>>{};
 
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider<LanguageProvider>(
-          create: (_) => LanguageProvider(),
-        ),
-        ChangeNotifierProvider<AppThemeController>(
-          create: (_) => AppThemeController(),
-        ),
-      ],
-      child: Consumer2<LanguageProvider, AppThemeController>(
-        builder: (context, languageProvider, themeController, _) {
-          return FutureBuilder<bool>(
-            future: _loggedInFuture,
-            builder: (context, snapshot) {
-              final booting =
-                  snapshot.connectionState == ConnectionState.waiting;
-              final authed = snapshot.hasData && snapshot.data == true;
-              String initialRoute = '/login';
+  Future<String> _startupRouteFuture({
+    required bool booting,
+    required bool authenticated,
+  }) {
+    final cacheKey = '${booting}:${authenticated}';
+    return _startupRouteFutures.putIfAbsent(cacheKey, () async {
+
+                  final prefs = await SharedPreferences.getInstance();
+                  final role = (prefs.getString('user_role') ??
+                          prefs.getString('user_type') ??
+                          prefs.getString('role') ??
+                          '')
+                      .trim()
+                      .toUpperCase();
+                  final storedUserId =
+                      prefs.get('user_id') ?? prefs.get('userId');
+                  final userId = storedUserId is int
+                      ? storedUserId
+                      : int.tryParse(storedUserId?.toString() ?? '') ?? 0;
+
+                  final shopDetailsRequired = userId > 0 &&
+                      (prefs.getBool('shop_details_required_$userId') ?? false);
+                  final staffMode =
+                      (await ScopedSharedPreferences.getBool('is_staff_mode')) ??
+                                          future: _startupRouteFuture(
+                  booting: booting,
+                  authenticated: authed,
+                ),
+                builder: (context, routeSnapshot)e = '/login';
               if (!booting && authed) {
                 initialRoute = '/identity-verification';
               } else if (booting) {
