@@ -584,6 +584,12 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                         final items = o['items'] as List<dynamic>? ?? [];
                         final orderId = o['id'] ?? o['order_id'] ?? i + 1;
                         final phone = o['customer_phone']?.toString() ?? '';
+                        final paymentMethod =
+                            (o['payment_method'] ?? '').toString().trim().toUpperCase();
+                        final paymentStatus =
+                            (o['payment_status'] ?? '').toString().trim().toUpperCase();
+                        final paymentConfirmationSource =
+                            (o['payment_confirmation_source'] ?? '').toString().trim().toUpperCase();
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 14),
@@ -667,6 +673,57 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                   ],
                                 ),
                               ),
+
+                              // Payment status and provenance: notification matches are not
+                              // provider settlement confirmations, so make that distinction visible.
+                              if (paymentMethod.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: _card,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.white10),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Payment: $paymentMethod · ${paymentStatus.isEmpty ? 'PENDING' : paymentStatus}',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white70,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        if (paymentConfirmationSource == 'OWNER_DEVICE_NOTIFICATION_MATCH')
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 4),
+                                            child: Text(
+                                              'Matched from an owner-device notification. Reconcile the transaction reference against the UPI/bank record; this is not a payment-provider webhook confirmation.',
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.orangeAccent,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          )
+                                        else if (paymentMethod == 'UPI' && paymentStatus != 'PAID')
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 4),
+                                            child: Text(
+                                              'Awaiting a matching transaction notification. Returning from the UPI app alone does not mark the order paid.',
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.orangeAccent,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
 
                               // Delivery address
                               if (o['delivery_address'] != null)
