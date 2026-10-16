@@ -6,8 +6,11 @@ class LanguageProvider extends ChangeNotifier {
 
   Locale get locale => _locale;
 
+  int _selectionVersion = 0;
+  late final Future<void> initialized;
+
   LanguageProvider() {
-    _loadSavedLanguage();
+    initialized = _loadSavedLanguage();
   }
 
   static String _preferenceKeyFor(SharedPreferences prefs) {
@@ -36,7 +39,11 @@ class LanguageProvider extends ChangeNotifier {
       languages.any((language) => language['code'] == languageCode);
 
   Future<void> _loadSavedLanguage() async {
+    final selectionVersionAtStart = _selectionVersion;
     final prefs = await SharedPreferences.getInstance();
+    // If a user chooses a language while startup is loading preferences, the
+    // explicit choice wins instead of being overwritten by this async read.
+    if (selectionVersionAtStart != _selectionVersion) return;
     final key = _preferenceKeyFor(prefs);
     final saved = prefs.getString(key) ?? prefs.getString('language_code') ?? 'en';
     final languageCode = _isSupported(saved) ? saved : 'en';
@@ -49,6 +56,7 @@ class LanguageProvider extends ChangeNotifier {
   }
 
   Future<void> setLanguage(String languageCode) async {
+    _selectionVersion++;
     final safeCode = _isSupported(languageCode) ? languageCode : 'en';
     _locale = Locale(safeCode);
     final prefs = await SharedPreferences.getInstance();
