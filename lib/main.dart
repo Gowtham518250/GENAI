@@ -39,6 +39,7 @@ import 'screens/customer/nearby_shops_page.dart';
 import 'screens/customer/customer_marketplace_page.dart';
 import 'screens/customer/customer_ai_shopping_page.dart';
 import 'screens/customer/customer_home_page.dart';
+import 'screens/customer/order_history_page.dart';
 import 'screens/customer/cart_checkout_page.dart';
 import 'screens/owner/online_orders_tab.dart';
 import 'screens/owner/online_shopping_config_page.dart';
@@ -1749,6 +1750,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                             const CustomerAiShoppingPage(),
                         '/nearby-shops': (context) => const NearbyShopsPage(),
                         '/customer-home': (context) => const CustomerHomePage(),
+                        // Checkout previously navigated to this missing route,
+                        // which showed the generic Not found page after a successful order.
+                        '/order-tracking': (context) => const OrderHistoryPage(),
+                        '/customer-orders': (context) => const OrderHistoryPage(),
                         '/customer-cart': (context) {
                           final args = ModalRoute.of(
                             context,
