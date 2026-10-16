@@ -10,6 +10,7 @@ import 'dart:collection';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
 import 'secure_token_storage.dart';
+import 'secure_preferences_service.dart';
 import 'scoped_shared_preferences.dart';
 import 'app_localizations.dart';
 import 'sync_queue_manager.dart';
@@ -2479,17 +2480,47 @@ class _SalesEntryPageState extends State<SalesEntryPage>
 
   Future<void> _loadPaymentConfig() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Shop Details writes the UPI ID into scoped and encrypted storage.
+    // Resolve the same sources here so the first bill works immediately after
+    // setup, without requiring a restart or an unrelated page visit.
+    var upiId =
+        (await ScopedSharedPreferences.getString('primary_upi_id') ?? '').trim();
+    if (upiId.isEmpty) {
+      upiId = (await ScopedSharedPreferences.getString('upi_id') ?? '').trim();
+    }
+    if (upiId.isEmpty) {
+      upiId = (await SecurePreferencesService.getUpiId() ?? '').trim();
+    }
+    if (upiId.isEmpty) {
+      // One-time migration for older installs that used unscoped preferences.
+      upiId = (prefs.getString('upi_id') ?? '').trim();
+    }
+    if (upiId.isNotEmpty) {
+      await ScopedSharedPreferences.setString('primary_upi_id', upiId);
+      await ScopedSharedPreferences.setString('upi_id', upiId);
+      await SecurePreferencesService.setUpiId(upiId);
+    }
+
+    final scopedShopName =
+        (await ScopedSharedPreferences.getString('shop_name') ?? '').trim();
+    final legacyShopName = (prefs.getString('shop_name') ?? '').trim();
+    final resolvedShopName = scopedShopName.isNotEmpty
+        ? scopedShopName
+        : legacyShopName.isNotEmpty
+            ? legacyShopName
+            : 'Retail Shop';
     if (!mounted) return;
 
-    final modeIndex = prefs.getInt('announcement_mode') ?? 1; // 1 = shopkeeper
+    final modeIndex = prefs.getInt('announcement_mode') ?? 1;
     final modes = AnnouncementMode.values;
     final safeModeIndex = modeIndex >= 0 && modeIndex < modes.length
         ? modeIndex
         : (modes.length > 1 ? 1 : 0);
 
     setState(() {
-      _upiId = prefs.getString('upi_id');
-      _shopNameForDynamicQr = prefs.getString('shop_name') ?? 'Retail Shop';
+      _upiId = upiId.isNotEmpty ? upiId : null;
+      _shopNameForDynamicQr = resolvedShopName;
       _paymentSoundEnabled = prefs.getBool('payment_sound_enabled') ?? true;
       _paymentSoundLang = prefs.getString('payment_sound_lang') ?? 'en-US';
       _speechInputLang = prefs.getString('speech_input_lang') ?? _paymentSoundLang;
