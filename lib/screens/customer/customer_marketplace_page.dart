@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -199,7 +200,7 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
             ),
             if (tagline.isNotEmpty) ...[
               const SizedBox(height: 10),
-              Text(tagline, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade600)),
+              LiveTranslatedText(tagline, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade600)),
             ],
             const SizedBox(height: 12),
             Row(
@@ -269,9 +270,9 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  LiveTranslatedText(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 4),
-                  Text(shop, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                  LiveTranslatedText(shop, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                   const SizedBox(height: 7),
                   Row(children: [
                     _rating(product),
@@ -316,7 +317,7 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
-                Text(shop, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+                LiveTranslatedText(shop, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
               ],
             ),
           ),
@@ -472,7 +473,7 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
                   ),
                   if (_aiResponse.isNotEmpty) ...[
                     const SizedBox(height: 14),
-                    Text(_aiResponse, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, height: 1.4)),
+                    LiveTranslatedText(_aiResponse, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, height: 1.4)),
                   ],
                   if (_recommendations.isNotEmpty) ...[
                     const SizedBox(height: 12),
