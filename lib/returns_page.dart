@@ -235,7 +235,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
             keyboardType: TextInputType.phone,
             onChanged: (_) => setState(() => _selectedInvoiceId = ''),
             decoration: InputDecoration(
-              hintText: 'Enter customer phone (10 digits)',
+              hint: LiveTranslatedText('Enter customer phone (10 digits)'),
               prefixIcon: const Icon(Icons.phone_rounded),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -330,7 +330,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                   decoration: const InputDecoration(
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     border: InputBorder.none,
-                    hintText: 'Choose invoice',
+                    hint: LiveTranslatedText('Choose invoice'),
                   ),
                 ),
               );
@@ -484,8 +484,8 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
               TextField(
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: 'Quantity to Return',
-                  hintText: '1',
+                  label: LiveTranslatedText('Quantity to Return'),
+                  hint: LiveTranslatedText('1'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 onChanged: (val) => returnQty = double.tryParse(val) ?? 1,
@@ -502,7 +502,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                 ].map((r) => DropdownMenuItem(value: r, child: LiveTranslatedText(r))).toList(),
                 onChanged: (val) => setState(() => reason = val ?? 'Damage/Defect'),
                 decoration: InputDecoration(
-                  labelText: 'Return Reason',
+                  label: LiveTranslatedText('Return Reason'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),

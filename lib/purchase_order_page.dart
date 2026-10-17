@@ -525,7 +525,7 @@ class _PurchaseOrderPageState extends State<PurchaseOrderPage> {
                   TextField(
                     controller: supplierController,
                     decoration: InputDecoration(
-                      labelText: 'Supplier Name',
+                      label: LiveTranslatedText('Supplier Name'),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
@@ -533,7 +533,7 @@ class _PurchaseOrderPageState extends State<PurchaseOrderPage> {
                   TextField(
                     controller: noteController,
                     decoration: InputDecoration(
-                      labelText: 'Notes (optional)',
+                      label: LiveTranslatedText('Notes (optional)'),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
@@ -605,7 +605,7 @@ class _PurchaseOrderPageState extends State<PurchaseOrderPage> {
                                 controller: quantityController,
                                 keyboardType: TextInputType.number,
                                 decoration: const InputDecoration(
-                                  labelText: 'Quantity',
+                                  label: LiveTranslatedText('Quantity'),
                                   border: OutlineInputBorder(),
                                 ),
                               ),

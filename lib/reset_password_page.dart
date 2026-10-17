@@ -254,7 +254,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               TextField(
                 controller: emailController,
                 decoration: InputDecoration(
-                  labelText: 'Email Address',
+                  label: LiveTranslatedText('Email Address'),
                   prefixIcon: const Icon(Icons.email),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   enabled: !isLoading,
@@ -282,7 +282,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               TextField(
                 controller: emailController,
                 decoration: InputDecoration(
-                  labelText: 'Email Address',
+                  label: LiveTranslatedText('Email Address'),
                   prefixIcon: const Icon(Icons.email),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   enabled: false,
@@ -295,7 +295,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               TextField(
                 controller: otpController,
                 decoration: InputDecoration(
-                  labelText: 'Enter Reset Code (OTP)',
+                  label: LiveTranslatedText('Enter Reset Code (OTP)'),
                   prefixIcon: const Icon(Icons.code),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   enabled: !isLoading,
@@ -309,7 +309,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 controller: newPasswordController,
                 obscureText: !showPassword,
                 decoration: InputDecoration(
-                  labelText: 'New Password',
+                  label: LiveTranslatedText('New Password'),
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(showPassword ? Icons.visibility : Icons.visibility_off),
@@ -326,7 +326,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 controller: confirmPasswordController,
                 obscureText: !showPassword,
                 decoration: InputDecoration(
-                  labelText: 'Confirm Password',
+                  label: LiveTranslatedText('Confirm Password'),
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(showPassword ? Icons.visibility : Icons.visibility_off),

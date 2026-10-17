@@ -175,8 +175,8 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                       textCapitalization: TextCapitalization.characters,
                       maxLength: 50,
                       decoration: InputDecoration(
-                        labelText: 'Coupon code',
-                        hintText: 'e.g. GOWTHAM10',
+                        label: LiveTranslatedText('Coupon code'),
+                        hint: LiveTranslatedText('e.g. GOWTHAM10'),
                         prefixIcon: const Icon(Icons.confirmation_number_outlined),
                         counterText: '',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -186,7 +186,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                     DropdownButtonFormField<String>(
                       value: discountType,
                       decoration: InputDecoration(
-                        labelText: 'Discount type',
+                        label: LiveTranslatedText('Discount type'),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       items: const [
@@ -212,8 +212,8 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                       controller: minimumController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: 'Minimum order amount (₹)',
-                        helperText: 'Set this above zero to reward larger orders.',
+                        label: LiveTranslatedText('Minimum order amount (₹)'),
+                        helper: LiveTranslatedText('Set this above zero to reward larger orders.'),
                         prefixIcon: const Icon(Icons.shopping_bag_outlined),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
@@ -224,7 +224,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                         controller: maximumController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(
-                          labelText: 'Maximum discount (₹, optional)',
+                          label: LiveTranslatedText('Maximum discount (₹, optional)'),
                           prefixIcon: const Icon(Icons.savings_outlined),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
@@ -235,8 +235,8 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                       controller: usageController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Maximum redemptions (optional)',
-                        hintText: 'Unlimited if left blank',
+                        label: LiveTranslatedText('Maximum redemptions (optional)'),
+                        hint: LiveTranslatedText('Unlimited if left blank'),
                         prefixIcon: const Icon(Icons.group_outlined),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
@@ -575,7 +575,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
             controller: copilot,
             onSubmitted: (_) => ask(),
             decoration: InputDecoration(
-              hintText: 'Ask about stock, profit, returns, delivery or online orders…',
+              hint: LiveTranslatedText('Ask about stock, profit, returns, delivery or online orders…'),
               prefixIcon: const Icon(
                 Icons.psychology_rounded,
                 color: Color(0xFF6366F1),

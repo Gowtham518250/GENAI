@@ -630,7 +630,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                           onSubmitted: (_) => _sendPurchaseShoppingQuery(),
                           style: GoogleFonts.poppins(color: _ink, fontSize: 12),
                           decoration: InputDecoration(
-                            hintText: 'Ask for any product or supplier…',
+                            hint: LiveTranslatedText('Ask for any product or supplier…'),
                             hintStyle: GoogleFonts.poppins(color: const Color(0xFF8792A8), fontSize: 10.5),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(vertical: 11),

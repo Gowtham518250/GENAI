@@ -683,7 +683,7 @@ class _RegisterPageState extends State<RegisterPage>
                               _buildTextField(
                                 controller: nameController,
                                 labelText: l.fullName,
-                                hintText: 'Enter your full name',
+                                hint: LiveTranslatedText('Enter your full name'),
                                 icon: Icons.person_outline_rounded,
                                 validator: (v) => (v == null || v.trim().isEmpty)
                                     ? 'Please enter your name'
@@ -694,8 +694,8 @@ class _RegisterPageState extends State<RegisterPage>
 
                               _buildTextField(
                                 controller: shopNameController,
-                                labelText: 'Shop Name',
-                                hintText: 'Enter your shop or business name',
+                                label: LiveTranslatedText('Shop Name'),
+                                hint: LiveTranslatedText('Enter your shop or business name'),
                                 icon: Icons.storefront_outlined,
                                 validator: (v) => (v == null || v.trim().isEmpty)
                                     ? 'Please enter your shop name'
@@ -718,7 +718,7 @@ class _RegisterPageState extends State<RegisterPage>
                               _buildTextField(
                                 controller: phoneController,
                                 labelText: l.phoneNumber,
-                                hintText: '9876543210 (10 digits)',
+                                hint: LiveTranslatedText('9876543210 (10 digits)'),
                                 icon: Icons.phone_rounded,
                                 keyboardType: TextInputType.phone,
                                 inputFormatters: [
@@ -771,8 +771,8 @@ class _RegisterPageState extends State<RegisterPage>
 
                               _buildTextField(
                                 controller: confirmController,
-                                labelText: 'Confirm Password',
-                                hintText: 'Re-enter your password',
+                                label: LiveTranslatedText('Confirm Password'),
+                                hint: LiveTranslatedText('Re-enter your password'),
                                 icon: Icons.lock_outline_rounded,
                                 obscureText: !isConfirmPasswordVisible,
                                 suffixIcon: IconButton(
