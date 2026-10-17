@@ -844,8 +844,8 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                   controller: urlController,
                   onChanged: (_) => ss(() { selectedBytes = null; selectedDataUrl = null; }),
                   decoration: InputDecoration(
-                    labelText: 'Image URL (optional)',
-                    hintText: 'https://…',
+                    label: LiveTranslatedText('Image URL (optional)'),
+                    hint: LiveTranslatedText('https://…'),
                     prefixIcon: const Icon(Icons.link_rounded),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -1200,8 +1200,8 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                       _selectedProductImageDataUrl = null;
                     }),
                     decoration: InputDecoration(
-                      labelText: 'Image URL (optional)',
-                      hintText: 'https://…',
+                      label: LiveTranslatedText('Image URL (optional)'),
+                      hint: LiveTranslatedText('https://…'),
                       prefixIcon: const Icon(Icons.link_rounded),
                       isDense: true,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -1212,7 +1212,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
               DropdownButtonFormField<String>(
                 value: _unitC.text.isEmpty ? 'pcs' : _unitC.text,
                 decoration: InputDecoration(
-                  labelText: 'Unit of Measure',
+                  label: LiveTranslatedText('Unit of Measure'),
                   prefixIcon: Icon(Icons.scale_rounded, color: _primary, size: 20),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
@@ -1624,7 +1624,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                 onChanged: (value) => setState(() => _inventorySearch = value),
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
-                  hintText: 'Search products, barcode, or category',
+                  hint: LiveTranslatedText('Search products, barcode, or category'),
                   hintStyle: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF94A3B8)),
                   prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 21),
                   suffixIcon: _inventorySearch.isEmpty ? null : IconButton(

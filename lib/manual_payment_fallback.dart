@@ -102,7 +102,7 @@ class _ManualPaymentFallbackWidgetState
                 controller: _amountCtrl,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: 'Amount Received (₹)',
+                  label: LiveTranslatedText('Amount Received (₹)'),
                   suffixText: '₹',
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -117,7 +117,7 @@ class _ManualPaymentFallbackWidgetState
               DropdownButtonFormField<String>(
                 value: _selectedMethod,
                 decoration: InputDecoration(
-                  labelText: 'Payment Method',
+                  label: LiveTranslatedText('Payment Method'),
                   filled: true,
                   fillColor: Colors.grey[50],
                   border: OutlineInputBorder(
@@ -145,7 +145,7 @@ class _ManualPaymentFallbackWidgetState
                 DropdownButtonFormField<String>(
                   value: _selectedBank,
                   decoration: InputDecoration(
-                    labelText: 'Bank / UPI App',
+                    label: LiveTranslatedText('Bank / UPI App'),
                     filled: true,
                     fillColor: Colors.grey[50],
                     border: OutlineInputBorder(

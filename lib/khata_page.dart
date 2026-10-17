@@ -746,7 +746,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                     controller: amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                      labelText: 'Payment Received (₹)',
+                      label: LiveTranslatedText('Payment Received (₹)'),
                       prefixIcon: const Icon(Icons.currency_rupee),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -786,7 +786,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                   TextField(
                     controller: notesController,
                     decoration: InputDecoration(
-                      labelText: 'Notes / Payment Ref (Optional)',
+                      label: LiveTranslatedText('Notes / Payment Ref (Optional)'),
                       prefixIcon: const Icon(Icons.note_alt_outlined),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -1314,7 +1314,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
               setState(() => _applyFilter());
             },
             decoration: InputDecoration(
-              hintText: 'Search by customer or phone...',
+              hint: LiveTranslatedText('Search by customer or phone...'),
               prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B)),
               fillColor: Colors.white,
               filled: true,
@@ -1598,7 +1598,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
             controller: _invoiceSearchController,
             onChanged: (val) => setState(() => _invoiceSearchQuery = val),
             decoration: InputDecoration(
-              hintText: 'Search invoice #, customer, phone...',
+              hint: LiveTranslatedText('Search invoice #, customer, phone...'),
               prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B), size: 20),
               isDense: true,
               fillColor: Colors.white,

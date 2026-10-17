@@ -290,7 +290,7 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
               controller: pointsController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                hintText: 'Points to redeem',
+                hint: LiveTranslatedText('Points to redeem'),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),

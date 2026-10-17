@@ -233,7 +233,7 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
             ]),
             const SizedBox(height: 16),
             TextField(controller: amountController, keyboardType: TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(labelText: 'Amount (₹)', prefixIcon: const Icon(Icons.currency_rupee), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+              decoration: InputDecoration(label: LiveTranslatedText('Amount (₹)'), prefixIcon: const Icon(Icons.currency_rupee), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
             const SizedBox(height: 12),
             SegmentedButton<String>(
               segments: const [ButtonSegment(value: 'CASH', label: LiveTranslatedText('CASH')), ButtonSegment(value: 'UPI', label: LiveTranslatedText('UPI'))],
@@ -351,7 +351,7 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
       controller: _searchController,
       onChanged: (v) => setState(() { _searchQuery = v; _applyFilter(); }),
       decoration: InputDecoration(
-        hintText: 'Search customers...', prefixIcon: const Icon(Icons.search), fillColor: Colors.white, filled: true,
+        hint: LiveTranslatedText('Search customers...'), prefixIcon: const Icon(Icons.search), fillColor: Colors.white, filled: true,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
       ),
     );
