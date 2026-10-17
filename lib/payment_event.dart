@@ -135,7 +135,9 @@ class PaymentEvent {
     final t = text.toLowerCase();
 
     final englishCredit = RegExp(
-      r'\b(?:credited|credit|received|deposited|money\s+received|amount\s+received|payment\s+received|added\s+to|sent\s+to\s+your|paid\s+to\s+your|has\s+sent)\b',
+      r'\b(?:credited|credit|received|deposited|money\s+received|amount\s+received|payment\s+received'
+      r'|added\s+to|sent\s+to\s+(?:your|you)\b|paid\s+to\s+(?:your|you)\b'
+      r'|made\s+to\s+your\b|has\s+sent|transferred\s+to\s+(?:your|you)\b)\b',
     ).hasMatch(t);
     final nativeCredit = RegExp(
       r'(जमा|क्रेडिट|प्राप्त|પૈસા મળ્યા|જમા|ક્રેડિટ|జమ|క్రెడిట్|అందింది|வரவு|பெறப்பட்டது|কয়েডিট|জমা|ক্রেডিট|জমা|ਜਮ੍ਹਾ|ਕ੍ਰੈਡਿਟ|വരവ്|ക്രെഡിറ്റ്|ലഭിച്ചു|ಜಮಾ|ಕ್ರೆಡಿಟ್)',
@@ -143,7 +145,9 @@ class PaymentEvent {
     final credit = englishCredit || nativeCredit;
 
     final englishDebit = RegExp(
-      r'\b(?:debited|debit|sent|you\s+sent|paid|payment\s+to|deducted|withdrawn|spent|purchase|transferred\s+to)\b',
+      r'\b(?:debited|debit|deducted|withdrawn|spent|purchase|you\s+sent|you\s+paid'
+      r'|sent\s+to\s+(?!your\b|you\b)|paid\s+to\s+(?!your\b|you\b)'
+      r'|payment\s+to\s+(?!your\b|you\b)|transferred\s+to\s+(?!your\b|you\b))',
     ).hasMatch(t);
     final nativeDebit = RegExp(
       r'(डेबिट|કાપવામાં આવ્યા|ડેબિટ|డెబిట్|పంపబడింది|பற்று|எடுக்கப்பட்டது|ডেবিট|কেটে নেওয়া|ਡੈਬਿਟ|ਕੱਟੇ|ഡെബിറ്റ്|പണം അയച്ചു|ಡೆബಿಟ್|ಕಡಿತ)',
