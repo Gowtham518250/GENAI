@@ -664,7 +664,11 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       // Never mutate invoice money for a LIKELY notification. Only CONFIRMED
       // events may automatically settle or partially settle an invoice.
-      if (event.decision != PaymentDecision.confirmed) return;
+      if (event.decision != PaymentDecision.confirmed ||
+          VoiceBuilder.detectDirection(event.rawText.toString()) !=
+              PaymentDirection.credited) {
+        return;
+      }
       final amount = (event.amount as num?)?.toDouble() ?? 0.0;
       if (amount <= 0) return;
 
