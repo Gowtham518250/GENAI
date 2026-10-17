@@ -156,7 +156,7 @@ class _TransactionRecorderPageState extends State<TransactionRecorderPage> {
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  hintText: 'e.g. Raj Kumar, Family Store',
+                  hint: LiveTranslatedText('e.g. Raj Kumar, Family Store'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -177,7 +177,7 @@ class _TransactionRecorderPageState extends State<TransactionRecorderPage> {
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
-                  hintText: '10-digit phone number',
+                  hint: LiveTranslatedText('10-digit phone number'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -199,7 +199,7 @@ class _TransactionRecorderPageState extends State<TransactionRecorderPage> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   prefixText: '₹ ',
-                  hintText: '0.00',
+                  hint: LiveTranslatedText('0.00'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
@@ -256,7 +256,7 @@ class _TransactionRecorderPageState extends State<TransactionRecorderPage> {
                 controller: _notesController,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: 'Add any notes about this transaction...',
+                  hint: LiveTranslatedText('Add any notes about this transaction...'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),

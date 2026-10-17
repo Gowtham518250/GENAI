@@ -489,7 +489,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
             maxLines: 7,
             style: GoogleFonts.notoSans(color: Colors.white, fontSize: 14, height: 1.6),
             decoration: InputDecoration(
-              hintText: 'Paste customer\'s WhatsApp order here…\n\nE.g:\n2 kg Atta 60, 1 Oil 150\nSugar 1kg 45',
+              hint: LiveTranslatedText('Paste customer\'s WhatsApp order here…\n\nE.g:\n2 kg Atta 60, 1 Oil 150\nSugar 1kg 45'),
               hintStyle: GoogleFonts.notoSans(
                 color: const Color(0xFF263238), fontSize: 13, height: 1.6),
               border: InputBorder.none,
