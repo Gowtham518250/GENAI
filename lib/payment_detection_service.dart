@@ -102,6 +102,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:telephony/telephony.dart';
 import 'payment_event.dart';
 import 'payment_event_deduplicator.dart';
+import 'payment_idempotency_service.dart';
 import 'sms_background_receiver.dart';
 import 'local_storage_service.dart';
 import 'sync_service.dart';
@@ -2490,10 +2491,18 @@ class PaymentDetectionService {
   }
 
   void repeatLastPayment() {
-    if (_lastConfirmed == null) return;
-    final text = VoiceBuilder.received(
-        _lastConfirmed!.amount, _lastConfirmed!.payerName, _voiceLanguage);
-    _voice.enqueueRaw(text, _VP.high);
+    final event = _lastConfirmed;
+    if (event == null ||
+        VoiceBuilder.detectDirection(event.rawText) != PaymentDirection.credited) {
+      return;
+    }
+    final text = VoiceBuilder.receivedDirectional(
+      event.amount,
+      event.payerName,
+      _voiceLanguage,
+      PaymentDirection.credited,
+    );
+    _voice.enqueueRaw(text, _VP.high, fingerprint: event.fingerprint);
   }
 
   // FIX-59: Cross-Device UTR Deduplication (Redis-backed)
@@ -3630,7 +3639,11 @@ class PaymentDetectionService {
     // V26: Deduplicate history entries by ID (In-place update)
     history.addOrUpdate(ui);
 
-    if (event.decision == PaymentDecision.confirmed) _lastConfirmed = event;
+    if (event.decision == PaymentDecision.confirmed &&
+        !event.isFailed &&
+        VoiceBuilder.detectDirection(event.rawText) == PaymentDirection.credited) {
+      _lastConfirmed = event;
+    }
 
     // Emit immediately; invoice mirror scans and cloud synchronization must not
     // block the voice queue or leave the payment UI appearing to spin.
@@ -3699,6 +3712,11 @@ class PaymentDetectionService {
       if (event.decision != PaymentDecision.confirmed || event.amount <= 0) {
         return null;
       }
+      final paymentKey = 'invoice_payment_' + event.fingerprint;
+      if (await PaymentIdempotencyService.instance.isKeyUsed(paymentKey)) {
+        PdsLogger.i('AUTOSETTL', 'Duplicate invoice reconciliation skipped');
+        return null;
+      }
       final amount = event.amount;
       final payer = event.payerName?.toLowerCase() ?? '';
       final saleId = event.saleId?.toString() ?? '';
@@ -3742,6 +3760,7 @@ class PaymentDetectionService {
           sale['paid_amount'] = total;
           sales[i] = sale;
           await LocalStorageService.saveSales(sales);
+          await PaymentIdempotencyService.instance.markKeyUsed(paymentKey);
 
           final invoiceNum = sale['invoice_number']?.toString() ??
               sale['sale_id']?.toString() ??
@@ -3784,6 +3803,7 @@ class PaymentDetectionService {
           invoice['paid_amount'] = total;
           invoices[i] = invoice;
           await LocalStorageService.saveLocalInvoices(invoices);
+          await PaymentIdempotencyService.instance.markKeyUsed(paymentKey);
 
           final invoiceNum = invoice['invoice_number']?.toString() ??
               invoice['sale_id']?.toString() ??
