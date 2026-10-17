@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -96,7 +97,7 @@ class _ExpensePageState extends State<ExpensePage>
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Container(width: 4, height: 28, color: _danger, margin: const EdgeInsets.only(right: 12)),
-                Text('Add Expense', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700)),
+                LiveTranslatedText('Add Expense', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700)),
                 const Spacer(),
                 IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
               ]),
@@ -125,7 +126,7 @@ class _ExpensePageState extends State<ExpensePage>
                   prefixIcon: const Icon(Icons.category_rounded, color: _primary),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                items: _categories.map((c) => DropdownMenuItem(value: c, child: LiveTranslatedText(c))).toList(),
                 onChanged: (v) => ss(() => selectedCategory = v ?? selectedCategory),
               ),
               const SizedBox(height: 12),
@@ -161,7 +162,7 @@ class _ExpensePageState extends State<ExpensePage>
                   child: Row(children: [
                     const Icon(Icons.calendar_today_rounded, color: _primary, size: 20),
                     const SizedBox(width: 12),
-                    Text(DateFormat('dd MMM yyyy').format(selectedDate),
+                    LiveTranslatedText(DateFormat('dd MMM yyyy').format(selectedDate),
                         style: GoogleFonts.poppins(fontSize: 14)),
                     const Spacer(),
                     const Icon(Icons.arrow_drop_down, color: Colors.grey),
@@ -182,7 +183,7 @@ class _ExpensePageState extends State<ExpensePage>
                     final amt = double.tryParse(amountC.text.trim());
                     if (amt == null || amt <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please enter a valid amount')));
+                          const SnackBar(content: LiveTranslatedText('Please enter a valid amount')));
                       return;
                     }
                     _expenses.insert(0, {
@@ -197,11 +198,11 @@ class _ExpensePageState extends State<ExpensePage>
                       Navigator.pop(context);
                       setState(() {});
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: const Text('✅ Expense recorded!'),
+                          content: const LiveTranslatedText('✅ Expense recorded!'),
                           backgroundColor: _primary));
                     }
                   },
-                  child: Text('Save Expense', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                  child: LiveTranslatedText('Save Expense', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -225,7 +226,7 @@ class _ExpensePageState extends State<ExpensePage>
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text('Expense Tracker', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: Colors.white)),
+        title: LiveTranslatedText('Expense Tracker', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: Colors.white)),
         backgroundColor: _danger,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -261,9 +262,9 @@ class _ExpensePageState extends State<ExpensePage>
                     ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey.shade300),
                         const SizedBox(height: 16),
-                        Text('No expenses yet', style: GoogleFonts.poppins(fontSize: 18, color: Colors.grey.shade500)),
+                        LiveTranslatedText('No expenses yet', style: GoogleFonts.poppins(fontSize: 18, color: Colors.grey.shade500)),
                         const SizedBox(height: 8),
-                        Text('Tap + to add your first expense', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400)),
+                        LiveTranslatedText('Tap + to add your first expense', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400)),
                       ]))
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
@@ -275,7 +276,7 @@ class _ExpensePageState extends State<ExpensePage>
                 ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    Text('BY CATEGORY', style: GoogleFonts.spaceMono(fontSize: 11, color: Colors.grey, letterSpacing: 1.5)),
+                    LiveTranslatedText('BY CATEGORY', style: GoogleFonts.spaceMono(fontSize: 11, color: Colors.grey, letterSpacing: 1.5)),
                     const SizedBox(height: 12),
                     ...topCategories.map((entry) {
                       final pct = _totalAll > 0 ? entry.value / _totalAll : 0.0;
@@ -287,8 +288,8 @@ class _ExpensePageState extends State<ExpensePage>
                             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)]),
                         child: Column(children: [
                           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                            Text(entry.key, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                            Text('₹${entry.value.toStringAsFixed(0)}',
+                            LiveTranslatedText(entry.key, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                            LiveTranslatedText('₹${entry.value.toStringAsFixed(0)}',
                                 style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: _danger)),
                           ]),
                           const SizedBox(height: 8),
@@ -303,7 +304,7 @@ class _ExpensePageState extends State<ExpensePage>
                           ),
                           const SizedBox(height: 4),
                           Align(alignment: Alignment.centerRight,
-                              child: Text('${(pct * 100).toStringAsFixed(1)}%',
+                              child: LiveTranslatedText('${(pct * 100).toStringAsFixed(1)}%',
                                   style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey))),
                         ]),
                       );
@@ -318,7 +319,7 @@ class _ExpensePageState extends State<ExpensePage>
         backgroundColor: _danger,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: Text('Add Expense', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        label: LiveTranslatedText('Add Expense', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
       ),
     );
   }
@@ -331,8 +332,8 @@ class _ExpensePageState extends State<ExpensePage>
         Icon(icon, size: 16, color: Colors.white70),
         const SizedBox(width: 6),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(val, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
-          Text(label, style: GoogleFonts.poppins(fontSize: 10, color: Colors.white70)),
+          LiveTranslatedText(val, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+          LiveTranslatedText(label, style: GoogleFonts.poppins(fontSize: 10, color: Colors.white70)),
         ]),
       ]),
     );
@@ -361,7 +362,7 @@ class _ExpensePageState extends State<ExpensePage>
         setState(() => _expenses.removeAt(index));
         await _saveExpenses();
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Expense deleted')));
+            const SnackBar(content: LiveTranslatedText('Expense deleted')));
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -377,16 +378,16 @@ class _ExpensePageState extends State<ExpensePage>
           ),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(e['category'] ?? 'Misc',
+            LiveTranslatedText(e['category'] ?? 'Misc',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
             if ((e['note'] ?? '').toString().isNotEmpty)
-              Text(e['note'].toString(),
+              LiveTranslatedText(e['note'].toString(),
                   style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade500),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(DateFormat('dd MMM yyyy').format(date),
+            LiveTranslatedText(DateFormat('dd MMM yyyy').format(date),
                 style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade400)),
           ])),
-          Text('−₹${amt.toStringAsFixed(0)}',
+          LiveTranslatedText('−₹${amt.toStringAsFixed(0)}',
               style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: _danger)),
         ]),
       ),

@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -129,14 +130,14 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear query history?'),
-        content: const Text('This removes your saved Ask Retail Mind history. This action cannot be undone.'),
+        title: const LiveTranslatedText('Clear query history?'),
+        content: const LiveTranslatedText('This removes your saved Ask Retail Mind history. This action cannot be undone.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const LiveTranslatedText('Cancel')),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
-            child: const Text('Clear history'),
+            child: const LiveTranslatedText('Clear history'),
           ),
         ],
       ),
@@ -156,7 +157,7 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      SnackBar(content: LiveTranslatedText(message), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -187,8 +188,8 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Query History', style: GoogleFonts.inter(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w800)),
-                  Text('Search and revisit previous answers', style: GoogleFonts.inter(fontSize: 10.5, color: Colors.white70, fontWeight: FontWeight.w500)),
+                  LiveTranslatedText('Query History', style: GoogleFonts.inter(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w800)),
+                  LiveTranslatedText('Search and revisit previous answers', style: GoogleFonts.inter(fontSize: 10.5, color: Colors.white70, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
@@ -230,7 +231,7 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
                     final category = _categories[index];
                     final active = category == _category;
                     return ChoiceChip(
-                      label: Text(category),
+                      label: LiveTranslatedText(category),
                       selected: active,
                       onSelected: (_) => setState(() => _category = category),
                       selectedColor: const Color(0xFFE9E6FF),
@@ -261,9 +262,9 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
                 const SizedBox(height: 18),
                 Row(
                   children: [
-                    Text('YOUR QUESTIONS', style: GoogleFonts.inter(fontSize: 10.5, letterSpacing: 1.0, fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
+                    LiveTranslatedText('YOUR QUESTIONS', style: GoogleFonts.inter(fontSize: 10.5, letterSpacing: 1.0, fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
                     const Spacer(),
-                    Text('${filtered.length} result${filtered.length == 1 ? '' : 's'}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textTertiary, fontWeight: FontWeight.w600)),
+                    LiveTranslatedText('${filtered.length} result${filtered.length == 1 ? '' : 's'}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textTertiary, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -290,15 +291,15 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Your business questions', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+              LiveTranslatedText('Your business questions', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
               const SizedBox(height: 4),
-              Text('Tap any question to run it again and refresh the result.', style: GoogleFonts.inter(fontSize: 11.5, height: 1.4, color: Colors.white.withValues(alpha: 0.82))),
+              LiveTranslatedText('Tap any question to run it again and refresh the result.', style: GoogleFonts.inter(fontSize: 11.5, height: 1.4, color: Colors.white.withValues(alpha: 0.82))),
             ]),
           ),
           const SizedBox(width: 10),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('$visibleCount', style: GoogleFonts.inter(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white)),
-            Text('shown', style: GoogleFonts.inter(fontSize: 10, color: Colors.white70)),
+            LiveTranslatedText('$visibleCount', style: GoogleFonts.inter(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white)),
+            LiveTranslatedText('shown', style: GoogleFonts.inter(fontSize: 10, color: Colors.white70)),
           ]),
         ],
       ),
@@ -330,11 +331,11 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
         children: [
           const Icon(Icons.calendar_month_rounded, size: 18, color: Color(0xFF64748B)),
           const SizedBox(width: 10),
-          Expanded(child: Text('Time range', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary))),
+          Expanded(child: LiveTranslatedText('Time range', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary))),
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _period,
-              items: _periods.map((value) => DropdownMenuItem(value: value, child: Text(value, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)))).toList(),
+              items: _periods.map((value) => DropdownMenuItem(value: value, child: LiveTranslatedText(value, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)))).toList(),
               onChanged: (value) { if (value != null) setState(() => _period = value); },
             ),
           ),
@@ -372,17 +373,17 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Expanded(child: Text(item.question, maxLines: 3, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 13, height: 1.35, color: const Color(0xFF17233E), fontWeight: FontWeight.w800))),
+                    Expanded(child: LiveTranslatedText(item.question, maxLines: 3, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 13, height: 1.35, color: const Color(0xFF17233E), fontWeight: FontWeight.w800))),
                     const SizedBox(width: 7),
                     _categoryPill(category, color),
                   ]),
                   const SizedBox(height: 7),
-                  Text(item.answer, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 11.5, height: 1.4, color: AppColors.textSecondary)),
+                  LiveTranslatedText(item.answer, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 11.5, height: 1.4, color: AppColors.textSecondary)),
                   const SizedBox(height: 9),
                   Wrap(spacing: 10, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                    Text(DateFormat('dd MMM yyyy · h:mm a').format(item.createdAt.toLocal()), style: GoogleFonts.inter(fontSize: 9.5, color: AppColors.textTertiary, fontWeight: FontWeight.w500)),
+                    LiveTranslatedText(DateFormat('dd MMM yyyy · h:mm a').format(item.createdAt.toLocal()), style: GoogleFonts.inter(fontSize: 9.5, color: AppColors.textTertiary, fontWeight: FontWeight.w500)),
                     if (item.resultCount > 0)
-                      Text('${item.resultCount} result${item.resultCount == 1 ? '' : 's'}', style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF6257D9), fontWeight: FontWeight.w800)),
+                      LiveTranslatedText('${item.resultCount} result${item.resultCount == 1 ? '' : 's'}', style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF6257D9), fontWeight: FontWeight.w800)),
                   ]),
                 ]),
               ),
@@ -401,7 +402,7 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
   Widget _categoryPill(String text, Color color) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(30)),
-    child: Text(text, style: GoogleFonts.inter(fontSize: 9.5, color: color, fontWeight: FontWeight.w800)),
+    child: LiveTranslatedText(text, style: GoogleFonts.inter(fontSize: 9.5, color: color, fontWeight: FontWeight.w800)),
   );
 
   Widget _buildInfoBanner(String message) => Container(
@@ -410,7 +411,7 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
     child: Row(children: [
       const Icon(Icons.info_outline_rounded, color: Color(0xFFB45309), size: 18),
       const SizedBox(width: 8),
-      Expanded(child: Text(message, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF92400E), height: 1.4))),
+      Expanded(child: LiveTranslatedText(message, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF92400E), height: 1.4))),
     ]),
   );
 
@@ -421,11 +422,11 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
     child: Column(children: [
       Icon(icon, size: 36, color: const Color(0xFF9CA3AF)),
       const SizedBox(height: 12),
-      Text(title, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+      LiveTranslatedText(title, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
       const SizedBox(height: 6),
-      Text(message, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, height: 1.45, color: AppColors.textSecondary)),
+      LiveTranslatedText(message, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, height: 1.45, color: AppColors.textSecondary)),
       const SizedBox(height: 12),
-      OutlinedButton.icon(onPressed: _loadHistory, icon: const Icon(Icons.refresh_rounded, size: 17), label: const Text('Try again')),
+      OutlinedButton.icon(onPressed: _loadHistory, icon: const Icon(Icons.refresh_rounded, size: 17), label: const LiveTranslatedText('Try again')),
     ]),
   );
 

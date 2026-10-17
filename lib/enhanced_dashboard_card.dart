@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
@@ -128,7 +129,7 @@ class _EnhancedDashboardCardState extends State<EnhancedDashboardCard>
                 const SizedBox(height: 12),
 
                 // Title
-                Text(
+                LiveTranslatedText(
                   widget.title,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
@@ -139,7 +140,7 @@ class _EnhancedDashboardCardState extends State<EnhancedDashboardCard>
                 const SizedBox(height: 6),
 
                 // Value
-                Text(
+                LiveTranslatedText(
                   widget.value,
                   style: GoogleFonts.poppins(
                     fontSize: 24,
@@ -150,7 +151,7 @@ class _EnhancedDashboardCardState extends State<EnhancedDashboardCard>
                 const SizedBox(height: 8),
 
                 // Subtitle
-                Text(
+                LiveTranslatedText(
                   widget.subtitle,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
@@ -230,7 +231,7 @@ class _ProgressCardState extends State<ProgressCard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              LiveTranslatedText(
                 widget.title,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -238,7 +239,7 @@ class _ProgressCardState extends State<ProgressCard>
                   color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
-              Text(
+              LiveTranslatedText(
                 '${(widget.progress * 100).toStringAsFixed(0)}%',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -327,7 +328,7 @@ class StatCard extends StatelessWidget {
                       size: 14,
                     ),
                     const SizedBox(width: 4),
-                    Text(
+                    LiveTranslatedText(
                       '${trendPercent.abs().toStringAsFixed(1)}%',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -340,7 +341,7 @@ class StatCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               fontSize: 11,
@@ -348,7 +349,7 @@ class StatCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          LiveTranslatedText(
             value,
             style: GoogleFonts.poppins(
               fontSize: 18,
@@ -410,7 +411,7 @@ class _AnimatedCounterState extends State<AnimatedCounter>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        return Text(
+        return LiveTranslatedText(
           '${_animation.value}${widget.suffix}',
           style: widget.textStyle,
         );

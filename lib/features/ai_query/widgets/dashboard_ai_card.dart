@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -64,7 +65,7 @@ class DashboardAiQueryCard extends StatelessWidget {
                     Row(
                       children: [
                         Flexible(
-                          child: Text(
+                          child: LiveTranslatedText(
                             'Ask Retail Mind',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -88,7 +89,7 @@ class DashboardAiQueryCard extends StatelessWidget {
                               color: const Color(0xFF818CF8).withValues(alpha: 0.26),
                             ),
                           ),
-                          child: Text(
+                          child: LiveTranslatedText(
                             'AI',
                             style: GoogleFonts.poppins(
                               color: const Color(0xFFDDE1FF),
@@ -101,7 +102,7 @@ class DashboardAiQueryCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 3),
-                    Text(
+                    LiveTranslatedText(
                       'Sales, revenue and inventory insights',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -127,7 +128,7 @@ class DashboardAiQueryCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Ask AI',
                       style: GoogleFonts.poppins(
                         color: Colors.white,

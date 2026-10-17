@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -100,7 +101,7 @@ class _AILoadingIndicatorState extends State<AILoadingIndicator>
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              LiveTranslatedText(
                 'Thinking',
                 style: GoogleFonts.inter(
                   fontSize: 16,
@@ -116,7 +117,7 @@ class _AILoadingIndicatorState extends State<AILoadingIndicator>
                   final dots = '.' * dotCount;
                   return SizedBox(
                     width: 20,
-                    child: Text(
+                    child: LiveTranslatedText(
                       dots,
                       style: GoogleFonts.inter(
                         fontSize: 16,
@@ -130,7 +131,7 @@ class _AILoadingIndicatorState extends State<AILoadingIndicator>
             ],
           ),
           const SizedBox(height: 6),
-          Text(
+          LiveTranslatedText(
             'Analyzing your shop data',
             style: GoogleFonts.inter(
               fontSize: 13,

@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,7 +29,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
+        content: LiveTranslatedText(
           '$label copied to clipboard',
           style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
         ),
@@ -95,7 +96,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'You asked:',
                       style: GoogleFonts.inter(
                         fontSize: 12,
@@ -104,7 +105,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LiveTranslatedText(
                       '"$queryText"',
                       style: GoogleFonts.inter(
                         fontSize: 14.5,
@@ -116,7 +117,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                   ],
                 ),
               ),
-              Text(
+              LiveTranslatedText(
                 timeStr,
                 style: GoogleFonts.inter(
                   fontSize: 11,
@@ -156,7 +157,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           'Retail Mind',
                           style: GoogleFonts.inter(
                             fontSize: 13,
@@ -218,7 +219,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                       color: const Color(0xFF818CF8),
                     ),
                     const SizedBox(width: 6),
-                    Text(
+                    LiveTranslatedText(
                       _isTechnicalDetailsExpanded
                           ? 'Hide Technical Details'
                           : 'Show Technical Details',
@@ -251,7 +252,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                     if (version != null && version.isNotEmpty) ...[
                       Row(
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             'Engine:',
                             style: GoogleFonts.jetBrainsMono(
                               fontSize: 11,
@@ -265,7 +266,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                               color: const Color(0xFF6366F1).withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Text(
+                            child: LiveTranslatedText(
                               version,
                               style: GoogleFonts.jetBrainsMono(
                                 fontSize: 10.5,
@@ -283,7 +284,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             'GENERATED SQL QUERY',
                             style: GoogleFonts.jetBrainsMono(
                               fontSize: 10.5,
@@ -300,7 +301,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
                                 children: [
                                   const Icon(Icons.copy_rounded, size: 13, color: Color(0xFF818CF8)),
                                   const SizedBox(width: 4),
-                                  Text(
+                                  LiveTranslatedText(
                                     'Copy SQL',
                                     style: GoogleFonts.inter(
                                       fontSize: 11,
@@ -336,7 +337,7 @@ class _AIAnswerCardState extends State<AIAnswerCard> {
 
                     if (tables.isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      Text(
+                      LiveTranslatedText(
                         'Retrieved Schema Context: ${tables.length} table(s)',
                         style: GoogleFonts.inter(
                           fontSize: 11,
