@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'comprehensive_logger.dart';
 
@@ -33,7 +34,7 @@ class TrackingAwareButton extends StatelessWidget {
         );
         onPressed();
       },
-      child: child ?? Text(label),
+      child: child ?? LiveTranslatedText(label),
     );
   }
 }
@@ -67,7 +68,7 @@ class TrackingAwareTextButton extends StatelessWidget {
         );
         onPressed();
       },
-      child: child ?? Text(label),
+      child: child ?? LiveTranslatedText(label),
     );
   }
 }

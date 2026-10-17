@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'live_translated_text.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data model
@@ -243,7 +244,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 8),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Skip',
                     style: GoogleFonts.poppins(
                       fontSize: 13,
@@ -327,6 +328,11 @@ class _SlideContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isTelugu = Localizations.localeOf(context).languageCode == 'te';
+    final displayTitle = isTelugu ? slide.titleTelugu : slide.titleEnglish;
+    final displaySubtitle =
+        isTelugu ? slide.subtitleTelugu : slide.subtitleEnglish;
+    final displayDescription = isTelugu ? slide.descTelugu : slide.descEnglish;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
@@ -406,8 +412,8 @@ class _SlideContent extends StatelessWidget {
                 shaderCallback: (bounds) => LinearGradient(
                   colors: [Colors.white, slide.accent],
                 ).createShader(bounds),
-                child: Text(
-                  slide.titleTelugu,
+                child: LiveTranslatedText(
+                  displayTitle,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 26,
@@ -423,28 +429,15 @@ class _SlideContent extends StatelessWidget {
 
           const SizedBox(height: 4),
 
-          // English Title (Secondary — smaller)
-          FadeTransition(
-            opacity: fadeTween,
-            child: Text(
-              slide.titleEnglish,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.white.withValues(alpha: 0.55),
-                height: 1.2,
-              ),
-            ),
-          ),
+          const SizedBox.shrink(),
 
           const SizedBox(height: 10),
 
           // Telugu Subtitle (colored)
           FadeTransition(
             opacity: fadeTween,
-            child: Text(
-              slide.subtitleTelugu,
+            child: LiveTranslatedText(
+              displaySubtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -469,8 +462,8 @@ class _SlideContent extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  Text(
-                    slide.descTelugu,
+                  LiveTranslatedText(
+                    displayDescription,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
@@ -478,18 +471,7 @@ class _SlideContent extends StatelessWidget {
                       height: 1.6,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Divider(color: slide.accent.withValues(alpha: 0.2), height: 1),
-                  const SizedBox(height: 8),
-                  Text(
-                    slide.descEnglish,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: Colors.white.withValues(alpha: 0.5),
-                      height: 1.5,
-                    ),
-                  ),
+                  const SizedBox.shrink(),
                 ],
               ),
             ),
@@ -577,7 +559,7 @@ class _GradientButton extends StatelessWidget {
           ],
         ),
         child: Center(
-          child: Text(
+          child: LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               color: Colors.white,
@@ -610,7 +592,7 @@ class _OutlineButton extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.06),
         ),
         child: Center(
-          child: Text(
+          child: LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               color: Colors.white70,
