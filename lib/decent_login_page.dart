@@ -17,15 +17,14 @@ import 'language_provider.dart';
 import 'sync_service.dart';
 import 'sync_queue_manager.dart';
 import 'sales_dedup_helper.dart';
-import 'local_storage_service.dart';
-import 'user_data_clear_service.dart';
 import 'role_selection_page.dart';
-import 'secure_token_storage.dart';
 import 'security_service.dart';
 import 'otp_service.dart';
 import 'ltv_analytics_service.dart';
 import 'session_management.dart';
 import 'scoped_shared_preferences.dart';
+import 'secure_token_storage.dart';
+import 'user_data_clear_service.dart';
 import 'google_auth_service.dart';
 import 'online_orders_listener.dart';
 import 'inventory_sync_service.dart';
@@ -76,25 +75,11 @@ class _DecentLoginPageState extends State<DecentLoginPage>
       if (!mounted) return;
 
       if (result.success) {
-        if (result.token == null || result.token!.isEmpty) {
-          final prefs = await SharedPreferences.getInstance();
-          final hadOwner =
-              (prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0) > 0;
-          if (hadOwner) {
-            await UserDataClearService.clearAllUserData();
-            await SecureTokenStorage.clearAll();
-            await LocalStorageService.clearOrphanSalesBoxes();
-          } else {
-            await SecureTokenStorage.clearAll();
-          }
-        }
-
-        if (result.isFallback && result.email != null) {
-          Navigator.pushNamed(
-            context,
-            '/register',
-            arguments: {'email': result.email, 'name': result.name},
-          );
+        if (result.token == null || result.token!.trim().isEmpty) {
+          setState(() {
+            errorMessage =
+                'Google sign-in did not return a verified Retail Mind session. Please try again.';
+          });
           return;
         }
 
