@@ -145,13 +145,13 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
       children: [
         const Icon(Icons.star_rounded, size: 16, color: Color(0xFFF59E0B)),
         const SizedBox(width: 3),
-        Text(
+        LiveTranslatedText(
           rating > 0 ? rating.toStringAsFixed(1) : 'New',
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
         ),
         if (count > 0) ...[
           const SizedBox(width: 3),
-          Text('($count)', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+          LiveTranslatedText('($count)', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
         ],
       ],
     );
@@ -188,7 +188,7 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
+                  child: LiveTranslatedText(
                     name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -209,7 +209,7 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
                 const Spacer(),
                 if (address.isNotEmpty)
                   Flexible(
-                    child: Text(
+                    child: LiveTranslatedText(
                       address,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -226,7 +226,7 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
                 color: const Color(0xFFECFDF5),
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: const Text(
+              child: const LiveTranslatedText(
                 'Online shopping enabled',
                 style: TextStyle(color: Color(0xFF047857), fontSize: 11, fontWeight: FontWeight.w800),
               ),
@@ -277,10 +277,10 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
                   Row(children: [
                     _rating(product),
                     const Spacer(),
-                    Text('₹${price.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.brand)),
+                    LiveTranslatedText('₹${price.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.brand)),
                   ]),
                   const SizedBox(height: 5),
-                  Text('${stock} in stock', style: TextStyle(fontSize: 11, color: stock > 0 ? Colors.green.shade700 : Colors.red.shade700)),
+                  LiveTranslatedText('${stock} in stock', style: TextStyle(fontSize: 11, color: stock > 0 ? Colors.green.shade700 : Colors.red.shade700)),
                 ],
               ),
             ),
@@ -309,14 +309,14 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
           CircleAvatar(
             radius: 18,
             backgroundColor: AppColors.brandLight,
-            child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.brand)),
+            child: LiveTranslatedText('${index + 1}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.brand)),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+                LiveTranslatedText(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
                 LiveTranslatedText(shop, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
               ],
             ),
@@ -324,9 +324,9 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('₹${price.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.brand)),
+              LiveTranslatedText('₹${price.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.brand)),
               _rating(item),
-              TextButton(onPressed: () => _openShop(shopId), child: const Text('Open shop')),
+              TextButton(onPressed: () => _openShop(shopId), child: const LiveTranslatedText('Open shop')),
             ],
           ),
         ],
@@ -341,7 +341,7 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FC),
       appBar: AppBar(
-        title: const Text('RetailShop Marketplace', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const LiveTranslatedText('RetailShop Marketplace', style: TextStyle(fontWeight: FontWeight.w800)),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF0F172A),
         elevation: 0,
@@ -376,9 +376,9 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Find the right shop or the right price.', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900, height: 1.05)),
+                  const LiveTranslatedText('Find the right shop or the right price.', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900, height: 1.05)),
                   const SizedBox(height: 8),
-                  Text(
+                  LiveTranslatedText(
                     'Search shop names to open their storefront, or search products to compare offers across every shop that enabled Online Shopping.',
                     style: TextStyle(color: Colors.blueGrey.shade700, height: 1.45),
                   ),
@@ -411,7 +411,7 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
                         ('products', 'Products'),
                       ])
                         ChoiceChip(
-                          label: Text(option.$2),
+                          label: LiveTranslatedText(option.$2),
                           selected: _mode == option.$1,
                           onSelected: (_) {
                             setState(() => _mode = option.$1);
@@ -441,15 +441,15 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
                   Row(children: [
                     const Icon(Icons.auto_awesome_rounded, color: Colors.amberAccent),
                     const SizedBox(width: 8),
-                    const Expanded(child: Text('Shopping assistant', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900))),
+                    const Expanded(child: LiveTranslatedText('Shopping assistant', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900))),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                       decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(999)),
-                      child: const Text('TOP 10', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w800)),
+                      child: const LiveTranslatedText('TOP 10', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w800)),
                     ),
                   ]),
                   const SizedBox(height: 6),
-                  const Text('Ask for cheap, highly rated, budget or price-limited products. The assistant searches every online-enabled shop.', style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.45)),
+                  const LiveTranslatedText('Ask for cheap, highly rated, budget or price-limited products. The assistant searches every online-enabled shop.', style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.45)),
                   const SizedBox(height: 14),
                   TextField(
                     controller: _aiController,
@@ -494,9 +494,9 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
                 child: Row(children: [
                   const Icon(Icons.wifi_off_rounded, color: Color(0xFFC2410C)),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(_error, style: const TextStyle(color: Color(0xFF9A3412))),
+                  Expanded(child: LiveTranslatedText(_error, style: const TextStyle(color: Color(0xFF9A3412))),
                   ),
-                  TextButton(onPressed: () => _runSearch(_query), child: const Text('Retry')),
+                  TextButton(onPressed: () => _runSearch(_query), child: const LiveTranslatedText('Retry')),
                 ]),
               ),
             ],
@@ -504,8 +504,8 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
             if (_shops.isNotEmpty) ...[
               Row(
                 children: [
-                  const Expanded(child: Text('Online shops', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900))),
-                  Text('${_shops.length} found', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                  const Expanded(child: LiveTranslatedText('Online shops', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900))),
+                  LiveTranslatedText('${_shops.length} found', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -524,14 +524,14 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
             ],
             if (_products.isNotEmpty) ...[
               const SizedBox(height: 28),
-              const Text('Products across shops', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+              const LiveTranslatedText('Products across shops', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
               const SizedBox(height: 12),
               ..._products.map(_productCard),
             ],
             if (!_loading && _error.isEmpty && _shops.isEmpty && _products.isEmpty) ...[
               const SizedBox(height: 50),
               const Center(
-                child: Text(
+                child: LiveTranslatedText(
                   'No online shops or products matched your search yet.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.black54),
