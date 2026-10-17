@@ -20,6 +20,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _paymentMethodController;
   late Animation<double> _expandAnimation;
+  bool _openingBillPreview = false;
   
   @override
   void initState() {
@@ -146,20 +147,32 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
   }
 
   Future<void> _showBillPreview() async {
+    if (_openingBillPreview) return;
+    _openingBillPreview = true;
     final provider = context.read<SalesEntryProvider>();
-    await provider.generateBillPreview();
-    if (!mounted) return;
-    final number = provider.draftBillNumber;
-    if (number == null || number.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not allocate a bill number. Please try again.')),
+    try {
+      await provider.generateBillPreview();
+      if (!mounted) return;
+      final number = provider.draftBillNumber;
+      if (number == null || number.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not allocate a bill number. Please try again.')),
+        );
+        return;
+      }
+      await showDialog<void>(
+        context: context,
+        builder: (_) => BillPreviewDialog(invoiceNumber: number),
       );
-      return;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bill preview could not be opened. Please try again.')),
+        );
+      }
+    } finally {
+      _openingBillPreview = false;
     }
-    await showDialog<void>(
-      context: context,
-      builder: (_) => BillPreviewDialog(invoiceNumber: number),
-    );
   }
 
   Future<void> _saveSale() async {
