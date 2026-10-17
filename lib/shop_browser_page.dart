@@ -253,7 +253,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
               decoration: InputDecoration(
                 border: InputBorder.none,
                 prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF4F46E5)),
-                hintText: 'Search shop name or product name',
+                hint: LiveTranslatedText('Search shop name or product name'),
                 hintStyle: GoogleFonts.poppins(color: Colors.grey.shade500, fontSize: 12),
                 suffixIcon: IconButton(
                   onPressed: _searching ? null : _runSearch,

@@ -194,14 +194,14 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Item Name')),
-              TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Price'), keyboardType: TextInputType.number),
-              TextField(controller: stockCtrl, decoration: const InputDecoration(labelText: 'Stock Qty'), keyboardType: TextInputType.number),
+              TextField(controller: nameCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Item Name'))),
+              TextField(controller: priceCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Price')), keyboardType: TextInputType.number),
+              TextField(controller: stockCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Stock Qty')), keyboardType: TextInputType.number),
               TextField(
                 controller: imageCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'Image URL (optional)',
-                  hintText: 'https://...',
+                  label: LiveTranslatedText('Image URL (optional)'),
+                  hint: LiveTranslatedText('https://...'),
                 ),
               ),
               const SizedBox(height: 12),

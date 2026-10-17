@@ -79,9 +79,9 @@ class _SupplierPageState extends State<SupplierPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: _nameCtrl, decoration: const InputDecoration(labelText: 'Supplier Name')),
-              TextField(controller: _phoneCtrl, decoration: const InputDecoration(labelText: 'Phone Number')),
-              TextField(controller: _emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
+              TextField(controller: _nameCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Supplier Name'))),
+              TextField(controller: _phoneCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Phone Number'))),
+              TextField(controller: _emailCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Email'))),
               DropdownButton<String>(
                 value: _categoryCtrl.text.isEmpty ? 'General' : _categoryCtrl.text,
                 items: ['General', 'Grocery', 'Clothes', 'Electronics', 'Other']
@@ -140,7 +140,7 @@ class _SupplierPageState extends State<SupplierPage> {
                   child: TextField(
                     controller: _search,
                     decoration: InputDecoration(
-                      labelText: 'Search supplier',
+                      label: LiveTranslatedText('Search supplier'),
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),

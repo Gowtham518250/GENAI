@@ -1912,7 +1912,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
               maxLength: 4,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'Current PIN',
+                label: LiveTranslatedText('Current PIN'),
                 labelStyle: const TextStyle(color: Colors.white60),
                 counterText: '',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -1926,7 +1926,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
               maxLength: 4,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'New 4-Digit PIN',
+                label: LiveTranslatedText('New 4-Digit PIN'),
                 labelStyle: const TextStyle(color: Colors.white60),
                 counterText: '',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

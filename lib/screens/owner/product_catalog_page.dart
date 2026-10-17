@@ -521,7 +521,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search products...',
+          hint: LiveTranslatedText('Search products...'),
           hintStyle: GoogleFonts.poppins(color: const Color(0xFF9CA3AF)),
           prefixIcon: const Icon(Icons.search, color: Color(0xFF6B7280)),
           suffixIcon: _searchQuery.isNotEmpty
