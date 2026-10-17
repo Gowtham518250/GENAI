@@ -18,6 +18,8 @@ import 'live_translated_text.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'language_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'utils/free_translator_service.dart';
 import 'api_client.dart';
@@ -848,6 +850,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
   final _catalog = ProductCatalogService();
   
   _LangConfig _selectedLang = _languages[0]; // default English
+  bool _voiceLanguageManuallySelected = false;
   List<ParsedItem> ParsedItems = [];
   List<ParsedItem> _committedItems = [];
   List<ParsedItem> _lastPreviewItems = [];
@@ -1062,6 +1065,22 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
       warnings: warnings,
       interpretedText: interpretedText,
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_voiceLanguageManuallySelected ||
+        (widget.initialLocale != null && widget.initialLocale!.trim().isNotEmpty)) {
+      return;
+    }
+    final appLanguageCode =
+        Provider.of<LanguageProvider>(context).locale.languageCode;
+    final preferred = _languageForCode(appLanguageCode);
+    if (_selectedLang.code != preferred.code) {
+      _selectedLang = preferred;
+      _updateHint();
+    }
   }
 
   @override
@@ -1746,7 +1765,10 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           final selected = lang.code == _selectedLang.code;
           return GestureDetector(
             onTap: () {
-              setState(() => _selectedLang = lang);
+              setState(() {
+                _voiceLanguageManuallySelected = true;
+                _selectedLang = lang;
+              });
               _updateHint();
             },
             child: AnimatedContainer(
