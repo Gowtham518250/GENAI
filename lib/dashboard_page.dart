@@ -672,14 +672,15 @@ class _DashboardPageState extends State<DashboardPage>
       final amount = (event.amount as num?)?.toDouble() ?? 0.0;
       if (amount <= 0) return;
 
-      paymentKey = 'invoice_payment_' + event.fingerprint.toString();
-      if (_paymentReconciledThisSession.contains(paymentKey)) return;
-      if (!_paymentReconciliationInFlight.add(paymentKey)) return;
+      final currentPaymentKey = 'invoice_payment_' + event.fingerprint.toString();
+      paymentKey = currentPaymentKey;
+      if (_paymentReconciledThisSession.contains(currentPaymentKey)) return;
+      if (!_paymentReconciliationInFlight.add(currentPaymentKey)) return;
 
       // Persistent, user/shop-scoped guard also prevents a replay after the
       // dashboard screen is recreated or a queued event is delivered again.
-      if (await PaymentIdempotencyService.instance.isKeyUsed(paymentKey)) {
-        _rememberReconciledPayment(paymentKey);
+      if (await PaymentIdempotencyService.instance.isKeyUsed(currentPaymentKey)) {
+        _rememberReconciledPayment(currentPaymentKey);
         return;
       }
 
@@ -794,8 +795,8 @@ class _DashboardPageState extends State<DashboardPage>
       await LocalStorageService.saveLocalInvoices(updatedInvoices);
       // Mark only after the local ledger write succeeds. Failed writes remain
       // retryable; repeat event delivery cannot add the same amount again.
-      await PaymentIdempotencyService.instance.markKeyUsed(paymentKey);
-      _rememberReconciledPayment(paymentKey);
+      await PaymentIdempotencyService.instance.markKeyUsed(currentPaymentKey);
+      _rememberReconciledPayment(currentPaymentKey);
 
       await SyncQueueManager.enqueue('update_invoice_paid', {
         'invoice_number': invoiceNumber,
