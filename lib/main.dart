@@ -15,6 +15,7 @@ import 'app_localizations.dart';
 import 'enterprise_pnl_page.dart';
 import 'purchase_orders_page.dart';
 import 'more_page.dart';
+import 'offline_sync_center_page.dart';
 import 'bank_recon_page.dart';
 import 'gift_cards_page.dart';
 import 'system_management_page.dart';
@@ -1807,6 +1808,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                         '/register': (context) => const DecentRegisterPage(),
                         '/dashboard': (context) => const DashboardPage(),
                         '/more': (context) => const MorePage(),
+                        '/sync-center': (context) => const OfflineSyncCenterPage(),
                         '/enterprise-pnl': (context) =>
                             const EnterprisePnlPage(),
                         '/purchase-orders': (context) =>

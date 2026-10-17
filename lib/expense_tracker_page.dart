@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'local_storage_service.dart';
 import 'api_client.dart';
 import 'secure_token_storage.dart';
+import 'sync_service.dart';
+import 'expense_submission_identity.dart';
 
 enum ExpenseCategory {
   rent,
@@ -26,6 +28,7 @@ class Expense {
   final DateTime date;
   final String? reference;
   final String? receipt;
+  final String? idempotencyKey;
 
   Expense({
     required this.id,
@@ -35,6 +38,7 @@ class Expense {
     required this.date,
     this.reference,
     this.receipt,
+    this.idempotencyKey,
   });
 
   Map<String, dynamic> toMap() => {
@@ -45,6 +49,7 @@ class Expense {
     'date': date.toIso8601String(),
     'reference': reference,
     'receipt': receipt,
+    'idempotency_key': idempotencyKey,
   };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
@@ -60,6 +65,7 @@ class Expense {
       : DateTime.now(),
     reference: map['reference']?.toString(),
     receipt: map['receipt']?.toString(),
+    idempotencyKey: map['idempotency_key']?.toString(),
   );
 }
 
@@ -109,10 +115,31 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                   'amount': item['amount'],
                   'description': item['description'],
                   'date': item['expense_date'],
+                  'idempotency_key': item['idempotency_key'],
                 });
               })
               .toList()
             ..sort((a, b) => b.date.compareTo(a.date));
+
+          // Remove device-only copies once their idempotent server record is visible.
+          try {
+            final localRows = await LocalStorageService.loadExpenses();
+            final syncedKeys = backendExpenses
+                .map((expense) => expense.idempotencyKey)
+                .whereType<String>()
+                .where((key) => key.isNotEmpty)
+                .toSet();
+            if (syncedKeys.isNotEmpty) {
+              final remainingLocal = localRows.where((row) {
+                if (row is! Map) return true;
+                final key = row['idempotency_key']?.toString() ?? '';
+                return key.isEmpty || !syncedKeys.contains(key);
+              }).toList();
+              await LocalStorageService.saveExpenses(remainingLocal);
+            }
+          } catch (e) {
+            if (kDebugMode) debugPrint('Could not reconcile local expense cache: $e');
+          }
 
           if (mounted) {
             setState(() {
@@ -529,6 +556,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
     final descriptionController = TextEditingController();
     final amountController = TextEditingController();
     var selectedCategory = ExpenseCategory.other;
+    final submissionIdentity = ExpenseSubmissionIdentity();
 
     showDialog(
       context: context,
@@ -591,36 +619,93 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                     return;
                   }
 
+                  final today = DateTime.now();
+                  final expenseDate = DateFormat('yyyy-MM-dd').format(today);
+                  final payload = <String, dynamic>{
+                    'category': selectedCategory.name,
+                    'amount': amount,
+                    'description': description,
+                    'expense_date': expenseDate,
+                    'payment_method': 'cash',
+                  };
+                  final currentIdempotencyKey = submissionIdentity.keyFor(
+                    category: selectedCategory.name,
+                    amount: amount,
+                    description: description,
+                    expenseDate: expenseDate,
+                    paymentMethod: 'cash',
+                  );
+                  payload['idempotency_key'] = currentIdempotencyKey;
+
                   final expense = Expense(
-                    id: DateTime.now().microsecondsSinceEpoch.toString(),
+                    id: 'offline-' + currentIdempotencyKey,
                     category: selectedCategory,
                     amount: amount,
                     description: description,
-                    date: DateTime.now(),
+                    date: today,
+                    idempotencyKey: currentIdempotencyKey,
                   );
 
                   final token = await SecureTokenStorage.getToken();
+                  var serverSaved = false;
+                  var queuedForSync = false;
                   if (token != null && token.isNotEmpty) {
-                    final response = await ApiClient.postJson(
-                      '/expenses',
-                      {
-                        'category': selectedCategory.name,
-                        'amount': amount,
-                        'description': description,
-                        'expense_date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                      },
-                      headers: {'Authorization': 'Bearer $token'},
-                    );
-                    if (response.statusCode < 200 || response.statusCode >= 300) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Expense was not saved on the server (HTTP ${response.statusCode}). Please retry.')),
-                      );
-                      return;
+                    try {
+                      final response = await ApiClient.postJson(
+                        '/expenses',
+                        payload,
+                        headers: {'Authorization': 'Bearer ' + token},
+                      ).timeout(const Duration(seconds: 20));
+                      if (response.statusCode < 200 || response.statusCode >= 300) {
+                        if (response.statusCode >= 500) {
+                          // A server error can follow a committed write. Retry the same key
+                          // through the durable outbox rather than generating a new expense.
+                          queuedForSync = await SyncService.queueExpense(payload);
+                          if (!queuedForSync) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Server error and expense could not be queued. Please retry.'),
+                              ),
+                            );
+                            return;
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Expense was not accepted (HTTP ' +
+                                    response.statusCode.toString() +
+                                    '). Check the details and retry.',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                      } else {
+                        serverSaved = true;
+                        if (kDebugMode) debugPrint('Expense saved to backend.');
+                      }
+                    } catch (_) {
+                      // The server might have committed before the response was lost.
+                      // Queue the exact same key/payload so the retry cannot duplicate it.
+                      queuedForSync = await SyncService.queueExpense(payload);
+                      if (!queuedForSync) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Connection failed and the expense could not be queued. Please keep this screen open and retry.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
                     }
-                    if (kDebugMode) debugPrint('✅ Expense saved to backend');
                   }
 
                   final expenses = await LocalStorageService.loadExpenses();
+                  expenses.removeWhere((row) =>
+                      row is Map &&
+                      row['idempotency_key']?.toString() == currentIdempotencyKey);
                   expenses.add(expense.toMap());
                   await LocalStorageService.saveExpenses(expenses);
 
@@ -628,7 +713,23 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                   Navigator.pop(context);
                   if (token == null || token.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Saved on this device only. This expense has not been sent to the server.')),
+                      const SnackBar(
+                        content: Text(
+                          'Saved on this device only. Sign in/connect to send it to the shop server.',
+                        ),
+                      ),
+                    );
+                  } else if (queuedForSync) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Expense saved locally and added to the durable sync queue.',
+                        ),
+                      ),
+                    );
+                  } else if (serverSaved) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Expense saved successfully.')),
                     );
                   }
                   await _loadExpenses();

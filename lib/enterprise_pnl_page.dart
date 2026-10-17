@@ -158,9 +158,12 @@ class _EnterprisePnlPageState extends State<EnterprisePnlPage> with SingleTicker
   }
 
   Widget _buildPnlTab() {
-    final revenue = (_pnl['total_revenue'] ?? 0.0).toStringAsFixed(0);
-    final expenses = (_pnl['total_expenses'] ?? 0.0).toStringAsFixed(0);
-    final profit = ((_pnl['total_revenue'] ?? 0.0) - (_pnl['total_expenses'] ?? 0.0)).toStringAsFixed(0);
+    final revenue = ((_pnl['total_revenue'] ?? _pnl['total_income'] ?? 0) as num).toStringAsFixed(0);
+    final expenses = ((_pnl['total_expenses'] ?? 0) as num).toStringAsFixed(0);
+    final collections = ((_pnl['total_collections'] ?? 0) as num).toStringAsFixed(0);
+    final revenueValue = ((_pnl['total_revenue'] ?? _pnl['total_income'] ?? 0) as num).toDouble();
+    final expensesValue = ((_pnl['total_expenses'] ?? 0) as num).toDouble();
+    final profit = (revenueValue - expensesValue).toStringAsFixed(0);
     final isProfit = double.tryParse(profit) != null && double.parse(profit) >= 0;
     final breakdown = (_pnl['breakdown'] as List?) ?? [];
 
@@ -168,9 +171,26 @@ class _EnterprisePnlPageState extends State<EnterprisePnlPage> with SingleTicker
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          Row(children: [ _kpiCard('Revenue', 'Rs $revenue', Colors.tealAccent), _kpiCard('Expenses', 'Rs $expenses', Colors.redAccent) ]),
+          Row(children: [
+            _kpiCard('Revenue', 'Rs $revenue', Colors.tealAccent),
+            _kpiCard('Expenses', 'Rs $expenses', Colors.redAccent),
+          ]),
           const SizedBox(height: 12),
-          Row(children: [ _kpiCard('Net Profit', 'Rs $profit', isProfit ? Colors.greenAccent : Colors.redAccent) ]),
+          Row(children: [
+            _kpiCard('Net Profit', 'Rs $profit', isProfit ? Colors.greenAccent : Colors.redAccent),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            _kpiCard('Payments Collected', 'Rs $collections', Colors.amberAccent),
+          ]),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+            child: Text(
+              'Payments collected are reported separately and are not added to sales revenue a second time.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(color: Colors.white54, fontSize: 10, height: 1.4),
+            ),
+          ),
           const SizedBox(height: 24),
           _buildLineChart(),
           const SizedBox(height: 24),

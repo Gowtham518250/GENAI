@@ -22,6 +22,74 @@ class AccountingIntegration {
       .replaceAll("'", '&apos;');
   }
 
+  static double? _numberOrNull(dynamic value) {
+    if (value is num) {
+      final number = value.toDouble();
+      return number.isFinite ? number : null;
+    }
+    if (value == null) return null;
+    final number = double.tryParse(value.toString().trim());
+    return number != null && number.isFinite ? number : null;
+  }
+
+  static double _roundMoney(double value) => double.parse(value.toStringAsFixed(2));
+
+  /// Uses recorded tax when available; otherwise derives tax only when the sale has an explicit GST rate.
+  /// The sale amount is treated as GST-inclusive for derived tax calculations.
+  static Map<String, dynamic> _deriveGstLine(Map<String, dynamic> sale) {
+    final amount = _numberOrNull(sale['total']) ??
+        _numberOrNull(sale['total_amount']) ??
+        0.0;
+
+    double? rate;
+    for (final key in const [
+      'gstRate', 'gst_rate', 'gstPercentage', 'gst_percentage',
+      'taxRate', 'tax_rate',
+    ]) {
+      rate = _numberOrNull(sale[key]);
+      if (rate != null) break;
+    }
+    if (rate != null && (rate < 0 || rate > 100)) rate = null;
+
+    double? recordedTax;
+    for (final key in const [
+      'gstAmount', 'gst_amount', 'taxAmount', 'tax_amount', 'tax',
+    ]) {
+      recordedTax = _numberOrNull(sale[key]);
+      if (recordedTax != null) break;
+    }
+    if (recordedTax != null && recordedTax < 0) recordedTax = null;
+
+    final calculatedTax = rate == null
+        ? null
+        : _roundMoney(amount * rate / (100 + rate));
+    final tax = recordedTax != null
+        ? _roundMoney(recordedTax)
+        : calculatedTax;
+    final taxable = tax == null ? null : _roundMoney(amount - tax);
+    final mismatch = recordedTax != null &&
+        calculatedTax != null &&
+        (recordedTax - calculatedTax).abs() > 0.02;
+    final rateLabel = rate == null
+        ? 'UNSPECIFIED'
+        : (rate == rate.truncateToDouble()
+            ? '${rate.toStringAsFixed(0)}%'
+            : '${rate.toStringAsFixed(2)}%');
+
+    return {
+      'total': _roundMoney(amount),
+      'gstRate': rate,
+      'gstRateLabel': rateLabel,
+      'taxableAmount': taxable,
+      'taxAmount': tax,
+      'taxSource': recordedTax != null
+          ? 'RECORDED_TAX_AMOUNT'
+          : (calculatedTax != null ? 'CALCULATED_FROM_EXPLICIT_RATE' : 'MISSING'),
+      'taxMismatch': mismatch,
+      'needsReview': rate == null || tax == null || mismatch || (taxable != null && taxable < 0),
+    };
+  }
+
   /// Generate Tally-compatible XML format
   static String generateTallyXML(List<Map<String, dynamic>> sales, {
     required String shopName,
@@ -32,35 +100,50 @@ class AccountingIntegration {
     buffer.write('<?xml version="1.0" encoding="utf-8"?>\n');
     buffer.write('<TALLYREQUEST>\n');
     buffer.write('  <COMPANYNAME>${_escapeXml(shopName)}</COMPANYNAME>\n');
-    
-    final totalAmount = sales.fold(0.0, (sum, sale) => sum + (sale['total'] as num? ?? 0));
-    final taxable = totalAmount / 1.18; // Assuming 18% GST
-    final taxAmount = totalAmount - taxable;
+
+    final taxLines = sales.map(_deriveGstLine).toList();
+    final totalAmount = _roundMoney(sales.fold<double>(
+      0,
+      (sum, sale) => sum + (_numberOrNull(sale['total']) ?? _numberOrNull(sale['total_amount']) ?? 0),
+    ));
+    final taxableAmount = _roundMoney(taxLines.fold<double>(
+      0,
+      (sum, line) => sum + ((line['taxableAmount'] as num?)?.toDouble() ?? 0),
+    ));
+    final totalTax = _roundMoney(taxLines.fold<double>(
+      0,
+      (sum, line) => sum + ((line['taxAmount'] as num?)?.toDouble() ?? 0),
+    ));
+    final reviewCount = taxLines.where((line) => line['needsReview'] == true).length;
 
     buffer.write('  <INVOICES>\n');
-    for (int i = 0; i < sales.length; i++) {
+    for (var i = 0; i < sales.length; i++) {
       final sale = sales[i];
+      final line = taxLines[i];
       buffer.write('    <INVOICE>\n');
-      buffer.write('      <INVOICENO>${i + 1}</INVOICENO>\n');
+      buffer.write('      <INVOICENO>${_escapeXml((sale['invoice_number'] ?? sale['invoiceNumber'] ?? (i + 1)).toString())}</INVOICENO>\n');
       buffer.write('      <DATE>${_formatDateDDMMYYYY(sale['date'])}</DATE>\n');
       buffer.write('      <PRODUCT>${_escapeXml(sale['product']?.toString() ?? 'N/A')}</PRODUCT>\n');
       buffer.write('      <QUANTITY>${sale['quantity'] ?? 0}</QUANTITY>\n');
-      buffer.write('      <RATE>${(sale['price'] as num? ?? 0).toStringAsFixed(2)}</RATE>\n');
-      buffer.write('      <GROSS>${(sale['total'] as num? ?? 0).toStringAsFixed(2)}</GROSS>\n');
+      buffer.write('      <RATE>${(_numberOrNull(sale['price']) ?? 0).toStringAsFixed(2)}</RATE>\n');
+      buffer.write('      <GROSS>${(line['total'] as num).toStringAsFixed(2)}</GROSS>\n');
+      buffer.write('      <GSTRATE>${_escapeXml(line['gstRateLabel'].toString())}</GSTRATE>\n');
+      buffer.write('      <TAXABLE>${(line['taxableAmount'] as num?)?.toStringAsFixed(2) ?? ''}</TAXABLE>\n');
+      buffer.write('      <GSTAMOUNT>${(line['taxAmount'] as num?)?.toStringAsFixed(2) ?? ''}</GSTAMOUNT>\n');
+      buffer.write('      <TAXREVIEW>${line['needsReview'] == true ? 'TRUE' : 'FALSE'}</TAXREVIEW>\n');
       buffer.write('      <PAYMENTMODE>${_escapeXml(sale['paymentMethod']?.toString() ?? 'Cash')}</PAYMENTMODE>\n');
       buffer.write('    </INVOICE>\n');
     }
     buffer.write('  </INVOICES>\n');
-
     buffer.write('  <SUMMARY>\n');
     buffer.write('    <TOTALINVOICES>${sales.length}</TOTALINVOICES>\n');
     buffer.write('    <TOTALGROSS>${totalAmount.toStringAsFixed(2)}</TOTALGROSS>\n');
-    buffer.write('    <TAXABLE>${taxable.toStringAsFixed(2)}</TAXABLE>\n');
-    buffer.write('    <TAX>${taxAmount.toStringAsFixed(2)}</TAX>\n');
+    buffer.write('    <TAXABLE>${taxableAmount.toStringAsFixed(2)}</TAXABLE>\n');
+    buffer.write('    <TAX>${totalTax.toStringAsFixed(2)}</TAX>\n');
+    buffer.write('    <TAXREVIEWCOUNT>$reviewCount</TAXREVIEWCOUNT>\n');
     buffer.write('    <GSTIN>${_escapeXml(gstIn)}</GSTIN>\n');
     buffer.write('    <PERIOD>${_escapeXml(period)}</PERIOD>\n');
     buffer.write('  </SUMMARY>\n');
-
     buffer.write('</TALLYREQUEST>\n');
     return buffer.toString();
   }
@@ -98,58 +181,82 @@ class AccountingIntegration {
     required String shopName,
     required String period,
   }) {
-    // Categorize by GST rates (assuming 5%, 12%, 18%)
-    final gst5 = <Map<String, dynamic>>[];
-    final gst12 = <Map<String, dynamic>>[];
-    final gst18 = <Map<String, dynamic>>[];
+    final lines = sales.map(_deriveGstLine).toList();
+    final totalSales = _roundMoney(lines.fold<double>(
+      0, (sum, line) => sum + (line['total'] as num).toDouble(),
+    ));
+    final totalTax = _roundMoney(lines.fold<double>(
+      0, (sum, line) => sum + ((line['taxAmount'] as num?)?.toDouble() ?? 0),
+    ));
+    final unclassified = lines.where((line) => line['gstRate'] == null || line['taxAmount'] == null).toList();
+    final unclassifiedGross = _roundMoney(unclassified.fold<double>(
+      0, (sum, line) => sum + (line['total'] as num).toDouble(),
+    ));
+    final grouped = <String, Map<String, dynamic>>{};
 
-    for (var sale in sales) {
-      final amount = sale['total'] as num? ?? 0;
-      // Default to 18% GST (can be customized based on product)
-      gst18.add(sale);
+    for (final line in lines) {
+      final label = line['gstRateLabel'].toString();
+      final group = grouped.putIfAbsent(label, () => {
+        'gstRate': label,
+        'taxableAmount': 0.0,
+        'tax': 0.0,
+        'items': 0,
+        'needsReviewItems': 0,
+      });
+      group['taxableAmount'] = (group['taxableAmount'] as double) +
+          ((line['taxableAmount'] as num?)?.toDouble() ?? 0);
+      group['tax'] = (group['tax'] as double) +
+          ((line['taxAmount'] as num?)?.toDouble() ?? 0);
+      group['items'] = (group['items'] as int) + 1;
+      if (line['needsReview'] == true) {
+        group['needsReviewItems'] = (group['needsReviewItems'] as int) + 1;
+      }
     }
 
-    double calcTax(double amount, double rate) => (amount * rate) / (100 + rate);
-
-    final total = sales.fold(0.0, (sum, s) => sum + (s['total'] as num? ?? 0));
-    final tax5 = calcTax(gst5.fold(0.0, (sum, s) => sum + (s['total'] as num? ?? 0)), 5);
-    final tax12 = calcTax(gst12.fold(0.0, (sum, s) => sum + (s['total'] as num? ?? 0)), 12);
-    final tax18 = calcTax(gst18.fold(0.0, (sum, s) => sum + (s['total'] as num? ?? 0)), 18);
+    final rateLabels = grouped.keys.toList()
+      ..sort((a, b) {
+        final ar = double.tryParse(a.replaceAll('%', ''));
+        final br = double.tryParse(b.replaceAll('%', ''));
+        if (ar == null) return br == null ? a.compareTo(b) : 1;
+        if (br == null) return -1;
+        return ar.compareTo(br);
+      });
 
     return {
       'gstIn': gstIn,
       'period': period,
       'shopName': shopName,
       'summary': {
-        'totalSales': total,
-        'totalTax': tax5 + tax12 + tax18,
+        'totalSales': totalSales,
+        'totalTax': totalTax,
+        'unclassifiedSalesAmount': unclassifiedGross,
+        'unclassifiedCount': unclassified.length,
+        'needsReviewCount': lines.where((line) => line['needsReview'] == true).length,
       },
-      'breakdown': [
-        {
-          'gstRate': '5%',
-          'taxableAmount': gst5.fold(0.0, (sum, s) => sum + (s['total'] as num? ?? 0)),
-          'tax': tax5,
-          'items': gst5.length,
-        },
-        {
-          'gstRate': '12%',
-          'taxableAmount': gst12.fold(0.0, (sum, s) => sum + (s['total'] as num? ?? 0)),
-          'tax': tax12,
-          'items': gst12.length,
-        },
-        {
-          'gstRate': '18%',
-          'taxableAmount': gst18.fold(0.0, (sum, s) => sum + (s['total'] as num? ?? 0)),
-          'tax': tax18,
-          'items': gst18.length,
-        },
-      ],
-      'transactions': sales.map((s) => {
-        'date': s['date'],
-        'product': s['product'],
-        'amount': s['total'],
-        'gst': tax18, // Simplified
+      'breakdown': rateLabels.map((label) {
+        final group = grouped[label]!;
+        return {
+          'gstRate': group['gstRate'],
+          'taxableAmount': _roundMoney(group['taxableAmount'] as double),
+          'tax': _roundMoney(group['tax'] as double),
+          'items': group['items'],
+          'needsReviewItems': group['needsReviewItems'],
+        };
       }).toList(),
+      'transactions': List.generate(sales.length, (i) {
+        final sale = sales[i];
+        final line = lines[i];
+        return {
+          'date': sale['date'],
+          'product': sale['product'],
+          'amount': line['total'],
+          'gst': line['taxAmount'],
+          'gstRate': line['gstRateLabel'],
+          'taxableAmount': line['taxableAmount'],
+          'taxSource': line['taxSource'],
+          'needsReview': line['needsReview'],
+        };
+      }),
     };
   }
 
