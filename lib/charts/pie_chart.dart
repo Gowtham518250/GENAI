@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 /// 🥧 RevenuePieChart
 /// Products sold by PRICE — shows revenue split across top products
 /// Beautiful donut chart with side legend + mini progress bars
@@ -60,7 +61,7 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
           children: [
             Icon(Icons.pie_chart_outline_rounded, size: 48, color: Colors.grey[400]),
             const SizedBox(height: 12),
-            Text('No product revenue data', style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 13)),
+            LiveTranslatedText('No product revenue data', style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 13)),
           ],
         ),
       );
@@ -207,7 +208,7 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             'Revenue Split',
                             style: GoogleFonts.poppins(
                               fontSize: 16,
@@ -215,7 +216,7 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
                               color: const Color(0xFF111827),
                             ),
                           ),
-                          Text(
+                          LiveTranslatedText(
                             'Top products by sale value',
                             style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500]),
                           ),
@@ -228,7 +229,7 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
                           color: const Color(0xFFF3F4F6),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(
+                        child: LiveTranslatedText(
                           '₹${_compact(grandTotal)}',
                           style: GoogleFonts.poppins(
                             fontSize: 11,
@@ -296,7 +297,7 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
                               Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
+                                  LiveTranslatedText(
                                     '₹${_compact(grandTotal)}',
                                     style: GoogleFonts.poppins(
                                       fontSize: 18,
@@ -304,7 +305,7 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
                                       color: const Color(0xFF111827),
                                     ),
                                   ),
-                                  Text(
+                                  LiveTranslatedText(
                                     'Total',
                                     style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500]),
                                   ),
@@ -341,7 +342,7 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(
+                                            LiveTranslatedText(
                                               name,
                                               style: GoogleFonts.poppins(
                                                 fontSize: 11,
@@ -354,7 +355,7 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
                                             Row(
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Text(
+                                                LiveTranslatedText(
                                                   '₹${_compact(val)}',
                                                   style: GoogleFonts.poppins(
                                                     fontSize: 10,
@@ -362,7 +363,7 @@ class _RevenuePieChartState extends State<RevenuePieChart> {
                                                     color: color,
                                                   ),
                                                 ),
-                                                Text(
+                                                LiveTranslatedText(
                                                   '${perc.toStringAsFixed(1)}%',
                                                   style: GoogleFonts.poppins(
                                                     fontSize: 10,

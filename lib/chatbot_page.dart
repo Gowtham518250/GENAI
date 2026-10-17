@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'ai_features_service.dart';
@@ -68,7 +69,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('AI Assistant', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('AI Assistant', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -94,7 +95,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
                         bottomLeft: m['isMe'] ? const Radius.circular(16) : Radius.zero,
                       ),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       m['msg'],
                       style: TextStyle(color: m['isMe'] ? Colors.white : Colors.black),
                     ),
@@ -106,7 +107,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
           if (isTyping)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Align(alignment: Alignment.centerLeft, child: Text('AI is typing...', style: TextStyle(fontSize: 10, color: Colors.grey))),
+              child: Align(alignment: Alignment.centerLeft, child: LiveTranslatedText('AI is typing...', style: TextStyle(fontSize: 10, color: Colors.grey))),
             ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

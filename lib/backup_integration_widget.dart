@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 /// BACKUP SERVICE INTEGRATION WIDGET
 /// 
 /// Drop this into dashboard_page.dart to add backup/restore UI
@@ -62,7 +63,7 @@ class _BackupManagementSectionState extends State<BackupManagementSection> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ Backup created successfully'),
+              content: LiveTranslatedText('✅ Backup created successfully'),
               duration: Duration(seconds: 3),
             ),
           );
@@ -72,7 +73,7 @@ class _BackupManagementSectionState extends State<BackupManagementSection> {
       setState(() => _backupStatus = '❌ Backup failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Backup failed: $e')),
+          SnackBar(content: LiveTranslatedText('❌ Backup failed: $e')),
         );
       }
     } finally {
@@ -92,7 +93,7 @@ class _BackupManagementSectionState extends State<BackupManagementSection> {
               children: [
                 Icon(Icons.backup, color: Colors.blue),
                 const SizedBox(width: 8),
-                const Text(
+                const LiveTranslatedText(
                   'Data Backup',
                   style: TextStyle(
                     fontSize: 16,
@@ -104,12 +105,12 @@ class _BackupManagementSectionState extends State<BackupManagementSection> {
             const SizedBox(height: 12),
             
             // Status display
-            Text(
+            LiveTranslatedText(
               _backupStatus,
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
             if (_lastBackupTime != null)
-              Text(
+              LiveTranslatedText(
                 'Last backup: ${_lastBackupTime.toString().split('.').first}',
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
@@ -125,7 +126,7 @@ class _BackupManagementSectionState extends State<BackupManagementSection> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.save),
-              label: Text(
+              label: LiveTranslatedText(
                 _isCreatingBackup ? 'Creating backup...' : 'Create Backup Now',
               ),
             ),
@@ -133,8 +134,8 @@ class _BackupManagementSectionState extends State<BackupManagementSection> {
             
             // Auto-backup toggle
             SwitchListTile(
-              title: const Text('Auto-backup daily (2 AM)'),
-              subtitle: const Text('Automatic backup every 24 hours'),
+              title: const LiveTranslatedText('Auto-backup daily (2 AM)'),
+              subtitle: const LiveTranslatedText('Automatic backup every 24 hours'),
               value: _autoBackupEnabled,
               onChanged: (value) async {
                 setState(() => _autoBackupEnabled = value);

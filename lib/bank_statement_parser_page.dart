@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -142,7 +143,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text('Bank Statement Parser', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('Bank Statement Parser', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -164,9 +165,9 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Status', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  LiveTranslatedText('Status', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text(_status, style: GoogleFonts.poppins(color: Colors.blue.shade800)),
+                  LiveTranslatedText(_status, style: GoogleFonts.poppins(color: Colors.blue.shade800)),
                 ],
               ),
             ),
@@ -181,7 +182,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
                 icon: _loading 
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.upload_file),
-                label: Text(_loading ? 'Processing...' : 'Select & Parse PDF'),
+                label: LiveTranslatedText(_loading ? 'Processing...' : 'Select & Parse PDF'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -197,7 +198,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
 
             // Instructions
             if (_parsedEntries.isEmpty) ...[
-              Text('Instructions', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+              LiveTranslatedText('Instructions', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               _buildInstructionCard(
                 'Supported Banks',
@@ -238,7 +239,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Statement Summary', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+        LiveTranslatedText('Statement Summary', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -261,13 +262,13 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
               Icon(net >= 0 ? Icons.account_balance_wallet_outlined : Icons.warning_amber_rounded,
                   color: net >= 0 ? Colors.green.shade800 : Colors.red.shade800),
               const SizedBox(width: 10),
-              Expanded(child: Text('Net flow for this search', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12))),
-              Text('₹${net.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, color: net >= 0 ? Colors.green.shade800 : Colors.red.shade800)),
+              Expanded(child: LiveTranslatedText('Net flow for this search', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12))),
+              LiveTranslatedText('₹${net.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, color: net >= 0 ? Colors.green.shade800 : Colors.red.shade800)),
             ],
           ),
         ),
         const SizedBox(height: 22),
-        Text('Search Transaction History', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+        LiveTranslatedText('Search Transaction History', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
         TextField(
           controller: _searchController,
@@ -288,7 +289,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Text('${visible.length} transaction(s) found', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
+        LiveTranslatedText('${visible.length} transaction(s) found', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
         if (_searchQuery.isNotEmpty && visible.isNotEmpty) ...[
           const SizedBox(height: 12),
           _buildSearchAnalytics(visible),
@@ -299,7 +300,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-            child: Text(
+            child: LiveTranslatedText(
               _searchQuery.isEmpty
                   ? 'No transactions were extracted.'
                   : 'No statement rows match “' + _searchController.text.trim() +
@@ -312,7 +313,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
           ...visible.map(_buildHistoryCard),
 
         const SizedBox(height: 24),
-        Text('Sale Reconciliation', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+        LiveTranslatedText('Sale Reconciliation', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -325,18 +326,18 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
         ),
         const SizedBox(height: 20),
         if (_matched.isNotEmpty) ...[
-          Text('✅ Matched Transactions', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green.shade800)),
+          LiveTranslatedText('✅ Matched Transactions', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green.shade800)),
           const SizedBox(height: 10),
           ..._matched.take(5).map((txn) => _buildTransactionCard(txn, true)),
           if (_matched.length > 5)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text('+ ${_matched.length - 5} more matched transactions', style: GoogleFonts.poppins(color: Colors.green.shade600)),
+              child: LiveTranslatedText('+ ${_matched.length - 5} more matched transactions', style: GoogleFonts.poppins(color: Colors.green.shade600)),
             ),
           const SizedBox(height: 18),
         ],
         if (_unmatched.isNotEmpty) ...[
-          Text('⚠️ Incoming transactions not matched to a sale', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
+          LiveTranslatedText('⚠️ Incoming transactions not matched to a sale', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
           const SizedBox(height: 10),
           ..._unmatched.map((txn) => _buildTransactionCard(txn, false)),
         ],
@@ -402,14 +403,14 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
             children: [
               Icon(icon, color: color, size: 19),
               const SizedBox(height: 7),
-              Text(
+              LiveTranslatedText(
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800, color: color),
               ),
               const SizedBox(height: 2),
-              Text(
+              LiveTranslatedText(
                 label,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -455,9 +456,9 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Customer / Search Analytics',
+                    LiveTranslatedText('Customer / Search Analytics',
                         style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w800)),
-                    Text(
+                    LiveTranslatedText(
                       'Matches for “' + query + '”',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -469,7 +470,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                 decoration: BoxDecoration(color: const Color(0xFFF0F3FA), borderRadius: BorderRadius.circular(20)),
-                child: Text(
+                child: LiveTranslatedText(
                   entries.length.toString() + ' txns',
                   style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF4A5874)),
                 ),
@@ -507,12 +508,12 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
                 Icon(Icons.account_balance_wallet_outlined, color: netColor, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Net flow (credit − debit)',
                     style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600),
                   ),
                 ),
-                Text(
+                LiveTranslatedText(
                   (net < 0 ? '−' : '') + '₹' + net.abs().toStringAsFixed(2),
                   style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w800, color: netColor),
                 ),
@@ -521,7 +522,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
           ),
           if (sorted.isNotEmpty) ...[
             const SizedBox(height: 9),
-            Text(
+            LiveTranslatedText(
               'Activity: ' + sorted.first.date.toIso8601String().split('T').first +
                   ' to ' + sorted.last.date.toIso8601String().split('T').first,
               style: GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 10),
@@ -529,7 +530,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
           ],
           if (monthsDescending.isNotEmpty) ...[
             const SizedBox(height: 14),
-            Text('Monthly activity', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w800)),
+            LiveTranslatedText('Monthly activity', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w800)),
             const SizedBox(height: 7),
             ...monthsDescending.take(6).map((month) {
               final monthCredit = (month['credited_total'] as num).toDouble();
@@ -541,17 +542,17 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(month['month'].toString(), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700)),
+                    LiveTranslatedText(month['month'].toString(), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: 12,
                       runSpacing: 4,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           '+ ₹' + monthCredit.toStringAsFixed(2) + ' received (' + month['credit_count'].toString() + ')',
                           style: GoogleFonts.poppins(color: const Color(0xFF07845F), fontSize: 10, fontWeight: FontWeight.w600),
                         ),
-                        Text(
+                        LiveTranslatedText(
                           '− ₹' + monthPaid.toStringAsFixed(2) + ' paid (' + month['debit_count'].toString() + ')',
                           style: GoogleFonts.poppins(color: const Color(0xFFC2414B), fontSize: 10, fontWeight: FontWeight.w600),
                         ),
@@ -563,7 +564,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
             }),
           ],
           const SizedBox(height: 9),
-          Text(
+          LiveTranslatedText(
             'Based only on transactions in this statement that match the search. Net flow does not automatically mean that either person owes money.',
             style: GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 9.5, height: 1.45),
           ),
@@ -589,24 +590,24 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
         onTap: () => showDialog<void>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text(party, style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+            title: LiveTranslatedText(party, style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${isCredit ? 'Money received' : 'Money paid'}: ₹${entry.amount.toStringAsFixed(2)}'),
-                Text('Date: ${entry.date.toIso8601String().split('T').first}'),
-                Text('Direction: ${entry.direction}'),
-                Text('Bank: ${entry.bankName}'),
-                if (entry.reference.isNotEmpty) Text('Reference: ${entry.reference}'),
+                LiveTranslatedText('${isCredit ? 'Money received' : 'Money paid'}: ₹${entry.amount.toStringAsFixed(2)}'),
+                LiveTranslatedText('Date: ${entry.date.toIso8601String().split('T').first}'),
+                LiveTranslatedText('Direction: ${entry.direction}'),
+                LiveTranslatedText('Bank: ${entry.bankName}'),
+                if (entry.reference.isNotEmpty) LiveTranslatedText('Reference: ${entry.reference}'),
                 const SizedBox(height: 8),
-                Text('Description: ${entry.description.isEmpty ? entry.rawLine : entry.description}'),
+                LiveTranslatedText('Description: ${entry.description.isEmpty ? entry.rawLine : entry.description}'),
                 const SizedBox(height: 8),
-                Text('Source row: ${entry.rawLine}', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600)),
+                LiveTranslatedText('Source row: ${entry.rawLine}', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600)),
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+              TextButton(onPressed: () => Navigator.pop(context), child: const LiveTranslatedText('Close')),
             ],
           ),
         ),
@@ -626,21 +627,21 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(party, style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 13)),
+                    LiveTranslatedText(party, style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 13)),
                     const SizedBox(height: 3),
-                    Text(
+                    LiveTranslatedText(
                       entry.description.isEmpty ? entry.rawLine : entry.description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
                     ),
                     const SizedBox(height: 5),
-                    Text(
+                    LiveTranslatedText(
                       '${entry.date.toIso8601String().split('T').first} • ${entry.bankName}',
                       style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade500),
                     ),
                     if (entry.reference.isNotEmpty)
-                      Text('Ref: ${entry.reference}', maxLines: 1, overflow: TextOverflow.ellipsis,
+                      LiveTranslatedText('Ref: ${entry.reference}', maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade500)),
                   ],
                 ),
@@ -649,9 +650,9 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('${isCredit ? '+' : '-'}₹${entry.amount.toStringAsFixed(2)}',
+                  LiveTranslatedText('${isCredit ? '+' : '-'}₹${entry.amount.toStringAsFixed(2)}',
                       style: GoogleFonts.poppins(fontWeight: FontWeight.w800, color: color, fontSize: 13)),
-                  Text(isCredit ? 'RECEIVED' : 'PAID',
+                  LiveTranslatedText(isCredit ? 'RECEIVED' : 'PAID',
                       style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: color, fontSize: 9)),
                 ],
               ),
@@ -674,8 +675,8 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 8),
-          Text(value, style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-          Text(label, style: GoogleFonts.poppins(fontSize: 12, color: color.withValues(alpha: 0.8))),
+          LiveTranslatedText(value, style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+          LiveTranslatedText(label, style: GoogleFonts.poppins(fontSize: 12, color: color.withValues(alpha: 0.8))),
         ],
       ),
     );
@@ -704,9 +705,9 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('₹${amount.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-                  Text(reference, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
-                  Text(date.split('T').first, style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade500)),
+                  LiveTranslatedText('₹${amount.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  LiveTranslatedText(reference, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
+                  LiveTranslatedText(date.split('T').first, style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade500)),
                 ],
               ),
             ),
@@ -714,7 +715,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: () => _addAsSale(txn),
-                child: const Text('Add as Sale'),
+                child: const LiveTranslatedText('Add as Sale'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -751,9 +752,9 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                LiveTranslatedText(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text(description, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
+                LiveTranslatedText(description, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
               ],
             ),
           ),
@@ -789,7 +790,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Transaction added as sale'), backgroundColor: Colors.green),
+      const SnackBar(content: LiveTranslatedText('Transaction added as sale'), backgroundColor: Colors.green),
     );
   }
 }

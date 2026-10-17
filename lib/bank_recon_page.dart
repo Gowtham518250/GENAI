@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
@@ -57,11 +58,11 @@ class _BankReconPageState extends State<BankReconPage> with SingleTickerProvider
         'notes': _notesC.text,
       });
       _bankNameC.clear(); _refC.clear(); _amountC.clear(); _notesC.clear();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reconciliation added!')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Reconciliation added!')));
       _tabController.animateTo(0);
       _fetchRecords();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText('Error: $e')));
     } finally {
       setState(() => _submitting = false);
     }
@@ -89,7 +90,7 @@ class _BankReconPageState extends State<BankReconPage> with SingleTickerProvider
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: _card,
-        title: Text('Bank Reconciliation', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: LiveTranslatedText('Bank Reconciliation', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.amberAccent, unselectedLabelColor: Colors.white54, indicatorColor: Colors.amberAccent,
@@ -103,7 +104,7 @@ class _BankReconPageState extends State<BankReconPage> with SingleTickerProvider
             : RefreshIndicator(
                 onRefresh: _fetchRecords,
                 child: _records.isEmpty
-                    ? Center(child: Text('No reconciliation records', style: GoogleFonts.poppins(color: Colors.white38)))
+                    ? Center(child: LiveTranslatedText('No reconciliation records', style: GoogleFonts.poppins(color: Colors.white38)))
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: _records.length,
@@ -125,10 +126,10 @@ class _BankReconPageState extends State<BankReconPage> with SingleTickerProvider
                               ),
                               const SizedBox(width: 14),
                               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(r['bank_name']?.toString() ?? 'Bank', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
-                                Text(r['date']?.toString() ?? '', style: GoogleFonts.poppins(color: Colors.white54, fontSize: 11)),
+                                LiveTranslatedText(r['bank_name']?.toString() ?? 'Bank', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                                LiveTranslatedText(r['date']?.toString() ?? '', style: GoogleFonts.poppins(color: Colors.white54, fontSize: 11)),
                               ])),
-                              Text('Rs ${r['amount']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: Colors.amberAccent, fontWeight: FontWeight.bold)),
+                              LiveTranslatedText('Rs ${r['amount']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: Colors.amberAccent, fontWeight: FontWeight.bold)),
                             ]),
                           );
                         },
@@ -138,7 +139,7 @@ class _BankReconPageState extends State<BankReconPage> with SingleTickerProvider
         SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('New Reconciliation Entry', style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            LiveTranslatedText('New Reconciliation Entry', style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             _field(_bankNameC, 'Bank Name'),
             _field(_refC, 'Transaction Reference'),
@@ -148,7 +149,7 @@ class _BankReconPageState extends State<BankReconPage> with SingleTickerProvider
               tileColor: Colors.white10,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               leading: const Icon(Icons.calendar_today, color: Colors.amberAccent),
-              title: Text('Date: ${_selectedDate.toIso8601String().split('T').first}', style: const TextStyle(color: Colors.white)),
+              title: LiveTranslatedText('Date: ${_selectedDate.toIso8601String().split('T').first}', style: const TextStyle(color: Colors.white)),
               onTap: () async {
                 final d = await showDatePicker(context: context, initialDate: _selectedDate, firstDate: DateTime(2020), lastDate: DateTime(2030));
                 if (d != null) setState(() => _selectedDate = d);
@@ -160,7 +161,7 @@ class _BankReconPageState extends State<BankReconPage> with SingleTickerProvider
               child: ElevatedButton(
                 onPressed: _submitting ? null : _submit,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.amberAccent, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 16)),
-                child: _submitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Submit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: _submitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const LiveTranslatedText('Submit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ),
           ]),

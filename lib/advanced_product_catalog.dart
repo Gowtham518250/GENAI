@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -260,7 +261,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
   void _addToComparison(Product product) {
     if (_comparisons.length >= 4) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You can compare up to 4 products')),
+        const SnackBar(content: LiveTranslatedText('You can compare up to 4 products')),
       );
       return;
     }
@@ -278,21 +279,21 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text('Shop', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('Shop', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
         actions: [
           IconButton(
             icon: Badge(
-              label: Text(_comparisons.length.toString()),
+              label: LiveTranslatedText(_comparisons.length.toString()),
               child: const Icon(Icons.compare_arrows),
             ),
             onPressed: () => _showComparisonSheet(),
           ),
           IconButton(
             icon: Badge(
-              label: Text(_wishlist.length.toString()),
+              label: LiveTranslatedText(_wishlist.length.toString()),
               child: const Icon(Icons.favorite_border),
             ),
             onPressed: () => _showWishlistSheet(),
@@ -370,7 +371,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Chip(
-        label: Text(label),
+        label: LiveTranslatedText(label),
         deleteIcon: const Icon(Icons.close, size: 18),
         onDeleted: () {
           setState(() {
@@ -401,7 +402,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
                 items: SortOption.values.map((option) {
                   return DropdownMenuItem(
                     value: option,
-                    child: Text(option.label),
+                    child: LiveTranslatedText(option.label),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -417,7 +418,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
           ElevatedButton.icon(
             onPressed: _showFilterBottomSheet,
             icon: const Icon(Icons.filter_list),
-            label: const Text('Filters'),
+            label: const LiveTranslatedText('Filters'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue[600],
               foregroundColor: Colors.white,
@@ -435,12 +436,12 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
         children: [
           Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          Text(
+          LiveTranslatedText(
             'No products found',
             style: GoogleFonts.poppins(fontSize: 18, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             'Try adjusting your filters or search terms',
             style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[500]),
           ),
@@ -501,7 +502,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
                           color: Colors.green,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(
+                        child: LiveTranslatedText(
                           '${product.discount}% OFF',
                           style: GoogleFonts.poppins(
                             color: Colors.white,
@@ -530,7 +531,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     product.name,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -552,7 +553,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
                           children: [
                             const Icon(Icons.star, size: 12, color: Colors.white),
                             const SizedBox(width: 2),
-                            Text(
+                            LiveTranslatedText(
                               product.rating.toString(),
                               style: GoogleFonts.poppins(
                                 color: Colors.white,
@@ -564,7 +565,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      LiveTranslatedText(
                         '(${product.reviewCount})',
                         style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[600]),
                       ),
@@ -573,7 +574,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         '₹${product.price}',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
@@ -583,7 +584,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
                       ),
                       if (product.discount > 0) ...[
                         const SizedBox(width: 8),
-                        Text(
+                        LiveTranslatedText(
                           '₹${product.originalPrice}',
                           style: GoogleFonts.poppins(
                             fontSize: 12,
@@ -604,7 +605,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
                             side: BorderSide(color: Colors.grey[300]!),
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
-                          child: Text('Compare', style: GoogleFonts.poppins(fontSize: 10)),
+                          child: LiveTranslatedText('Compare', style: GoogleFonts.poppins(fontSize: 10)),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -618,7 +619,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
-                          child: Text('Add', style: GoogleFonts.poppins(fontSize: 10)),
+                          child: LiveTranslatedText('Add', style: GoogleFonts.poppins(fontSize: 10)),
                         ),
                       ),
                     ],
@@ -677,7 +678,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
   void _showComparisonSheet() {
     if (_comparisons.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No products added to comparison')),
+        const SnackBar(content: LiveTranslatedText('No products added to comparison')),
       );
       return;
     }
@@ -889,10 +890,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Filters', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                LiveTranslatedText('Filters', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
                 TextButton(
                   onPressed: _resetFilters,
-                  child: Text('Reset All', style: GoogleFonts.poppins(color: Colors.blue[600])),
+                  child: LiveTranslatedText('Reset All', style: GoogleFonts.poppins(color: Colors.blue[600])),
                 ),
               ],
             ),
@@ -928,7 +929,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: Text('Apply Filters', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: LiveTranslatedText('Apply Filters', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
           ),
@@ -941,7 +942,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+        LiveTranslatedText(title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         content,
         const SizedBox(height: 24),
@@ -955,7 +956,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       children: PriceRange.values.map((range) {
         final isSelected = _priceRange == range;
         return FilterChip(
-          label: Text(range.label),
+          label: LiveTranslatedText(range.label),
           selected: isSelected,
           onSelected: (selected) {
             setState(() {
@@ -975,7 +976,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       children: widget.categories.map((category) {
         final isSelected = _selectedCategories.contains(category);
         return FilterChip(
-          label: Text(category),
+          label: LiveTranslatedText(category),
           selected: isSelected,
           onSelected: (selected) {
             setState(() {
@@ -999,7 +1000,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       children: widget.brands.map((brand) {
         final isSelected = _selectedBrands.contains(brand);
         return FilterChip(
-          label: Text(brand),
+          label: LiveTranslatedText(brand),
           selected: isSelected,
           onSelected: (selected) {
             setState(() {
@@ -1032,7 +1033,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             });
           },
         ),
-        Text('$_minRating+ Rating', style: GoogleFonts.poppins(color: Colors.grey[600])),
+        LiveTranslatedText('$_minRating+ Rating', style: GoogleFonts.poppins(color: Colors.grey[600])),
       ],
     );
   }
@@ -1041,7 +1042,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     return Column(
       children: [
         CheckboxListTile(
-          title: const Text('In Stock Only'),
+          title: const LiveTranslatedText('In Stock Only'),
           value: _inStockOnly,
           onChanged: (value) {
             setState(() {
@@ -1050,7 +1051,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           },
         ),
         CheckboxListTile(
-          title: const Text('With Discount Only'),
+          title: const LiveTranslatedText('With Discount Only'),
           value: _discountOnly,
           onChanged: (value) {
             setState(() {
@@ -1140,14 +1141,14 @@ class ProductDetailSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Title and price
-                        Text(
+                        LiveTranslatedText(
                           product.name,
                           style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               '₹${product.price}',
                               style: GoogleFonts.poppins(
                                 fontSize: 24,
@@ -1157,7 +1158,7 @@ class ProductDetailSheet extends StatelessWidget {
                             ),
                             if (product.discount > 0) ...[
                               const SizedBox(width: 8),
-                              Text(
+                              LiveTranslatedText(
                                 '₹${product.originalPrice}',
                                 style: GoogleFonts.poppins(
                                   fontSize: 16,
@@ -1172,7 +1173,7 @@ class ProductDetailSheet extends StatelessWidget {
                                   color: Colors.green,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: Text(
+                                child: LiveTranslatedText(
                                   '${product.discount}% OFF',
                                   style: GoogleFonts.poppins(
                                     color: Colors.white,
@@ -1198,7 +1199,7 @@ class ProductDetailSheet extends StatelessWidget {
                                 children: [
                                   const Icon(Icons.star, size: 16, color: Colors.white),
                                   const SizedBox(width: 4),
-                                  Text(
+                                  LiveTranslatedText(
                                     product.rating.toString(),
                                     style: GoogleFonts.poppins(
                                       color: Colors.white,
@@ -1209,23 +1210,23 @@ class ProductDetailSheet extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text('${product.reviewCount} Ratings & Reviews'),
+                            LiveTranslatedText('${product.reviewCount} Ratings & Reviews'),
                           ],
                         ),
                         const SizedBox(height: 24),
                         // Description
-                        Text(
+                        LiveTranslatedText(
                           'Description',
                           style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
-                        Text(
+                        LiveTranslatedText(
                           product.description,
                           style: GoogleFonts.poppins(color: Colors.grey[700]),
                         ),
                         const SizedBox(height: 24),
                         // Specifications
-                        Text(
+                        LiveTranslatedText(
                           'Specifications',
                           style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
@@ -1237,14 +1238,14 @@ class ProductDetailSheet extends StatelessWidget {
                               children: [
                                 Expanded(
                                   flex: 1,
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     entry.key,
                                     style: GoogleFonts.poppins(color: Colors.grey[600]),
                                   ),
                                 ),
                                 Expanded(
                                   flex: 2,
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     entry.value,
                                     style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
                                   ),
@@ -1261,7 +1262,7 @@ class ProductDetailSheet extends StatelessWidget {
                               child: OutlinedButton.icon(
                                 onPressed: () {},
                                 icon: const Icon(Icons.favorite_border),
-                                label: const Text('Wishlist'),
+                                label: const LiveTranslatedText('Wishlist'),
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -1270,7 +1271,7 @@ class ProductDetailSheet extends StatelessWidget {
                               child: ElevatedButton.icon(
                                 onPressed: () {},
                                 icon: const Icon(Icons.shopping_cart),
-                                label: const Text('Add to Cart'),
+                                label: const LiveTranslatedText('Add to Cart'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.orange[600],
                                   foregroundColor: Colors.white,
@@ -1323,7 +1324,7 @@ class ProductComparisonSheet extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Product Comparison', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                LiveTranslatedText('Product Comparison', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
@@ -1357,17 +1358,17 @@ class ProductComparisonSheet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Specifications', style: TextStyle(fontWeight: FontWeight.bold)),
+          const LiveTranslatedText('Specifications', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
-          const Text('Product Name'),
+          const LiveTranslatedText('Product Name'),
           const SizedBox(height: 16),
-          const Text('Brand'),
+          const LiveTranslatedText('Brand'),
           const SizedBox(height: 16),
-          const Text('Price'),
+          const LiveTranslatedText('Price'),
           const SizedBox(height: 16),
-          const Text('Rating'),
+          const LiveTranslatedText('Rating'),
           const SizedBox(height: 16),
-          const Text('Discount'),
+          const LiveTranslatedText('Discount'),
         ],
       ),
     );
@@ -1387,22 +1388,22 @@ class ProductComparisonSheet extends StatelessWidget {
               ? Image.network(product.images[0], height: 100, fit: BoxFit.cover)
               : Container(height: 100, color: Colors.grey[200]),
           const SizedBox(height: 8),
-          Text(product.name, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          LiveTranslatedText(product.name, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
-          Text(product.brand),
+          LiveTranslatedText(product.brand),
           const SizedBox(height: 16),
-          Text('₹${product.price}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.orange[600])),
+          LiveTranslatedText('₹${product.price}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.orange[600])),
           const SizedBox(height: 16),
           Row(
             children: [
               const Icon(Icons.star, size: 16, color: Colors.orange),
               const SizedBox(width: 4),
-              Text('${product.rating}'),
+              LiveTranslatedText('${product.rating}'),
             ],
           ),
           const SizedBox(height: 16),
           if (product.discount > 0)
-            Text('${product.discount}% OFF', style: GoogleFonts.poppins(color: Colors.green)),
+            LiveTranslatedText('${product.discount}% OFF', style: GoogleFonts.poppins(color: Colors.green)),
         ],
       ),
     );
@@ -1435,7 +1436,7 @@ class WishlistSheet extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('My Wishlist (${wishlist.length})', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                LiveTranslatedText('My Wishlist (${wishlist.length})', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
@@ -1452,7 +1453,7 @@ class WishlistSheet extends StatelessWidget {
                       children: [
                         Icon(Icons.favorite_border, size: 64, color: Colors.grey[400]),
                         const SizedBox(height: 16),
-                        Text('Your wishlist is empty', style: GoogleFonts.poppins(color: Colors.grey[600])),
+                        LiveTranslatedText('Your wishlist is empty', style: GoogleFonts.poppins(color: Colors.grey[600])),
                       ],
                     ),
                   )
@@ -1494,14 +1495,14 @@ class WishlistSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     product.name,
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  LiveTranslatedText(
                     '₹${product.price}',
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
