@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -54,7 +55,7 @@ class WelcomeCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         'AI Shop Pro కి స్వాగతం! 👋',
                         style: GoogleFonts.poppins(
                           fontSize: 15,
@@ -62,7 +63,7 @@ class WelcomeCard extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      Text(
+                      LiveTranslatedText(
                         'Welcome! Start with these 3 quick actions:',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
@@ -147,7 +148,7 @@ class _WelcomeAction extends StatelessWidget {
           children: [
             Icon(icon, color: Colors.white, size: 24),
             const SizedBox(height: 6),
-            Text(
+            LiveTranslatedText(
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(

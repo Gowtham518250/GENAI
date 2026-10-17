@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../security_service.dart';
@@ -81,7 +82,7 @@ class _ShopModulesSectionState extends State<ShopModulesSection> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Text(
+                child: LiveTranslatedText(
                   'Shop modules',
                   style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF1F2937)),
                 ),
@@ -231,7 +232,7 @@ class _ShopModulesSectionState extends State<ShopModulesSection> {
               child: Icon(icon, color: color, size: 28),
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
@@ -243,7 +244,7 @@ class _ShopModulesSectionState extends State<ShopModulesSection> {
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 2),
-              Text(
+              LiveTranslatedText(
                 subtitle,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
@@ -293,7 +294,7 @@ class _ShopModulesSectionState extends State<ShopModulesSection> {
                     child: const Icon(Icons.widgets_rounded, color: Color(0xFF8B5CF6), size: 20),
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  LiveTranslatedText(
                     'Shop Modules',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
@@ -313,7 +314,7 @@ class _ShopModulesSectionState extends State<ShopModulesSection> {
                 ),
                 child: Row(
                   children: [
-                    Text('View All', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
+                    LiveTranslatedText('View All', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
                     const SizedBox(width: 4),
                     const Icon(Icons.arrow_forward_ios_rounded, size: 12),
                   ],
@@ -395,7 +396,7 @@ class _ShopModulesSectionState extends State<ShopModulesSection> {
               child: Icon(icon, color: color, size: 18),
             ),
             const SizedBox(height: 6),
-            Text(
+            LiveTranslatedText(
               label,
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -408,7 +409,7 @@ class _ShopModulesSectionState extends State<ShopModulesSection> {
               ),
             ),
             const SizedBox(height: 2),
-            Text(
+            LiveTranslatedText(
               subtitle,
               textAlign: TextAlign.center,
               maxLines: 1,

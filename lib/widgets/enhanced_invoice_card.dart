@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -130,7 +131,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             widget.invoice['invoice_number'] ?? 'INV-0001',
                             style: GoogleFonts.poppins(
                               fontSize: 14,
@@ -148,7 +149,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                               ),
                               const SizedBox(width: 4),
                               Expanded(
-                                child: Text(
+                                child: LiveTranslatedText(
                                   customerName,
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
@@ -176,7 +177,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                           width: 1,
                         ),
                       ),
-                      child: Text(
+                      child: LiveTranslatedText(
                         status,
                         style: GoogleFonts.poppins(
                           fontSize: 10,
@@ -198,7 +199,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                       color: const Color(0xFF94A3B8),
                     ),
                     const SizedBox(width: 4),
-                    Text(
+                    LiveTranslatedText(
                       invoiceDate,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -212,7 +213,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                       color: const Color(0xFF94A3B8),
                     ),
                     const SizedBox(width: 4),
-                    Text(
+                    LiveTranslatedText(
                       paymentMethod,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -227,7 +228,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       '₹${totalAmount.toStringAsFixed(2)}',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
@@ -318,7 +319,7 @@ class InvoiceItemsBreakdown extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              LiveTranslatedText(
                 'Items Breakdown',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
@@ -355,14 +356,14 @@ class InvoiceItemsBreakdown extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               productName,
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            Text(
+                            LiveTranslatedText(
                               '$quantity x ₹${unitPrice.toStringAsFixed(2)}',
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
@@ -372,7 +373,7 @@ class InvoiceItemsBreakdown extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Text(
+                      LiveTranslatedText(
                         '₹${lineTotal.toStringAsFixed(2)}',
                         style: GoogleFonts.poppins(
                           fontSize: 14,
@@ -394,14 +395,14 @@ class InvoiceItemsBreakdown extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Total',
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
+                LiveTranslatedText(
                   '₹${totalAmount.toStringAsFixed(2)}',
                   style: GoogleFonts.poppins(
                     fontSize: 16,
@@ -472,7 +473,7 @@ class _InvoiceFilterChipsState extends State<InvoiceFilterChips> {
                 ),
               ),
               child: Center(
-                child: Text(
+                child: LiveTranslatedText(
                   filter,
                   style: GoogleFonts.poppins(
                     fontSize: 12,

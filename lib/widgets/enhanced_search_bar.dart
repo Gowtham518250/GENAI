@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'accessibility_helper.dart';
@@ -201,12 +202,12 @@ class _EnhancedSearchBarState extends State<EnhancedSearchBar> {
               itemBuilder: (context, index) {
                 final suggestion = widget.suggestions![index];
                 return AccessibilityHelper.accessibleListTile(
-                  title: Text(
+                  title: LiveTranslatedText(
                     suggestion.text,
                     style: GoogleFonts.poppins(fontSize: AccessibilityHelper.minFontSize),
                   ),
                   subtitle: suggestion.subtitle != null
-                      ? Text(
+                      ? LiveTranslatedText(
                           suggestion.subtitle!,
                           style: GoogleFonts.poppins(
                             fontSize: 12,
@@ -246,7 +247,7 @@ class _EnhancedSearchBarState extends State<EnhancedSearchBar> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Recent Searches',
                       style: GoogleFonts.poppins(
                         fontSize: AccessibilityHelper.minFontSize,
@@ -258,7 +259,7 @@ class _EnhancedSearchBarState extends State<EnhancedSearchBar> {
                       onTap: () {
                         // Clear search history
                       },
-                      child: Text(
+                      child: LiveTranslatedText(
                         'Clear',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
@@ -324,7 +325,7 @@ class _FilterChip extends StatelessWidget {
             width: 1.5,
           ),
         ),
-        child: Text(
+        child: LiveTranslatedText(
           label,
           style: GoogleFonts.poppins(
             fontSize: 12,
@@ -363,7 +364,7 @@ class _HistoryChip extends StatelessWidget {
         children: [
           const Icon(Icons.history, size: 14, color: Color(0xFF64748B)),
           const SizedBox(width: 6),
-          Text(
+          LiveTranslatedText(
             text,
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -470,7 +471,7 @@ class _AdvancedFilterSheetState extends State<AdvancedFilterSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              LiveTranslatedText(
                 'Advanced Filters',
                 style: GoogleFonts.poppins(
                   fontSize: 20,
@@ -487,7 +488,7 @@ class _AdvancedFilterSheetState extends State<AdvancedFilterSheet> {
           const SizedBox(height: 24),
           
           // Stock filter
-          Text(
+          LiveTranslatedText(
             'Stock Status',
             style: GoogleFonts.poppins(
               fontSize: 16,
@@ -512,7 +513,7 @@ class _AdvancedFilterSheetState extends State<AdvancedFilterSheet> {
           const SizedBox(height: 24),
           
           // Price range
-          Text(
+          LiveTranslatedText(
             'Price Range',
             style: GoogleFonts.poppins(
               fontSize: 16,
