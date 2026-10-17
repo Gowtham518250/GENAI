@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -225,7 +226,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   const SizedBox(height: AppSpacing.xxxl),
                   
                   // Title
-                  Text(
+                  LiveTranslatedText(
                     slide.title,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
@@ -239,7 +240,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   // Description
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-                    child: Text(
+                    child: LiveTranslatedText(
                       slide.description,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
@@ -317,17 +318,17 @@ class FeatureHighlight extends StatelessWidget {
           children: [
             Icon(Icons.lightbulb, color: const Color(0xFFF59E0B)),
             const SizedBox(width: AppSpacing.sm),
-            Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+            LiveTranslatedText(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Text(
+        content: LiveTranslatedText(
           description,
           style: GoogleFonts.poppins(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Got it'),
+            child: const LiveTranslatedText('Got it'),
           ),
         ],
       ),
@@ -413,7 +414,7 @@ class _QuickTipState extends State<QuickTip> with SingleTickerProviderStateMixin
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
-                    child: Text(
+                    child: LiveTranslatedText(
                       widget.tip,
                       style: GoogleFonts.poppins(
                         fontSize: 12,

@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -122,7 +123,7 @@ class _SyncVisibilityWidgetState extends State<SyncVisibilityWidget>
             },
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             widget.isSyncing
                 ? 'Syncing ${(widget.syncProgress * 100).toInt()}%'
                 : '${widget.pendingChanges} pending',
@@ -148,7 +149,7 @@ class _SyncVisibilityWidgetState extends State<SyncVisibilityWidget>
                   color: const Color(0xFF6366F1),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   'Sync Now',
                   style: GoogleFonts.poppins(
                     fontSize: 10,
@@ -186,7 +187,7 @@ class _SyncVisibilityWidgetState extends State<SyncVisibilityWidget>
             color: Color(0xFF10B981),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             'Synced',
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -221,7 +222,7 @@ class _SyncVisibilityWidgetState extends State<SyncVisibilityWidget>
             color: Color(0xFFF59E0B),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             'Offline',
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -256,7 +257,7 @@ class _SyncVisibilityWidgetState extends State<SyncVisibilityWidget>
             color: Color(0xFFEF4444),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             '${widget.conflictedItems} conflicts',
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -279,7 +280,7 @@ class _SyncVisibilityWidgetState extends State<SyncVisibilityWidget>
                 color: const Color(0xFFEF4444),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 'Resolve',
                 style: GoogleFonts.poppins(
                   fontSize: 10,
@@ -319,7 +320,7 @@ class SyncProgressDialog extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             'Syncing Data',
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
           ),
@@ -331,7 +332,7 @@ class SyncProgressDialog extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           LinearProgressIndicator(value: progress),
           const SizedBox(height: AppSpacing.md),
-          Text(
+          LiveTranslatedText(
             '${(progress * 100).toInt()}%',
             style: GoogleFonts.poppins(
               fontSize: 24,
@@ -340,7 +341,7 @@ class SyncProgressDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             currentStep,
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -352,7 +353,7 @@ class SyncProgressDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: onCancel,
-          child: const Text('Cancel'),
+          child: const LiveTranslatedText('Cancel'),
         ),
       ],
     );
@@ -379,7 +380,7 @@ class ConflictResolutionDialog extends StatelessWidget {
         children: [
           Icon(Icons.error_rounded, color: const Color(0xFFEF4444)),
           const SizedBox(width: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             'Data Conflicts',
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
           ),
@@ -401,7 +402,7 @@ class ConflictResolutionDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: const LiveTranslatedText('Cancel'),
         ),
       ],
     );
@@ -425,7 +426,7 @@ class ConflictResolutionDialog extends StatelessWidget {
               Icon(Icons.description, size: 16, color: const Color(0xFF6366F1)),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   conflict.itemName,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
@@ -443,7 +444,7 @@ class ConflictResolutionDialog extends StatelessWidget {
                   color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   'Conflict',
                   style: GoogleFonts.poppins(
                     fontSize: 10,
@@ -473,7 +474,7 @@ class ConflictResolutionDialog extends StatelessWidget {
                   children: [
                     Icon(Icons.phone_android, size: 12, color: const Color(0xFF10B981)),
                     const SizedBox(width: 4),
-                    Text(
+                    LiveTranslatedText(
                       'Local (Your Device)',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -484,7 +485,7 @@ class ConflictResolutionDialog extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(
+                LiveTranslatedText(
                   conflict.localValue,
                   style: GoogleFonts.poppins(fontSize: 12),
                 ),
@@ -510,7 +511,7 @@ class ConflictResolutionDialog extends StatelessWidget {
                   children: [
                     Icon(Icons.cloud, size: 12, color: const Color(0xFF6366F1)),
                     const SizedBox(width: 4),
-                    Text(
+                    LiveTranslatedText(
                       'Server (Cloud)',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -521,7 +522,7 @@ class ConflictResolutionDialog extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(
+                LiveTranslatedText(
                   conflict.serverValue,
                   style: GoogleFonts.poppins(fontSize: 12),
                 ),
@@ -541,7 +542,7 @@ class ConflictResolutionDialog extends StatelessWidget {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Keep Local',
                     style: GoogleFonts.poppins(fontSize: 12),
                   ),
@@ -556,7 +557,7 @@ class ConflictResolutionDialog extends StatelessWidget {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Keep Server',
                     style: GoogleFonts.poppins(fontSize: 12),
                   ),
@@ -618,7 +619,7 @@ class OfflineModeBanner extends StatelessWidget {
               const Icon(Icons.wifi_off, color: Colors.white, size: 20),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   'You\'re Offline',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
@@ -634,7 +635,7 @@ class OfflineModeBanner extends StatelessWidget {
                     foregroundColor: Colors.white,
                     backgroundColor: Colors.white.withValues(alpha: 0.2),
                   ),
-                  child: const Text('Go Online'),
+                  child: const LiveTranslatedText('Go Online'),
                 ),
             ],
           ),
@@ -644,7 +645,7 @@ class OfflineModeBanner extends StatelessWidget {
               children: [
                 Icon(Icons.queue, color: Colors.white.withValues(alpha: 0.8), size: 14),
                 const SizedBox(width: 4),
-                Text(
+                LiveTranslatedText(
                   '$queuedActions actions queued for sync',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
@@ -708,7 +709,7 @@ class SyncStatusBar extends StatelessWidget {
                 color: const Color(0xFF10B981),
               ),
             const SizedBox(width: AppSpacing.sm),
-            Text(
+            LiveTranslatedText(
               isSyncing
                   ? 'Syncing ${(syncProgress * 100).toInt()}%'
                   : 'Last synced: $formattedTime',

@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -78,7 +79,7 @@ class OnlineAnalyticsCard extends StatelessWidget {
                     Row(
                       children: [
                         Flexible(
-                          child: Text(
+                          child: LiveTranslatedText(
                             'Online Store',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -105,7 +106,7 @@ class OnlineAnalyticsCard extends StatelessWidget {
                                 decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
                               ),
                               const SizedBox(width: 5),
-                              Text(
+                              LiveTranslatedText(
                                 hasPending ? '$pendingOrders pending' : 'All caught up',
                                 style: GoogleFonts.poppins(
                                   color: statusColor,
@@ -119,7 +120,7 @@ class OnlineAnalyticsCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 3),
-                    Text(
+                    LiveTranslatedText(
                       totalOrders.toString() + ' orders  •  ₹' +
                           totalRevenue.toStringAsFixed(0) +
                           ' revenue  •  ' + totalPaidCount.toString() + ' paid',
@@ -144,7 +145,7 @@ class OnlineAnalyticsCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Open',
                       style: GoogleFonts.poppins(
                         color: const Color(0xFF4F46E5),

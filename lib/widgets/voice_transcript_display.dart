@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -128,7 +129,7 @@ class _VoiceTranscriptDisplayState extends State<VoiceTranscriptDisplay>
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   widget.isListening ? 'Listening...' : 'Voice Input',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
@@ -150,7 +151,7 @@ class _VoiceTranscriptDisplayState extends State<VoiceTranscriptDisplay>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       '${(widget.confidence * 100).toInt()}%',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -159,7 +160,7 @@ class _VoiceTranscriptDisplayState extends State<VoiceTranscriptDisplay>
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Text(
+                    LiveTranslatedText(
                       confidenceLabel,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -181,7 +182,7 @@ class _VoiceTranscriptDisplayState extends State<VoiceTranscriptDisplay>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
-            child: Text(
+            child: LiveTranslatedText(
               widget.transcript.isEmpty ? 'Tap to start speaking...' : widget.transcript,
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -202,7 +203,7 @@ class _VoiceTranscriptDisplayState extends State<VoiceTranscriptDisplay>
                     child: OutlinedButton.icon(
                       onPressed: widget.onEdit,
                       icon: const Icon(Icons.edit_rounded, size: 16),
-                      label: const Text('Edit'),
+                      label: const LiveTranslatedText('Edit'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF6366F1),
                         side: const BorderSide(color: Color(0xFF6366F1)),
@@ -219,7 +220,7 @@ class _VoiceTranscriptDisplayState extends State<VoiceTranscriptDisplay>
                     child: OutlinedButton.icon(
                       onPressed: widget.onDelete,
                       icon: const Icon(Icons.delete_rounded, size: 16),
-                      label: const Text('Delete'),
+                      label: const LiveTranslatedText('Delete'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFFEF4444),
                         side: const BorderSide(color: Color(0xFFEF4444)),
@@ -236,7 +237,7 @@ class _VoiceTranscriptDisplayState extends State<VoiceTranscriptDisplay>
                     child: OutlinedButton.icon(
                       onPressed: widget.onRetry,
                       icon: const Icon(Icons.refresh_rounded, size: 16),
-                      label: const Text('Retry'),
+                      label: const LiveTranslatedText('Retry'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF10B981),
                         side: const BorderSide(color: Color(0xFF10B981)),
@@ -317,7 +318,7 @@ class VoiceDetectedProduct extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   productName,
                   style: GoogleFonts.poppins(
                     fontSize: 14,
@@ -328,7 +329,7 @@ class VoiceDetectedProduct extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Qty: $quantity',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -336,7 +337,7 @@ class VoiceDetectedProduct extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text(
+                    LiveTranslatedText(
                       '₹$price',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -350,7 +351,7 @@ class VoiceDetectedProduct extends StatelessWidget {
                         color: confidenceColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(
+                      child: LiveTranslatedText(
                         '${(confidence * 100).toInt()}%',
                         style: GoogleFonts.poppins(
                           fontSize: 10,

@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
@@ -326,7 +327,7 @@ class _AnimatedCounterState extends State<_AnimatedCounter>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        return Text(
+        return LiveTranslatedText(
           '${widget.prefix ?? ''}${_animation.value}${widget.suffix ?? ''}',
           style: widget.style,
         );

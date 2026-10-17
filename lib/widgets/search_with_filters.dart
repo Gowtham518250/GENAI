@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'empty_state.dart';
@@ -150,7 +151,7 @@ class _ModernSearchBarState extends State<ModernSearchBar> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Filters',
                   style: GoogleFonts.poppins(
                     fontSize: 18,
@@ -164,7 +165,7 @@ class _ModernSearchBarState extends State<ModernSearchBar> {
                     widget.onFilterChange?.call(_selectedFilters);
                     Navigator.pop(context);
                   },
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Clear All',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
@@ -179,7 +180,7 @@ class _ModernSearchBarState extends State<ModernSearchBar> {
             ...widget.filters!.map((filter) => CheckboxListTile(
               value: _selectedFilters.contains(filter),
               onChanged: (_) => _toggleFilter(filter),
-              title: Text(
+              title: LiveTranslatedText(
                 filter.label,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -233,7 +234,7 @@ class _FilterChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
+          LiveTranslatedText(
             filter.label,
             style: GoogleFonts.poppins(
               fontSize: 12,

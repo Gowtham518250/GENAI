@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -241,7 +242,7 @@ class ShimmerLoadingOverlay extends StatelessWidget {
             const CircularProgressIndicator(),
             if (message != null) ...[
               const SizedBox(height: 16),
-              Text(
+              LiveTranslatedText(
                 message!,
                 style: GoogleFonts.poppins(
                   fontSize: 14,

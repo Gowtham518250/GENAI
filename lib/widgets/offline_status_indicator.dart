@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -111,7 +112,7 @@ class _OfflineBanner extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 'No internet connection',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -122,7 +123,7 @@ class _OfflineBanner extends StatelessWidget {
             ),
             TextButton(
               onPressed: onRetry,
-              child: Text(
+              child: LiveTranslatedText(
                 'Retry',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -181,7 +182,7 @@ class OfflineBadge extends StatelessWidget {
             color: isOnline ? const Color(0xFF10B981) : const Color(0xFFEF4444),
           ),
           const SizedBox(width: 4),
-          Text(
+          LiveTranslatedText(
             isOnline ? 'Online' : 'Offline',
             style: GoogleFonts.poppins(
               fontSize: 11,
