@@ -147,7 +147,7 @@ class PaymentEvent {
     final englishDebit = RegExp(
       r'\b(?:debited|debit|deducted|withdrawn|spent|purchase|you\s+sent|you\s+paid'
       r'|sent\s+to\s+(?!your\b|you\b)|paid\s+to\s+(?!your\b|you\b)'
-      r'|payment\s+to\s+(?!your\b|you\b)|transferred\s+to\s+(?!your\b|you\b))',
+      r'|payment\s+to\s+(?!your\b|you\b)|transferred\s+to\s+(?!your\b|you\b))\b',
     ).hasMatch(t);
     final nativeDebit = RegExp(
       r'(डेबिट|કાપવામાં આવ્યા|ડેબિટ|డెబిట్|పంపబడింది|பற்று|எடுக்கப்பட்டது|ডেবিট|কেটে নেওয়া|ਡੈਬਿਟ|ਕੱਟੇ|ഡെബിറ്റ്|പണം അയച്ചു|ಡೆബಿಟ್|ಕಡಿತ)',
