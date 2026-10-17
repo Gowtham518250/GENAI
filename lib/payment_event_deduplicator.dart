@@ -36,8 +36,14 @@ class RecentPaymentEventDeduplicator {
         continue;
       }
 
+      final previousSource = _sourceChannel(previous.detectionSource);
+      final candidateSource = _sourceChannel(candidate.detectionSource);
       if (previousRef != null && candidateRef != null) {
-        // A matching UTR already identifies the same transaction across apps.
+        if (previousRef != candidateRef) continue;
+        // Preserve the notification -> bank-SMS confirmation upgrade path.
+        if ((previousSource == 'sms') != (candidateSource == 'sms')) {
+          continue;
+        }
         return true;
       }
 
@@ -45,10 +51,7 @@ class RecentPaymentEventDeduplicator {
 
       final sameText = _normalizeText(previous.rawText) ==
           _normalizeText(candidate.rawText);
-      final sources = <String>{
-        _sourceChannel(previous.detectionSource),
-        _sourceChannel(candidate.detectionSource),
-      };
+      final sources = <String>{previousSource, candidateSource};
       final crossedNotificationAccessibility =
           sources.length == 2 &&
           sources.contains('notification') &&
