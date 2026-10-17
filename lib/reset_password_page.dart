@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
@@ -186,7 +187,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reset Password'),
+        title: const LiveTranslatedText('Reset Password'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
@@ -199,13 +200,13 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           children: [
             // Header
             const SizedBox(height: 20),
-            Text(
+            LiveTranslatedText(
               'Forgot Password?',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               'Enter your email to receive a password reset code',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
               textAlign: TextAlign.center,
@@ -223,7 +224,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     border: Border.all(color: Colors.red),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     errorMessage,
                     style: const TextStyle(color: Colors.red),
                   ),
@@ -241,7 +242,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     border: Border.all(color: Colors.green),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     successMessage,
                     style: const TextStyle(color: Colors.green),
                   ),
@@ -268,7 +269,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   height: 20,
                   width: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
-                ) : const Text('Send Reset Code'),
+                ) : const LiveTranslatedText('Send Reset Code'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -345,7 +346,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   width: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ) : const Icon(Icons.check),
-                label: const Text('Reset Password'),
+                label: const LiveTranslatedText('Reset Password'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -362,7 +363,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   errorMessage = '';
                   successMessage = '';
                 }),
-                child: const Text('Request a new code?'),
+                child: const LiveTranslatedText('Request a new code?'),
               ),
             ],
 
@@ -371,7 +372,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             // Back to Login
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Back to Login'),
+              child: const LiveTranslatedText('Back to Login'),
             ),
           ],
         ),

@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -122,7 +123,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
       await SecurityService.setBiometricEnabled(true);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Biometric login enabled for this device.'),
+          content: const LiveTranslatedText('Biometric login enabled for this device.'),
           backgroundColor: AppColors.secondary,
         ),
       );
@@ -138,7 +139,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LiveTranslatedText(
             failure == null
                 ? 'Verification cancelled or failed. Check that a fingerprint/face is enrolled in phone Settings.'
                 : 'Biometric error: $failure',
@@ -158,7 +159,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
     setState(() => _submitting = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok ? 'Biometric check succeeded.' : 'Biometric check failed or cancelled.'),
+        content: LiveTranslatedText(ok ? 'Biometric check succeeded.' : 'Biometric check failed or cancelled.'),
         backgroundColor: ok ? AppColors.secondary : Colors.redAccent,
       ),
     );
@@ -174,7 +175,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Biometric login is off. You can turn it on again here or from Shop Details.'),
+        content: LiveTranslatedText('Biometric login is off. You can turn it on again here or from Shop Details.'),
         backgroundColor: Color(0xFF6B7280),
       ),
     );
@@ -187,7 +188,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Biometric login is off. Enable later from Shop Details or the dashboard shortcut.'),
+        content: LiveTranslatedText('Biometric login is off. Enable later from Shop Details or the dashboard shortcut.'),
         backgroundColor: Color(0xFF6B7280),
       ),
     );
@@ -197,7 +198,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
   Widget _buildGateBody() {
     return Column(
       children: [
-        Text(
+        LiveTranslatedText(
           'Register your fingerprint or face for quick owner login. Enrollment is managed in your phone settings; here we only link this app to the biometrics already on the device.',
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
@@ -208,7 +209,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
         ),
         if (_redirectNote != null) ...[
           const SizedBox(height: 24),
-          Text(
+          LiveTranslatedText(
             _redirectNote!,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.white60),
@@ -236,7 +237,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 'Register fingerprint / face',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
@@ -253,7 +254,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
                 side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 widget.openedFromDashboard
                     ? 'Not now'
                     : 'Not now (turn off biometric login)',
@@ -274,7 +275,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
                 side: const BorderSide(color: Color(0xFF818CF8)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: Text('Close', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              child: LiveTranslatedText('Close', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
             ),
           ),
         ],
@@ -285,7 +286,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
   Widget _buildReviewBody() {
     return Column(
       children: [
-        Text(
+        LiveTranslatedText(
           _hardwareOk
               ? 'This device is registered for owner biometric login. You can test, turn login on or off, or close when done.'
               : 'Biometric hardware is not available. Use PIN and OTP.',
@@ -301,7 +302,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
-          child: Text(
+          child: LiveTranslatedText(
             'Biometric login: ${_biometricOn ? "On" : "Off"}',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
@@ -328,7 +329,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: Text('Test fingerprint / face', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              child: LiveTranslatedText('Test fingerprint / face', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(height: 12),
@@ -343,7 +344,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
                   side: const BorderSide(color: Color(0xFF34D399)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                child: Text('Turn on biometric login', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                child: LiveTranslatedText('Turn on biometric login', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               ),
             )
           else
@@ -357,14 +358,14 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
                   side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                child: Text('Turn off biometric login', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                child: LiveTranslatedText('Turn off biometric login', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               ),
             ),
         ],
         const SizedBox(height: 20),
         TextButton(
           onPressed: _submitting ? null : _goLeave,
-          child: Text(
+          child: LiveTranslatedText(
             'Done',
             style: GoogleFonts.poppins(color: const Color(0xFF818CF8), fontWeight: FontWeight.w600),
           ),
@@ -391,7 +392,7 @@ class _OwnerBiometricRegisterPageState extends State<OwnerBiometricRegisterPage>
               child: const Icon(Icons.fingerprint_rounded, size: 56, color: Color(0xFF818CF8)),
             ),
             const SizedBox(height: 28),
-            Text(
+            LiveTranslatedText(
               'Device authentication',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(

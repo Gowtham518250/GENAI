@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
@@ -175,7 +176,7 @@ class _RecentTransactionsPageState extends State<RecentTransactionsPage>
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text('Transactions', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('Transactions', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -218,7 +219,7 @@ class _RecentTransactionsPageState extends State<RecentTransactionsPage>
           children: [
             Icon(Icons.history, size: 60, color: Colors.grey.shade300),
             const SizedBox(height: 16),
-            Text('No transactions', style: GoogleFonts.poppins()),
+            LiveTranslatedText('No transactions', style: GoogleFonts.poppins()),
           ],
         ),
       );
@@ -276,7 +277,7 @@ class _RecentTransactionsPageState extends State<RecentTransactionsPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             txn.customerName,
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
@@ -285,7 +286,7 @@ class _RecentTransactionsPageState extends State<RecentTransactionsPage>
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          Text(
+                          LiveTranslatedText(
                             txn.customerPhone,
                             style: GoogleFonts.poppins(
                               fontSize: 12,
@@ -301,14 +302,14 @@ class _RecentTransactionsPageState extends State<RecentTransactionsPage>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     '₹${txn.amount.toStringAsFixed(0)}',
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     txn.status,
                     style: GoogleFonts.poppins(
                       fontSize: 11,
@@ -327,7 +328,7 @@ class _RecentTransactionsPageState extends State<RecentTransactionsPage>
                 children: [
                   Icon(Icons.access_time, size: 14, color: Colors.grey.shade600),
                   const SizedBox(width: 4),
-                  Text(
+                  LiveTranslatedText(
                     _formatTime(txn.timestamp),
                     style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
                   ),
@@ -339,7 +340,7 @@ class _RecentTransactionsPageState extends State<RecentTransactionsPage>
                   color: typeColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   txn.type,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
@@ -359,7 +360,7 @@ class _RecentTransactionsPageState extends State<RecentTransactionsPage>
                 color: Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 'Ref: ${txn.reference}',
                 style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade700),
               ),

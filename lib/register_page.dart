@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
@@ -471,7 +472,7 @@ class _RegisterPageState extends State<RegisterPage>
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text(
+                    LiveTranslatedText(
                       l.appTitle,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
@@ -482,7 +483,7 @@ class _RegisterPageState extends State<RegisterPage>
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    LiveTranslatedText(
                       l.tagline,
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -523,7 +524,7 @@ class _RegisterPageState extends State<RegisterPage>
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      LiveTranslatedText(
                                         l.createAccount,
                                         style: const TextStyle(
                                           color: Colors.white,
@@ -532,7 +533,7 @@ class _RegisterPageState extends State<RegisterPage>
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(
+                                      LiveTranslatedText(
                                         l.joinCommunity,
                                         style: TextStyle(
                                           color: Colors.white.withValues(alpha: 0.65),
@@ -560,7 +561,7 @@ class _RegisterPageState extends State<RegisterPage>
                                         Icon(Icons.shield_moon_rounded,
                                             size: 14, color: Colors.white),
                                         SizedBox(width: 4),
-                                        Text(
+                                        LiveTranslatedText(
                                           'Secure',
                                           style: TextStyle(
                                             color: Colors.white,
@@ -602,7 +603,7 @@ class _RegisterPageState extends State<RegisterPage>
                                               color: Color(0xFFEF4444), size: 18),
                                           const SizedBox(width: 8),
                                           Expanded(
-                                            child: Text(
+                                            child: LiveTranslatedText(
                                               errorMessage,
                                               style: const TextStyle(
                                                 color: Color(0xFFFCA5A5),
@@ -625,7 +626,7 @@ class _RegisterPageState extends State<RegisterPage>
                                           width: double.infinity,
                                           child: ElevatedButton.icon(
                                             icon: const Icon(Icons.refresh, size: 16),
-                                            label: const Text('Retry Registration'),
+                                            label: const LiveTranslatedText('Retry Registration'),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: const Color(0xFFEF4444),
                                               foregroundColor: Colors.white,
@@ -663,7 +664,7 @@ class _RegisterPageState extends State<RegisterPage>
                                           color: Color(0xFF10B981), size: 18),
                                       const SizedBox(width: 8),
                                       Expanded(
-                                        child: Text(
+                                        child: LiveTranslatedText(
                                           successMessage,
                                           style: const TextStyle(
                                             color: Color(0xFFA7F3D0),
@@ -819,7 +820,7 @@ class _RegisterPageState extends State<RegisterPage>
                                           size: 20,
                                         ),
                                         const SizedBox(width: 8),
-                                        Text(
+                                        LiveTranslatedText(
                                           'Enable Biometric Login (Optional)',
                                           style: TextStyle(
                                             color: Colors.white.withValues(alpha: 0.9),
@@ -830,7 +831,7 @@ class _RegisterPageState extends State<RegisterPage>
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    Text(
+                                    LiveTranslatedText(
                                       'Register fingerprint or face unlock for faster login. You can enable this later from Shop Profile.',
                                       style: TextStyle(
                                         color: Colors.white.withValues(alpha: 0.6),
@@ -849,7 +850,7 @@ class _RegisterPageState extends State<RegisterPage>
                                           checkColor: Colors.white,
                                         ),
                                         Expanded(
-                                          child: Text(
+                                          child: LiveTranslatedText(
                                             _biometricAvailable
                                                 ? 'I want to use fingerprint/face unlock for login'
                                                 : 'Biometric support not available on this device',
@@ -895,7 +896,7 @@ class _RegisterPageState extends State<RegisterPage>
                                               ),
                                             ),
                                             const SizedBox(width: 10),
-                                            Text(
+                                            LiveTranslatedText(
                                               'Creating Account...',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w600,
@@ -904,7 +905,7 @@ class _RegisterPageState extends State<RegisterPage>
                                             ),
                                           ],
                                         )
-                                      : Text(
+                                      : LiveTranslatedText(
                                           l.createAccount,
                                           style: const TextStyle(
                                             fontWeight: FontWeight.w700,
@@ -964,7 +965,7 @@ class _RegisterPageState extends State<RegisterPage>
                                                   child: CustomPaint(painter: _GoogleLogoPainter()),
                                                 ),
                                                 const SizedBox(width: 10),
-                                                Text(
+                                                LiveTranslatedText(
                                                   'Continue with Google',
                                                   style: TextStyle(
                                                     color: Colors.white.withValues(alpha: 0.9),
@@ -983,7 +984,7 @@ class _RegisterPageState extends State<RegisterPage>
 
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
-                                child: Text(
+                                child: LiveTranslatedText(
                                   l.alreadyHaveAccount + ' ' + l.signIn,
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.9),
@@ -1089,7 +1090,7 @@ class _RegisterLanguageSelector extends StatelessWidget {
                 value: lang['code']!,
                 child: Row(
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       lang['nativeName']!,
                       style: const TextStyle(color: Colors.white),
                     ),
@@ -1108,7 +1109,7 @@ class _RegisterLanguageSelector extends StatelessWidget {
             children: [
               const Icon(Icons.language_rounded, size: 18, color: Colors.white),
               const SizedBox(width: 6),
-              Text(
+              LiveTranslatedText(
                 AppLocalizations.of(context).language,
                 style: const TextStyle(
                   color: Colors.white,
@@ -1117,7 +1118,7 @@ class _RegisterLanguageSelector extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              Text(
+              LiveTranslatedText(
                 current['nativeName']!,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),

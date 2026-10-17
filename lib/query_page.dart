@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -93,7 +94,7 @@ class _QueryPageState extends State<QueryPage> {
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).askSimpleLanguage),
+        title: LiveTranslatedText(AppLocalizations.of(context).askSimpleLanguage),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
@@ -144,7 +145,7 @@ class _QueryPageState extends State<QueryPage> {
                             child: ElevatedButton.icon(
                               onPressed: pickFile,
                               icon: const Icon(Icons.attach_file),
-                              label: Text(
+                              label: LiveTranslatedText(
                                 selectedFile != null
                                     ? 'File: ${selectedFile!.path.split('\\').last}'
                                     : '${AppLocalizations.of(context).selectFile} (Optional)',
@@ -190,7 +191,7 @@ class _QueryPageState extends State<QueryPage> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : Text(
+                                  : LiveTranslatedText(
                                       AppLocalizations.of(context).askButton,
                                       style: const TextStyle(
                                           fontWeight: FontWeight.w700),
@@ -200,7 +201,7 @@ class _QueryPageState extends State<QueryPage> {
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Text(
+                      LiveTranslatedText(
                         AppLocalizations.of(context).queryTip,
                         style: TextStyle(
                           fontSize: 12,
@@ -216,7 +217,7 @@ class _QueryPageState extends State<QueryPage> {
                     padding: const EdgeInsets.all(16),
                     borderRadius: BorderRadius.circular(20),
                     child: SingleChildScrollView(
-                      child: Text(
+                      child: LiveTranslatedText(
                         reply.isEmpty ? AppLocalizations.of(context).responseHint : reply,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),

@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -144,7 +145,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
           }
         } catch (e) {
           if (mounted && _paidInvoices.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paid invoices will appear after cloud sync completes.')));
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Paid invoices will appear after cloud sync completes.')));
           }
         }
       }());
@@ -156,7 +157,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to load paid invoices: $e'),
+          content: LiveTranslatedText('Unable to load paid invoices: $e'),
           backgroundColor: Colors.red.shade700,
         ),
       );
@@ -221,14 +222,14 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LiveTranslatedText(
               'Paid Invoices',
               style: GoogleFonts.poppins(
                 fontSize: 19,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            Text(
+            LiveTranslatedText(
               '${_paidInvoices.length} completed payments',
               style: GoogleFonts.poppins(
                 fontSize: 11,
@@ -350,7 +351,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Payment Completed',
                   style: GoogleFonts.poppins(
                     color: Colors.white,
@@ -359,7 +360,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
+                LiveTranslatedText(
                   'Every paid invoice remains safely available here.',
                   style: GoogleFonts.poppins(
                     color: Colors.white.withValues(alpha: 0.82),
@@ -368,7 +369,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                   ),
                 ),
                 const SizedBox(height: 10),
-                Text(
+                LiveTranslatedText(
                   '₹${totalCollected.toStringAsFixed(2)} collected',
                   style: GoogleFonts.poppins(
                     color: Colors.white,
@@ -419,7 +420,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
           const SizedBox(height: 10),
           Row(
             children: [
-              const Text(
+              const LiveTranslatedText(
                 'Sort',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
@@ -445,19 +446,19 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                   items: const [
                     DropdownMenuItem(
                       value: 'DATE_DESC',
-                      child: Text('Newest first'),
+                      child: LiveTranslatedText('Newest first'),
                     ),
                     DropdownMenuItem(
                       value: 'DATE_ASC',
-                      child: Text('Oldest first'),
+                      child: LiveTranslatedText('Oldest first'),
                     ),
                     DropdownMenuItem(
                       value: 'AMOUNT_DESC',
-                      child: Text('Highest amount'),
+                      child: LiveTranslatedText('Highest amount'),
                     ),
                     DropdownMenuItem(
                       value: 'AMOUNT_ASC',
-                      child: Text('Lowest amount'),
+                      child: LiveTranslatedText('Lowest amount'),
                     ),
                   ],
                   onChanged: (value) {
@@ -517,7 +518,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: Text(
+              child: LiveTranslatedText(
                 initial,
                 style: GoogleFonts.poppins(
                   color: Colors.white,
@@ -531,7 +532,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -543,7 +544,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                   ),
                   if (phone.isNotEmpty) ...[
                     const SizedBox(height: 2),
-                    Text(
+                    LiveTranslatedText(
                       phone,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -566,7 +567,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                     ],
                   ),
                   const SizedBox(height: 5),
-                  Text(
+                  LiveTranslatedText(
                     _formatDate(date),
                     style: GoogleFonts.poppins(
                       fontSize: 10.5,
@@ -580,7 +581,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
+                LiveTranslatedText(
                   '₹${paid.toStringAsFixed(2)}',
                   style: GoogleFonts.poppins(
                     fontSize: 17,
@@ -589,7 +590,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
+                LiveTranslatedText(
                   'of ₹${total.toStringAsFixed(2)}',
                   style: GoogleFonts.poppins(
                     fontSize: 10,
@@ -616,7 +617,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
         color: color.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
+      child: LiveTranslatedText(
         text,
         style: GoogleFonts.poppins(
           fontSize: 8.5,
@@ -659,7 +660,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
               ),
             ),
             const SizedBox(height: 18),
-            Text(
+            LiveTranslatedText(
               _query.isEmpty
                   ? 'No paid invoices yet'
                   : 'No matching paid invoices',
@@ -671,7 +672,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
               ),
             ),
             const SizedBox(height: 7),
-            Text(
+            LiveTranslatedText(
               _query.isEmpty
                   ? 'When an Udhar invoice is fully settled, it will move here and remain available permanently.'
                   : 'Try a different customer name, phone number, or invoice number.',
@@ -753,7 +754,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                           ),
                         ),
                         const SizedBox(height: 11),
-                        Text(
+                        LiveTranslatedText(
                           'Payment Completed',
                           style: GoogleFonts.poppins(
                             fontSize: 20,
@@ -762,7 +763,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
+                        LiveTranslatedText(
                           '₹${paid.toStringAsFixed(2)} paid',
                           style: GoogleFonts.poppins(
                             fontSize: 24,
@@ -802,7 +803,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(
+                          child: LiveTranslatedText(
                             'This invoice is fully settled and remains in Paid Invoice History.',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
@@ -816,7 +817,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                   ),
                   if (lineItems is List && lineItems.isNotEmpty) ...[
                     const SizedBox(height: 20),
-                    Text(
+                    LiveTranslatedText(
                       'Items',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
@@ -844,7 +845,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                         child: Row(
                           children: [
                             Expanded(
-                              child: Text(
+                              child: LiveTranslatedText(
                                 itemName,
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
@@ -852,7 +853,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                                 ),
                               ),
                             ),
-                            Text(
+                            LiveTranslatedText(
                               'x${qty.toStringAsFixed(qty % 1 == 0 ? 0 : 2)}',
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
@@ -860,7 +861,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
                               ),
                             ),
                             const SizedBox(width: 14),
-                            Text(
+                            LiveTranslatedText(
                               '₹${value.toStringAsFixed(2)}',
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
@@ -890,7 +891,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
         children: [
           SizedBox(
             width: 125,
-            child: Text(
+            child: LiveTranslatedText(
               label,
               style: GoogleFonts.poppins(
                 fontSize: 11,
@@ -899,7 +900,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
             ),
           ),
           Expanded(
-            child: Text(
+            child: LiveTranslatedText(
               value,
               textAlign: TextAlign.right,
               style: GoogleFonts.poppins(
