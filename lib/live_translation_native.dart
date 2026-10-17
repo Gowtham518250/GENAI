@@ -99,24 +99,69 @@ Future<OnDeviceTranslator> _translatorFor(
   }
 }
 
-Future<List<String>> translateEnglishTexts(
+Future<List<String>> translateTexts(
   List<String> texts,
   String targetLanguageCode,
 ) async {
   if (texts.isEmpty || targetLanguageCode == 'en') return texts;
+
   final target = _targetFor(targetLanguageCode);
-  if (target == null) {
-    return translateEnglishBatchRemotely(texts, targetLanguageCode);
+  final result = List<String>.of(texts);
+  final localIndexes = <int>[];
+  final remoteIndexes = <int>[];
+
+  final targetScriptRegex = switch (targetLanguageCode) {
+    'te' => RegExp(r'[\u0C00-\u0C7F]'),
+    'hi' || 'mr' => RegExp(r'[\u0900-\u097F]'),
+    'ta' => RegExp(r'[\u0B80-\u0BFF]'),
+    'kn' => RegExp(r'[\u0C80-\u0CFF]'),
+    'ml' => RegExp(r'[\u0D00-\u0D7F]'),
+    'gu' => RegExp(r'[\u0A80-\u0AFF]'),
+    'pa' => RegExp(r'[\u0A00-\u0A7F]'),
+    'bn' => RegExp(r'[\u0980-\u09FF]'),
+    _ => RegExp(r'(?!)'),
+  };
+  final anyIndicScript = RegExp(r'[\u0900-\u0DFF]');
+  final latinLetters = RegExp(r'[A-Za-z\u00C0-\u024F]');
+
+  for (var index = 0; index < texts.length; index++) {
+    final text = texts[index];
+    if (text.trim().isEmpty) continue;
+    final hasLatin = latinLetters.hasMatch(text);
+    final hasIndic = anyIndicScript.hasMatch(text);
+    if (!hasLatin && targetScriptRegex.hasMatch(text)) {
+      // Already in the target writing system: preserve its spelling exactly.
+      continue;
+    }
+    if (target == null || !hasLatin || hasIndic) {
+      remoteIndexes.add(index);
+    } else {
+      localIndexes.add(index);
+    }
   }
 
-  try {
-    final translator = await _translatorFor(targetLanguageCode, target);
-    return await Future.wait(
-      texts.map((text) => translator.translateText(text)),
-    );
-  } catch (_) {
-    // If local model download or translation fails, use the authenticated
-    // backend batch route before falling back to original text.
-    return translateEnglishBatchRemotely(texts, targetLanguageCode);
+  if (target != null && localIndexes.isNotEmpty) {
+    try {
+      final translator = await _translatorFor(targetLanguageCode, target);
+      final translated = await Future.wait(
+        localIndexes.map((index) => translator.translateText(texts[index])),
+      );
+      for (var index = 0; index < localIndexes.length; index++) {
+        result[localIndexes[index]] = translated[index];
+      }
+    } catch (_) {
+      // If a local model is missing or fails, retry those entries remotely.
+      remoteIndexes.addAll(localIndexes);
+    }
   }
+
+  if (remoteIndexes.isNotEmpty) {
+    final remoteTexts = remoteIndexes.map((index) => texts[index]).toList();
+    final translated =
+        await translateTextBatchRemotely(remoteTexts, targetLanguageCode);
+    for (var index = 0; index < remoteIndexes.length; index++) {
+      result[remoteIndexes[index]] = translated[index];
+    }
+  }
+  return result;
 }

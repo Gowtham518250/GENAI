@@ -30,7 +30,7 @@ class LiveTranslationService {
     final trimmed = text.trim();
     if (trimmed.isEmpty ||
         targetLanguageCode == 'en' ||
-        !_hasLatinLetters(trimmed)) {
+        !_containsTranslatableLetters(trimmed, targetLanguageCode)) {
       return Future<String>.value(text);
     }
 
@@ -82,7 +82,7 @@ class LiveTranslationService {
 
   Future<void> _translateBatch(List<_TranslationTask> batch) async {
     try {
-      final translated = await platform.translateEnglishTexts(
+      final translated = await platform.translateTexts(
         batch.map((task) => task.text).toList(),
         batch.first.targetLanguageCode,
       );
@@ -114,8 +114,25 @@ class LiveTranslationService {
     }
   }
 
-  bool _hasLatinLetters(String value) =>
-      RegExp(r'[A-Za-z\u00C0-\u024F]').hasMatch(value);
+  bool _containsTranslatableLetters(String value, String targetCode) {
+    if (RegExp(r'[A-Za-z\u00C0-\u024F]').hasMatch(value)) return true;
+    return !_hasTargetScript(value, targetCode);
+  }
+
+  bool _hasTargetScript(String value, String targetCode) {
+    final pattern = switch (targetCode) {
+      'te' => RegExp(r'[\u0C00-\u0C7F]'),
+      'hi' || 'mr' => RegExp(r'[\u0900-\u097F]'),
+      'ta' => RegExp(r'[\u0B80-\u0BFF]'),
+      'kn' => RegExp(r'[\u0C80-\u0CFF]'),
+      'ml' => RegExp(r'[\u0D00-\u0D7F]'),
+      'gu' => RegExp(r'[\u0A80-\u0AFF]'),
+      'pa' => RegExp(r'[\u0A00-\u0A7F]'),
+      'bn' => RegExp(r'[\u0980-\u09FF]'),
+      _ => RegExp(r'(?!)'),
+    };
+    return pattern.hasMatch(value);
+  }
 }
 
 class _TranslationTask {

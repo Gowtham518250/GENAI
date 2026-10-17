@@ -12,7 +12,7 @@ const int _maxRemoteBatchChars = 4000;
 
 /// Uses the authenticated backend batch endpoint for platforms/locales that
 /// have no on-device translator. No provider secret is shipped in the app.
-Future<List<String>> translateEnglishBatchRemotely(
+Future<List<String>> translateTextBatchRemotely(
   List<String> texts,
   String targetLanguageCode,
 ) async {
