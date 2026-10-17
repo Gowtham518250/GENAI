@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'festival_stock_predictor.dart';
@@ -48,7 +49,7 @@ class _FestivalAlertsPageState extends State<FestivalAlertsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text('Festival Stock Alerts', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('Festival Stock Alerts', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -66,7 +67,7 @@ class _FestivalAlertsPageState extends State<FestivalAlertsPage> {
                 children: [
                   Icon(Icons.check_circle, size: 60, color: Colors.green.shade300),
                   const SizedBox(height: 16),
-                  Text(
+                  LiveTranslatedText(
                     'All stocks are well-stocked!',
                     style: GoogleFonts.poppins(fontSize: 16),
                   ),
@@ -102,7 +103,7 @@ class _FestivalAlertsPageState extends State<FestivalAlertsPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   alert.itemName,
                   style: GoogleFonts.poppins(
                     fontSize: 16,
@@ -118,7 +119,7 @@ class _FestivalAlertsPageState extends State<FestivalAlertsPage> {
                   color: isUrgent ? Colors.red : Colors.amber,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   isUrgent ? 'URGENT' : 'ALERT',
                   style: GoogleFonts.poppins(
                     fontSize: 10,
@@ -130,7 +131,7 @@ class _FestivalAlertsPageState extends State<FestivalAlertsPage> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
+          LiveTranslatedText(
             '🪔 ${alert.festivalName} (in ${alert.daysUntilFestival} days)',
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -145,11 +146,11 @@ class _FestivalAlertsPageState extends State<FestivalAlertsPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'Current Stock',
                     style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     '${alert.currentStock} units',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
@@ -161,11 +162,11 @@ class _FestivalAlertsPageState extends State<FestivalAlertsPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'Recommended Reorder',
                     style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     '+${alert.recommendedReorderQty} units',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
@@ -185,7 +186,7 @@ class _FestivalAlertsPageState extends State<FestivalAlertsPage> {
               color: Colors.white.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text(
+            child: LiveTranslatedText(
               'Demand multiplier for ${alert.category} during ${alert.festivalName}: ${alert.expectedDemandMultiplier}x',
               style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade700),
               textAlign: TextAlign.center,
@@ -207,7 +208,7 @@ class _FestivalAlertsPageState extends State<FestivalAlertsPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6366F1),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 'Reorder Now',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
               ),

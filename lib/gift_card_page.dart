@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:convert';
@@ -449,7 +450,7 @@ class _GiftCardPageState extends State<GiftCardPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Sharing card with details...'),
+            content: LiveTranslatedText('Sharing card with details...'),
             duration: Duration(seconds: 1),
           ),
         );
@@ -507,7 +508,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                             ElevatedButton.icon(
                               onPressed: _shareCard,
                               icon: const Icon(Icons.share_outlined),
-                              label: Text(AppLocalizations.of(context).shareCard),
+                              label: LiveTranslatedText(AppLocalizations.of(context).shareCard),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF06B6D4),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -518,7 +519,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                             OutlinedButton.icon(
                               onPressed: _toggleCard,
                               icon: const Icon(Icons.flip_outlined),
-                              label: Text(_showBack ? AppLocalizations.of(context).viewFront : AppLocalizations.of(context).viewBack),
+                              label: LiveTranslatedText(_showBack ? AppLocalizations.of(context).viewFront : AppLocalizations.of(context).viewBack),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.white,
                                 side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
@@ -542,7 +543,7 @@ class _GiftCardPageState extends State<GiftCardPage>
 
   AppBar _buildAppBar() {
     return AppBar(
-      title: Text(
+      title: LiveTranslatedText(
         AppLocalizations.of(context).giftCard,
         style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
       ),
@@ -633,7 +634,7 @@ class _GiftCardPageState extends State<GiftCardPage>
           shaderCallback: (bounds) => const LinearGradient(
             colors: [Colors.white, Color(0xFFB0B8FF), Colors.white],
           ).createShader(bounds),
-          child: Text(
+          child: LiveTranslatedText(
             AppLocalizations.of(context).appTitle,
             style: const TextStyle(
               fontSize: 22,
@@ -644,7 +645,7 @@ class _GiftCardPageState extends State<GiftCardPage>
           ),
         ),
         const SizedBox(height: 4),
-        Text(
+        LiveTranslatedText(
           AppLocalizations.of(context).tagline,
         ),
       ],
@@ -753,7 +754,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                 if (_isEditing)
                   _buildEditField(_userNameController, 'Owner Name', theme)
                 else
-                  Text(
+                  LiveTranslatedText(
                     _userNameController.text.toUpperCase(),
                     style: GoogleFonts.poppins(fontSize: 12, letterSpacing: 3, color: theme.text.withValues(alpha: 0.7), fontWeight: FontWeight.bold),
                   ),
@@ -761,7 +762,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                 if (_isEditing)
                   _buildEditField(_shopNameController, 'Shop Name', theme, isLarge: true)
                 else
-                  Text(
+                  LiveTranslatedText(
                     _shopNameController.text,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.playfairDisplay(fontSize: 32, fontWeight: FontWeight.w900, color: theme.text, height: 1.1),
@@ -825,13 +826,13 @@ class _GiftCardPageState extends State<GiftCardPage>
                     color: theme.accent.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     _userNameController.text,
                     style: GoogleFonts.spaceMono(color: theme.text, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(
+                LiveTranslatedText(
                   _shopNameController.text,
                   style: GoogleFonts.archivoBlack(fontSize: 38, color: theme.text, height: 1, letterSpacing: -1.5),
                 ),
@@ -880,11 +881,11 @@ class _GiftCardPageState extends State<GiftCardPage>
         child: Column(
           children: [
             const SizedBox(height: 40),
-            Text('E S T . 2 0 2 6', style: GoogleFonts.montserrat(fontSize: 10, letterSpacing: 4, color: theme.subtext)),
+            LiveTranslatedText('E S T . 2 0 2 6', style: GoogleFonts.montserrat(fontSize: 10, letterSpacing: 4, color: theme.subtext)),
             const SizedBox(height: 25),
             _buildAvatar(theme, size: 120),
             const SizedBox(height: 30),
-            Text(
+            LiveTranslatedText(
               _shopNameController.text,
               textAlign: TextAlign.center,
               style: GoogleFonts.cormorantGaramond(fontSize: 42, fontWeight: FontWeight.w300, color: theme.text, fontStyle: FontStyle.italic),
@@ -892,7 +893,7 @@ class _GiftCardPageState extends State<GiftCardPage>
             const SizedBox(height: 10),
             Container(width: 50, height: 1, color: theme.border.withValues(alpha: 0.3)),
             const SizedBox(height: 10),
-            Text(_userNameController.text, style: GoogleFonts.montserrat(fontSize: 14, letterSpacing: 2, color: theme.subtext)),
+            LiveTranslatedText(_userNameController.text, style: GoogleFonts.montserrat(fontSize: 14, letterSpacing: 2, color: theme.subtext)),
             const Spacer(),
             Padding(
               padding: const EdgeInsets.all(24),
@@ -903,7 +904,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                     children: [
                       Icon(Icons.phone_outlined, size: 14, color: theme.accent),
                       const SizedBox(width: 8),
-                      Text(_phoneController.text, style: GoogleFonts.poppins(color: theme.text, fontSize: 13, fontWeight: FontWeight.w600)),
+                      LiveTranslatedText(_phoneController.text, style: GoogleFonts.poppins(color: theme.text, fontSize: 13, fontWeight: FontWeight.w600)),
                     ],
                    ),
                   const SizedBox(height: 8),
@@ -912,7 +913,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                     children: [
                       Icon(Icons.location_on_outlined, size: 14, color: theme.accent),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(_locationController.text, style: GoogleFonts.poppins(color: theme.subtext, fontSize: 11), textAlign: TextAlign.center)),
+                      Expanded(child: LiveTranslatedText(_locationController.text, style: GoogleFonts.poppins(color: theme.subtext, fontSize: 11), textAlign: TextAlign.center)),
                     ],
                   ),
                 ],
@@ -950,13 +951,13 @@ class _GiftCardPageState extends State<GiftCardPage>
                 const SizedBox(height: 20),
                 _buildAvatar(theme, size: 100),
                 const SizedBox(height: 40),
-                Text(
+                LiveTranslatedText(
                   _shopNameController.text.toUpperCase(),
                   textAlign: TextAlign.center,
                   style: GoogleFonts.playfairDisplay(fontSize: 34, fontWeight: FontWeight.w900, color: theme.text, letterSpacing: 2),
                 ),
                 const SizedBox(height: 15),
-                Text(
+                LiveTranslatedText(
                    _userNameController.text,
                    style: GoogleFonts.poppins(fontSize: 14, color: theme.accent, letterSpacing: 3, fontWeight: FontWeight.w500),
                 ),
@@ -974,11 +975,11 @@ class _GiftCardPageState extends State<GiftCardPage>
                         children: [
                           Icon(Icons.phone_outlined, color: theme.accent, size: 16),
                           const SizedBox(width: 10),
-                          Text(_phoneController.text, style: TextStyle(color: theme.text)),
+                          LiveTranslatedText(_phoneController.text, style: TextStyle(color: theme.text)),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      LiveTranslatedText(
                         _locationController.text,
                         textAlign: TextAlign.center,
                         style: TextStyle(color: theme.text.withValues(alpha: 0.7), fontSize: 12),
@@ -1019,12 +1020,12 @@ class _GiftCardPageState extends State<GiftCardPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   _shopNameController.text.toUpperCase(),
                   style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w900, color: theme.text, letterSpacing: 1.2),
                 ),
                 const SizedBox(height: 4),
-                Text(_userNameController.text, style: GoogleFonts.inter(color: theme.subtext, fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: 0.5)),
+                LiveTranslatedText(_userNameController.text, style: GoogleFonts.inter(color: theme.subtext, fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: 0.5)),
                 const SizedBox(height: 40),
                 _MinimalRow(icon: Icons.call_outlined, value: _phoneController.text, theme: theme),
                 const SizedBox(height: 12),
@@ -1130,7 +1131,7 @@ class _GiftCardPageState extends State<GiftCardPage>
         children: [
           const Icon(Icons.access_time_filled_rounded, size: 14, color: Colors.white70),
           const SizedBox(width: 8),
-          Text(
+          LiveTranslatedText(
             '${_openingHourValue} – ${_closingHourValue}',
             style: GoogleFonts.poppins(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
           ),
@@ -1286,7 +1287,7 @@ class _GiftCardPageState extends State<GiftCardPage>
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   _shopNameValue,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1304,7 +1305,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                     color: const Color(0xFF10B981).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     AppLocalizations.of(context).shopkeeper,
                     style: GoogleFonts.spaceMono(
                       fontSize: 8,
@@ -1413,7 +1414,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                 Icon(Icons.format_quote_rounded, size: 14, color: const Color(0xFF6366F1).withValues(alpha: 0.5)),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
+                  child: LiveTranslatedText(
                     _taglineValue!,
                     maxLines: 2,
                     style: GoogleFonts.playfairDisplay(
@@ -1474,7 +1475,7 @@ class _GiftCardPageState extends State<GiftCardPage>
               ),
             ),
             const SizedBox(height: 24),
-            Text(
+            LiveTranslatedText(
               'SCAN FOR SHOP DETAILS',
               style: GoogleFonts.spaceMono(
                 fontSize: 12,
@@ -1483,7 +1484,7 @@ class _GiftCardPageState extends State<GiftCardPage>
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               _shopNameValue.toUpperCase(),
               style: GoogleFonts.playfairDisplay(
                 fontSize: 18,
@@ -1555,7 +1556,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       _shopNameValue,
                       style: GoogleFonts.playfairDisplay(
                         fontSize: 16,
@@ -1576,7 +1577,7 @@ class _GiftCardPageState extends State<GiftCardPage>
                         color: const Color(0xFF10B981).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(
+                      child: LiveTranslatedText(
                         AppLocalizations.of(context).shopkeeper,
                         style: GoogleFonts.spaceMono(
                           fontSize: 7,
@@ -1636,7 +1637,7 @@ class _GiftCardPageState extends State<GiftCardPage>
         Icon(icon, size: 12, color: const Color(0xFF10B981)),
         const SizedBox(width: 6),
         Expanded(
-          child: Text(
+          child: LiveTranslatedText(
             value,
             style: GoogleFonts.poppins(
               fontSize: fontSize,
@@ -1658,7 +1659,7 @@ class _GiftCardPageState extends State<GiftCardPage>
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       borderRadius: BorderRadius.circular(999),
       blurSigma: 18,
-      child: Text(
+      child: LiveTranslatedText(
         _showBack ? AppLocalizations.of(context).tapToSeeFront : AppLocalizations.of(context).tapToFlip,
         style: GoogleFonts.poppins(
           color: Colors.white70,
@@ -1684,7 +1685,7 @@ class _GiftCardPageState extends State<GiftCardPage>
           onPressed: () =>
               Navigator.of(context).pushReplacementNamed('/dashboard'),
           icon: const Icon(Icons.dashboard_rounded, size: 18),
-          label: Text(
+          label: LiveTranslatedText(
             AppLocalizations.of(context).goToDashboard,
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -1713,7 +1714,7 @@ class _GiftCardPageState extends State<GiftCardPage>
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
+          child: LiveTranslatedText(
             'Choose Theme',
             style: GoogleFonts.poppins(
               color: Colors.white.withValues(alpha: 0.9),
@@ -1770,7 +1771,7 @@ class _GiftCardPageState extends State<GiftCardPage>
               child: isSelected ? const Icon(Icons.check_rounded, color: Colors.white, size: 20) : null,
             ),
             const SizedBox(height: 6),
-            Text(
+            LiveTranslatedText(
               theme.mindsetName.split(' ').last,
               style: GoogleFonts.poppins(
                 fontSize: 9,
@@ -1796,7 +1797,7 @@ class _SimpleDetail extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: theme.text.withValues(alpha: 0.6)),
         const SizedBox(width: 8),
-        Text(value, style: GoogleFonts.poppins(color: theme.text, fontSize: 13)),
+        LiveTranslatedText(value, style: GoogleFonts.poppins(color: theme.text, fontSize: 13)),
       ],
     );
   }
@@ -1813,7 +1814,7 @@ class _MinimalRow extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: theme.accent),
         const SizedBox(width: 12),
-        Expanded(child: Text(value, style: GoogleFonts.inter(color: theme.subtext, fontSize: 14))),
+        Expanded(child: LiveTranslatedText(value, style: GoogleFonts.inter(color: theme.subtext, fontSize: 14))),
       ],
     );
   }
@@ -1869,7 +1870,7 @@ class _DetailRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LiveTranslatedText(
                 label,
                 style: TextStyle(
                   fontSize: 10.5,
@@ -1879,7 +1880,7 @@ class _DetailRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
+              LiveTranslatedText(
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -1920,7 +1921,7 @@ class _InfoRow extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
+          child: LiveTranslatedText(
             value,
             style: GoogleFonts.poppins(
               fontSize: 12.5,
@@ -1974,7 +1975,7 @@ class _TaglineStrip extends StatelessWidget {
               ),
             ),
           ),
-          Text(
+          LiveTranslatedText(
             '"$tagline"',
             textAlign: TextAlign.center,
             style: GoogleFonts.playfairDisplay(
@@ -2003,7 +2004,7 @@ class _StampBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
       ),
-      child: Text(
+      child: LiveTranslatedText(
         label,
         style: GoogleFonts.spaceMono(
           color: Colors.white.withValues(alpha: 0.8),
@@ -2041,7 +2042,7 @@ class _CountdownRing extends StatelessWidget {
                   AppColors.primary.withValues(alpha: 0.8),
                 ),
               ),
-              Text(
+              LiveTranslatedText(
                 '$remaining',
                 style: GoogleFonts.spaceMono(
                   fontSize: 11,

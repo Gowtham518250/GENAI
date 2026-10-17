@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:ui';
 import 'dart:convert';
 
@@ -102,7 +103,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('OTP sent to $email. Check your inbox and spam folder.'),
+            content: LiveTranslatedText('OTP sent to $email. Check your inbox and spam folder.'),
           ),
         );
       } else {
@@ -383,7 +384,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
               color: Colors.white, size: 48),
         ),
         const SizedBox(height: 28),
-        Text(
+        LiveTranslatedText(
           'Password Reset!',
           style: GoogleFonts.poppins(
             fontSize: 26,
@@ -392,7 +393,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
           ),
         ),
         const SizedBox(height: 12),
-        Text(
+        LiveTranslatedText(
           'Your password has been updated successfully. You can now login with your new password.',
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
@@ -422,7 +423,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                   )
                 ],
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 AppLocalizations.of(context).login,
                 style: GoogleFonts.poppins(
                   color: Colors.white,
@@ -463,7 +464,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
           ),
         ),
         const SizedBox(height: 28),
-        Text(
+        LiveTranslatedText(
           title,
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
@@ -474,7 +475,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
           ),
         ),
         const SizedBox(height: 10),
-        Text(
+        LiveTranslatedText(
           subtitle,
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
@@ -504,7 +505,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             const Icon(Icons.error_outline, color: Colors.red, size: 18),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 _errorMessage,
                 style: GoogleFonts.poppins(
                   color: Colors.red.shade300,
@@ -541,7 +542,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
         const SizedBox(height: 22),
         GestureDetector(
           onTap: () => Navigator.of(context).pop(),
-          child: Text(
+          child: LiveTranslatedText(
             AppLocalizations.of(context).signIn,
             style: GoogleFonts.poppins(
               color: const Color(0xFF818CF8),
@@ -584,7 +585,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   'Open the secure confirmation link in the same email first. Then enter the 6-digit OTP here. Both checks are required before a password-reset token is issued.',
                   style: GoogleFonts.poppins(
                     color: Colors.white.withValues(alpha: 0.72),
@@ -610,7 +611,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
         const SizedBox(height: 22),
         TextButton(
           onPressed: () => setState(() => _currentStep = 1),
-          child: Text(
+          child: LiveTranslatedText(
             'Change Email',
             style: GoogleFonts.poppins(
               color: const Color(0xFF818CF8),
@@ -737,7 +738,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white),
                   )
-                : Text(
+                : LiveTranslatedText(
                     label,
                     style: GoogleFonts.poppins(
                       color: Colors.white,
@@ -784,12 +785,12 @@ class _ResetLanguageButton extends StatelessWidget {
                 value: lang['code']!,
                 child: Row(
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       lang['nativeName']!,
                       style: const TextStyle(color: Colors.white),
                     ),
                     const SizedBox(width: 8),
-                    Text(
+                    LiveTranslatedText(
                       lang['name']!,
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                     ),
@@ -810,7 +811,7 @@ class _ResetLanguageButton extends StatelessWidget {
               const Icon(Icons.language_rounded,
                   size: 18, color: Colors.white),
               const SizedBox(width: 6),
-              Text(
+              LiveTranslatedText(
                 AppLocalizations.of(context).language,
                 style: const TextStyle(
                   color: Colors.white,

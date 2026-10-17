@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'hybrid_payment_pipeline.dart';
 import 'payment_event.dart';
@@ -38,7 +39,7 @@ class _HybridPaymentIntegrationPageState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🔗 Hybrid Payment Pipeline'),
+        title: const LiveTranslatedText('🔗 Hybrid Payment Pipeline'),
         // subtitle removed - not supported in this context
         elevation: 2,
       ),
@@ -86,7 +87,7 @@ class _HybridPaymentIntegrationPageState
             children: [
               Icon(Icons.trending_up, color: Colors.green, size: 24),
               SizedBox(width: 8),
-              Text(
+              LiveTranslatedText(
                 'Combined Accuracy Metrics',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
@@ -123,7 +124,7 @@ class _HybridPaymentIntegrationPageState
       ),
       child: Column(
         children: [
-          Text(
+          LiveTranslatedText(
             value,
             style: TextStyle(
               fontSize: 20,
@@ -132,7 +133,7 @@ class _HybridPaymentIntegrationPageState
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          LiveTranslatedText(
             label,
             style: TextStyle(
               fontSize: 11,
@@ -156,7 +157,7 @@ class _HybridPaymentIntegrationPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          const LiveTranslatedText(
             'Pipeline Flow (3-Stage)',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
@@ -216,7 +217,7 @@ class _HybridPaymentIntegrationPageState
               shape: BoxShape.circle,
             ),
             child: Center(
-              child: Text(
+              child: LiveTranslatedText(
                 num,
                 style: const TextStyle(
                   color: Colors.white,
@@ -231,7 +232,7 @@ class _HybridPaymentIntegrationPageState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   title,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
@@ -239,7 +240,7 @@ class _HybridPaymentIntegrationPageState
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                LiveTranslatedText(
                   description,
                   style: TextStyle(fontSize: 11, color: Colors.grey[700]),
                 ),
@@ -250,7 +251,7 @@ class _HybridPaymentIntegrationPageState
                     color: color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     output,
                     style: TextStyle(fontSize: 10, color: color),
                   ),
@@ -280,7 +281,7 @@ class _HybridPaymentIntegrationPageState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        const LiveTranslatedText(
           'Test Scenarios',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
@@ -328,10 +329,10 @@ class _HybridPaymentIntegrationPageState
       label: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          LiveTranslatedText(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
           SizedBox(
             width: 300,
-            child: Text(
+            child: LiveTranslatedText(
               description,
               style: const TextStyle(fontSize: 10),
               maxLines: 1,
@@ -358,7 +359,7 @@ class _HybridPaymentIntegrationPageState
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Center(
-          child: Text(
+          child: LiveTranslatedText(
             'No payments processed yet. Click a test scenario above.',
             textAlign: TextAlign.center,
           ),
@@ -372,14 +373,14 @@ class _HybridPaymentIntegrationPageState
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
+            LiveTranslatedText(
               'Processed Payments (${_processedPayments.length})',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             TextButton.icon(
               onPressed: _clearHistory,
               icon: const Icon(Icons.delete, size: 16),
-              label: const Text('Clear'),
+              label: const LiveTranslatedText('Clear'),
             ),
           ],
         ),
@@ -412,7 +413,7 @@ class _HybridPaymentIntegrationPageState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   'Payment #${index + 1}',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
@@ -428,7 +429,7 @@ class _HybridPaymentIntegrationPageState
                   children: [
                     Icon(statusIcon, size: 14, color: Colors.white),
                     const SizedBox(width: 4),
-                    Text(
+                    LiveTranslatedText(
                       '${result.confidence.score.toStringAsFixed(0)}%',
                       style: const TextStyle(
                         fontSize: 11,
@@ -442,13 +443,13 @@ class _HybridPaymentIntegrationPageState
             ],
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             'Amount: ₹${result.transaction?.amount ?? "?"} | '
             'Status: ${result.confidence.status}',
             style: TextStyle(fontSize: 11, color: Colors.grey[700]),
           ),
           const SizedBox(height: 4),
-          Text(
+          LiveTranslatedText(
             result.summary,
             style: TextStyle(
               fontSize: 12,
@@ -467,12 +468,12 @@ class _HybridPaymentIntegrationPageState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     '⚠️ Conflicts (${result.confidence.conflicts.length}):',
                     style: TextStyle(fontSize: 10, color: Colors.orange[900]),
                   ),
                   ...result.confidence.conflicts.take(2).map((c) {
-                    return Text(
+                    return LiveTranslatedText(
                       '• $c',
                       style: TextStyle(fontSize: 9, color: Colors.orange[800]),
                     );
@@ -551,7 +552,7 @@ class _HybridPaymentIntegrationPageState
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.summary),
+          content: LiveTranslatedText(result.summary),
           backgroundColor: _statusColor(result.action),
         ),
       );
@@ -593,7 +594,7 @@ class _HybridPaymentIntegrationPageState
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.summary),
+          content: LiveTranslatedText(result.summary),
           backgroundColor: _statusColor(result.action),
         ),
       );
@@ -633,7 +634,7 @@ class _HybridPaymentIntegrationPageState
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.summary),
+          content: LiveTranslatedText(result.summary),
           backgroundColor: _statusColor(result.action),
         ),
       );
@@ -673,7 +674,7 @@ class _HybridPaymentIntegrationPageState
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.summary),
+          content: LiveTranslatedText(result.summary),
           backgroundColor: _statusColor(result.action),
         ),
       );

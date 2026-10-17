@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
@@ -52,13 +53,13 @@ class _GiftCardsPageState extends State<GiftCardsPage> with SingleTickerProvider
         if (mounted) {
           showDialog(context: context, builder: (_) => AlertDialog(
             backgroundColor: _card,
-            title: const Text('Gift Card Issued!', style: TextStyle(color: Colors.white)),
+            title: const LiveTranslatedText('Gift Card Issued!', style: TextStyle(color: Colors.white)),
             content: SelectableText(code, style: GoogleFonts.robotoMono(color: Colors.purpleAccent, fontSize: 24, fontWeight: FontWeight.bold)),
-            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
+            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const LiveTranslatedText('Close'))],
           ));
         }
       } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: ${res.body}')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText('Failed: ${res.body}')));
       }
     } finally {
       if (mounted) setState(() => _issuing = false);
@@ -77,13 +78,13 @@ class _GiftCardsPageState extends State<GiftCardsPage> with SingleTickerProvider
         if (mounted) {
           showDialog(context: context, builder: (_) => AlertDialog(
             backgroundColor: _card,
-            title: const Text('Redeemed Successfully', style: TextStyle(color: Colors.white)),
-            content: Text('Remaining Balance: Rs $bal', style: GoogleFonts.poppins(color: Colors.greenAccent, fontSize: 18)),
-            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
+            title: const LiveTranslatedText('Redeemed Successfully', style: TextStyle(color: Colors.white)),
+            content: LiveTranslatedText('Remaining Balance: Rs $bal', style: GoogleFonts.poppins(color: Colors.greenAccent, fontSize: 18)),
+            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const LiveTranslatedText('Close'))],
           ));
         }
       } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: ${res.body}')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText('Failed: ${res.body}')));
       }
     } finally {
       if (mounted) setState(() => _redeeming = false);
@@ -123,7 +124,7 @@ class _GiftCardsPageState extends State<GiftCardsPage> with SingleTickerProvider
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: _card,
-        title: Text('Gift Cards & GST', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: LiveTranslatedText('Gift Cards & GST', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
         bottom: TabBar(
           controller: _tabController, indicatorColor: Colors.purpleAccent, labelColor: Colors.purpleAccent, unselectedLabelColor: Colors.white54,
           tabs: const [Tab(text: 'Issue'), Tab(text: 'Redeem'), Tab(text: 'GST')],
@@ -138,7 +139,7 @@ class _GiftCardsPageState extends State<GiftCardsPage> with SingleTickerProvider
           _field(_issueAmountC, 'Amount (Rs)', numeric: true), _field(_issueValidityC, 'Validity (Days)', numeric: true),
           SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
             onPressed: _issuing ? null : _issueCard, style: ElevatedButton.styleFrom(backgroundColor: Colors.purpleAccent),
-            child: _issuing ? const CircularProgressIndicator(color: Colors.white) : const Text('Issue Gift Card', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: _issuing ? const CircularProgressIndicator(color: Colors.white) : const LiveTranslatedText('Issue Gift Card', style: TextStyle(fontWeight: FontWeight.bold)),
           )),
         ])),
         // Redeem
@@ -148,7 +149,7 @@ class _GiftCardsPageState extends State<GiftCardsPage> with SingleTickerProvider
           _field(_redeemCodeC, 'Gift Card Code'), _field(_redeemPhoneC, 'Customer Phone'),
           SizedBox(width: double.infinity, height: 50, child: ElevatedButton(
             onPressed: _redeeming ? null : _redeemCard, style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: _redeeming ? const CircularProgressIndicator(color: Colors.white) : const Text('Redeem Card', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: _redeeming ? const CircularProgressIndicator(color: Colors.white) : const LiveTranslatedText('Redeem Card', style: TextStyle(fontWeight: FontWeight.bold)),
           )),
         ])),
         // GST
@@ -156,18 +157,18 @@ class _GiftCardsPageState extends State<GiftCardsPage> with SingleTickerProvider
           SizedBox(width: double.infinity, height: 50, child: ElevatedButton.icon(
             onPressed: _exporting ? null : _exportGst, style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
             icon: _exporting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator()) : const Icon(Icons.download),
-            label: const Text('Export GSTR-1 Data'),
+            label: const LiveTranslatedText('Export GSTR-1 Data'),
           )),
           const SizedBox(height: 16),
           if (_gstData.isNotEmpty) ...[
             Align(alignment: Alignment.centerRight, child: TextButton.icon(
-              onPressed: () { Clipboard.setData(ClipboardData(text: _gstData)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied to clipboard'))); },
-              icon: const Icon(Icons.copy, color: Colors.purpleAccent), label: const Text('Copy', style: TextStyle(color: Colors.purpleAccent)),
+              onPressed: () { Clipboard.setData(ClipboardData(text: _gstData)); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Copied to clipboard'))); },
+              icon: const Icon(Icons.copy, color: Colors.purpleAccent), label: const LiveTranslatedText('Copy', style: TextStyle(color: Colors.purpleAccent)),
             )),
             Expanded(child: Container(
               width: double.infinity, padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(12)),
-              child: SingleChildScrollView(child: Text(_gstData, style: GoogleFonts.robotoMono(color: Colors.greenAccent, fontSize: 12))),
+              child: SingleChildScrollView(child: LiveTranslatedText(_gstData, style: GoogleFonts.robotoMono(color: Colors.greenAccent, fontSize: 12))),
             )),
           ]
         ])),

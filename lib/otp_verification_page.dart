@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:google_fonts/google_fonts.dart';
@@ -92,7 +93,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
     if (result['success'] && mounted) {
        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('PIN dispatched to ${widget.email}. Check Inbox/Spam.'),
+            content: LiveTranslatedText('PIN dispatched to ${widget.email}. Check Inbox/Spam.'),
             backgroundColor: const Color(0xFF6366F1),
             duration: const Duration(seconds: 4),
           ),
@@ -163,7 +164,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
     if (result['success'] && mounted) {
        ScaffoldMessenger.of(context).showSnackBar(
          const SnackBar(
-           content: Text('Verification code resent successfully! 📧'),
+           content: LiveTranslatedText('Verification code resent successfully! 📧'),
            backgroundColor: Color(0xFF6366F1),
            duration: Duration(seconds: 4),
          ),
@@ -202,7 +203,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
     return Scaffold(
       backgroundColor: isDarkMode ? Colors.black : Colors.white,
       appBar: AppBar(
-        title: Text(
+        title: LiveTranslatedText(
           'Verify Email',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
@@ -225,7 +226,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
               const SizedBox(height: 20),
 
               // Header
-              Text(
+              LiveTranslatedText(
                 'Enter OTP',
                 style: GoogleFonts.poppins(
                   fontSize: 28,
@@ -234,7 +235,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              LiveTranslatedText(
                 'We sent a 6-digit code to ${widget.email}',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -242,7 +243,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              LiveTranslatedText(
                 'If you don’t receive it in 1–2 minutes, check Spam/Junk, then tap Resend.',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -269,7 +270,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
                         if (!mounted) return;
                         await _sendOTP();
                       },
-                      child: const Text('Setup Email & Send OTP'),
+                      child: const LiveTranslatedText('Setup Email & Send OTP'),
                     ),
                   ),
                 ),
@@ -278,7 +279,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
               // Timer
               if (_remainingTime > 0)
                 Center(
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Valid for $_remainingTime ${_remainingTime == 0 ? "0s" : ""}',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -301,7 +302,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     disabledBackgroundColor: Colors.grey[400],
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Verify OTP',
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w600,
@@ -322,7 +323,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
                       side: const BorderSide(color: Color(0xFF6366F1)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       _isResending ? 'Resending...' : 'Resend OTP',
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
@@ -340,7 +341,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
                       side: BorderSide(color: Colors.grey[400]!),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Resend OTP',
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
@@ -437,7 +438,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LiveTranslatedText(
               _message,
               style: GoogleFonts.poppins(
                 fontSize: 12,

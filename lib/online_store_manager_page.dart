@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -86,7 +87,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not verify server settings. Showing saved device settings; changes may not sync.'),
+            content: LiveTranslatedText('Could not verify server settings. Showing saved device settings; changes may not sync.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -137,7 +138,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LiveTranslatedText(
             _isStoreActive
                 ? 'Online Shopping enabled and settings published to customers.'
                 : 'Online Store disabled.',
@@ -152,7 +153,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to save: $e'),
+          content: LiveTranslatedText('Unable to save: $e'),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 4),
         ),
@@ -169,7 +170,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text('Online Store Manager', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('Online Store Manager', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
@@ -183,7 +184,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
             TextButton.icon(
               onPressed: _saveSettings,
               icon: const Icon(Icons.save),
-              label: Text('Save', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+              label: LiveTranslatedText('Save', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
             ),
         ],
       ),
@@ -198,8 +199,8 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               color: _isStoreActive ? Colors.green[50] : Colors.white,
               child: SwitchListTile(
-                title: Text('Enable Online Store', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-                subtitle: Text('Make this shop discoverable in the customer marketplace on app and web.'),
+                title: LiveTranslatedText('Enable Online Store', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                subtitle: LiveTranslatedText('Make this shop discoverable in the customer marketplace on app and web.'),
                 value: _isStoreActive,
                 activeColor: Colors.green,
                 onChanged: (val) {
@@ -239,12 +240,12 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             'Marketplace discovery',
                             style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800),
                           ),
                           const SizedBox(height: 5),
-                          Text(
+                          LiveTranslatedText(
                             'Customers no longer need a shared shop link. When Online Shopping is enabled, they can find your shop by name or find your products across the marketplace.',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
@@ -261,7 +262,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
               const SizedBox(height: 24),
 
               // Settings
-              Text('Delivery & Pickup', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
+              LiveTranslatedText('Delivery & Pickup', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               Card(
                 elevation: 0,
@@ -269,13 +270,13 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                 child: Column(
                   children: [
                     SwitchListTile(
-                      title: Text('Offer Delivery', style: GoogleFonts.poppins()),
+                      title: LiveTranslatedText('Offer Delivery', style: GoogleFonts.poppins()),
                       value: _offerDelivery,
                       onChanged: (v) => setState(() => _offerDelivery = v),
                     ),
                     const Divider(height: 1),
                     SwitchListTile(
-                      title: Text('Offer Store Pickup', style: GoogleFonts.poppins()),
+                      title: LiveTranslatedText('Offer Store Pickup', style: GoogleFonts.poppins()),
                       value: _offerPickup,
                       onChanged: (v) => setState(() => _offerPickup = v),
                     ),
@@ -285,7 +286,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
               const SizedBox(height: 24),
 
               // Fees & Limits
-              Text('Order Constraints', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
+              LiveTranslatedText('Order Constraints', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -319,7 +320,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
               const SizedBox(height: 24),
 
               // Online-only fee
-              Text(
+              LiveTranslatedText(
                 'Online Order Fee',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
               ),
@@ -346,7 +347,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                         const Icon(Icons.tune_rounded, color: Color(0xFF4F46E5)),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(
+                          child: LiveTranslatedText(
                             'Online setup / service fee',
                             style: GoogleFonts.poppins(fontWeight: FontWeight.w800),
                           ),
@@ -357,7 +358,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                             color: const Color(0xFFEEF2FF),
                             borderRadius: BorderRadius.circular(999),
                           ),
-                          child: Text(
+                          child: LiveTranslatedText(
                             'ONLINE ONLY',
                             style: GoogleFonts.poppins(
                               fontSize: 9,
@@ -369,7 +370,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    LiveTranslatedText(
                       'Charged once per online order. It does not change your in-store/POS product prices.',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -397,7 +398,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
               const SizedBox(height: 24),
 
               // Payment Methods
-              Text('Accepted Payments', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
+              LiveTranslatedText('Accepted Payments', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               Card(
                 elevation: 0,
@@ -405,14 +406,14 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                 child: Column(
                   children: [
                     SwitchListTile(
-                      title: Text('Cash on Delivery (COD)', style: GoogleFonts.poppins()),
+                      title: LiveTranslatedText('Cash on Delivery (COD)', style: GoogleFonts.poppins()),
                       value: _acceptCOD,
                       onChanged: (v) => setState(() => _acceptCOD = v),
                     ),
                     const Divider(height: 1),
                     SwitchListTile(
-                      title: Text('Online Payments (UPI/Cards)', style: GoogleFonts.poppins()),
-                      subtitle: const Text(
+                      title: LiveTranslatedText('Online Payments (UPI/Cards)', style: GoogleFonts.poppins()),
+                      subtitle: const LiveTranslatedText(
                         'Coming soon. Online payment collection is not configured yet; use COD for now.',
                       ),
                       value: false,
