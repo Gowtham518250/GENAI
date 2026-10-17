@@ -242,8 +242,8 @@ abstract class VoiceBuilder {
     // be ASCII-oriented in Dart.
     final englishCredit = RegExp(
       r'\b(credited|credit|received|payment received|money received|deposited|added to|cashback'
-      r'|paid to your|paid to you|made to your|sent to your|sent to you|has sent'
-      r'|amount credited|amount received)\b',
+      r'|paid to (?:your|you)|made to your|sent to (?:your|you)|has sent'
+      r'|amount credited|amount received|transferred to (?:your|you))\b',
     ).hasMatch(t);
     final romanizedCredit = RegExp(
       r'\b(jama(?:\s+hua|\s+ho gaya)?|prapt|paise\s+aaye|paisa\s+aaya|mil\s+gaya|credit\s+hua)\b',
@@ -254,7 +254,9 @@ abstract class VoiceBuilder {
     final credit = englishCredit || romanizedCredit || nativeCredit;
 
     final englishDebit = RegExp(
-      r'\b(debited|debit|sent|paid|payment to|deducted|withdrawn|spent|transferred to)\b',
+      r'\b(debited|debit|deducted|withdrawn|spent|purchase|you sent|you paid'
+      r'|sent to (?!your\b|you\b)|paid to (?!your\b|you\b)'
+      r'|payment to (?!your\b|you\b)|transferred to (?!your\b|you\b))',
     ).hasMatch(t);
     final romanizedDebit = RegExp(
       r'\b(kata(?:\s+gaya)?|kat gaya|nikala|bheja gaya|paise bheje|debit hua|paise kate)\b',
