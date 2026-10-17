@@ -1,9 +1,11 @@
-/// ML Kit's Flutter translation plugin supports Android and iOS, not Web.
-/// Keep the original text on Web until an approved remote translation endpoint
-/// is configured by the application.
-Future<String> translateEnglishText(
-  String text,
+import 'live_translation_remote.dart';
+
+/// Flutter Web does not have the ML Kit platform-channel implementation.
+/// Use the authenticated backend batch route and retain source text whenever
+/// the browser has no valid app session or the translation service is offline.
+Future<List<String>> translateEnglishTexts(
+  List<String> texts,
   String targetLanguageCode,
-) async {
-  return text;
+) {
+  return translateEnglishBatchRemotely(texts, targetLanguageCode);
 }

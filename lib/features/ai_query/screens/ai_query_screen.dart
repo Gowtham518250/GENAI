@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -19,6 +20,7 @@ import '../widgets/product_discovery_card.dart';
 import '../widgets/suggestion_chip.dart';
 import 'ai_query_history_screen.dart';
 import 'voice_language_option.dart';
+import '../../../language_provider.dart';
 
 /// Ask Retail Mind: text or voice in an Indian language, followed by the
 /// existing authenticated RAG -> SQL -> result pipeline.
@@ -44,16 +46,34 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   bool _isLoading = false;
   bool _isRecording = false;
   bool _isVoiceProcessing = false;
-  String _inputLanguageCode = 'te';
+  String _inputLanguageCode = 'en';
+  bool _voiceLanguageManuallySelected = false;
   AIQueryResponse? _currentResponse;
   String? _errorMessage;
   String? _originalTranscript;
   String? _translatedEnglish;
   VoiceLanguageOption _selectedLanguage = kVoiceLanguages.firstWhere(
-    (language) => language.code == 'te',
+    (language) => language.code == 'en',
   );
   Timer? _recordTimer;
   int _recordSeconds = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final appLanguageCode =
+        Provider.of<LanguageProvider>(context).locale.languageCode;
+    if (!_voiceLanguageManuallySelected) {
+      final matches = kVoiceLanguages.where(
+        (language) => language.code == appLanguageCode,
+      );
+      final defaultLanguage = matches.isNotEmpty
+          ? matches.first
+          : kVoiceLanguages.firstWhere((language) => language.code == 'en');
+      _selectedLanguage = defaultLanguage;
+      _inputLanguageCode = defaultLanguage.code;
+    }
+  }
 
   @override
   void initState() {
@@ -1051,6 +1071,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                         : (language) {
                             if (language != null) {
                               setState(() {
+                                _voiceLanguageManuallySelected = true;
                                 _selectedLanguage = language;
                                 _inputLanguageCode = language.code;
                               });

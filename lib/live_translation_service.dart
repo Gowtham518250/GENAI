@@ -4,23 +4,24 @@ import 'dart:collection';
 import 'live_translation_web.dart'
     if (dart.library.io) 'live_translation_native.dart' as platform;
 
-/// Translates dynamic, English-language display content.
-///
-/// Curated dictionary strings never use this service. For uncatalogued strings,
-/// results and in-flight requests are shared and the local model queue is
-/// bounded so opening a screen with hundreds of labels won't flood the plugin.
+/// Translates dynamic display strings with a small bounded queue.
+/// Duplicate strings are coalesced and requests are batched to avoid a remote
+/// AI call for every widget on the page.
 class LiveTranslationService {
   LiveTranslationService._();
 
   static final LiveTranslationService instance = LiveTranslationService._();
 
-  static const int _maxConcurrentTranslations = 3;
-  static const int _maxCachedTranslations = 1000;
+  static const int _maxConcurrentBatches = 2;
+  static const int _maxBatchItems = 20;
+  static const int _maxCachedTranslations = 2000;
+  static const Duration _batchCoalesceDelay = Duration(milliseconds: 25);
 
   final LinkedHashMap<String, String> _cache = LinkedHashMap<String, String>();
   final Map<String, Future<String>> _inFlight = <String, Future<String>>{};
   final Queue<_TranslationTask> _queue = Queue<_TranslationTask>();
-  int _activeTranslations = 0;
+  int _activeBatches = 0;
+  bool _pumpScheduled = false;
 
   Future<String> translateForDisplay(
     String text, {
@@ -29,7 +30,7 @@ class LiveTranslationService {
     final trimmed = text.trim();
     if (trimmed.isEmpty ||
         targetLanguageCode == 'en' ||
-        !_hasAnyLetters(trimmed)) {
+        !_hasLatinLetters(trimmed)) {
       return Future<String>.value(text);
     }
 
@@ -37,7 +38,6 @@ class LiveTranslationService {
     final cached = _cache[key];
     if (cached != null) return Future<String>.value(cached);
 
-    // Multiple widgets can request the same string in the same frame.
     final inFlight = _inFlight[key];
     if (inFlight != null) return inFlight;
 
@@ -51,38 +51,70 @@ class LiveTranslationService {
         completer: completer,
       ),
     );
-    _pumpQueue();
+    _schedulePump();
     return completer.future;
   }
 
-  void _pumpQueue() {
-    while (_activeTranslations < _maxConcurrentTranslations &&
-        _queue.isNotEmpty) {
-      final task = _queue.removeFirst();
-      _activeTranslations++;
+  void _schedulePump() {
+    if (_pumpScheduled) return;
+    _pumpScheduled = true;
+    Timer(_batchCoalesceDelay, () {
+      _pumpScheduled = false;
+      _pumpQueue();
+    });
+  }
 
-      Future<String>.sync(
-        () => platform.translateEnglishText(
-          task.text,
-          task.targetLanguageCode,
-        ),
-      ).catchError((Object _) => task.text).then((translated) {
-        _cache[task.key] = translated;
-        while (_cache.length > _maxCachedTranslations) {
-          _cache.remove(_cache.keys.first);
+  void _pumpQueue() {
+    while (_activeBatches < _maxConcurrentBatches && _queue.isNotEmpty) {
+      final first = _queue.removeFirst();
+      final batch = <_TranslationTask>[first];
+      for (final candidate in _queue.toList()) {
+        if (batch.length >= _maxBatchItems) break;
+        if (candidate.targetLanguageCode == first.targetLanguageCode) {
+          _queue.remove(candidate);
+          batch.add(candidate);
         }
-        if (!task.completer.isCompleted) {
-          task.completer.complete(translated);
-        }
-      }).whenComplete(() {
-        _activeTranslations--;
-        _inFlight.remove(task.key);
-        _pumpQueue();
-      });
+      }
+      _activeBatches++;
+      unawaited(_translateBatch(batch));
     }
   }
 
-  bool _hasAnyLetters(String value) =>
+  Future<void> _translateBatch(List<_TranslationTask> batch) async {
+    try {
+      final translated = await platform.translateEnglishTexts(
+        batch.map((task) => task.text).toList(),
+        batch.first.targetLanguageCode,
+      );
+      for (var index = 0; index < batch.length; index++) {
+        final task = batch[index];
+        final value = index < translated.length &&
+                translated[index].trim().isNotEmpty
+            ? translated[index]
+            : task.text;
+        // Avoid caching a transient offline/auth fallback forever. A later
+        // screen rebuild can retry once the session or connection is restored.
+        if (value.trim() != task.text.trim()) {
+          _cache[task.key] = value;
+          while (_cache.length > _maxCachedTranslations) {
+            _cache.remove(_cache.keys.first);
+          }
+        }
+        if (!task.completer.isCompleted) task.completer.complete(value);
+        _inFlight.remove(task.key);
+      }
+    } catch (_) {
+      for (final task in batch) {
+        if (!task.completer.isCompleted) task.completer.complete(task.text);
+        _inFlight.remove(task.key);
+      }
+    } finally {
+      _activeBatches--;
+      if (_queue.isNotEmpty) _schedulePump();
+    }
+  }
+
+  bool _hasLatinLetters(String value) =>
       RegExp(r'[A-Za-z\u00C0-\u024F]').hasMatch(value);
 }
 

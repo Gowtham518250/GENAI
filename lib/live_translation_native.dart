@@ -1,10 +1,11 @@
 import 'package:google_mlkit_translation/google_mlkit_translation.dart';
 
+import 'live_translation_remote.dart';
+
 final OnDeviceTranslatorModelManager _modelManager =
     OnDeviceTranslatorModelManager();
 
-// Single-flight maps prevent dozens of text widgets from simultaneously
-// downloading the same language model or creating duplicate translators.
+// Single-flight maps prevent duplicate downloads and translator instances.
 final Map<String, Future<void>> _modelDownloads = <String, Future<void>>{};
 final Map<String, Future<OnDeviceTranslator>> _translatorTasks =
     <String, Future<OnDeviceTranslator>>{};
@@ -28,8 +29,8 @@ TranslateLanguage? _targetFor(String code) {
     case 'bn':
       return TranslateLanguage.bengali;
     default:
-      // ML Kit's on-device translator doesn't currently include every
-      // language offered in the Retail Mind selector (e.g. Punjabi, Malayalam).
+      // Malayalam and Punjabi aren't exposed by the plugin version pinned in
+      // this app, so use the authenticated backend batch route for those locales.
       return null;
   }
 }
@@ -98,19 +99,23 @@ Future<OnDeviceTranslator> _translatorFor(
   }
 }
 
-Future<String> translateEnglishText(
-  String text,
+Future<List<String>> translateEnglishTexts(
+  List<String> texts,
   String targetLanguageCode,
 ) async {
+  if (texts.isEmpty || targetLanguageCode == 'en') return texts;
   final target = _targetFor(targetLanguageCode);
-  if (target == null || targetLanguageCode == 'en') return text;
+  if (target == null) {
+    return translateEnglishBatchRemotely(texts, targetLanguageCode);
+  }
 
   try {
     final translator = await _translatorFor(targetLanguageCode, target);
-    return await translator.translateText(text);
+    return await Future.wait(
+      texts.map((text) => translator.translateText(text)),
+    );
   } catch (_) {
-    // Keep content readable if a model can't be downloaded or translation
-    // fails. Translation must never block order or inventory interactions.
-    return text;
+    // Keep displayed information visible if a local model isn't available.
+    return texts;
   }
 }
