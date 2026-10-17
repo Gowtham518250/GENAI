@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
@@ -23,16 +24,16 @@ class _SystemManagementPageState extends State<SystemManagementPage> {
       if (mounted) {
         showDialog(context: context, builder: (_) => AlertDialog(
           backgroundColor: _card,
-          title: Text('$name Result', style: const TextStyle(color: Colors.white)),
-          content: SingleChildScrollView(child: Text(
+          title: LiveTranslatedText('$name Result', style: const TextStyle(color: Colors.white)),
+          content: SingleChildScrollView(child: LiveTranslatedText(
             isJson ? const JsonEncoder.withIndent('  ').convert(jsonDecode(res.body)) : res.body,
             style: GoogleFonts.robotoMono(color: Colors.cyanAccent, fontSize: 12),
           )),
-          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const LiveTranslatedText('Close'))],
         ));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText('Error: $e')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -46,7 +47,7 @@ class _SystemManagementPageState extends State<SystemManagementPage> {
         child: ElevatedButton.icon(
           onPressed: _loading ? null : onTap,
           style: ElevatedButton.styleFrom(backgroundColor: color.withValues(alpha: 0.2), foregroundColor: color, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: color.withValues(alpha: 0.5)))),
-          icon: Icon(icon), label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          icon: Icon(icon), label: LiveTranslatedText(label, style: const TextStyle(fontWeight: FontWeight.bold)),
         ),
       ),
     );
@@ -56,11 +57,11 @@ class _SystemManagementPageState extends State<SystemManagementPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      appBar: AppBar(backgroundColor: _card, title: Text('System Management', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold))),
+      appBar: AppBar(backgroundColor: _card, title: LiveTranslatedText('System Management', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold))),
       body: _loading ? const Center(child: CircularProgressIndicator(color: Colors.cyanAccent)) : SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Cache Management', style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          LiveTranslatedText('Cache Management', style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           _btn('View Cache Stats', Icons.analytics, () => _handle('Stats', () => ApiClient.getJson('/api/cache/stats'))),
           _btn('Warm Product Cache', Icons.inventory, () => _handle('Warm Products', () => ApiClient.postJson('/api/cache/warm/products', {}))),
@@ -68,7 +69,7 @@ class _SystemManagementPageState extends State<SystemManagementPage> {
           _btn('Clear ALL Cache', Icons.delete_forever, () => _handle('Clear Cache', () => http.delete(Uri.parse('${ApiClient.baseUrl}/api/cache/clear-all')), isJson: false), color: Colors.redAccent),
           
           const SizedBox(height: 32),
-          Text('Batch Operations', style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          LiveTranslatedText('Batch Operations', style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           _btn('View Batch History', Icons.history, () => _handle('History', () => ApiClient.getJson('/batch/api/batch/history')), color: Colors.amberAccent),
           _btn('Export Products', Icons.download, () => _handle('Export', () => ApiClient.postJson('/batch/api/batch/products/export', {})), color: Colors.amberAccent),

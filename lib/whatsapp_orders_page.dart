@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
@@ -67,7 +68,7 @@ class _WhatsappOrdersPageState extends State<WhatsappOrdersPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text(
+        title: LiveTranslatedText(
           'WhatsApp Pending Orders',
           style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.black87),
         ),
@@ -90,7 +91,7 @@ class _WhatsappOrdersPageState extends State<WhatsappOrdersPage> {
                     children: [
                       Icon(Icons.inbox_outlined, size: 80, color: Colors.grey[300]),
                       const SizedBox(height: 16),
-                      Text(
+                      LiveTranslatedText(
                         'No pending WhatsApp orders.',
                         style: GoogleFonts.inter(fontSize: 16, color: Colors.grey[500]),
                       )
@@ -130,13 +131,13 @@ class _WhatsappOrdersPageState extends State<WhatsappOrdersPage> {
                                       child: const Icon(Icons.chat, color: Colors.green, size: 20),
                                     ),
                                     const SizedBox(width: 12),
-                                    Text(
+                                    LiveTranslatedText(
                                       'WhatsApp Order',
                                       style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
                                     ),
                                   ],
                                 ),
-                                Text(
+                                LiveTranslatedText(
                                   timeStr,
                                   style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500]),
                                 ),
@@ -150,7 +151,7 @@ class _WhatsappOrdersPageState extends State<WhatsappOrdersPage> {
                                 color: Colors.grey[50],
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Text(
+                              child: LiveTranslatedText(
                                 order['raw_text'] ?? '',
                                 style: GoogleFonts.inter(fontSize: 14, color: Colors.black87),
                               ),
@@ -166,7 +167,7 @@ class _WhatsappOrdersPageState extends State<WhatsappOrdersPage> {
                                       side: const BorderSide(color: Colors.red),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
-                                    child: const Text('Reject'),
+                                    child: const LiveTranslatedText('Reject'),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -177,7 +178,7 @@ class _WhatsappOrdersPageState extends State<WhatsappOrdersPage> {
                                       backgroundColor: Colors.blue,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
-                                    child: const Text('Process Bill'),
+                                    child: const LiveTranslatedText('Process Bill'),
                                   ),
                                 ),
                               ],

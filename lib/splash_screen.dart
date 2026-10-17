@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
@@ -165,7 +166,7 @@ class _SplashScreenState extends State<SplashScreen>
                     opacity: _fadeAnimation,
                     child: Column(
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           'AI Shop Pro',
                           style: GoogleFonts.inter(
                             fontSize: 30,
@@ -175,7 +176,7 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
+                        LiveTranslatedText(
                           'Smart Billing & Analytics',
                           style: GoogleFonts.inter(
                             fontSize: 14,
@@ -209,7 +210,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text(
+                  LiveTranslatedText(
                     'Loading...',
                     style: GoogleFonts.inter(
                       fontSize: 12,
@@ -315,7 +316,7 @@ class _MinimalSplashScreenState extends State<MinimalSplashScreen>
                 scale: Tween<double>(begin: 0.8, end: 1).animate(
                   CurvedAnimation(parent: _controller, curve: Curves.easeOut),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   'Retail Mind',
                   style: GoogleFonts.poppins(
                     fontSize: 24,

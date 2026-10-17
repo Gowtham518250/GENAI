@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -457,7 +458,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
             });
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('✅ UPI ID detected: $upiId'),
+                content: LiveTranslatedText('✅ UPI ID detected: $upiId'),
                 backgroundColor: const Color(0xFF10B981),
               ),
             );
@@ -474,7 +475,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Could not read UPI ID: $e')),
+          SnackBar(content: LiveTranslatedText('❌ Could not read UPI ID: $e')),
         );
       }
     }
@@ -503,7 +504,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e')),
+        SnackBar(content: LiveTranslatedText('Error picking image: $e')),
       );
     }
   }
@@ -595,7 +596,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       
       if (permission == LocationPermission.deniedForever) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location permission denied forever. Please enable in settings.')),
+          const SnackBar(content: LiveTranslatedText('Location permission denied forever. Please enable in settings.')),
         );
         return;
       }
@@ -603,7 +604,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       final position = await Geolocator.getCurrentPosition();
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fetching address details...')),
+        const SnackBar(content: LiveTranslatedText('Fetching address details...')),
       );
 
       final url = Uri.parse(
@@ -664,7 +665,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
           });
           
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('📍 Bound to State: $stateName ($discoveredStateCode) for Auto-Pricing!')),
+            SnackBar(content: LiveTranslatedText('📍 Bound to State: $stateName ($discoveredStateCode) for Auto-Pricing!')),
           );
         } else {
           throw Exception('HTTP ${resp.statusCode}');
@@ -675,12 +676,12 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
           locationController.text = '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not get address, showing coordinates.')),
+          const SnackBar(content: LiveTranslatedText('Could not get address, showing coordinates.')),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching location: $e')),
+        SnackBar(content: LiveTranslatedText('Error fetching location: $e')),
       );
     }
   }
@@ -812,7 +813,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
             Icon(icon, color: iconColor, size: 16),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 message,
                 style: TextStyle(color: iconColor, fontSize: 12),
               ),
@@ -890,7 +891,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: LiveTranslatedText(
               synced
                   ? (logoUploaded ? '✅ Profile & logo synced to backend!' : '✅ Profile synced to backend!')
                   : '💾 Profile saved locally. Will sync online.',
@@ -908,7 +909,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error: $e'),
+            content: LiveTranslatedText('❌ Error: $e'),
             backgroundColor: Colors.red[600],
           ),
         );
@@ -942,25 +943,25 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
-                title: const Text(
+                title: const LiveTranslatedText(
                   'Discard Changes?',
                   style: TextStyle(color: Colors.white),
                 ),
-                content: const Text(
+                content: const LiveTranslatedText(
                   'You have unsaved shop profile changes.',
                   style: TextStyle(color: Colors.white70),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Keep Editing'),
+                    child: const LiveTranslatedText('Keep Editing'),
                   ),
                   TextButton(
                     onPressed: () {
                       Navigator.pop(ctx);
                       Navigator.pop(context);
                     },
-                    child: const Text('Discard'),
+                    child: const LiveTranslatedText('Discard'),
                   ),
                 ],
               ),
@@ -1033,7 +1034,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                               Expanded(
                                 child: Column(
                                   children: [
-                                    Text(
+                                    LiveTranslatedText(
                                       'Complete Your Shop Details',
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.inter(
@@ -1044,7 +1045,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                                       ),
                                     ),
                                     const SizedBox(height: 3),
-                                    Text(
+                                    LiveTranslatedText(
                                       'Set up your store once. You can change it later.',
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.inter(
@@ -1078,7 +1079,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                                     if (mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
-                                          content: Text('Could not share shop'),
+                                          content: LiveTranslatedText('Could not share shop'),
                                         ),
                                       );
                                     }
@@ -1148,7 +1149,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(
+                                            LiveTranslatedText(
                                               'Store profile',
                                               style: GoogleFonts.inter(
                                                 fontSize: 13,
@@ -1157,7 +1158,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                                               ),
                                             ),
                                             const SizedBox(height: 2),
-                                            Text(
+                                            LiveTranslatedText(
                                               'Basic information',
                                               style: GoogleFonts.inter(
                                                 fontSize: 9.5,
@@ -1183,7 +1184,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                                                 .withValues(alpha: 0.22),
                                           ),
                                         ),
-                                        child: const Text(
+                                        child: const LiveTranslatedText(
                                           '1 of 3',
                                           style: TextStyle(
                                             color: Color(0xFF86EFAC),
@@ -1263,7 +1264,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             logoBytes == null ? 'Tap to add shop logo' : 'Tap to change logo',
             style: GoogleFonts.inter(
               color: Colors.white.withValues(alpha: 0.58),
@@ -1388,9 +1389,9 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Enable Online Shopping', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                        LiveTranslatedText('Enable Online Shopping', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
-                        Text('Allow customers to browse & order online', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10.5)),
+                        LiveTranslatedText('Allow customers to browse & order online', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10.5)),
                       ],
                     ),
                   ),
@@ -1412,7 +1413,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 return Center(
                   child: Column(
                     children: [
-                      const Text(
+                      const LiveTranslatedText(
                         'Live Payment QR',
                         style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
                       ),
@@ -1445,7 +1446,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      LiveTranslatedText(
                         value.text,
                         style: const TextStyle(color: Colors.indigoAccent, fontWeight: FontWeight.bold, fontSize: 12),
                       ),
@@ -1467,11 +1468,11 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
             const SizedBox(height: 16),
             if (errorMessage != null) ...[
                 const SizedBox(height: 16),
-                Text(errorMessage!, style: const TextStyle(color: Colors.redAccent)),
+                LiveTranslatedText(errorMessage!, style: const TextStyle(color: Colors.redAccent)),
             ],
             if (successMessage != null) ...[
                 const SizedBox(height: 16),
-                Text(successMessage!, style: const TextStyle(color: AppColors.secondary)),
+                LiveTranslatedText(successMessage!, style: const TextStyle(color: AppColors.secondary)),
             ],
             const SizedBox(height: 16),
             _buildSyncStatusIndicator(),
@@ -1485,7 +1486,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                       onPressed: isLoading ? null : saveShopProfile,
                       child: isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Save Profile'),
+                          : const LiveTranslatedText('Save Profile'),
                     ),
                   ),
                 ),
@@ -1530,7 +1531,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 child: const Icon(Icons.cloud_upload_rounded, color: AppColors.primary),
               ),
               const SizedBox(width: 16),
-              Text(
+              LiveTranslatedText(
                 AppLocalizations.of(context).translate('backup') ?? 'Backup & Restore',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
@@ -1541,7 +1542,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
+          LiveTranslatedText(
             'Keep your shop data safe by creating periodic backups. You can restore your data if you switch devices.',
             style: GoogleFonts.poppins(
               fontSize: 13,
@@ -1555,7 +1556,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 child: OutlinedButton.icon(
                   onPressed: () => _handleCreateBackup(),
                   icon: const Icon(Icons.backup_rounded, size: 18),
-                  label: const Text('Backup Now'),
+                  label: const LiveTranslatedText('Backup Now'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.secondary,
                     side: const BorderSide(color: AppColors.secondary),
@@ -1568,7 +1569,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 child: ElevatedButton.icon(
                   onPressed: () => _handleRestoreBackup(),
                   icon: const Icon(Icons.restore_rounded, size: 18),
-                  label: const Text('Restore'),
+                  label: const LiveTranslatedText('Restore'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white10,
                     foregroundColor: Colors.white,
@@ -1592,7 +1593,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Backup created: ${result['size']} KB'),
+            content: LiveTranslatedText('✅ Backup created: ${result['size']} KB'),
             backgroundColor: AppColors.secondary,
           ),
         );
@@ -1600,7 +1601,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Backup failed: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: LiveTranslatedText('❌ Backup failed: $e'), backgroundColor: Colors.redAccent),
         );
       }
     }
@@ -1613,7 +1614,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       if (backups.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No backups found to restore')),
+            const SnackBar(content: LiveTranslatedText('No backups found to restore')),
           );
         }
         return;
@@ -1629,12 +1630,12 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Select Backup to Restore', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+              LiveTranslatedText('Select Backup to Restore', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 16),
               ...backups.map((b) => ListTile(
                 leading: const Icon(Icons.insert_drive_file, color: AppColors.primary),
-                title: Text(b['date'], style: const TextStyle(color: Colors.white)),
-                subtitle: Text('${b['fileSize']} KB', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+                title: LiveTranslatedText(b['date'], style: const TextStyle(color: Colors.white)),
+                subtitle: LiveTranslatedText('${b['fileSize']} KB', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
                 onTap: () => Navigator.pop(ctx, b['path']),
               )).toList(),
             ],
@@ -1647,11 +1648,11 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
           context: context,
           builder: (ctx) => AlertDialog(
             backgroundColor: AppColors.surfaceDark,
-            title: const Text('Confirm Restore?', style: TextStyle(color: Colors.white)),
-            content: const Text('This will overwrite current data with backup data. Continue?', style: TextStyle(color: Colors.white70)),
+            title: const LiveTranslatedText('Confirm Restore?', style: TextStyle(color: Colors.white)),
+            content: const LiveTranslatedText('This will overwrite current data with backup data. Continue?', style: TextStyle(color: Colors.white70)),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-              ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Restore')),
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const LiveTranslatedText('Cancel')),
+              ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const LiveTranslatedText('Restore')),
             ],
           ),
         );
@@ -1661,7 +1662,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
           await BackupService.restoreBackup(selectedBackup);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('✅ Restore complete! Please restart the app.'), backgroundColor: AppColors.secondary),
+              const SnackBar(content: LiveTranslatedText('✅ Restore complete! Please restart the app.'), backgroundColor: AppColors.secondary),
             );
           }
           setState(() => isLoading = false);
@@ -1670,7 +1671,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Restore failed: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: LiveTranslatedText('❌ Restore failed: $e'), backgroundColor: Colors.redAccent),
         );
       }
     }
@@ -1698,7 +1699,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 child: const Icon(Icons.fingerprint_rounded, color: AppColors.primary),
               ),
               const SizedBox(width: 16),
-              Text(
+              LiveTranslatedText(
                 'Biometric Login',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
@@ -1709,7 +1710,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
+          LiveTranslatedText(
             'Keep biometric access private on this device only. Use this setting to enable or disable fingerprint or face unlock for owner verification and protected sections.',
             style: GoogleFonts.poppins(
               fontSize: 13,
@@ -1723,7 +1724,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       _biometricAvailable ? 'Device biometrics ready' : 'Biometric unavailable',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
@@ -1732,7 +1733,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
+                    LiveTranslatedText(
                       _biometricAvailable
                           ? 'Fingerprint or face unlock can be managed here.'
                           : 'This device does not support biometric enrollment.',
@@ -1754,7 +1755,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
           if (!_biometricAvailable)
             Padding(
               padding: const EdgeInsets.only(top: 16),
-              child: Text(
+              child: LiveTranslatedText(
                 'Biometric login requires device support and must be activated after registration.',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -1771,7 +1772,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
     if (!await SecurityService.isBiometricHardwareAvailable()) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Biometric hardware unavailable on this device.'), backgroundColor: Colors.redAccent),
+          const SnackBar(content: LiveTranslatedText('Biometric hardware unavailable on this device.'), backgroundColor: Colors.redAccent),
         );
       }
       return;
@@ -1784,7 +1785,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       if (!authenticated) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Biometric verification failed. Login not enabled.'), backgroundColor: Colors.redAccent),
+            const SnackBar(content: LiveTranslatedText('Biometric verification failed. Login not enabled.'), backgroundColor: Colors.redAccent),
           );
         }
         return;
@@ -1794,7 +1795,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       if (mounted) {
         setState(() => _biometricEnabled = true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Biometric login enabled on this device.'), backgroundColor: AppColors.secondary),
+          const SnackBar(content: LiveTranslatedText('✅ Biometric login enabled on this device.'), backgroundColor: AppColors.secondary),
         );
       }
     } else {
@@ -1802,7 +1803,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       if (mounted) {
         setState(() => _biometricEnabled = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Biometric login disabled.'), backgroundColor: AppColors.secondary),
+          const SnackBar(content: LiveTranslatedText('Biometric login disabled.'), backgroundColor: AppColors.secondary),
         );
       }
     }
@@ -1830,7 +1831,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 child: const Icon(Icons.security_rounded, color: AppColors.electric),
               ),
               const SizedBox(width: 16),
-              Text(
+              LiveTranslatedText(
                 'Access Control',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
@@ -1841,7 +1842,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
+          LiveTranslatedText(
             'The Master PIN protects sensitive sections like Inventory, Shop Details, and Analytics from unauthorized employee access.',
             style: GoogleFonts.poppins(
               fontSize: 13,
@@ -1855,7 +1856,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Master App PIN',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
@@ -1863,7 +1864,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                         color: Colors.white,
                       ),
                     ),
-                    Text(
+                    LiveTranslatedText(
                       'Default is 0000',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -1882,7 +1883,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   side: BorderSide(color: AppColors.electric.withValues(alpha: 0.3)),
                 ),
-                child: const Text('Change PIN'),
+                child: const LiveTranslatedText('Change PIN'),
               ),
             ],
           ),
@@ -1900,7 +1901,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E293B),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Change Master PIN', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: LiveTranslatedText('Change Master PIN', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1934,7 +1935,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('CANCEL')),
           ElevatedButton(
             onPressed: () async {
               final current = await SecurityService.getMasterPin();
@@ -1944,21 +1945,21 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                   await SecurityService.setMasterPin(newController.text);
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('✅ Master PIN updated!'), backgroundColor: AppColors.secondary)
+                    const SnackBar(content: LiveTranslatedText('✅ Master PIN updated!'), backgroundColor: AppColors.secondary)
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('❌ New PIN must be 4 digits'), backgroundColor: Colors.red)
+                    const SnackBar(content: LiveTranslatedText('❌ New PIN must be 4 digits'), backgroundColor: Colors.red)
                   );
                 }
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('❌ Current PIN is incorrect'), backgroundColor: Colors.red)
+                  const SnackBar(content: LiveTranslatedText('❌ Current PIN is incorrect'), backgroundColor: Colors.red)
                 );
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.electric),
-            child: const Text('UPDATE'),
+            child: const LiveTranslatedText('UPDATE'),
           ),
         ],
       ),
@@ -1987,7 +1988,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
                 child: const Icon(Icons.warning_rounded, color: Colors.redAccent),
               ),
               const SizedBox(width: 16),
-              Text(
+              LiveTranslatedText(
                 'Danger Zone',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
@@ -1998,7 +1999,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
+          LiveTranslatedText(
             'Permanently delete your account and all associated data. This action cannot be undone.',
             style: GoogleFonts.poppins(
               fontSize: 13,
@@ -2012,7 +2013,7 @@ class _ShopProfilePageState extends State<ShopProfilePage> {
             child: ElevatedButton.icon(
               onPressed: () => Navigator.pushNamed(context, '/delete-account'),
               icon: const Icon(Icons.delete_forever_rounded, size: 20),
-              label: const Text('Delete Account Permanently'),
+              label: const LiveTranslatedText('Delete Account Permanently'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
@@ -2052,7 +2053,7 @@ class _StyledField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           label,
           style: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.9), fontSize: 12.5, fontWeight: FontWeight.w600),
         ),

@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'payment_detection_system.dart';
 import 'payment_confirmation_dialog.dart';
@@ -49,7 +50,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
       onError: (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $error'), backgroundColor: Colors.red),
+            SnackBar(content: LiveTranslatedText('Error: $error'), backgroundColor: Colors.red),
           );
         }
       },
@@ -89,7 +90,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Payment confirmed: ${payment.name} - ₹${payment.amount}'),
+          content: LiveTranslatedText('✅ Payment confirmed: ${payment.name} - ₹${payment.amount}'),
           backgroundColor: Colors.green,
         ),
       );
@@ -100,7 +101,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Payment denied: ${payment.name}'),
+          content: LiveTranslatedText('❌ Payment denied: ${payment.name}'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -150,7 +151,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🔍 Smart Payment Matcher'),
+        title: const LiveTranslatedText('🔍 Smart Payment Matcher'),
         // subtitle removed - not supported in this context
         elevation: 2,
       ),
@@ -210,7 +211,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
               // ========== SIMULATION BUTTONS ==========
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
+                child: LiveTranslatedText(
                   'Test Payment Detection',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
@@ -248,7 +249,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
               // ========== HOW IT WORKS ==========
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
+                child: LiveTranslatedText(
                   'How Smart Matching Works',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
@@ -286,7 +287,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
               // ========== CONFLICT HANDLING ==========
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
+                child: LiveTranslatedText(
                   'Conflict Resolution (Same Amount + Time)',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
@@ -301,18 +302,18 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    const LiveTranslatedText(
                       'Problem: Multiple sales with ₹5000 at 3:45 PM',
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    const LiveTranslatedText(
                       '• Sale 1: Rahul - Customer (9876543210)\n'
                       '• Sale 2: Priya - Wholesale (9123456789)',
                       style: TextStyle(fontSize: 12),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    const LiveTranslatedText(
                       'Solution: Popup shows both options + phone matching\n' +
                           'User taps to confirm which customer it is\n' +
                           'System saves to audit trail for learning',
@@ -330,7 +331,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Audit Trail (Last 10)',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
@@ -340,7 +341,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
                         _refreshStats();
                       },
                       icon: const Icon(Icons.refresh, size: 16),
-                      label: const Text('Refresh'),
+                      label: const LiveTranslatedText('Refresh'),
                     ),
                   ],
                 ),
@@ -353,7 +354,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Center(
-                    child: Text('No audit entries yet. Simulate payments above.'),
+                    child: LiveTranslatedText('No audit entries yet. Simulate payments above.'),
                   ),
                 )
               else
@@ -379,7 +380,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
-                                child: Text(
+                                child: LiveTranslatedText(
                                   'Payment ID: ${entry['payment_id']?.substring(0, 12) ?? '-'}',
                                   style: const TextStyle(
                                     fontSize: 12,
@@ -393,7 +394,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
                                   color: statusColor.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: Text(
+                                child: LiveTranslatedText(
                                   '$score%',
                                   style: TextStyle(
                                     fontSize: 11,
@@ -405,7 +406,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
                             ],
                           ),
                           const SizedBox(height: 4),
-                          Text(
+                          LiveTranslatedText(
                             'Status: $status',
                             style: TextStyle(
                               fontSize: 11,
@@ -414,7 +415,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
                             ),
                           ),
                           if (entry['sale_id'] != null && entry['sale_id'].toString().isNotEmpty)
-                            Text(
+                            LiveTranslatedText(
                               'Matched Sale: ${entry['sale_id']}',
                               style: const TextStyle(fontSize: 10, color: Colors.blue),
                             ),
@@ -444,7 +445,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             value.toString(),
             style: TextStyle(
               fontSize: 28,
@@ -453,7 +454,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          LiveTranslatedText(
             label,
             style: TextStyle(
               fontSize: 12,
@@ -478,11 +479,11 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
       label: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             title,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          Text(
+          LiveTranslatedText(
             subtitle,
             style: const TextStyle(fontSize: 11),
           ),
@@ -508,7 +509,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             title,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
@@ -516,7 +517,7 @@ class _SmartPaymentMatcherPageState extends State<SmartPaymentMatcherPage> {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
+          LiveTranslatedText(
             content,
             style: const TextStyle(fontSize: 12),
           ),
