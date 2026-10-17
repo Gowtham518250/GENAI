@@ -758,7 +758,7 @@ class _WorkerAttendanceDetailPageState
             TextField(
               controller: amountCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Amount (₹)', prefixIcon: Icon(Icons.currency_rupee)),
+              decoration: const InputDecoration(label: LiveTranslatedText('Amount (₹)'), prefixIcon: Icon(Icons.currency_rupee)),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
@@ -767,12 +767,12 @@ class _WorkerAttendanceDetailPageState
                   .map((t) => DropdownMenuItem(value: t, child: LiveTranslatedText(t)))
                   .toList(),
               onChanged: (v) => setModalState(() => type = v ?? 'Salary'),
-              decoration: const InputDecoration(labelText: 'Type'),
+              decoration: const InputDecoration(label: LiveTranslatedText('Type')),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: noteCtrl,
-              decoration: const InputDecoration(labelText: 'Note (optional)', prefixIcon: Icon(Icons.note_alt_outlined)),
+              decoration: const InputDecoration(label: LiveTranslatedText('Note (optional)'), prefixIcon: Icon(Icons.note_alt_outlined)),
             ),
           ]),
           actions: [

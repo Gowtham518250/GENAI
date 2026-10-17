@@ -248,31 +248,31 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person)),
+                    decoration: const InputDecoration(label: LiveTranslatedText('Full Name'), prefixIcon: Icon(Icons.person)),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: phoneCtrl,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(labelText: 'Phone Number (Optional)', prefixIcon: Icon(Icons.phone)),
+                    decoration: const InputDecoration(label: LiveTranslatedText('Phone Number (Optional)'), prefixIcon: Icon(Icons.phone)),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: positionCtrl,
-                    decoration: const InputDecoration(labelText: 'Position / Role', prefixIcon: Icon(Icons.work)),
+                    decoration: const InputDecoration(label: LiveTranslatedText('Position / Role'), prefixIcon: Icon(Icons.work)),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: salaryCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Salary', prefixIcon: Icon(Icons.attach_money)),
+                    decoration: const InputDecoration(label: LiveTranslatedText('Salary'), prefixIcon: Icon(Icons.attach_money)),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: pinCtrl,
                     keyboardType: TextInputType.number,
                     maxLength: 4,
-                    decoration: const InputDecoration(labelText: '4-Digit Attendance PIN', prefixIcon: Icon(Icons.lock)),
+                    decoration: const InputDecoration(label: LiveTranslatedText('4-Digit Attendance PIN'), prefixIcon: Icon(Icons.lock)),
                   ),
                 ],
               ),
@@ -386,7 +386,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
                 controller: _searchCtrl,
                 onChanged: (v) => setState(() => _query = v),
                 decoration: InputDecoration(
-                  hintText: 'Search by name, phone, or role',
+                  hint: LiveTranslatedText('Search by name, phone, or role'),
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _query.isEmpty
                       ? null

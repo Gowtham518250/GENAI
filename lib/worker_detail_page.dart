@@ -67,13 +67,13 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
           title: LiveTranslatedText('Edit Worker', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person))),
+              TextField(controller: nameCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Full Name'), prefixIcon: Icon(Icons.person))),
               const SizedBox(height: 12),
-              TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone))),
+              TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(label: LiveTranslatedText('Phone Number'), prefixIcon: Icon(Icons.phone))),
               const SizedBox(height: 12),
-              TextField(controller: positionCtrl, decoration: const InputDecoration(labelText: 'Position / Role', prefixIcon: Icon(Icons.work))),
+              TextField(controller: positionCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Position / Role'), prefixIcon: Icon(Icons.work))),
               const SizedBox(height: 12),
-              TextField(controller: salaryCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Salary', prefixIcon: Icon(Icons.attach_money))),
+              TextField(controller: salaryCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(label: LiveTranslatedText('Salary'), prefixIcon: Icon(Icons.attach_money))),
             ]),
           ),
           actions: [
@@ -141,16 +141,16 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
         return AlertDialog(
           title: LiveTranslatedText('Log Payment', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Amount (₹)', prefixIcon: Icon(Icons.currency_rupee))),
+            TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(label: LiveTranslatedText('Amount (₹)'), prefixIcon: Icon(Icons.currency_rupee))),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: type,
               items: ['Salary', 'Advance', 'Bonus', 'Other'].map((t) => DropdownMenuItem(value: t, child: LiveTranslatedText(t))).toList(),
               onChanged: (v) => setModalState(() => type = v ?? 'Salary'),
-              decoration: const InputDecoration(labelText: 'Type'),
+              decoration: const InputDecoration(label: LiveTranslatedText('Type')),
             ),
             const SizedBox(height: 12),
-            TextField(controller: noteCtrl, decoration: const InputDecoration(labelText: 'Note (optional)', prefixIcon: Icon(Icons.note_alt_outlined))),
+            TextField(controller: noteCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Note (optional)'), prefixIcon: Icon(Icons.note_alt_outlined))),
           ]),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('Cancel')),
