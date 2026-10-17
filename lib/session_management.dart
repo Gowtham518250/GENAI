@@ -265,14 +265,10 @@ class SessionManagementService {
     });
   }
 
-  /// Identity verification is deliberately separate from login/session validity.
-  /// A valid refresh token never grants Owner/Staff access by itself.
-  /// The state is user-scoped and survives an app restart, but logout and a
-  /// new login session clear it.
-  // Verification is valid only for the current app process.
-  // It intentionally does not survive a force-close/restart.
-  static final Map<int, String> _processIdentityVerification = <int, String>{};
-
+  /// Verification is separate from session validity and is scoped to both
+  /// the authenticated user and selected role. Persisting this record means a
+  /// force-close or app restart does not trigger the same OTP/PIN flow again.
+  /// A fresh login clears this record in initializeSession().
   static String _identityVerificationKey(int userId) =>
       '$_identityVerifiedKeyPrefix$userId';
 
@@ -290,13 +286,13 @@ class SessionManagementService {
           int.tryParse(storedUserId?.toString() ?? '') ??
           0;
       if (resolvedUserId <= 0) return;
-      _processIdentityVerification.remove(resolvedUserId);
       await prefs.remove(_identityVerificationKey(resolvedUserId));
       await prefs.remove(_identityVerificationRoleKey(resolvedUserId));
       await prefs.remove(_identityVerificationAtKey(resolvedUserId));
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ Failed to clear identity verification: $e');
+      }
     }
   }
 
@@ -305,23 +301,29 @@ class SessionManagementService {
     required String role,
   }) async {
     try {
-      if (userId <= 0) return;
       final normalizedRole = role.trim().toUpperCase();
-      _processIdentityVerification[userId] = normalizedRole;
+      if (userId <= 0 || normalizedRole.isEmpty) return;
 
-      // Remove any legacy persisted verification state.
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_identityVerificationKey(userId));
-      await prefs.remove(_identityVerificationRoleKey(userId));
-      await prefs.remove(_identityVerificationAtKey(userId));
+      await prefs.setBool(_identityVerificationKey(userId), true);
+      await prefs.setString(
+        _identityVerificationRoleKey(userId),
+        normalizedRole,
+      );
+      await prefs.setInt(
+        _identityVerificationAtKey(userId),
+        DateTime.now().millisecondsSinceEpoch,
+      );
 
       if (kDebugMode) {
         debugPrint(
-          '✅ Identity verified for current app process: user $userId as $normalizedRole',
+          '✅ Identity verification saved for user $userId as $normalizedRole',
         );
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Failed to save identity verification: $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ Failed to save identity verification: $e');
+      }
     }
   }
 
@@ -330,10 +332,21 @@ class SessionManagementService {
     required String role,
   }) async {
     try {
-      if (userId <= 0) return false;
-      return _processIdentityVerification[userId] == role.trim().toUpperCase();
+      final normalizedRole = role.trim().toUpperCase();
+      if (userId <= 0 || normalizedRole.isEmpty) return false;
+
+      final prefs = await SharedPreferences.getInstance();
+      final verified = prefs.getBool(_identityVerificationKey(userId)) ?? false;
+      final verifiedRole =
+          (prefs.getString(_identityVerificationRoleKey(userId)) ?? '')
+              .trim()
+              .toUpperCase();
+
+      return verified && verifiedRole == normalizedRole;
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Identity verification check failed: $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ Identity verification check failed: $e');
+      }
       return false;
     }
   }
@@ -349,7 +362,8 @@ class SessionManagementService {
   }) async {
     if (kDebugMode) debugPrint('🔐 Initializing session for user ID $userId');
     ApiClient.resetSessionExpiryNotification();
-    // A fresh login session must pass identity verification again.
+    // A fresh login session must pass identity verification again. The saved
+    // verification record is preserved across app restarts, but not logins.
     await clearIdentityVerification(userId: userId);
     await SecureTokenStorage.clearAll();
     await saveTokens(

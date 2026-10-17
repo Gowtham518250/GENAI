@@ -1496,9 +1496,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       final identityVerified = await SessionManagementService
           .isIdentityVerified(userId: userId, role: identityRole);
       
-      // A valid stored token is not enough to grant owner/staff
-      // dashboard access on a fresh app/tab process. Only the
-      // identity verification completed in this process unlocks it.
+      // A stored token alone is not enough: this user and role must have a
+      // saved verification record from OTP, biometric, or staff PIN success.
       return resolveStartupRoute(
         booting: booting,
         authenticated: authenticated,
@@ -1551,7 +1550,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   authenticated: authed,
                 ),
                 builder: (context, routeSnapshot) {
-                  final resolvedRoute = routeSnapshot.data ?? initialRoute;
+                  // Wait on the boot splash while the saved user/role verification
+                  // state is resolved. Do not briefly route authenticated users
+                  // to identity verification just because the Future is pending.
+                  final resolvedRoute =
+                      routeSnapshot.connectionState == ConnectionState.waiting
+                      ? '/_boot'
+                      : (routeSnapshot.data ?? initialRoute);
                   return MaterialApp(
                     navigatorKey: globalNavigatorKey,
                     key: ValueKey<String>(

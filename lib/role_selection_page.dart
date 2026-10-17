@@ -197,8 +197,8 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
         );
       }
 
-      // Verification is process-local: persisted PIN/session data must not
-      // silently authorize Staff Mode after a fresh app/tab launch.
+      // Save verification for this user and role so app restarts do not
+      // repeat the staff PIN flow. A new login clears this verification state.
       await SessionManagementService.markIdentityVerified(
         userId: userId,
         role: 'STAFF',
