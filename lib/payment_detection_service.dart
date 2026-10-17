@@ -683,7 +683,7 @@ class PdsConfig {
 
   // Dedup
   static const Duration dedupUtrTtl          = Duration(hours: 24);
-  static const Duration dedupHashTtl         = Duration(seconds: 30);
+  static const Duration dedupHashTtl         = Duration(minutes: 5);
   static const Duration dedupCleanupInterval = Duration(minutes: 5);
   // FIX-C: debounce save
   static const Duration dedupSaveDebounce    = Duration(seconds: 30);
@@ -3163,11 +3163,15 @@ class PaymentDetectionService {
       detectionSource: source,
     );
     final fp = tempEvent.fingerprint;
-    if (_dedupStore.containsKey(fp) || _activeFingerprints.contains(fp)) {
+    final now = DateTime.now();
+    final existingExpiry = _dedupStore[fp];
+    if ((existingExpiry != null && now.isBefore(existingExpiry)) ||
+        _activeFingerprints.contains(fp)) {
       PdsLogger.d('L4.5', 'DUPLICATE BLOCKED EARLY: fp=$fp');
       _stats.recordDupe();
       return;
     }
+    if (existingExpiry != null) _dedupStore.remove(fp);
     _activeFingerprints.add(fp);
     _dedupStore[fp] = DateTime.now().add(
         isUtrFp ? PdsConfig.dedupUtrTtl : PdsConfig.dedupHashTtl);
@@ -3559,7 +3563,12 @@ class PaymentDetectionService {
     bool isBillSettlement = false,
     bool forceMute        = false,
   }) async {
-    if (event.decision == PaymentDecision.rejected) return;
+    if (event.decision == PaymentDecision.rejected) {
+      if (isBillSettlement) {
+        billContext.releaseSettlementReservation(event.fingerprint);
+      }
+      return;
+    }
 
     // Cross-device UTR check happens before UI/voice emission. Serialize
     // concurrent same-UTR events on this device, and await the registration
@@ -3711,7 +3720,10 @@ class PaymentDetectionService {
   // Partial payments excluded — shopkeeper already knows money is pending.
   Future<String?> _tryAutoSettleInvoice(PaymentEvent event) async {
     try {
-      if (event.decision != PaymentDecision.confirmed || event.amount <= 0) {
+      if (event.decision != PaymentDecision.confirmed ||
+          event.amount <= 0 ||
+          event.isFailed ||
+          VoiceBuilder.detectDirection(event.rawText) != PaymentDirection.credited) {
         return null;
       }
       final paymentKey = 'invoice_payment_' + event.fingerprint;
