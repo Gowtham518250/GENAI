@@ -295,7 +295,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                       controller: _minOrderController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Min Order (₹)',
+                        label: LiveTranslatedText('Min Order (₹)'),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         filled: true,
                         fillColor: Colors.white,
@@ -308,7 +308,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                       controller: _deliveryFeeController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Delivery Fee (₹)',
+                        label: LiveTranslatedText('Delivery Fee (₹)'),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         filled: true,
                         fillColor: Colors.white,
@@ -383,7 +383,7 @@ class _OnlineStoreManagerPageState extends State<OnlineStoreManagerPage> {
                       controller: _onlineSetupFeeController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: 'Fee per online order (₹)',
+                        label: LiveTranslatedText('Fee per online order (₹)'),
                         prefixText: '₹ ',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),

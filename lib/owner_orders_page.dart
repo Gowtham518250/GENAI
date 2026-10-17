@@ -339,7 +339,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                   ),
                   decoration: InputDecoration(
                     counterText: '',
-                    hintText: '000000',
+                    hint: LiveTranslatedText('000000'),
                     hintStyle: GoogleFonts.poppins(
                       color: Colors.white24,
                       letterSpacing: 6,
@@ -460,7 +460,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
               maxLines: 3,
               style: GoogleFonts.poppins(color: Colors.white),
               decoration: InputDecoration(
-                hintText: 'e.g. Out of stock, Shop closed, Item unavailable...',
+                hint: LiveTranslatedText('e.g. Out of stock, Shop closed, Item unavailable...'),
                 hintStyle: GoogleFonts.poppins(color: Colors.white30, fontSize: 12),
                 filled: true,
                 fillColor: _cardLight,

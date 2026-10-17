@@ -393,7 +393,7 @@ class _PaidInvoicesPageState extends State<PaidInvoicesPage>
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search customer, phone or invoice...',
+              hint: LiveTranslatedText('Search customer, phone or invoice...'),
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _query.isEmpty
                   ? null

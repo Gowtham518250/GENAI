@@ -1420,7 +1420,7 @@ class _ReturnRequestSheetState extends State<ReturnRequestSheet> {
                     controller: _notesController,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: 'Describe the issue...',
+                      hint: LiveTranslatedText('Describe the issue...'),
                       hintStyle: GoogleFonts.poppins(color: Colors.grey[400]),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       filled: true,

@@ -371,7 +371,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
       ),
       decoration: InputDecoration(
         counterText: '',
-        hintText: '000000',
+        hint: LiveTranslatedText('000000'),
         hintStyle: GoogleFonts.poppins(
           color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
         ),
