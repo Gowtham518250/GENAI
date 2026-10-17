@@ -163,7 +163,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
             TextField(
               controller: _confirmController,
               decoration: InputDecoration(
-                hintText: 'Type PERMANENT DELETE',
+                hint: LiveTranslatedText('Type PERMANENT DELETE'),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),

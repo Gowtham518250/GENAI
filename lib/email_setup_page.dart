@@ -159,8 +159,8 @@ class _EmailSetupPageState extends State<EmailSetupPage> {
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
-                labelText: 'Sender Gmail',
-                hintText: 'yourshop@gmail.com',
+                label: LiveTranslatedText('Sender Gmail'),
+                hint: LiveTranslatedText('yourshop@gmail.com'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.email_outlined),
               ),
@@ -170,8 +170,8 @@ class _EmailSetupPageState extends State<EmailSetupPage> {
               controller: _passwordCtrl,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'Gmail App Password',
-                hintText: 'xxxx xxxx xxxx xxxx',
+                label: LiveTranslatedText('Gmail App Password'),
+                hint: LiveTranslatedText('xxxx xxxx xxxx xxxx'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.lock_outline),
               ),

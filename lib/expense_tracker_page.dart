@@ -543,7 +543,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                 TextField(
                   controller: descriptionController,
                   decoration: InputDecoration(
-                    hintText: 'Description',
+                    hint: LiveTranslatedText('Description'),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
@@ -552,7 +552,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                   controller: amountController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    hintText: 'Amount',
+                    hint: LiveTranslatedText('Amount'),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),

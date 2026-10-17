@@ -108,7 +108,7 @@ class _ExpensePageState extends State<ExpensePage>
                 controller: amountC,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
-                  labelText: 'Amount (₹) *',
+                  label: LiveTranslatedText('Amount (₹) *'),
                   prefixIcon: const Icon(Icons.currency_rupee_rounded, color: _danger),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   focusedBorder: OutlineInputBorder(
@@ -122,7 +122,7 @@ class _ExpensePageState extends State<ExpensePage>
               DropdownButtonFormField<String>(
                 value: selectedCategory,
                 decoration: InputDecoration(
-                  labelText: 'Category',
+                  label: LiveTranslatedText('Category'),
                   prefixIcon: const Icon(Icons.category_rounded, color: _primary),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -135,7 +135,7 @@ class _ExpensePageState extends State<ExpensePage>
               TextField(
                 controller: noteC,
                 decoration: InputDecoration(
-                  labelText: 'Note (optional)',
+                  label: LiveTranslatedText('Note (optional)'),
                   prefixIcon: const Icon(Icons.note_rounded, color: _primary),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
