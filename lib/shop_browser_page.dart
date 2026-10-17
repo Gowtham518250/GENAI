@@ -113,7 +113,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Search failed: ' + e.toString())),
+          SnackBar(content: LiveTranslatedText('Search failed: ' + e.toString())),
         );
       }
     } finally {
@@ -142,7 +142,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
         backgroundColor: const Color(0xFF111827),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: Text(
+        title: LiveTranslatedText(
           'Retail Marketplace',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 18),
         ),
@@ -202,7 +202,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             'YOUR LOCAL MARKETPLACE',
             style: GoogleFonts.poppins(
               color: Colors.white70,
@@ -212,7 +212,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
+          LiveTranslatedText(
             'Find shops. Compare prices. Order.',
             style: GoogleFonts.poppins(
               color: Colors.white,
@@ -222,7 +222,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
             ),
           ),
           const SizedBox(height: 10),
-          Text(
+          LiveTranslatedText(
             'Only shops with Online Shopping enabled appear in this marketplace.',
             style: GoogleFonts.poppins(
               color: Colors.white70,
@@ -286,7 +286,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
         selected: selected,
-        label: Text(label),
+        label: LiveTranslatedText(label),
         onSelected: (_) {
           setState(() => _mode = value);
           if (_searchController.text.trim().isNotEmpty) _runSearch();
@@ -405,7 +405,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
           const Icon(Icons.auto_awesome_rounded, color: Color(0xFF4F46E5)),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LiveTranslatedText(
               _aiMessage,
               style: GoogleFonts.poppins(
                 color: const Color(0xFF3730A3),
@@ -423,7 +423,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
   Widget _title(String value) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
-      child: Text(
+      child: LiveTranslatedText(
         value,
         style: GoogleFonts.poppins(
           color: const Color(0xFF111827),
@@ -467,7 +467,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
               style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 14),
             ),
             const SizedBox(height: 4),
-            Text(
+            LiveTranslatedText(
               shop['city']?.toString().isNotEmpty == true
                   ? shop['city'].toString()
                   : 'Online shop',
@@ -478,7 +478,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
             const Spacer(),
             _ratingRow(shop),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               'Shop now →',
               style: GoogleFonts.poppins(
                 color: const Color(0xFF059669),
@@ -517,7 +517,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
                   LiveTranslatedText(shop['shop_name']?.toString() ?? 'Shop',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w800),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     shop['address']?.toString().isNotEmpty == true
                         ? shop['address'].toString()
                         : 'Online shopping enabled',
@@ -567,7 +567,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
                   LiveTranslatedText(product['product_name']?.toString() ?? 'Product',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w800),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     product['shop_name']?.toString() ?? 'Shop',
                     style: GoogleFonts.poppins(
                       color: const Color(0xFF4F46E5),
@@ -580,7 +580,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
                 ],
               ),
             ),
-            Text(
+            LiveTranslatedText(
               '₹' + ((double.tryParse(product['price']?.toString() ?? '0') ?? 0).toStringAsFixed(2)),
               style: GoogleFonts.poppins(
                 color: const Color(0xFF059669),
@@ -610,7 +610,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
           children: [
             CircleAvatar(
               backgroundColor: const Color(0xFFEEF2FF),
-              child: Text(
+              child: LiveTranslatedText(
                 (index + 1).toString(),
                 style: GoogleFonts.poppins(
                   color: const Color(0xFF4F46E5),
@@ -634,7 +634,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
                 ],
               ),
             ),
-            Text(
+            LiveTranslatedText(
               '₹' + ((double.tryParse(item['price']?.toString() ?? '0') ?? 0).toStringAsFixed(2)),
               style: GoogleFonts.poppins(
                 color: const Color(0xFF059669),
@@ -654,7 +654,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
       children: [
         const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 15),
         const SizedBox(width: 3),
-        Text(
+        LiveTranslatedText(
           count == 0 ? 'New' : rating.toStringAsFixed(1) + ' • ' + count.toString(),
           style: GoogleFonts.poppins(
             color: Colors.grey.shade700,
@@ -675,7 +675,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
           children: [
             const Icon(Icons.search_off_rounded, size: 58, color: Color(0xFFCBD5E1)),
             const SizedBox(height: 12),
-            Text(
+            LiveTranslatedText(
               text,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(color: Colors.grey.shade600),
@@ -744,7 +744,7 @@ class _ShopProductsPageState extends State<ShopProductsPage> {
               onPressed: _goToCheckout,
               backgroundColor: Colors.indigo,
               icon: const Icon(Icons.shopping_cart),
-              label: Text('Cart ($_cartCount)', style: const TextStyle(fontWeight: FontWeight.bold)),
+              label: LiveTranslatedText('Cart ($_cartCount)', style: const TextStyle(fontWeight: FontWeight.bold)),
             )
           : null,
       body: _loading
@@ -764,12 +764,12 @@ class _ShopProductsPageState extends State<ShopProductsPage> {
                     const SizedBox(width: 14),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       LiveTranslatedText(p['product_name']?.toString() ?? '', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                      Text('Rs ${p['unit_price'] ?? p['price'] ?? 0}', style: GoogleFonts.poppins(color: Colors.indigo, fontWeight: FontWeight.bold)),
+                      LiveTranslatedText('Rs ${p['unit_price'] ?? p['price'] ?? 0}', style: GoogleFonts.poppins(color: Colors.indigo, fontWeight: FontWeight.bold)),
                     ])),
                     if (inCart > 0) Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
-                      child: Text('x$inCart', style: GoogleFonts.poppins(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: LiveTranslatedText('x$inCart', style: GoogleFonts.poppins(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                     const SizedBox(width: 8),
                     IconButton(
