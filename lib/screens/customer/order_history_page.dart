@@ -105,16 +105,16 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Cancel Order', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
-        content: Text('Are you sure you want to cancel this order?', style: GoogleFonts.poppins()),
+        title: LiveTranslatedText('Cancel Order', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+        content: LiveTranslatedText('Are you sure you want to cancel this order?', style: GoogleFonts.poppins()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('No', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+            child: LiveTranslatedText('No', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Yes', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: const Color(0xFFEF4444))),
+            child: LiveTranslatedText('Yes', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: const Color(0xFFEF4444))),
           ),
         ],
       ),
@@ -125,14 +125,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Order cancelled successfully'), backgroundColor: Colors.green),
+            const SnackBar(content: LiveTranslatedText('Order cancelled successfully'), backgroundColor: Colors.green),
           );
         }
         await _loadOrders();
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cannot cancel this order'), backgroundColor: Colors.red),
+            const SnackBar(content: LiveTranslatedText('Cannot cancel this order'), backgroundColor: Colors.red),
           );
         }
       }
@@ -331,7 +331,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       orderId,
                       style: GoogleFonts.poppins(
                         fontSize: 14,
@@ -340,7 +340,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    LiveTranslatedText(
                       _formatDate(createdAt),
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -374,7 +374,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     localizations
                         .translate('paymentStatusLine')
                         .replaceAll('{method}', paymentMethod)
@@ -388,7 +388,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                   if (paymentConfirmationSource == 'OWNER_DEVICE_NOTIFICATION_MATCH')
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(
+                      child: LiveTranslatedText(
                         localizations.translate('paymentMatchedNotificationHint'),
                         style: GoogleFonts.poppins(
                           fontSize: 11,
@@ -399,7 +399,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                   else if (paymentMethod == 'UPI' && paymentStatus != 'PAID')
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(
+                      child: LiveTranslatedText(
                         localizations.translate('paymentPendingHint'),
                         style: GoogleFonts.poppins(
                           fontSize: 11,
@@ -416,7 +416,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              LiveTranslatedText(
                 '₹${total.toString()}',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
@@ -431,7 +431,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                     OutlinedButton.icon(
                       onPressed: () => _cancelOrder(orderId),
                       icon: const Icon(Icons.cancel, size: 16),
-                      label: const Text('Cancel'),
+                      label: const LiveTranslatedText('Cancel'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFFEF4444),
                         side: const BorderSide(color: Color(0xFFEF4444)),
@@ -530,7 +530,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   status.replaceAll('_', ' '),
                   style: GoogleFonts.poppins(
                     fontSize: 14,
@@ -540,7 +540,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 ),
                 if (timestamp != null) ...[
                   const SizedBox(height: 4),
-                  Text(
+                  LiveTranslatedText(
                     _formatDate(timestamp),
                     style: GoogleFonts.poppins(
                       fontSize: 12,
