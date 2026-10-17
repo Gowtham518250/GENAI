@@ -3503,6 +3503,16 @@ class PaymentDetectionService {
           ? PaymentDecision.likely
           : decision;
 
+      // A bill match can improve the score, but a LIKELY signal must never
+      // release/clear the active bill or be treated as a confirmed settlement.
+      if (isBillSettled && finalDecision != PaymentDecision.confirmed) {
+        if (reservedBillSettlementKey != null) {
+          billContext.releaseSettlementReservation(reservedBillSettlementKey);
+        }
+        reservedBillSettlementKey = null;
+        isBillSettled = false;
+      }
+
       final event = tempEvent.copyWith(
         id:               matched?.event.id,
         confidenceScore:  score,
