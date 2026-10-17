@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -281,7 +282,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Text(
+                        LiveTranslatedText(
                           l.appTitle,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
@@ -292,7 +293,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        LiveTranslatedText(
                           l.tagline,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
@@ -333,7 +334,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(
+                                            LiveTranslatedText(
                                               l.createAccount,
                                               style: GoogleFonts.inter(
                                                 color: Colors.white,
@@ -342,7 +343,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                                               ),
                                             ),
                                             const SizedBox(height: 3),
-                                            Text(
+                                            LiveTranslatedText(
                                               l.enterCredentials,
                                               style: GoogleFonts.inter(
                                                 color: Colors.white
@@ -377,7 +378,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                                               color: Color(0xFF5EEAD4),
                                             ),
                                             SizedBox(width: 4),
-                                            Text(
+                                            LiveTranslatedText(
                                               l.translate('secure'),
                                               style: TextStyle(
                                                 color: Color(0xFF99F6E4),
@@ -422,7 +423,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                                                 ),
                                                 const SizedBox(width: 8),
                                                 Expanded(
-                                                  child: Text(
+                                                  child: LiveTranslatedText(
                                                     errorMessage,
                                                     style: const TextStyle(
                                                       color: Color(0xFFFCA5A5),
@@ -538,7 +539,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                                                   color: Colors.white,
                                                 ),
                                               )
-                                            : Text(
+                                            : LiveTranslatedText(
                                                 l.createAccount,
                                                 key:
                                                     const ValueKey('label'),
@@ -562,7 +563,7 @@ class _DecentRegisterPageState extends State<DecentRegisterPage>
                                       tapTargetSize:
                                           MaterialTapTargetSize.shrinkWrap,
                                     ),
-                                    child: Text(
+                                    child: LiveTranslatedText(
                                       l.signIn,
                                       style: GoogleFonts.inter(
                                         color:
@@ -664,7 +665,7 @@ class _RegisterLanguageSelector extends StatelessWidget {
                 value: lang['code']!,
                 child: Row(
                   children: [
-                    Text(lang['nativeName']!, style: const TextStyle(color: Colors.white)),
+                    LiveTranslatedText(lang['nativeName']!, style: const TextStyle(color: Colors.white)),
                     const SizedBox(width: 6),
                     if (lang['code'] == currentCode)
                       const Icon(Icons.check, size: 16, color: Colors.white70),
@@ -680,12 +681,12 @@ class _RegisterLanguageSelector extends StatelessWidget {
             children: [
               const Icon(Icons.language_rounded, size: 18, color: Colors.white),
               const SizedBox(width: 6),
-              Text(
+              LiveTranslatedText(
                 AppLocalizations.of(context).language,
                 style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 6),
-              Text(
+              LiveTranslatedText(
                 current['nativeName']!,
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 10),
               ),

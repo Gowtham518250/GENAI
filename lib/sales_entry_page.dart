@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'sharing_intent_service.dart';
 import 'package:intl/intl.dart';
@@ -209,7 +210,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     
     final customerPhone = customerPhoneController.text.trim();
     if (customerPhone.isEmpty) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter customer phone number first')));
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Please enter customer phone number first')));
        return;
     }
 
@@ -222,7 +223,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open WhatsApp. Is it installed?')),
+        const SnackBar(content: LiveTranslatedText('Could not open WhatsApp. Is it installed?')),
       );
     }
   }
@@ -240,15 +241,15 @@ class _SalesEntryPageState extends State<SalesEntryPage>
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Text(
+              child: LiveTranslatedText(
                 'Voice billing',
                 style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w800, color: const Color(0xFF111827)),
               ),
             ),
             ListTile(
               leading: const Icon(Icons.smart_display_rounded, color: Color(0xFF4F46E5)),
-              title: Text('Guided line items', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-              subtitle: Text('Step-by-step — one product at a time', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+              title: LiveTranslatedText('Guided line items', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              subtitle: LiveTranslatedText('Step-by-step — one product at a time', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
               onTap: () {
                 Navigator.pop(ctx);
                 setState(() => _isVoiceAssistantOpen = true);
@@ -256,8 +257,8 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             ),
             ListTile(
               leading: const Icon(Icons.graphic_eq_rounded, color: Color(0xFF10B981)),
-              title: Text('Speak full bill', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-              subtitle: Text('Speak the full bill, review items, then confirm', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+              title: LiveTranslatedText('Speak full bill', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              subtitle: LiveTranslatedText('Speak the full bill, review items, then confirm', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
               onTap: () {
                 Navigator.pop(ctx);
                 _startListening();
@@ -266,7 +267,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             if (_isVoiceAssistantOpen)
               ListTile(
                 leading: Icon(Icons.close_rounded, color: Colors.grey[700]),
-                title: Text('Close guided panel', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                title: LiveTranslatedText('Close guided panel', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                 onTap: () {
                   Navigator.pop(ctx);
                   setState(() => _isVoiceAssistantOpen = false);
@@ -436,11 +437,11 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               children: [
                 const Icon(Icons.language_rounded, color: Colors.indigo),
                 const SizedBox(width: 10),
-                Text('Language & Keyboard', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                LiveTranslatedText('Language & Keyboard', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
-            Text('1. Voice Input (Mic) Language:', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
+            LiveTranslatedText('1. Voice Input (Mic) Language:', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -452,7 +453,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                 {'code': 'ta-IN', 'name': 'Tamil / à®¤à®®à®¿à®´à¯'},
                 {'code': 'mr-IN', 'name': 'Marathi / à¤®à¤°à¤¾à¤ à¥€'},
               ].map((l) => ActionChip(
-                label: Text(l['name']?.toString() ?? '', style: GoogleFonts.poppins(fontSize: 12, color: _speechInputLang == l['code'] ? Colors.white : Colors.black87)),
+                label: LiveTranslatedText(l['name']?.toString() ?? '', style: GoogleFonts.poppins(fontSize: 12, color: _speechInputLang == l['code'] ? Colors.white : Colors.black87)),
                 backgroundColor: _speechInputLang == l['code'] ? Colors.indigo : Colors.grey[200],
                 side: _speechInputLang == l['code'] ? const BorderSide(color: Colors.indigo) : BorderSide.none,
                 onPressed: () async {
@@ -464,7 +465,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                     Navigator.pop(ctx);
                   }
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Voice input set to ${l['name']?.toString() ?? ''}')));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText('Voice input set to ${l['name']?.toString() ?? ''}')));
                   }
                 },
               )).toList(),
@@ -473,7 +474,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               padding: EdgeInsets.symmetric(vertical: 16.0),
               child: Divider(),
             ),
-            Text('2. How to Type in Your Language?', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
+            LiveTranslatedText('2. How to Type in Your Language?', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),
@@ -484,7 +485,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                   const Icon(Icons.keyboard_alt_outlined, color: Colors.blue, size: 28),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text('To type in your local language (Hindi, Telugu, etc.), open your device keyboard, tap the 🌐 (Globe) icon or press and hold the Spacebar to add your language layout.', 
+                    child: LiveTranslatedText('To type in your local language (Hindi, Telugu, etc.), open your device keyboard, tap the 🌐 (Globe) icon or press and hold the Spacebar to add your language layout.', 
                       style: GoogleFonts.poppins(fontSize: 13, color: Colors.black87, height: 1.4)),
                   ),
                 ],
@@ -659,7 +660,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Low confidence, please try again!'),
+              content: const LiveTranslatedText('Low confidence, please try again!'),
               backgroundColor: Colors.orange.shade600,
             ),
           );
@@ -726,7 +727,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 '🎙️ AI Detected ${segments.length} Items',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 15),
               ),
@@ -737,7 +738,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('I heard:', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
+            LiveTranslatedText('I heard:', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
             const SizedBox(height: 8),
             ...preview.map((item) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 3),
@@ -745,7 +746,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                 children: [
                   const Icon(Icons.check_circle_outline, color: Color(0xFF10B981), size: 18),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(item, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500))),
+                  Expanded(child: LiveTranslatedText(item, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500))),
                 ],
               ),
             )),
@@ -756,7 +757,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                 color: const Color(0xFF6366F1).withOpacity(0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 '✍️¨ All items will be auto-added to the bill!',
                 style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF4338CA)),
               ),
@@ -766,11 +767,11 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('RETRY', style: GoogleFonts.poppins(color: Colors.red)),
+            child: LiveTranslatedText('RETRY', style: GoogleFonts.poppins(color: Colors.red)),
           ),
           ElevatedButton.icon(
             icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-            label: Text('ADD ALL ${segments.length} ITEMS', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+            label: LiveTranslatedText('ADD ALL ${segments.length} ITEMS', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6366F1),
               foregroundColor: Colors.white,
@@ -795,7 +796,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('✅ ${segments.length} items added by Voice AI!', 
+                LiveTranslatedText('✅ ${segments.length} items added by Voice AI!', 
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               ],
             ),
@@ -825,7 +826,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🎯 Payment mode set to ${entry.value}!'),
+            content: LiveTranslatedText('🎯 Payment mode set to ${entry.value}!'),
             backgroundColor: const Color(0xFF10B981),
             behavior: SnackBarBehavior.floating,
           ),
@@ -846,7 +847,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('🎯 Borrow mode activated!'),
+          content: LiveTranslatedText('🎯 Borrow mode activated!'),
           backgroundColor: const Color(0xFF4338CA),
           behavior: SnackBarBehavior.floating,
         ),
@@ -1009,16 +1010,16 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             children: [
               const Icon(Icons.psychology_outlined, color: Color(0xFF6366F1)),
               const SizedBox(width: 10),
-              const Text('AI Suggestion'),
+              const LiveTranslatedText('AI Suggestion'),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('I heard "$text"', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
+              LiveTranslatedText('I heard "$text"', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
               const SizedBox(height: 12),
-              Text('Did you mean:', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+              LiveTranslatedText('Did you mean:', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -1027,15 +1028,15 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(bestMatch?['product_name'] ?? itemName, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF4338CA))),
-                    Text('Qty: $qty $unitFound | Price: ₹$finalPrice', style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF6366F1))),
+                    LiveTranslatedText(bestMatch?['product_name'] ?? itemName, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF4338CA))),
+                    LiveTranslatedText('Qty: $qty $unitFound | Price: ₹$finalPrice', style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF6366F1))),
                   ],
                 ),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('NO, TRY AGAIN')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('NO, TRY AGAIN')),
             ElevatedButton(
               onPressed: () {
                 _addVoiceItem(
@@ -1048,7 +1049,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                 Navigator.pop(ctx);
               },
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1), foregroundColor: Colors.white),
-              child: const Text('YES, ADD'),
+              child: const LiveTranslatedText('YES, ADD'),
             ),
           ],
         ),
@@ -1160,7 +1161,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                children: [
                  const Icon(Icons.warning_amber_rounded, color: Colors.white),
                  const SizedBox(width: 8),
-                 Expanded(child: Text('⚠️ LOW STOCK: $pName (Only $stockQty left)', 
+                 Expanded(child: LiveTranslatedText('⚠️ LOW STOCK: $pName (Only $stockQty left)', 
                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13))),
                ],
              ),
@@ -1198,7 +1199,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               !RegExp(r'^[6-9][0-9]{9}$').hasMatch(normalizedPhone)) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('⚠️ Enter a valid 10-digit Indian mobile number'),
+                content: LiveTranslatedText('⚠️ Enter a valid 10-digit Indian mobile number'),
                 backgroundColor: Color(0xFFEF4444),
               ),
             );
@@ -1256,7 +1257,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             Navigator.pop(ctx);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
+                content: LiveTranslatedText(
                   wasBorrowRequest
                       ? '✅ Customer added. Borrow NOT recorded yet — tap “Record Borrow” to continue.'
                       : '✅ Customer added!',
@@ -1272,7 +1273,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('❌ Could not add customer: $e'),
+                  content: LiveTranslatedText('❌ Could not add customer: $e'),
                   backgroundColor: const Color(0xFFEF4444),
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -1293,7 +1294,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               title: Row(
                 children: [
                   Expanded(
-                    child: Text(
+                    child: LiveTranslatedText(
                       'New Customer',
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w700,
@@ -1395,7 +1396,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              Text(
+                              LiveTranslatedText(
                                 'Adding customer…',
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
@@ -1413,7 +1414,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               actions: [
                 TextButton(
                   onPressed: isSaving ? null : () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
+                  child: const LiveTranslatedText('Cancel'),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -1436,7 +1437,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             color: Colors.white,
                           ),
                         )
-                      : const Text(
+                      : const LiveTranslatedText(
                           'Add',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
@@ -1471,7 +1472,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
   }
 
   SnackBar _styledSnackBar(String msg, {bool isError = false}) => SnackBar(
-        content: Text(msg,
+        content: LiveTranslatedText(msg,
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.black)),
         backgroundColor:
             isError ? const Color(0xFFEF4444) : const Color(0xFF10B981),
@@ -2264,13 +2265,13 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Record Cash Payment (₹)', 
+        title: LiveTranslatedText('Record Cash Payment (₹)', 
                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Remaining Due: ₹${(totalAmount - _paidAmount).toStringAsFixed(2)}', 
+            LiveTranslatedText('Remaining Due: ₹${(totalAmount - _paidAmount).toStringAsFixed(2)}', 
                  style: GoogleFonts.poppins(fontSize: 13, color: Colors.redAccent, fontWeight: FontWeight.w700)),
             const SizedBox(height: 16),
             TextField(
@@ -2295,7 +2296,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx), 
-            child: Text('CANCEL', style: GoogleFonts.poppins(color: Colors.grey, fontWeight: FontWeight.w600))
+            child: LiveTranslatedText('CANCEL', style: GoogleFonts.poppins(color: Colors.grey, fontWeight: FontWeight.w600))
           ),
           ElevatedButton(
             onPressed: () {
@@ -2335,7 +2336,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               elevation: 0,
             ),
-            child: Text('ADD CASH', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
+            child: LiveTranslatedText('ADD CASH', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
           ),
         ],
       ),
@@ -2453,14 +2454,14 @@ class _SalesEntryPageState extends State<SalesEntryPage>
           children: [
             const Icon(Icons.notifications_active, color: Color(0xFF10B981)),
             const SizedBox(width: 12),
-            Text(title, style: GoogleFonts.poppins(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            LiveTranslatedText(title, style: GoogleFonts.poppins(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Text(desc, style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
+        content: LiveTranslatedText(desc, style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('LATER', style: GoogleFonts.poppins(color: Colors.white38)),
+            child: LiveTranslatedText('LATER', style: GoogleFonts.poppins(color: Colors.white38)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -2471,7 +2472,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               backgroundColor: const Color(0xFF10B981),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: Text('ENABLE', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.bold)),
+            child: LiveTranslatedText('ENABLE', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -2630,7 +2631,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(event.isFailed ? 'âŒ PAYMENT FAILED' : (_paymentConfirmed
+            content: LiveTranslatedText(event.isFailed ? 'âŒ PAYMENT FAILED' : (_paymentConfirmed
                 ? '✅ RECEIVED ₹${event.amount.toStringAsFixed(0)} (Full)'
                 : '⚠️ RECEIVED ₹${event.amount.toStringAsFixed(0)} | ₹${(freshTotal - _paidAmount).toStringAsFixed(0)} Left')),
             backgroundColor: event.isFailed ? Colors.red : (_paymentConfirmed ? const Color(0xFF10B981) : Colors.orange.shade800),
@@ -2654,7 +2655,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                   Text(
+                   LiveTranslatedText(
                     'Customer Scan QR',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
@@ -2679,7 +2680,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                     child: Image.memory(bytes, fit: BoxFit.contain),
                   ),
                   const SizedBox(height: 24),
-                  Text(
+                  LiveTranslatedText(
                     '₹${totalAmount.toStringAsFixed(2)}',
                     style: GoogleFonts.spaceMono(
                       fontSize: 36,
@@ -2688,7 +2689,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  LiveTranslatedText(
                     'PAYMENT AMOUNT',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -2713,7 +2714,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                 children: [
                   const Icon(Icons.verified_user, color: Color(0xFF22C55E), size: 18),
                   const SizedBox(width: 8),
-                  Text(
+                  LiveTranslatedText(
                     'Secure Automatic Payment Detection Active',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
@@ -3348,7 +3349,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⚠️ Session expired. Please login again.'),
+              content: LiveTranslatedText('⚠️ Session expired. Please login again.'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
             ),
@@ -3517,7 +3518,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                   children: [
                     const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 60),
                     const SizedBox(height: 12),
-                    Text('Sale Successful!', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+                    LiveTranslatedText('Sale Successful!', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
                     if (isFirstSaleForThisShop) ...[
                       const SizedBox(height: 10),
                       TweenAnimationBuilder<double>(
@@ -3531,7 +3532,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                           children: [
                             Icon(Icons.celebration_rounded, color: const Color(0xFF6366F1), size: 34),
                             const SizedBox(height: 6),
-                            Text(
+                            LiveTranslatedText(
                               'Your shop is live!',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
@@ -3540,7 +3541,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
+                            LiveTranslatedText(
                               'Great start — keep billing daily.',
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
@@ -3552,10 +3553,10 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                         ),
                       ),
                     ],
-                    Text('Bill No: ' + billNumber, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF111827))),
+                    LiveTranslatedText('Bill No: ' + billNumber, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF111827))),
                     if (capturedBillPath.isNotEmpty) ...[  
                       const SizedBox(height: 4),
-                      Text('✅ Bill PDF saved to Downloads/RetailMind',
+                      LiveTranslatedText('✅ Bill PDF saved to Downloads/RetailMind',
                           style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF10B981))),
                     ],
                     const SizedBox(height: 16),
@@ -3578,11 +3579,11 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Color(0xFF4338CA)),
                           ),
                           const SizedBox(height: 6),
-                          Text(
+                          LiveTranslatedText(
                             capturedBillPath.isNotEmpty ? 'SCAN TO OPEN BILL PDF' : 'SCAN FOR DIGITAL BILL',
                             style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1, color: const Color(0xFF4338CA)),
                           ),
-                          Text(
+                          LiveTranslatedText(
                             capturedBillPath.isNotEmpty ? 'Real bill image generated ✍️“' : 'WhatsApp message fallback',
                             style: GoogleFonts.poppins(fontSize: 9, color: Colors.grey),
                           ),
@@ -3601,7 +3602,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             await BillGeneratorService.shareBill(capturedBillPath, customerName: capturedCustomer);
                           },
                           icon: const Icon(Icons.share_rounded, size: 18),
-                          label: Text('SHARE BILL (PDF / WhatsApp)', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12)),
+                          label: LiveTranslatedText('SHARE BILL (PDF / WhatsApp)', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF25D366),
                             foregroundColor: Colors.white,
@@ -3626,7 +3627,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                           );
                         },
                         icon: const Icon(Icons.print_rounded, color: Color(0xFF10B981), size: 18),
-                        label: Text('PRINT RECEIPT', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
+                        label: LiveTranslatedText('PRINT RECEIPT', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFF10B981)),
                           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -3652,7 +3653,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: Text('DONE', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
+                    child: LiveTranslatedText('DONE', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                 ),
               ],
@@ -3670,7 +3671,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             });
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('⚠️ Sale saved locally. Server confirmation is pending — do not bill this customer again.'),
+                content: LiveTranslatedText('⚠️ Sale saved locally. Server confirmation is pending — do not bill this customer again.'),
                 backgroundColor: Color(0xFFD97706),
                 duration: Duration(seconds: 6),
                 behavior: SnackBarBehavior.floating,
@@ -3708,7 +3709,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       _borrowWaitingForCustomer = true;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('⚠️ Customer phone number is required to record the borrow.'),
+          content: LiveTranslatedText('⚠️ Customer phone number is required to record the borrow.'),
           backgroundColor: Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
         ),
@@ -3751,33 +3752,33 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             children: [
               const Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444)),
               const SizedBox(width: 10),
-              Text('Borrow Limit Exceeded!', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFFEF4444))),
+              LiveTranslatedText('Borrow Limit Exceeded!', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFFEF4444))),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('This customer already has ${pendingBorrows.length} pending borrows.', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              LiveTranslatedText('This customer already has ${pendingBorrows.length} pending borrows.', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.red.withValues(alpha: 0.1))),
                 child: Column(
                   children: [
-                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Outstanding Balance:'), Text('₹${totalDueAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold))]),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const LiveTranslatedText('Outstanding Balance:'), LiveTranslatedText('₹${totalDueAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold))]),
                   ],
                 ),
               ),
               const SizedBox(height: 14),
-              const Text('Please ask the customer to settle their duo before allowing new borrows.'),
+              const LiveTranslatedText('Please ask the customer to settle their duo before allowing new borrows.'),
             ],
           ),
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4F46E5), foregroundColor: Colors.white),
-              child: const Text('OK'),
+              child: const LiveTranslatedText('OK'),
             ),
           ],
         ),
@@ -3795,14 +3796,14 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Record as Borrow?', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text('This sale will be marked as UNPAID and listed in Invoices with a due date of ${_dueDateController.text}.'),
+        title: LiveTranslatedText('Record as Borrow?', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: LiveTranslatedText('This sale will be marked as UNPAID and listed in Invoices with a due date of ${_dueDateController.text}.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const LiveTranslatedText('CANCEL')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1), foregroundColor: Colors.white),
-            child: const Text('CONFIRM BORROW'),
+            child: const LiveTranslatedText('CONFIRM BORROW'),
           ),
         ],
       ),
@@ -4026,7 +4027,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                   size: 18,
                 ),
               const SizedBox(width: 6),
-              Text(
+              LiveTranslatedText(
                 label,
                 style: GoogleFonts.poppins(
                   fontSize: 13,
@@ -4087,7 +4088,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'TOTAL',
                       style: GoogleFonts.poppins(
                         fontSize: 10,
@@ -4096,7 +4097,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                         letterSpacing: 1.2,
                       ),
                     ),
-                    Text(
+                    LiveTranslatedText(
                       '₹${totalAmount.toStringAsFixed(0)}',
                       style: GoogleFonts.spaceMono(
                         fontSize: 22,
@@ -4275,7 +4276,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
+                                LiveTranslatedText(
                                   _lastWords.isEmpty ? 'Listening...' : '"$_lastWords"',
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.poppins(
@@ -4295,7 +4296,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                                           : Colors.orange.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: Text(
+                                    child: LiveTranslatedText(
                                       'Confidence: ${(_voiceConfidence * 100).toStringAsFixed(0)}%',
                                       style: GoogleFonts.poppins(
                                         color: _voiceConfidence > 0.7
@@ -4326,7 +4327,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             child: ElevatedButton.icon(
                               onPressed: _stopListening,
                               icon: const Icon(Icons.stop_rounded, size: 20),
-                              label: Text(
+                              label: LiveTranslatedText(
                                 'STOP LISTENING',
                                 style: GoogleFonts.poppins(
                                   fontWeight: FontWeight.w700,
@@ -4346,7 +4347,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                           ),
                           const SizedBox(height: 20),
                           // Tip text
-                          Text(
+                          LiveTranslatedText(
                             'Speak your order clearly, e.g., "2 kg rice 100"',
                             style: GoogleFonts.poppins(
                               color: Colors.white54,
@@ -4369,7 +4370,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
 
   AppBar _buildAppBar() {
     return AppBar(
-      title: Text(
+      title: LiveTranslatedText(
         AppLocalizations.of(context).addSale,
         style: GoogleFonts.poppins(
           fontWeight: FontWeight.w700,
@@ -4428,27 +4429,27 @@ class _SalesEntryPageState extends State<SalesEntryPage>
         return <PopupMenuEntry<String>>[
           PopupMenuItem<String>(
             enabled: false,
-            child: Text('Screen language', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey)),
+            child: LiveTranslatedText('Screen language', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey)),
           ),
           ...LanguageProvider.languages.map((l) {
             return PopupMenuItem<String>(
               value: 'ui:${l['code']}',
-              child: Text('${l['nativeName']} (${l['name']})'),
+              child: LiveTranslatedText('${l['nativeName']} (${l['name']})'),
             );
           }),
           const PopupMenuDivider(),
           PopupMenuItem<String>(
             enabled: false,
-            child: Text('Voice bill (speech-to-text)', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey)),
+            child: LiveTranslatedText('Voice bill (speech-to-text)', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey)),
           ),
-          const PopupMenuItem(value: 'stt:en-US', child: Text('English')),
-          const PopupMenuItem(value: 'stt:te-IN', child: Text('Telugu')),
-          const PopupMenuItem(value: 'stt:hi-IN', child: Text('Hindi')),
-          const PopupMenuItem(value: 'stt:ta-IN', child: Text('Tamil')),
-          const PopupMenuItem(value: 'stt:kn-IN', child: Text('Kannada')),
-          const PopupMenuItem(value: 'stt:ml-IN', child: Text('Malayalam')),
-          const PopupMenuItem(value: 'stt:mr-IN', child: Text('Marathi')),
-          const PopupMenuItem(value: 'stt:bn-IN', child: Text('Bengali')),
+          const PopupMenuItem(value: 'stt:en-US', child: LiveTranslatedText('English')),
+          const PopupMenuItem(value: 'stt:te-IN', child: LiveTranslatedText('Telugu')),
+          const PopupMenuItem(value: 'stt:hi-IN', child: LiveTranslatedText('Hindi')),
+          const PopupMenuItem(value: 'stt:ta-IN', child: LiveTranslatedText('Tamil')),
+          const PopupMenuItem(value: 'stt:kn-IN', child: LiveTranslatedText('Kannada')),
+          const PopupMenuItem(value: 'stt:ml-IN', child: LiveTranslatedText('Malayalam')),
+          const PopupMenuItem(value: 'stt:mr-IN', child: LiveTranslatedText('Marathi')),
+          const PopupMenuItem(value: 'stt:bn-IN', child: LiveTranslatedText('Bengali')),
         ];
       },
     );
@@ -4505,7 +4506,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                 child: const Icon(Icons.receipt, color: Color(0xFF4F46E5), size: 18),
               ),
               const SizedBox(width: 10),
-              Text(
+              LiveTranslatedText(
                 'BILL SUMMARY',
                 style: GoogleFonts.poppins(
                   fontSize: 11,
@@ -4544,7 +4545,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                         color: _withTax ? const Color(0xFF059669) : const Color(0xFFDC2626),
                       ),
                       const SizedBox(width: 4),
-                      Text(
+                      LiveTranslatedText(
                         _withTax ? 'GST ON' : 'GST OFF',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
@@ -4565,7 +4566,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
             children: [
               AnimatedBuilder(
                 animation: _totalPulse,
-                builder: (_, __) => Text(
+                builder: (_, __) => LiveTranslatedText(
                   '₹${totalAmount.toStringAsFixed(0)}',
                   style: GoogleFonts.spaceMono(
                     fontSize: 32,
@@ -4582,7 +4583,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                     color: Colors.amber.shade700,
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     'DUE ₹${(totalAmount - _paidAmount).toStringAsFixed(0)}',
                     style: GoogleFonts.spaceMono(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
@@ -4688,7 +4689,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
     }).toList();
     if (pendingBorrows.isNotEmpty) {
        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-         content: Text('Alert: Customer has ${pendingBorrows.length} pending borrows'),
+         content: LiveTranslatedText('Alert: Customer has ${pendingBorrows.length} pending borrows'),
          backgroundColor: Colors.orange,
        ));
     }
@@ -4842,7 +4843,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'PRODUCTS',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -4851,7 +4852,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                         letterSpacing: 1.2,
                       ),
                     ),
-                    Text(
+                    LiveTranslatedText(
                       AppLocalizations.of(context).enterProductDetails,
                       style: GoogleFonts.poppins(
                         color: const Color(0xFF9CA3AF),
@@ -4972,11 +4973,11 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                                 return ListTile(
                                   dense: true,
                                   leading: const Icon(Icons.person_rounded, color: Color(0xFF6366F1), size: 18),
-                                  title: Text(
+                                  title: LiveTranslatedText(
                                     option['name'].toString(),
                                     style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
                                   ),
-                                  subtitle: Text(
+                                  subtitle: LiveTranslatedText(
                                     'Phone: ${option['phone'] ?? 'N/A'}',
                                     style: GoogleFonts.poppins(color: Colors.black54, fontSize: 11),
                                   ),
@@ -5022,7 +5023,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
 
             if (_recentHistory.isNotEmpty) ...[
               const SizedBox(height: 20),
-              Text(
+              LiveTranslatedText(
                 'DETECTION HISTORY (LAST 5)',
                 style: GoogleFonts.spaceMono(fontSize: 10, color: Colors.white54, letterSpacing: 1, fontWeight: FontWeight.bold),
               ),
@@ -5070,7 +5071,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           '₹${ev.amount.toStringAsFixed(0)}', 
                           style: GoogleFonts.poppins(
                             color: Colors.white, 
@@ -5079,7 +5080,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             letterSpacing: -0.5
                           )
                         ),
-                        Text(
+                        LiveTranslatedText(
                           ev.decision == PaymentDecision.confirmed ? 'Verified' : 'Likely - Tap to Confirm',
                           style: GoogleFonts.poppins(
                             color: ev.decision == PaymentDecision.confirmed ? Colors.white54 : Colors.orangeAccent,
@@ -5093,7 +5094,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           ev.appDisplayName, 
                           style: GoogleFonts.spaceMono(
                             color: Colors.white38, 
@@ -5101,7 +5102,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             fontWeight: FontWeight.bold
                           )
                         ),
-                        Text(
+                        LiveTranslatedText(
                           'Just Now',
                           style: GoogleFonts.poppins(color: Colors.white12, fontSize: 9),
                         ),
@@ -5121,7 +5122,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               child: OutlinedButton.icon(
                 onPressed: addEntry,
                 icon: const Icon(Icons.add_circle_outline_rounded, size: 14),
-                label: Text(AppLocalizations.of(context).addProduct,
+                label: LiveTranslatedText(AppLocalizations.of(context).addProduct,
                     style: GoogleFonts.poppins(
                         fontSize: 12, fontWeight: FontWeight.w600)),
                 style: OutlinedButton.styleFrom(
@@ -5154,18 +5155,18 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('BILLED AMOUNT', style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                        Text('Rs.${totalAmount.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+                        LiveTranslatedText('BILLED AMOUNT', style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                        LiveTranslatedText('Rs.${totalAmount.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
                       ],
                     ),
                     Container(width: 1, height: 30, color: Colors.black12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('REMAINING DUE', style: GoogleFonts.poppins(fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                        LiveTranslatedText('REMAINING DUE', style: GoogleFonts.poppins(fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                         AnimatedBuilder(
                           animation: _totalPulse,
-                          builder: (context, child) => Text(
+                          builder: (context, child) => LiveTranslatedText(
                             'Rs.${(totalAmount - _paidAmount < 1.0 ? 0 : (totalAmount - _paidAmount).round())}',
                             style: GoogleFonts.spaceMono(
                               fontSize: 18, 
@@ -5193,7 +5194,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                   children: [
                     const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
                     const SizedBox(width: 10),
-                    Text(
+                    LiveTranslatedText(
                       'Remaining: Rs.${(totalAmount - _paidAmount).toStringAsFixed(0)}',
                       style: GoogleFonts.poppins(
                         fontSize: 14, 
@@ -5223,9 +5224,9 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(AppLocalizations.of(context).selectDueDate,
+                                LiveTranslatedText(AppLocalizations.of(context).selectDueDate,
                                     style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-                                Text(
+                                LiveTranslatedText(
                                   _selectedDueDate == null 
                                       ? 'Set Deadline (Optional)' 
                                       : DateFormat('MMM dd, yyyy').format(_selectedDueDate!),
@@ -5271,7 +5272,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                     });
                   },
                   icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.redAccent),
-                  label: Text('CLEAR / NEW SALE', style: GoogleFonts.poppins(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                  label: LiveTranslatedText('CLEAR / NEW SALE', style: GoogleFonts.poppins(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12)),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     backgroundColor: Colors.redAccent.withValues(alpha: 0.05),
@@ -5295,7 +5296,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             AppLocalizations.of(context).paymentMethod,
             style: GoogleFonts.poppins(
               color: const Color(0xFF4B5563),
@@ -5366,7 +5367,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    LiveTranslatedText(
                       'Scan to Pay Exactly ₹${totalAmount.toStringAsFixed(2)}',
                       style: GoogleFonts.poppins(
                         fontSize: 13,
@@ -5401,7 +5402,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                          child: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF4F46E5), size: 42),
                        ),
                        const SizedBox(height: 16),
-                       Text(
+                       LiveTranslatedText(
                          'Online Payment Not Setup',
                          style: GoogleFonts.poppins(
                            color: const Color(0xFF1F2937),
@@ -5444,7 +5445,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                                   ),
                                 ),
                                 const SizedBox(width: 10),
-                                Text(
+                                LiveTranslatedText(
                                   'TRIPLE-CHANNEL DETECTION ACTIVE',
                                   style: GoogleFonts.spaceMono(fontSize: 10, color: const Color(0xFF166534), fontWeight: FontWeight.w900, letterSpacing: 0.5),
                                 ),
@@ -5461,7 +5462,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                              _loadPaymentConfig();
                            }),
                            icon: const Icon(Icons.account_balance_wallet_rounded, size: 18),
-                           label: const Text('SET UPI ID NOW'),
+                           label: const LiveTranslatedText('SET UPI ID NOW'),
                            style: ElevatedButton.styleFrom(
                              backgroundColor: const Color(0xFF4F46E5),
                              foregroundColor: Colors.white,
@@ -5481,7 +5482,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                 child: Column(
                   children: [
                     if (!_paymentConfirmed)
-                      Text(
+                      LiveTranslatedText(
                         'Listening for UPI, SMS & Screen...',
                         style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFF4B5563), fontWeight: FontWeight.w500),
                       ),
@@ -5506,7 +5507,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             children: [
                               const Icon(Icons.notifications_off_rounded, color: Color(0xFFEF4444), size: 16),
                               const SizedBox(width: 8),
-                              Text(
+                              LiveTranslatedText(
                                 'Enable Notification Access to Auto-Detect Payments',
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
@@ -5528,7 +5529,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             message = 'Payment Confirmed Manually! ✅';
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Manual confirmation received. Buttons enabled.')),
+                            const SnackBar(content: LiveTranslatedText('Manual confirmation received. Buttons enabled.')),
                           );
                        },
                        child: Container(
@@ -5538,7 +5539,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                            borderRadius: BorderRadius.circular(10),
                            border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
                          ),
-                         child: Text(
+                         child: LiveTranslatedText(
                            'Already received? Confirm Manually',
                            style: GoogleFonts.poppins(
                              fontSize: 11,
@@ -5564,7 +5565,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                               children: [
                                 const Icon(Icons.add_circle_outline_rounded, color: Color(0xFFF59E0B), size: 14),
                                 const SizedBox(width: 8),
-                                Text(
+                                LiveTranslatedText(
                                   'Record Partial Cash (Rs.)',
                                   style: GoogleFonts.poppins(
                                     fontSize: 11,
@@ -5581,7 +5582,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               ),
               const SizedBox(height: 12),
               Center(
-                child: Text(
+                child: LiveTranslatedText(
                   '${AppLocalizations.of(context).total}: Rs.${totalAmount.toStringAsFixed(2)}',
                   style: GoogleFonts.spaceMono(
                     color: const Color(0xFF22C55E),
@@ -5602,7 +5603,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                         child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xFF22C55E)),
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      LiveTranslatedText(
                         'Auto-detecting payments...',
                         style: GoogleFonts.poppins(
                           color: const Color(0xFF22C55E),
@@ -5614,7 +5615,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                   ),
                 ),
               Center(
-                child: Text(
+                child: LiveTranslatedText(
                   AppLocalizations.of(context).askToScan,
                   style: GoogleFonts.poppins(
                     color: Colors.grey[400],
@@ -5641,7 +5642,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                         children: [
                           const Icon(Icons.verified_rounded, color: Color(0xFF22C55E), size: 18),
                           const SizedBox(width: 8),
-                          Text(
+                          LiveTranslatedText(
                             '${AppLocalizations.of(context).paymentConfirmed} ✍️“',
                             style: GoogleFonts.poppins(
                               color: const Color(0xFF22C55E),
@@ -5652,7 +5653,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      LiveTranslatedText(
                         'Generating bill automatically...',
                         style: GoogleFonts.poppins(
                           color: const Color(0xFF22C55E).withValues(alpha: 0.8),
@@ -5677,7 +5678,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                       const Icon(Icons.info_outline, color: Colors.amber, size: 16),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
+                        child: LiveTranslatedText(
                           'No payment QR uploaded. Go to Dashboard → Receive Payment to add your QR.',
                           style: GoogleFonts.poppins(color: Colors.amber, fontSize: 11),
                         ),
@@ -5715,7 +5716,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
           children: [
             Icon(icon, color: selected ? color : Colors.grey, size: 20),
             const SizedBox(height: 4),
-            Text(
+            LiveTranslatedText(
               label,
               textAlign: TextAlign.center,
               maxLines: 2,
@@ -5765,7 +5766,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               color: selected ? activeColor : const Color(0xFF9CA3AF),
             ),
             const SizedBox(width: 6),
-            Text(
+            LiveTranslatedText(
               label,
               style: GoogleFonts.poppins(
                 fontSize: 13,
@@ -5887,7 +5888,7 @@ class _ProductEntryCardState extends State<_ProductEntryCard> {
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: const Color(0xFF4F46E5).withValues(alpha: 0.2)),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   '#${index + 1}',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w700,
@@ -6090,7 +6091,7 @@ class _ProductEntryCardState extends State<_ProductEntryCard> {
                                 size: 22,
                               ),
                             ),
-                            title: Text(
+                            title: LiveTranslatedText(
                               option['name'].toString(),
                               style: GoogleFonts.poppins(
                                 color: Colors.black87, 
@@ -6121,7 +6122,7 @@ class _ProductEntryCardState extends State<_ProductEntryCard> {
                                         color: stockColor,
                                       ),
                                       const SizedBox(width: 3),
-                                      Text(
+                                      LiveTranslatedText(
                                         isOutOfStock ? 'OUT' : '$stock',
                                         style: GoogleFonts.poppins(
                                           color: stockColor,
@@ -6133,7 +6134,7 @@ class _ProductEntryCardState extends State<_ProductEntryCard> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
+                                LiveTranslatedText(
                                   '₹${option['price']}',
                                   style: GoogleFonts.poppins(
                                     color: const Color(0xFF059669),
@@ -6142,7 +6143,7 @@ class _ProductEntryCardState extends State<_ProductEntryCard> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
+                                LiveTranslatedText(
                                   'GST: ${option['gst']}%',
                                   style: GoogleFonts.poppins(
                                     color: Colors.black45,
@@ -6278,7 +6279,7 @@ class _ProductEntryCardState extends State<_ProductEntryCard> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Sub ₹${subtotal.toStringAsFixed(2)}',
                       style: GoogleFonts.poppins(
                         fontSize: 10,
@@ -6287,7 +6288,7 @@ class _ProductEntryCardState extends State<_ProductEntryCard> {
                       ),
                     ),
                     if (gst > 0)
-                      Text(
+                      LiveTranslatedText(
                         'GST ${gst.toStringAsFixed(0)}%  ₹${gstAmount.toStringAsFixed(2)}',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
@@ -6297,7 +6298,7 @@ class _ProductEntryCardState extends State<_ProductEntryCard> {
                       ),
                   ],
                 ),
-                Text(
+                LiveTranslatedText(
                   '₹${itemTotal.toStringAsFixed(2)}',
                   style: GoogleFonts.poppins(
                     fontSize: 16,
@@ -6483,7 +6484,7 @@ class _MessageBanner extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(message,
+            child: LiveTranslatedText(message,
                 style: GoogleFonts.poppins(
                     color: color,
                     fontSize: 12.5,
@@ -6549,7 +6550,7 @@ class _ActionBtn extends StatelessWidget {
                   children: [
                     Icon(icon, size: 14, color: Colors.white),
                     const SizedBox(width: 6),
-                    Text(
+                    LiveTranslatedText(
                       label,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -6602,7 +6603,7 @@ class _DialogBtn extends StatelessWidget {
             children: [
               Icon(icon, size: 13, color: textColor),
               const SizedBox(width: 5),
-              Text(label,
+              LiveTranslatedText(label,
                   style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -6636,7 +6637,7 @@ class _QrDialog extends StatelessWidget {
       backgroundColor: const Color(0xFF0F172A),
       shape:
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text('Bill QR Code',
+      title: LiveTranslatedText('Bill QR Code',
           style: GoogleFonts.playfairDisplay(
               color: Colors.white, fontWeight: FontWeight.w700)),
       content: SingleChildScrollView(
@@ -6653,7 +6654,7 @@ class _QrDialog extends StatelessWidget {
                 qrImageUrl,
                 width: 240,
                 height: 240,
-                errorBuilder: (c, e, s) => Text('Unable to load QR image',
+                errorBuilder: (c, e, s) => LiveTranslatedText('Unable to load QR image',
                     style: GoogleFonts.poppins(
                         color: Colors.red, fontSize: 12)),
               ),
@@ -6670,7 +6671,7 @@ class _QrDialog extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Bill content (scan or copy):',
+                  LiveTranslatedText('Bill content (scan or copy):',
                       style: GoogleFonts.poppins(
                           color: Colors.white60,
                           fontSize: 11,
@@ -6692,7 +6693,7 @@ class _QrDialog extends StatelessWidget {
                               ClipboardData(text: billContent.toString()));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content: Text('Bill copied to clipboard')),
+                                content: LiveTranslatedText('Bill copied to clipboard')),
                           );
                         },
                       ),
@@ -6709,7 +6710,7 @@ class _QrDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Text('Scan this QR to load bill on any device',
+            LiveTranslatedText('Scan this QR to load bill on any device',
                 style: GoogleFonts.poppins(
                     color: Colors.white38, fontSize: 11)),
           ],
@@ -6718,7 +6719,7 @@ class _QrDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: Text('Close',
+          child: LiveTranslatedText('Close',
               style: GoogleFonts.poppins(
                   color: const Color(0xFF6366F1),
                   fontWeight: FontWeight.w600)),
@@ -6753,7 +6754,7 @@ class _TextBtn extends StatelessWidget {
           children: [
             Icon(icon, size: 12, color: const Color(0xFF818CF8)),
             const SizedBox(width: 4),
-            Text(label,
+            LiveTranslatedText(label,
                 style: GoogleFonts.poppins(
                     fontSize: 11,
                     color: const Color(0xFF818CF8),
@@ -6807,7 +6808,7 @@ Widget _buildSetupStep(String number, String text) {
         height: 20,
         decoration: const BoxDecoration(color: Color(0xFF4F46E5), shape: BoxShape.circle),
         child: Center(
-          child: Text(
+          child: LiveTranslatedText(
             number,
             style: GoogleFonts.poppins(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
           ),
@@ -6815,7 +6816,7 @@ Widget _buildSetupStep(String number, String text) {
       ),
       const SizedBox(width: 12),
       Expanded(
-        child: Text(
+        child: LiveTranslatedText(
           text,
           style: GoogleFonts.poppins(color: const Color(0xFF1F2937), fontSize: 12, fontWeight: FontWeight.w600),
         ),
@@ -6967,7 +6968,7 @@ class _BillImageDialogState extends State<_BillImageDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Share failed: $e'), backgroundColor: Colors.red[800]),
+          SnackBar(content: LiveTranslatedText('Share failed: $e'), backgroundColor: Colors.red[800]),
         );
       }
     }
@@ -6980,7 +6981,7 @@ class _BillImageDialogState extends State<_BillImageDialog> {
     final phone = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Send bill via WhatsApp'),
+        title: const LiveTranslatedText('Send bill via WhatsApp'),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.phone,
@@ -6993,11 +6994,11 @@ class _BillImageDialogState extends State<_BillImageDialog> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const LiveTranslatedText('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Send'),
+            child: const LiveTranslatedText('Send'),
           ),
         ],
       ),
@@ -7042,7 +7043,7 @@ class _BillImageDialogState extends State<_BillImageDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('WhatsApp share failed: $e'), backgroundColor: Colors.red[800]),
+          SnackBar(content: LiveTranslatedText('WhatsApp share failed: $e'), backgroundColor: Colors.red[800]),
         );
       }
     }
@@ -7073,7 +7074,7 @@ class _BillImageDialogState extends State<_BillImageDialog> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text('Bill Preview',
+                  LiveTranslatedText('Bill Preview',
                       style: GoogleFonts.poppins(
                           color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
                   const Spacer(),
@@ -7107,7 +7108,7 @@ class _BillImageDialogState extends State<_BillImageDialog> {
                           } catch (error) {
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Print failed: ' + error.toString())),
+                                SnackBar(content: LiveTranslatedText('Print failed: ' + error.toString())),
                               );
                             }
                           } finally {
@@ -7314,7 +7315,7 @@ class _BillCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
           ],
-          Text(
+          LiveTranslatedText(
             shopName.toUpperCase(),
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
@@ -7326,12 +7327,12 @@ class _BillCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           if (shopLocation.isNotEmpty)
-            Text(
+            LiveTranslatedText(
               shopLocation,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w800),
             ),
-          Text(
+          LiveTranslatedText(
             [
               if (shopPhone.isNotEmpty) '${l.translate('phone')}: $shopPhone',
               if (shopType.isNotEmpty) 'GSTin: $shopType',
@@ -7348,7 +7349,7 @@ class _BillCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(4)),
-                child: Text(
+                child: LiveTranslatedText(
                   billLabel,
                   style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
                 ),
@@ -7356,7 +7357,7 @@ class _BillCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('${l.translate('billNo')}: $billNumber', 
+                  LiveTranslatedText('${l.translate('billNo')}: $billNumber', 
                       style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w900)),
                 ],
               ),
@@ -7366,16 +7367,16 @@ class _BillCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${l.translate('date')}: $dateStr', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
-              Text('${l.translate('time')}: $timeStr', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
+              LiveTranslatedText('${l.translate('date')}: $dateStr', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
+              LiveTranslatedText('${l.translate('time')}: $timeStr', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
             ],
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${l.translate('cashier')}: POS', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
-              Text('${l.translate('counter')}: 1', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
-              Text('${l.translate('serve')}: POS', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
+              LiveTranslatedText('${l.translate('cashier')}: POS', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
+              LiveTranslatedText('${l.translate('counter')}: 1', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
+              LiveTranslatedText('${l.translate('serve')}: POS', style: GoogleFonts.poppins(fontSize: 10, color: Colors.black, fontWeight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: 10),
@@ -7386,11 +7387,11 @@ class _BillCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                Expanded(flex: 5, child: Text(l.translate('description'), style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
-                Expanded(flex: 2, child: Text(l.translate('mrp'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
-                Expanded(flex: 2, child: Text(l.translate('rate'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
-                Expanded(flex: 2, child: Text(l.translate('qty'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
-                Expanded(flex: 2, child: Text(l.translate('amt'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
+                Expanded(flex: 5, child: LiveTranslatedText(l.translate('description'), style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
+                Expanded(flex: 2, child: LiveTranslatedText(l.translate('mrp'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
+                Expanded(flex: 2, child: LiveTranslatedText(l.translate('rate'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
+                Expanded(flex: 2, child: LiveTranslatedText(l.translate('qty'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
+                Expanded(flex: 2, child: LiveTranslatedText(l.translate('amt'), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900))),
               ],
             ),
           ),
@@ -7418,21 +7419,21 @@ class _BillCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               item['item'] ?? '',
                               style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black),
                             ),
-                              Text(
+                              LiveTranslatedText(
                                 '(Disc Saved: Rs.${(discount * qty).toStringAsFixed(2)})',
                                 style: GoogleFonts.poppins(fontSize: 9, color: Colors.black, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic),
                               ),
                           ],
                         ),
                       ),
-                      Expanded(flex: 2, child: Text(mrp.toStringAsFixed(2), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700))),
-                      Expanded(flex: 2, child: Text(rate.toStringAsFixed(2), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700))),
-                      Expanded(flex: 2, child: Text(qty.toStringAsFixed(0), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700))),
-                      Expanded(flex: 2, child: Text(amt.toStringAsFixed(2), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black))),
+                      Expanded(flex: 2, child: LiveTranslatedText(mrp.toStringAsFixed(2), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700))),
+                      Expanded(flex: 2, child: LiveTranslatedText(rate.toStringAsFixed(2), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700))),
+                      Expanded(flex: 2, child: LiveTranslatedText(qty.toStringAsFixed(0), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700))),
+                      Expanded(flex: 2, child: LiveTranslatedText(amt.toStringAsFixed(2), textAlign: TextAlign.right, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black))),
                     ],
                   ),
                 ],
@@ -7445,8 +7446,8 @@ class _BillCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('E & O.E., ${withGst ? '#Incl Gst' : '#Excl Gst'}', style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black)),
-              Text('${l.translate('total')} : ${finalGrandTotal.toStringAsFixed(1)}', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black)),
+              LiveTranslatedText('E & O.E., ${withGst ? '#Incl Gst' : '#Excl Gst'}', style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black)),
+              LiveTranslatedText('${l.translate('total')} : ${finalGrandTotal.toStringAsFixed(1)}', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black)),
             ],
           ),
           const SizedBox(height: 4),
@@ -7456,13 +7457,13 @@ class _BillCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${l.translate('qty')} : ${snapshot.fold<double>(0, (p, c) => p + (c['qty'] ?? 0)).toStringAsFixed(0)}', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black)),
-                    Text('${l.translate('items')} : ${snapshot.length}', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black)),
+                    LiveTranslatedText('${l.translate('qty')} : ${snapshot.fold<double>(0, (p, c) => p + (c['qty'] ?? 0)).toStringAsFixed(0)}', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black)),
+                    LiveTranslatedText('${l.translate('items')} : ${snapshot.length}', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black)),
                   ],
                 ),
               ),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   '${l.translate('total')} : ${finalGrandTotal.toStringAsFixed(2)}',
                   textAlign: TextAlign.right,
                   style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black),
@@ -7473,9 +7474,9 @@ class _BillCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Text('${paymentLabel}     :', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black)),
+              LiveTranslatedText('${paymentLabel}     :', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black)),
               const SizedBox(width: 20),
-              Text(totalAmount.toStringAsFixed(2), style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black)),
+              LiveTranslatedText(totalAmount.toStringAsFixed(2), style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black)),
             ],
           ),
           const SizedBox(height: 20),
@@ -7483,7 +7484,7 @@ class _BillCard extends StatelessWidget {
           // Removed Savings Widget
 
           // ── Footer ──
-          Text(
+          LiveTranslatedText(
             l.translate('thankYouVisitAgain'),
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black),
@@ -7506,11 +7507,11 @@ class _BillMeta extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
+        LiveTranslatedText(label,
             style: GoogleFonts.poppins(
                 color: Colors.white54, fontSize: 8, letterSpacing: 0.8)),
         const SizedBox(height: 2),
-        Text(value,
+        LiveTranslatedText(value,
             style: GoogleFonts.poppins(
                 color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
       ],
@@ -7543,7 +7544,7 @@ class _BillTotalRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               fontSize: fontSize,
@@ -7551,7 +7552,7 @@ class _BillTotalRow extends StatelessWidget {
               color: labelColor ?? Colors.black87,
             ),
           ),
-          Text(
+          LiveTranslatedText(
             value,
             style: GoogleFonts.poppins(
               fontSize: fontSize,
@@ -7629,11 +7630,11 @@ class _TaxRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
+        LiveTranslatedText(
           label,
           style: GoogleFonts.poppins(fontSize: fontSize, fontWeight: weight, color: textColor),
         ),
-        Text(
+        LiveTranslatedText(
           value,
           style: GoogleFonts.poppins(fontSize: fontSize, fontWeight: weight, color: textColor),
         ),
@@ -7684,7 +7685,7 @@ class _StickySecondaryBtn extends StatelessWidget {
                 color: enabled ? color : const Color(0xFF9CA3AF),
               ),
               const SizedBox(height: 2),
-              Text(
+              LiveTranslatedText(
                 label,
                 style: GoogleFonts.poppins(
                   fontSize: 9,
@@ -7730,7 +7731,7 @@ class _MetaChip extends StatelessWidget {
         children: [
           Icon(icon, size: 11, color: chipColor),
           const SizedBox(width: 4),
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               fontSize: 10,

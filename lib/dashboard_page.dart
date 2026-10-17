@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'whatsapp_orders_page.dart';
 import 'marketing_page.dart';
@@ -952,7 +953,7 @@ class _DashboardPageState extends State<DashboardPage>
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   'Payment Detection is Disabled',
                   style: GoogleFonts.poppins(
                     fontSize: 17,
@@ -967,7 +968,7 @@ class _DashboardPageState extends State<DashboardPage>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LiveTranslatedText(
                 'This is a core RETAIL MIND feature. Enable it to automatically detect eligible UPI and bank payment confirmations.',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
@@ -996,7 +997,7 @@ class _DashboardPageState extends State<DashboardPage>
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFFFECACA)),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   'You can keep recording sales and billing even if this is not enabled. We will remind you again when you return to the Dashboard or resume the app.',
                   style: GoogleFonts.poppins(
                     fontSize: 11.5,
@@ -1010,7 +1011,7 @@ class _DashboardPageState extends State<DashboardPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
+              child: LiveTranslatedText(
                 'LATER',
                 style: GoogleFonts.poppins(
                   color: const Color(0xFF6B7280),
@@ -1054,7 +1055,7 @@ class _DashboardPageState extends State<DashboardPage>
                 }
               },
               icon: const Icon(Icons.lock_open_rounded, size: 18),
-              label: Text(
+              label: LiveTranslatedText(
                 'ENABLE PAYMENT DETECTION',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -1114,7 +1115,7 @@ class _DashboardPageState extends State<DashboardPage>
               Icon(icon, size: 18, color: color),
               const SizedBox(width: 9),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   label,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
@@ -1129,7 +1130,7 @@ class _DashboardPageState extends State<DashboardPage>
                 color: color,
               ),
               const SizedBox(width: 5),
-              Text(
+              LiveTranslatedText(
                 granted ? 'Enabled' : 'Required',
                 style: GoogleFonts.poppins(
                   fontSize: 11,
@@ -1355,7 +1356,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                   ),
                   child: Center(
-                    child: Text(
+                    child: LiveTranslatedText(
                       steps[currentStep].icon,
                       style: const TextStyle(fontSize: 110),
                     ),
@@ -1365,7 +1366,7 @@ class _DashboardPageState extends State<DashboardPage>
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                   child: Column(
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         steps[currentStep].title,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
@@ -1374,7 +1375,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Text(
+                      LiveTranslatedText(
                         steps[currentStep].description,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
@@ -1399,7 +1400,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
-                                    child: Text(
+                                    child: LiveTranslatedText(
                                       detail,
                                       style: GoogleFonts.poppins(
                                         fontSize: 13,
@@ -1451,7 +1452,7 @@ class _DashboardPageState extends State<DashboardPage>
                               vertical: 12,
                             ),
                           ),
-                          child: const Text(
+                          child: const LiveTranslatedText(
                             'Next',
                             style: TextStyle(
                               color: Colors.white,
@@ -1475,7 +1476,7 @@ class _DashboardPageState extends State<DashboardPage>
                               vertical: 12,
                             ),
                           ),
-                          child: const Text(
+                          child: const LiveTranslatedText(
                             'Get Started',
                             style: TextStyle(
                               color: Colors.white,
@@ -1738,7 +1739,7 @@ class _DashboardPageState extends State<DashboardPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
+              content: LiveTranslatedText(
                 enable
                     ? '✅ Online Store enabled! Customers can find you nearby.'
                     : '✅ Online Store disabled.',
@@ -1754,7 +1755,7 @@ class _DashboardPageState extends State<DashboardPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
+              content: LiveTranslatedText(
                 'Failed to update status: ${result['error'] ?? "Unknown error"}',
               ),
               backgroundColor: Colors.red,
@@ -1768,7 +1769,7 @@ class _DashboardPageState extends State<DashboardPage>
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: LiveTranslatedText('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -1783,14 +1784,14 @@ class _DashboardPageState extends State<DashboardPage>
       );
       if (!opened && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open your online shop link.')),
+          const SnackBar(content: LiveTranslatedText('Could not open your online shop link.')),
         );
       }
     } catch (error) {
       if (kDebugMode) debugPrint('Unable to open online shop URL: $error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open your online shop link.')),
+          const SnackBar(content: LiveTranslatedText('Could not open your online shop link.')),
         );
       }
     }
@@ -1803,7 +1804,7 @@ class _DashboardPageState extends State<DashboardPage>
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Shop link copied to clipboard.')),
+        const SnackBar(content: LiveTranslatedText('Shop link copied to clipboard.')),
       );
     } catch (error) {
       if (kDebugMode) debugPrint('Unable to copy online shop URL: $error');
@@ -1828,7 +1829,7 @@ class _DashboardPageState extends State<DashboardPage>
                     size: 22,
                   ),
                   const SizedBox(width: 8),
-                  Text(
+                  LiveTranslatedText(
                     'Online Store is Live',
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
@@ -1881,7 +1882,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         'Your shop is live at',
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w800,
@@ -1901,7 +1902,7 @@ class _DashboardPageState extends State<DashboardPage>
                         color: const Color(0xFF16A34A).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text(
+                      child: LiveTranslatedText(
                         'LIVE',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
@@ -1915,7 +1916,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
+                LiveTranslatedText(
                   'Share this link with customers so they can visit your online store.',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
@@ -1956,7 +1957,7 @@ class _DashboardPageState extends State<DashboardPage>
                           borderRadius: BorderRadius.circular(6),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Text(
+                            child: LiveTranslatedText(
                               kRetailMindCustomerStoreUrl,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -1987,7 +1988,7 @@ class _DashboardPageState extends State<DashboardPage>
                   child: TextButton.icon(
                     onPressed: _openOnlineStoreUrl,
                     icon: const Icon(Icons.open_in_new_rounded, size: 17),
-                    label: Text(
+                    label: LiveTranslatedText(
                       'Open store',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -2068,7 +2069,7 @@ class _DashboardPageState extends State<DashboardPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         'Enable Online Shopping',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
@@ -2079,7 +2080,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
+                      LiveTranslatedText(
                         'One switch to make your shop discoverable to customers',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
@@ -2111,7 +2112,7 @@ class _DashboardPageState extends State<DashboardPage>
                 const Icon(Icons.public_rounded, color: Color(0xFF4F46E5), size: 19),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Turn this on to appear in the customer marketplace. Only enabled shops can be searched or ordered from.',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -2130,7 +2131,7 @@ class _DashboardPageState extends State<DashboardPage>
                 child: ElevatedButton.icon(
                   onPressed: _onlineStoreLoading ? null : () => _toggleOnlineStore(true),
                   icon: const Icon(Icons.shopping_bag_rounded, size: 19),
-                  label: Text(
+                  label: LiveTranslatedText(
                     _onlineStoreLoading ? 'Enabling…' : 'Enable Online Shopping',
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w800,
@@ -2915,7 +2916,7 @@ class _DashboardPageState extends State<DashboardPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         'AI Shop Pro కి స్వాగతం! 👋',
                         style: GoogleFonts.poppins(
                           fontSize: 15,
@@ -2923,7 +2924,7 @@ class _DashboardPageState extends State<DashboardPage>
                           color: Colors.white,
                         ),
                       ),
-                      Text(
+                      LiveTranslatedText(
                         'Welcome! Start with these 3 quick actions:',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
@@ -3010,7 +3011,7 @@ class _DashboardPageState extends State<DashboardPage>
           children: [
             Icon(icon, color: Colors.white, size: 24),
             const SizedBox(height: 6),
-            Text(
+            LiveTranslatedText(
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
@@ -3044,7 +3045,7 @@ class _DashboardPageState extends State<DashboardPage>
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('🔊 Soundbox test — listen for the voice!'),
+                content: LiveTranslatedText('🔊 Soundbox test — listen for the voice!'),
                 duration: Duration(seconds: 2),
               ),
             );
@@ -3079,7 +3080,7 @@ class _DashboardPageState extends State<DashboardPage>
               ),
             ),
             const SizedBox(width: 6),
-            Text(
+            LiveTranslatedText(
               isActive ? 'Soundbox ON' : 'Soundbox OFF',
               style: GoogleFonts.poppins(
                 fontSize: 11,
@@ -3152,7 +3153,7 @@ class _DashboardPageState extends State<DashboardPage>
     if (_prevRealtimeConnected && !isConnected) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('⚠️ No internet - Cloud sync paused'),
+          content: const LiveTranslatedText('⚠️ No internet - Cloud sync paused'),
           backgroundColor: Colors.red[600],
           duration: const Duration(seconds: 4),
         ),
@@ -3325,7 +3326,7 @@ class _DashboardPageState extends State<DashboardPage>
     if (_isBackingUp) return;
     setState(() => _isBackingUp = true);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('⏳ Backing up to Google Drive...')),
+      const SnackBar(content: LiveTranslatedText('⏳ Backing up to Google Drive...')),
     );
     try {
       final success = await GoogleDriveService.backupToDrive();
@@ -3333,14 +3334,14 @@ class _DashboardPageState extends State<DashboardPage>
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Backup to Google Drive Successful!'),
+            content: LiveTranslatedText('✅ Backup to Google Drive Successful!'),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: LiveTranslatedText(
               '❌ Backup failed. Check your connection or Google Sign-In.',
             ),
             backgroundColor: Colors.red,
@@ -3356,7 +3357,7 @@ class _DashboardPageState extends State<DashboardPage>
     if (_isBackingUp) return;
     setState(() => _isBackingUp = true);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('⏳ Restoring from Google Drive...')),
+      const SnackBar(content: LiveTranslatedText('⏳ Restoring from Google Drive...')),
     );
     try {
       final success = await GoogleDriveService.restoreFromDrive();
@@ -3365,14 +3366,14 @@ class _DashboardPageState extends State<DashboardPage>
         _loadSales();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Restore Successful! Data reloaded.'),
+            content: LiveTranslatedText('✅ Restore Successful! Data reloaded.'),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: LiveTranslatedText(
               '❌ Restore failed. No backup found or network error.',
             ),
             backgroundColor: Colors.red,
@@ -3476,7 +3477,7 @@ class _DashboardPageState extends State<DashboardPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   title,
                   style: GoogleFonts.poppins(
                     fontSize: 16,
@@ -3488,7 +3489,7 @@ class _DashboardPageState extends State<DashboardPage>
                 if (subtitle != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
-                    child: Text(
+                    child: LiveTranslatedText(
                       subtitle,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -3535,7 +3536,7 @@ class _DashboardPageState extends State<DashboardPage>
               children: [
                 Icon(icon, size: 22, color: Colors.white),
                 const SizedBox(height: 8),
-                Text(
+                LiveTranslatedText(
                   label,
                   textAlign: TextAlign.center,
                   maxLines: 2,
@@ -3569,7 +3570,7 @@ class _DashboardPageState extends State<DashboardPage>
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Text(
+              child: LiveTranslatedText(
                 'Retail AI hub',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
@@ -3584,14 +3585,14 @@ class _DashboardPageState extends State<DashboardPage>
                 semanticLabel: 'Psychology Rounded',
                 color: Color(0xFF7C3AED),
               ),
-              title: Text(
+              title: LiveTranslatedText(
                 'Retail intelligence',
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w700,
                   color: Colors.black,
                 ),
               ),
-              subtitle: Text(
+              subtitle: LiveTranslatedText(
                 'Insights, forecasts, smart tools',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -3615,14 +3616,14 @@ class _DashboardPageState extends State<DashboardPage>
                 semanticLabel: 'Chat Bubble Outline Rounded',
                 color: Color(0xFF4F46E5),
               ),
-              title: Text(
+              title: LiveTranslatedText(
                 'Ask AI assistant',
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w700,
                   color: Colors.black,
                 ),
               ),
-              subtitle: Text(
+              subtitle: LiveTranslatedText(
                 'Questions about your shop data',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -3641,14 +3642,14 @@ class _DashboardPageState extends State<DashboardPage>
                 semanticLabel: 'Record Voice Over Rounded',
                 color: Color(0xFFE11D48),
               ),
-              title: Text(
+              title: LiveTranslatedText(
                 'Voice studio',
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w700,
                   color: Colors.black,
                 ),
               ),
-              subtitle: Text(
+              subtitle: LiveTranslatedText(
                 'Custom payment sounds',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -3735,7 +3736,7 @@ class _DashboardPageState extends State<DashboardPage>
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: LiveTranslatedText(
               'Daily report copied to clipboard (WhatsApp not found).',
             ),
           ),
@@ -3754,14 +3755,14 @@ class _DashboardPageState extends State<DashboardPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           label,
           style: GoogleFonts.poppins(
             color: Colors.white.withValues(alpha: 0.7),
             fontSize: 12,
           ),
         ),
-        Text(
+        LiveTranslatedText(
           value,
           style: GoogleFonts.poppins(
             color: Colors.white,
@@ -4273,7 +4274,7 @@ class _DashboardPageState extends State<DashboardPage>
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Text(
+              child: LiveTranslatedText(
                 'Money & collections',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
@@ -4287,11 +4288,11 @@ class _DashboardPageState extends State<DashboardPage>
                 semanticLabel: 'Account Balance Wallet Rounded',
                 color: Color(0xFF4F46E5),
               ),
-              title: Text(
+              title: LiveTranslatedText(
                 'Khata / ledger',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
-              subtitle: Text(
+              subtitle: LiveTranslatedText(
                 'Credit, collections, reminders',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -4312,7 +4313,7 @@ class _DashboardPageState extends State<DashboardPage>
                 semanticLabel: 'Receipt Long Rounded',
                 color: Color(0xFF2563EB),
               ),
-              title: Text(
+              title: LiveTranslatedText(
                 'Invoices & dues',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
@@ -4330,7 +4331,7 @@ class _DashboardPageState extends State<DashboardPage>
                 semanticLabel: 'Card Giftcard Rounded',
                 color: Color(0xFFDB2777),
               ),
-              title: Text(
+              title: LiveTranslatedText(
                 'Gift cards',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
@@ -4348,7 +4349,7 @@ class _DashboardPageState extends State<DashboardPage>
                 semanticLabel: 'Receipt Rounded',
                 color: Color(0xFF8B5CF6),
               ),
-              title: Text(
+              title: LiveTranslatedText(
                 'Transactions',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
@@ -4418,7 +4419,7 @@ class _DashboardPageState extends State<DashboardPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           'Grow your shop',
                           style: GoogleFonts.poppins(
                             fontSize: 17,
@@ -4428,7 +4429,7 @@ class _DashboardPageState extends State<DashboardPage>
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        LiveTranslatedText(
                           'Focus: $label',
                           style: GoogleFonts.poppins(
                             fontSize: 12,
@@ -4447,7 +4448,7 @@ class _DashboardPageState extends State<DashboardPage>
                       );
                       if (mounted) setState(() {});
                     },
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Change',
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
@@ -4458,7 +4459,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ],
               ),
               const SizedBox(height: 10),
-              Text(
+              LiveTranslatedText(
                 tip,
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -4482,7 +4483,7 @@ class _DashboardPageState extends State<DashboardPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         'Retention snapshot',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
@@ -4491,12 +4492,12 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      LiveTranslatedText(
                         'Bills saved here: ${snap.billsCompleted} · Day ${snap.daysSinceFirstOpen} since install',
                         style: GoogleFonts.poppins(fontSize: 11, color: t2),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      LiveTranslatedText(
                         snap.streakHint,
                         style: GoogleFonts.poppins(
                           fontSize: 11,
@@ -4509,7 +4510,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
               ],
               const SizedBox(height: 12),
-              Text(
+              LiveTranslatedText(
                 'Field demo tip: walk through Sales → Khata → Day closing in under five minutes.',
                 style: GoogleFonts.poppins(
                   fontSize: 11,
@@ -4528,7 +4529,7 @@ class _DashboardPageState extends State<DashboardPage>
                       semanticLabel: 'Share Rounded',
                       size: 18,
                     ),
-                    label: const Text('Invite another shop'),
+                    label: const LiveTranslatedText('Invite another shop'),
                     onPressed: () => RetailGrowthKit.shareAppInvite(),
                   ),
                   ActionChip(
@@ -4537,7 +4538,7 @@ class _DashboardPageState extends State<DashboardPage>
                       semanticLabel: 'Chat Rounded',
                       size: 18,
                     ),
-                    label: const Text('WhatsApp support'),
+                    label: const LiveTranslatedText('WhatsApp support'),
                     onPressed: () async {
                       final p = await SharedPreferences.getInstance();
                       final phone =
@@ -4549,7 +4550,7 @@ class _DashboardPageState extends State<DashboardPage>
                           phone.replaceAll(RegExp(r'\D'), '').length < 10) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text(
+                            content: LiveTranslatedText(
                               'Add your shop phone in Shop profile for one-tap support.',
                             ),
                           ),
@@ -4563,7 +4564,7 @@ class _DashboardPageState extends State<DashboardPage>
                       semanticLabel: 'Cloud Upload Rounded',
                       size: 18,
                     ),
-                    label: const Text('Backup data'),
+                    label: const LiveTranslatedText('Backup data'),
                     onPressed: () => Navigator.pushNamed(
                       context,
                       '/data-upload',
@@ -4575,7 +4576,7 @@ class _DashboardPageState extends State<DashboardPage>
                       semanticLabel: 'Payments Rounded',
                       size: 18,
                     ),
-                    label: const Text('Money tools'),
+                    label: const LiveTranslatedText('Money tools'),
                     onPressed: () => _showMoneyToolsSheet(context),
                   ),
                 ],
@@ -4714,7 +4715,7 @@ class _DashboardPageState extends State<DashboardPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Daily Health Score',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w800,
@@ -4723,7 +4724,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LiveTranslatedText(
                   isLoading ? '...' : '$score/100',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w900,
@@ -4743,7 +4744,7 @@ class _DashboardPageState extends State<DashboardPage>
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: scoreColor.withValues(alpha: 0.35)),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 score >= 80
                     ? 'Excellent'
                     : (score >= 50 ? 'Improving' : 'Needs focus'),
@@ -4797,7 +4798,7 @@ class _DashboardPageState extends State<DashboardPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     '$_remarketingCount Dormant Customers',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
@@ -4805,7 +4806,7 @@ class _DashboardPageState extends State<DashboardPage>
                       fontSize: 16,
                     ),
                   ),
-                  const Text(
+                  const LiveTranslatedText(
                     'Tap to send WhatsApp discounts and boost sales!',
                     style: TextStyle(color: Colors.white, fontSize: 12),
                   ),
@@ -4869,7 +4870,7 @@ class _DashboardPageState extends State<DashboardPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'LOW STOCK DETECTED',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -4878,7 +4879,7 @@ class _DashboardPageState extends State<DashboardPage>
                       letterSpacing: 0.5,
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     'Items needing restock: $displayNames',
                     style: GoogleFonts.poppins(
                       fontSize: 13,
@@ -5035,7 +5036,7 @@ class _DashboardPageState extends State<DashboardPage>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: Text(
+          title: LiveTranslatedText(
             l10n.howToUseTitle,
             style: const TextStyle(
               color: Color(0xFF1F2937),
@@ -5078,7 +5079,7 @@ class _DashboardPageState extends State<DashboardPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(
+              child: LiveTranslatedText(
                 l10n.gotIt,
                 style: const TextStyle(color: Color(0xFF6366F1)),
               ),
@@ -5108,7 +5109,7 @@ class _DashboardPageState extends State<DashboardPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   title,
                   style: const TextStyle(
                     color: Color(0xFF000000),
@@ -5117,7 +5118,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LiveTranslatedText(
                   description,
                   style: const TextStyle(
                     color: Color(0xFF6366F1),
@@ -5138,19 +5139,19 @@ class _DashboardPageState extends State<DashboardPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('📧 Close Day & Send Summary?'),
-        content: const Text('Generate daily summary and send to your email?'),
+        title: const LiveTranslatedText('📧 Close Day & Send Summary?'),
+        content: const LiveTranslatedText('Generate daily summary and send to your email?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const LiveTranslatedText('Cancel'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6366F1),
             ),
-            child: const Text(
+            child: const LiveTranslatedText(
               'Send Summary',
               style: TextStyle(color: Colors.white),
             ),
@@ -5171,7 +5172,7 @@ class _DashboardPageState extends State<DashboardPage>
       if (userId <= 0 || userEmail.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ User email not found'),
+            content: LiveTranslatedText('❌ User email not found'),
             backgroundColor: Colors.red,
           ),
         );
@@ -5232,14 +5233,14 @@ class _DashboardPageState extends State<DashboardPage>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Daily summary sent to $userEmail'),
+          content: LiveTranslatedText('✅ Daily summary sent to $userEmail'),
           backgroundColor: const Color(0xFF10B981),
           duration: const Duration(seconds: 3),
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('⚠️ Error: $e'), backgroundColor: Colors.orange),
+        SnackBar(content: LiveTranslatedText('⚠️ Error: $e'), backgroundColor: Colors.orange),
       );
     } finally {
       setState(() => loading = false);
@@ -5270,7 +5271,7 @@ class _DashboardPageState extends State<DashboardPage>
                   semanticLabel: 'Mail Outline',
                   size: 18,
                 ),
-                label: const Text('Close Day'),
+                label: const LiveTranslatedText('Close Day'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6366F1),
                   foregroundColor: Colors.white,
@@ -5288,7 +5289,7 @@ class _DashboardPageState extends State<DashboardPage>
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Chip(
-                label: const Text(
+                label: const LiveTranslatedText(
                   '✓ Day Closed',
                   style: TextStyle(color: Colors.white, fontSize: 12),
                 ),
@@ -5315,7 +5316,7 @@ class _DashboardPageState extends State<DashboardPage>
                   semanticLabel: 'Trending Up',
                   size: 18,
                 ),
-                label: const Text('📊 Series A'),
+                label: const LiveTranslatedText('📊 Series A'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6F46E0),
                   foregroundColor: Colors.white,
@@ -5353,7 +5354,7 @@ class _DashboardPageState extends State<DashboardPage>
                   semanticLabel: 'Storefront',
                   size: 18,
                 ),
-                label: Text(
+                label: LiveTranslatedText(
                   _isOnlineStoreActive ? '🟢 Store' : '🔴 Store',
                   style: const TextStyle(fontSize: 12),
                 ),
@@ -5392,7 +5393,7 @@ class _DashboardPageState extends State<DashboardPage>
                   semanticLabel: 'Public',
                   size: 18,
                 ),
-                label: const Text('🌐 Network'),
+                label: const LiveTranslatedText('🌐 Network'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0891B2),
                   foregroundColor: Colors.white,
@@ -5427,7 +5428,7 @@ class _DashboardPageState extends State<DashboardPage>
       itemBuilder: (context) => LanguageProvider.languages.map((l) {
         return PopupMenuItem<String>(
           value: l['code'],
-          child: Text('${l['nativeName']} (${l['name']})'),
+          child: LiveTranslatedText('${l['nativeName']} (${l['name']})'),
         );
       }).toList(),
     );
@@ -5445,7 +5446,7 @@ class _DashboardPageState extends State<DashboardPage>
           border: Border.all(color: border2),
         ),
         child: const Center(
-          child: Text('☰', style: TextStyle(fontSize: 17, color: t1)),
+          child: LiveTranslatedText('☰', style: TextStyle(fontSize: 17, color: t1)),
         ),
       ),
     );
@@ -5482,7 +5483,7 @@ class _DashboardPageState extends State<DashboardPage>
             ],
           ),
           child: Center(
-            child: Text(
+            child: LiveTranslatedText(
               'RM',
               style: GoogleFonts.poppins(
                 fontSize: 18,
@@ -5505,7 +5506,7 @@ class _DashboardPageState extends State<DashboardPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            LiveTranslatedText(
               'Retail Mind',
               style: GoogleFonts.poppins(
                 fontSize: 18,
@@ -5514,7 +5515,7 @@ class _DashboardPageState extends State<DashboardPage>
                 color: const Color(0xFF00B4FF), // Neon blue
               ),
             ),
-            Text(
+            LiveTranslatedText(
               'Smart Billing',
               style: GoogleFonts.poppins(
                 fontSize: 12,
@@ -5551,7 +5552,7 @@ class _DashboardPageState extends State<DashboardPage>
                 color: active ? indigo : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 l,
                 style: TextStyle(
                   fontSize: 13,
@@ -5592,7 +5593,7 @@ class _DashboardPageState extends State<DashboardPage>
                   if (mounted)
                     ScaffoldMessenger.of(
                       context,
-                    ).showSnackBar(SnackBar(content: Text(result['message'])));
+                    ).showSnackBar(SnackBar(content: LiveTranslatedText(result['message'])));
                 },
               ),
             if (!_isStaffMode)
@@ -5676,7 +5677,7 @@ class _DashboardPageState extends State<DashboardPage>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: Text(
+          title: LiveTranslatedText(
             AppLocalizations.of(context).selectLanguage,
             style: const TextStyle(color: Colors.white),
           ),
@@ -5684,11 +5685,11 @@ class _DashboardPageState extends State<DashboardPage>
             mainAxisSize: MainAxisSize.min,
             children: LanguageProvider.languages.map((lang) {
               return ListTile(
-                title: Text(
+                title: LiveTranslatedText(
                   lang['name']!,
                   style: const TextStyle(color: Colors.white),
                 ),
-                subtitle: Text(
+                subtitle: LiveTranslatedText(
                   lang['nativeName']!,
                   style: const TextStyle(color: Colors.white70),
                 ),
@@ -5725,7 +5726,7 @@ class _DashboardPageState extends State<DashboardPage>
                 size: 24,
               ),
               const SizedBox(width: 12),
-              Text(
+              LiveTranslatedText(
                 'Announcement Language',
                 style: GoogleFonts.poppins(
                   color: Colors.white,
@@ -5762,7 +5763,7 @@ class _DashboardPageState extends State<DashboardPage>
     bool isSelected = _paymentSoundLang == code;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      title: Text(
+      title: LiveTranslatedText(
         label,
         style: GoogleFonts.poppins(
           color: isSelected ? Colors.blueAccent : Colors.white,
@@ -5865,7 +5866,7 @@ class _DashboardPageState extends State<DashboardPage>
           children: [
             Icon(icon, size: 16, color: Colors.black),
             const SizedBox(width: 6),
-            Text(
+            LiveTranslatedText(
               label,
               style: const TextStyle(
                 fontSize: 12,
@@ -5905,7 +5906,7 @@ class _DashboardPageState extends State<DashboardPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           AppLocalizations.of(context).performanceOverview,
           style: TextStyle(
             fontFamily: 'Familjen Grotesk',
@@ -5914,7 +5915,7 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ),
         const SizedBox(height: 4),
-        Text(
+        LiveTranslatedText(
           '${AppLocalizations.of(context).showing}: ${[AppLocalizations.of(context).today, AppLocalizations.of(context).week, AppLocalizations.of(context).month, AppLocalizations.of(context).year][_selectedTimeFilter]}',
           style: const TextStyle(fontSize: 12, color: t2),
         ),
@@ -5948,7 +5949,7 @@ class _DashboardPageState extends State<DashboardPage>
               ),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Text(
+            child: LiveTranslatedText(
               labels[i],
               style: TextStyle(
                 fontSize: 13,
@@ -6029,7 +6030,7 @@ class _DashboardPageState extends State<DashboardPage>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     it['lbl'] as String,
                     style: const TextStyle(
                       fontSize: 12,
@@ -6048,7 +6049,7 @@ class _DashboardPageState extends State<DashboardPage>
                           : const Color(0xFFEF4444).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       it['chg'] as String,
                       style: TextStyle(
                         color: isUp
@@ -6062,7 +6063,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ],
               ),
               const Spacer(),
-              Text(
+              LiveTranslatedText(
                 it['val'] as String,
                 style: const TextStyle(
                   fontSize: 22,
@@ -6082,7 +6083,7 @@ class _DashboardPageState extends State<DashboardPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           AppLocalizations.of(context).quickActions,
           style: const TextStyle(
             fontFamily: 'Familjen Grotesk',
@@ -6127,7 +6128,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Text(
+                      LiveTranslatedText(
                         AppLocalizations.of(context).addSale,
                         style: const TextStyle(
                           fontSize: 14,
@@ -6173,7 +6174,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      const LiveTranslatedText(
                         'Staff / Workers',
                         style: TextStyle(
                           fontSize: 14,
@@ -6226,7 +6227,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      const LiveTranslatedText(
                         'Khata Book',
                         style: TextStyle(
                           fontSize: 14,
@@ -6275,7 +6276,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      const LiveTranslatedText(
                         'Returns',
                         style: TextStyle(
                           fontSize: 14,
@@ -6328,7 +6329,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      const LiveTranslatedText(
                         'Offers',
                         style: TextStyle(
                           fontSize: 14,
@@ -6360,7 +6361,7 @@ class _DashboardPageState extends State<DashboardPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 12),
-                      Text(
+                      LiveTranslatedText(
                         AppLocalizations.of(context).getInsights,
                         style: const TextStyle(
                           fontSize: 14,
@@ -6409,12 +6410,12 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      const LiveTranslatedText(
                         'AI Growth Center',
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      const LiveTranslatedText(
                         'Copilot · Stock · Returns · Delivery',
                         style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
                         textAlign: TextAlign.center,
@@ -6480,7 +6481,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      const LiveTranslatedText(
                         'Online Store',
                         style: TextStyle(
                           fontSize: 14,
@@ -6488,7 +6489,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      LiveTranslatedText(
                         _isOnlineStoreActive ? 'Active' : 'Setup Required',
                         style: TextStyle(
                           fontSize: 11,
@@ -6703,7 +6704,7 @@ class _DashboardPageState extends State<DashboardPage>
                                     size: 12,
                                   ),
                                   const SizedBox(width: 2),
-                                  Text(
+                                  LiveTranslatedText(
                                     '${_growthPercentage >= 0 ? '+' : ''}${_growthPercentage.toStringAsFixed(1)}%',
                                     style: TextStyle(
                                       fontSize: 12,
@@ -6720,7 +6721,7 @@ class _DashboardPageState extends State<DashboardPage>
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    LiveTranslatedText(
                       title,
                       style: TextStyle(
                         fontSize: 11,
@@ -6730,7 +6731,7 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    LiveTranslatedText(
                       value,
                       style: const TextStyle(
                         fontSize: 20,
@@ -6740,7 +6741,7 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    LiveTranslatedText(
                       subtitle,
                       style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                       overflow: TextOverflow.ellipsis,
@@ -6815,7 +6816,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ]
                       : [],
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   labels[i],
                   style: TextStyle(
                     fontSize: 13,
@@ -6899,7 +6900,7 @@ class _DashboardPageState extends State<DashboardPage>
         children: [
           Row(
             children: [
-              Text(
+              LiveTranslatedText(
                 title,
                 style: GoogleFonts.poppins(
                   fontSize: 16,
@@ -6984,7 +6985,7 @@ class _DashboardPageState extends State<DashboardPage>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Track your total sales amount for each month',
                       style: const TextStyle(
                         fontSize: 13,
@@ -7015,7 +7016,7 @@ class _DashboardPageState extends State<DashboardPage>
                           color: Color(0xFF6366F1),
                         ),
                         const SizedBox(width: 4),
-                        Text(
+                        LiveTranslatedText(
                           '${entries.length} months',
                           style: const TextStyle(
                             color: Color(0xFF6366F1),
@@ -7073,7 +7074,7 @@ class _DashboardPageState extends State<DashboardPage>
                             if (index >= 0 && index < entries.length) {
                               return Padding(
                                 padding: const EdgeInsets.only(top: 8),
-                                child: Text(
+                                child: LiveTranslatedText(
                                   entries[index].key,
                                   style: TextStyle(
                                     fontSize: 11,
@@ -7092,7 +7093,7 @@ class _DashboardPageState extends State<DashboardPage>
                           showTitles: true,
                           getTitlesWidget: (value, meta) => Padding(
                             padding: const EdgeInsets.only(right: 6),
-                            child: Text(
+                            child: LiveTranslatedText(
                               '\u20b9${(value >= 1000 ? (value / 1000).toStringAsFixed(1) + 'k' : value.toInt().toString())}',
                               style: TextStyle(
                                 fontSize: 11,
@@ -7158,7 +7159,7 @@ class _DashboardPageState extends State<DashboardPage>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     AppLocalizations.of(context).salesByWeek,
                     style: const TextStyle(
                       fontSize: 16,
@@ -7188,7 +7189,7 @@ class _DashboardPageState extends State<DashboardPage>
                           color: Color(0xFFFF4081),
                         ),
                         const SizedBox(width: 4),
-                        const Text(
+                        const LiveTranslatedText(
                           'Last 8W',
                           style: TextStyle(
                             color: Color(0xFFFF4081),
@@ -7243,7 +7244,7 @@ class _DashboardPageState extends State<DashboardPage>
                             if (index >= 0 && index < entries.length) {
                               return Padding(
                                 padding: const EdgeInsets.only(top: 8),
-                                child: Text(
+                                child: LiveTranslatedText(
                                   entries[index].key,
                                   style: TextStyle(
                                     fontSize: 11,
@@ -7263,7 +7264,7 @@ class _DashboardPageState extends State<DashboardPage>
                           showTitles: true,
                           getTitlesWidget: (value, meta) => Padding(
                             padding: const EdgeInsets.only(right: 6),
-                            child: Text(
+                            child: LiveTranslatedText(
                               '\u20b9${(value >= 1000 ? (value / 1000).toStringAsFixed(1) + 'k' : value.toInt().toString())}',
                               style: TextStyle(
                                 fontSize: 12,
@@ -7303,7 +7304,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              const LiveTranslatedText(
                 'Track your sales week-over-week to identify patterns',
                 style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
               ),
@@ -7338,7 +7339,7 @@ class _DashboardPageState extends State<DashboardPage>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         AppLocalizations.of(context).salesByYear,
                         style: const TextStyle(
                           fontSize: 18,
@@ -7372,7 +7373,7 @@ class _DashboardPageState extends State<DashboardPage>
                               color: Color(0xFFB388FF),
                             ),
                             const SizedBox(width: 6),
-                            Text(
+                            LiveTranslatedText(
                               '${entries.length} year(s)',
                               style: const TextStyle(
                                 color: Color(0xFFB388FF),
@@ -7427,7 +7428,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 if (index >= 0 && index < entries.length)
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 10),
-                                    child: Text(
+                                    child: LiveTranslatedText(
                                       entries[index].key,
                                       style: TextStyle(
                                         fontSize: 11,
@@ -7446,7 +7447,7 @@ class _DashboardPageState extends State<DashboardPage>
                               showTitles: true,
                               getTitlesWidget: (value, meta) => Padding(
                                 padding: const EdgeInsets.only(right: 8),
-                                child: Text(
+                                child: LiveTranslatedText(
                                   '\u20b9${(value >= 1000 ? (value / 1000).toStringAsFixed(1) + 'k' : value.toInt().toString())}',
                                   style: TextStyle(
                                     fontSize: 11,
@@ -7508,7 +7509,7 @@ class _DashboardPageState extends State<DashboardPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           'Yearly Overview',
                           style: GoogleFonts.poppins(
                             fontSize: 13,
@@ -7523,7 +7524,7 @@ class _DashboardPageState extends State<DashboardPage>
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
+                                LiveTranslatedText(
                                   e.key,
                                   style: const TextStyle(
                                     fontSize: 12,
@@ -7531,7 +7532,7 @@ class _DashboardPageState extends State<DashboardPage>
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                Text(
+                                LiveTranslatedText(
                                   '\u20b9${e.value.toStringAsFixed(0)}',
                                   style: const TextStyle(
                                     fontSize: 12,
@@ -7817,7 +7818,7 @@ class _DashboardPageState extends State<DashboardPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             AppLocalizations.of(context).monthlySalesDesc,
             style: GoogleFonts.poppins(
               fontSize: 18,
@@ -7853,7 +7854,7 @@ class _DashboardPageState extends State<DashboardPage>
                         if (idx >= 1 && idx <= 12) {
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
-                            child: Text(
+                            child: LiveTranslatedText(
                               monthNames[idx - 1],
                               style: const TextStyle(
                                 fontSize: 12,
@@ -7862,7 +7863,7 @@ class _DashboardPageState extends State<DashboardPage>
                             ),
                           );
                         }
-                        return const Text('');
+                        return const LiveTranslatedText('');
                       },
                       reservedSize: 28,
                     ),
@@ -7872,7 +7873,7 @@ class _DashboardPageState extends State<DashboardPage>
                       showTitles: true,
                       getTitlesWidget: (value, meta) => Padding(
                         padding: const EdgeInsets.only(right: 8),
-                        child: Text(
+                        child: LiveTranslatedText(
                           '\u20b9${value >= 1000 ? (value / 1000).toStringAsFixed(1) + 'k' : value.toStringAsFixed(0)}',
                           style: const TextStyle(
                             fontSize: 11,
@@ -7931,7 +7932,7 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
+                    LiveTranslatedText(
                       prod,
                       style: const TextStyle(
                         fontSize: 12,
@@ -8005,7 +8006,7 @@ class _DashboardPageState extends State<DashboardPage>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           AppLocalizations.of(context).revenueLeaders,
                           style: const TextStyle(
                             fontSize: 18,
@@ -8031,7 +8032,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 color: Color(0xFF6366F1),
                               ),
                               const SizedBox(width: 6),
-                              Text(
+                              LiveTranslatedText(
                                 'Top ${topItems.length} ${AppLocalizations.of(context).products}',
                                 style: const TextStyle(
                                   color: Color(0xFF6366F1),
@@ -8142,7 +8143,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   if (index >= 0 && index < topItems.length) {
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 10),
-                                      child: Text(
+                                      child: LiveTranslatedText(
                                         topItems[index].key.length > 10
                                             ? '${topItems[index].key.substring(0, 10)}..'
                                             : topItems[index].key,
@@ -8154,7 +8155,7 @@ class _DashboardPageState extends State<DashboardPage>
                                       ),
                                     );
                                   }
-                                  return const Text('');
+                                  return const LiveTranslatedText('');
                                 },
                                 reservedSize: 40,
                               ),
@@ -8165,7 +8166,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 getTitlesWidget: (value, meta) {
                                   return Padding(
                                     padding: const EdgeInsets.only(right: 8),
-                                    child: Text(
+                                    child: LiveTranslatedText(
                                       '₹${value.toInt()}',
                                       style: TextStyle(
                                         fontSize: 12,
@@ -8233,7 +8234,7 @@ class _DashboardPageState extends State<DashboardPage>
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
+                        LiveTranslatedText(
                           '${AppLocalizations.of(context).revenueLeaders} per product',
                           style: TextStyle(
                             fontSize: 12,
@@ -8306,7 +8307,7 @@ class _DashboardPageState extends State<DashboardPage>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         '${AppLocalizations.of(context).salesTrend}${_currentFilterLabel.isNotEmpty ? ' (${_currentFilterLabel})' : ''}',
                         style: const TextStyle(
                           fontSize: 18,
@@ -8333,7 +8334,7 @@ class _DashboardPageState extends State<DashboardPage>
                               color: Color(0xFF6366F1),
                             ),
                             const SizedBox(width: 6),
-                            Text(
+                            LiveTranslatedText(
                               AppLocalizations.of(context).last7Days,
                               style: const TextStyle(
                                 color: Color(0xFF6366F1),
@@ -8436,7 +8437,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   if (idx >= 0 && idx < labels.length) {
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 8),
-                                      child: Text(
+                                      child: LiveTranslatedText(
                                         labels[idx],
                                         style: TextStyle(
                                           fontSize: 11,
@@ -8446,9 +8447,9 @@ class _DashboardPageState extends State<DashboardPage>
                                       ),
                                     );
                                   }
-                                  return const Text('');
+                                  return const LiveTranslatedText('');
                                 }
-                                return const Text('');
+                                return const LiveTranslatedText('');
                               },
                               reservedSize: 32,
                             ),
@@ -8459,7 +8460,7 @@ class _DashboardPageState extends State<DashboardPage>
                               getTitlesWidget: (value, meta) {
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 8),
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     '₹${value.toInt()}',
                                     style: TextStyle(
                                       fontSize: 12,
@@ -8514,7 +8515,7 @@ class _DashboardPageState extends State<DashboardPage>
                         size: 16,
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      LiveTranslatedText(
                         _calculateTrend(recentEntries) >= 0
                             ? AppLocalizations.of(context).upwardTrend
                             : AppLocalizations.of(context).downwardTrend,
@@ -8527,7 +8528,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const Spacer(),
-                      Text(
+                      LiveTranslatedText(
                         '${_calculateTrend(recentEntries).abs().toStringAsFixed(1)}% ${AppLocalizations.of(context).avgChange}',
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
@@ -8593,12 +8594,12 @@ class _DashboardPageState extends State<DashboardPage>
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: Text(title),
-          content: Text(message),
+          title: LiveTranslatedText(title),
+          content: LiveTranslatedText(message),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
+              child: const LiveTranslatedText('OK'),
             ),
           ],
         );
@@ -8674,7 +8675,7 @@ class _DashboardPageState extends State<DashboardPage>
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               'Revenue Split',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
@@ -8682,7 +8683,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 color: const Color(0xFF111827),
                               ),
                             ),
-                            Text(
+                            LiveTranslatedText(
                               'Top products by sale value',
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
@@ -8701,7 +8702,7 @@ class _DashboardPageState extends State<DashboardPage>
                             color: const Color(0xFFF3F4F6),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Text(
+                          child: LiveTranslatedText(
                             'TOP 5',
                             style: GoogleFonts.poppins(
                               fontSize: 10,
@@ -8769,7 +8770,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
+                                    LiveTranslatedText(
                                       '₹${_formatCompactNumber(grandTotal)}',
                                       style: GoogleFonts.poppins(
                                         fontSize: 20,
@@ -8777,7 +8778,7 @@ class _DashboardPageState extends State<DashboardPage>
                                         color: const Color(0xFF111827),
                                       ),
                                     ),
-                                    Text(
+                                    LiveTranslatedText(
                                       'Total',
                                       style: GoogleFonts.poppins(
                                         fontSize: 11,
@@ -8827,7 +8828,7 @@ class _DashboardPageState extends State<DashboardPage>
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text(
+                                              LiveTranslatedText(
                                                 _cleanProductName(
                                                   product.key,
                                                   '',
@@ -8847,7 +8848,7 @@ class _DashboardPageState extends State<DashboardPage>
                                                     MainAxisAlignment
                                                         .spaceBetween,
                                                 children: [
-                                                  Text(
+                                                  LiveTranslatedText(
                                                     '₹${_formatCompactNumber(val)}',
                                                     style: GoogleFonts.poppins(
                                                       fontSize: 10,
@@ -8856,7 +8857,7 @@ class _DashboardPageState extends State<DashboardPage>
                                                       color: color,
                                                     ),
                                                   ),
-                                                  Text(
+                                                  LiveTranslatedText(
                                                     '${perc.toStringAsFixed(1)}%',
                                                     style: GoogleFonts.poppins(
                                                       fontSize: 10,
@@ -9045,7 +9046,7 @@ class _DashboardPageState extends State<DashboardPage>
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              LiveTranslatedText(
                                 'Volume Radar',
                                 style: GoogleFonts.poppins(
                                   fontSize: 16,
@@ -9053,7 +9054,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   color: Colors.white,
                                 ),
                               ),
-                              Text(
+                              LiveTranslatedText(
                                 'Most sold products by quantity',
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
@@ -9072,7 +9073,7 @@ class _DashboardPageState extends State<DashboardPage>
                               color: const Color(0xFF1E293B),
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text(
+                            child: LiveTranslatedText(
                               '$totalQty units',
                               style: GoogleFonts.poppins(
                                 fontSize: 10,
@@ -9206,7 +9207,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   children: [
                                     SizedBox(
                                       width: 80,
-                                      child: Text(
+                                      child: LiveTranslatedText(
                                         _cleanProductName(product.key, ''),
                                         style: GoogleFonts.poppins(
                                           fontSize: 10,
@@ -9253,7 +9254,7 @@ class _DashboardPageState extends State<DashboardPage>
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Text(
+                                    LiveTranslatedText(
                                       '$qty',
                                       style: GoogleFonts.poppins(
                                         fontSize: 10,
@@ -9310,7 +9311,7 @@ class _DashboardPageState extends State<DashboardPage>
               Icon(icon, size: 16, color: accent),
               const SizedBox(width: 6),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   label,
                   style: TextStyle(
                     fontSize: 11,
@@ -9323,7 +9324,7 @@ class _DashboardPageState extends State<DashboardPage>
             ],
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             value,
             style: const TextStyle(
               fontSize: 16,
@@ -9355,7 +9356,7 @@ class _DashboardPageState extends State<DashboardPage>
           child: Icon(icon, color: color, size: 18),
         ),
         const SizedBox(height: 8),
-        Text(
+        LiveTranslatedText(
           value,
           style: TextStyle(
             fontSize: 14,
@@ -9363,7 +9364,7 @@ class _DashboardPageState extends State<DashboardPage>
             color: Colors.grey[800],
           ),
         ),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+        LiveTranslatedText(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
       ],
     );
   }
@@ -9414,7 +9415,7 @@ class _DashboardPageState extends State<DashboardPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'Realtime Transaction Activity',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
@@ -9424,7 +9425,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  LiveTranslatedText(
                     'Live transactions per hour (auto-updates with new sales)',
                     style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                   ),
@@ -9470,7 +9471,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 if (value % (maxCount > 5 ? 2 : 1) != 0) {
                                   return const SizedBox.shrink();
                                 }
-                                return Text(
+                                return LiveTranslatedText(
                                   value.toInt().toString(),
                                   style: const TextStyle(
                                     fontSize: 12,
@@ -9490,7 +9491,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 if (hour % 3 != 0) {
                                   return const SizedBox.shrink();
                                 }
-                                return Text(
+                                return LiveTranslatedText(
                                   '$hour:00',
                                   style: const TextStyle(
                                     fontSize: 12,
@@ -9568,7 +9569,7 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ),
         const SizedBox(width: 6),
-        Text(
+        LiveTranslatedText(
           label,
           style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
         ),
@@ -9579,7 +9580,7 @@ class _DashboardPageState extends State<DashboardPage>
   Widget _heatMapStat(String label, String value) {
     return Column(
       children: [
-        Text(
+        LiveTranslatedText(
           value,
           style: const TextStyle(
             fontSize: 16,
@@ -9588,7 +9589,7 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        LiveTranslatedText(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
       ],
     );
   }
@@ -9624,7 +9625,7 @@ class _DashboardPageState extends State<DashboardPage>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    const LiveTranslatedText(
                       'All Transactions',
                       style: TextStyle(
                         fontSize: 20,
@@ -9647,7 +9648,7 @@ class _DashboardPageState extends State<DashboardPage>
               Expanded(
                 child: filteredSales.isEmpty
                     ? const Center(
-                        child: Text(
+                        child: LiveTranslatedText(
                           'No transactions found',
                           style: TextStyle(color: Colors.grey),
                         ),
@@ -9710,7 +9711,7 @@ class _DashboardPageState extends State<DashboardPage>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
+                                        LiveTranslatedText(
                                           _cleanProductName(
                                             s['product']?.toString() ??
                                                 'Unknown',
@@ -9733,7 +9734,7 @@ class _DashboardPageState extends State<DashboardPage>
                                               color: Colors.white54,
                                             ),
                                             const SizedBox(width: 3),
-                                            Text(
+                                            LiveTranslatedText(
                                               'Qty: ${s['quantity']} @ ₹${(s['price'] ?? 0)}',
                                               style: TextStyle(
                                                 color: Colors.grey[500],
@@ -9749,7 +9750,7 @@ class _DashboardPageState extends State<DashboardPage>
                                             ),
                                             const SizedBox(width: 3),
                                             Flexible(
-                                              child: Text(
+                                              child: LiveTranslatedText(
                                                 formattedDate,
                                                 style: const TextStyle(
                                                   color: Colors.white60,
@@ -9764,7 +9765,7 @@ class _DashboardPageState extends State<DashboardPage>
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(
+                                  LiveTranslatedText(
                                     '\u20b9${totalVal.toStringAsFixed(2)}',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
@@ -9806,7 +9807,7 @@ class _DashboardPageState extends State<DashboardPage>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           AppLocalizations.of(context).bills,
                           style: const TextStyle(
                             fontSize: 18,
@@ -9835,7 +9836,7 @@ class _DashboardPageState extends State<DashboardPage>
                           ),
                           child: Row(
                             children: [
-                              Text(
+                              LiveTranslatedText(
                                 AppLocalizations.of(context).reports,
                                 style: TextStyle(
                                   color: const Color(0xFF6366F1),
@@ -9871,7 +9872,7 @@ class _DashboardPageState extends State<DashboardPage>
                               ),
                             ),
                             const SizedBox(height: 16),
-                            Text(
+                            LiveTranslatedText(
                               AppLocalizations.of(context).noSalesData,
                               style: TextStyle(
                                 color: Colors.grey[500],
@@ -9978,7 +9979,7 @@ class _DashboardPageState extends State<DashboardPage>
                                                 CrossAxisAlignment.start,
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Text(
+                                              LiveTranslatedText(
                                                 title,
                                                 style: const TextStyle(
                                                   fontWeight: FontWeight.w600,
@@ -9989,7 +9990,7 @@ class _DashboardPageState extends State<DashboardPage>
                                               ),
                                               if (invoice.isNotEmpty) ...[
                                                 const SizedBox(height: 2),
-                                                Text(
+                                                LiveTranslatedText(
                                                   'Invoice: $invoice',
                                                   style: const TextStyle(
                                                     color: Color(0xFF94A3B8),
@@ -10013,7 +10014,7 @@ class _DashboardPageState extends State<DashboardPage>
                                             color: Color(0xFF94A3B8),
                                           ),
                                           const SizedBox(width: 3),
-                                          Text(
+                                          LiveTranslatedText(
                                             'Status: ${s['payment_status'] ?? 'N/A'}',
                                             style: const TextStyle(
                                               color: Color(0xFF64748B),
@@ -10029,7 +10030,7 @@ class _DashboardPageState extends State<DashboardPage>
                                           ),
                                           const SizedBox(width: 3),
                                           Flexible(
-                                            child: Text(
+                                            child: LiveTranslatedText(
                                               formattedDate,
                                               style: const TextStyle(
                                                 color: Color(0xFF64748B),
@@ -10049,7 +10050,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    Text(
+                                    LiveTranslatedText(
                                       '₹${_formatCompactNumber(totalVal)}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
@@ -10079,7 +10080,7 @@ class _DashboardPageState extends State<DashboardPage>
                                             color: Color(0xFF6366F1),
                                           ),
                                           SizedBox(width: 3),
-                                          Text(
+                                          LiveTranslatedText(
                                             'Done',
                                             style: TextStyle(
                                               color: Color(0xFF0097A7),
@@ -10122,7 +10123,7 @@ class _DashboardPageState extends State<DashboardPage>
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: Text(
+                          child: LiveTranslatedText(
                             'View All ${recentSales.length} Bills →',
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w600,
@@ -10197,7 +10198,7 @@ class _DashboardPageState extends State<DashboardPage>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     l10n.pendingPayment,
                     style: GoogleFonts.poppins(
                       fontSize: 15,
@@ -10205,7 +10206,7 @@ class _DashboardPageState extends State<DashboardPage>
                       color: const Color(0xFF1F2937),
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     '${sortedInvoices.length} invoices require attention',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
@@ -10217,7 +10218,7 @@ class _DashboardPageState extends State<DashboardPage>
               const Spacer(),
               TextButton(
                 onPressed: () => Navigator.pushNamed(context, '/invoices'),
-                child: Text(
+                child: LiveTranslatedText(
                   l10n.viewAll,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
@@ -10260,7 +10261,7 @@ class _DashboardPageState extends State<DashboardPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         _cleanProductName(
                           inv['product']?.toString() ?? 'Unknown',
                           inv['barcode']?.toString() ?? '',
@@ -10274,7 +10275,7 @@ class _DashboardPageState extends State<DashboardPage>
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      LiveTranslatedText(
                         '₹${balance.toStringAsFixed(0)} balance',
                         style: TextStyle(
                           fontSize: 11,
@@ -10292,7 +10293,7 @@ class _DashboardPageState extends State<DashboardPage>
                             color: isOverdue ? Colors.red : Colors.grey[500],
                           ),
                           const SizedBox(width: 4),
-                          Text(
+                          LiveTranslatedText(
                             dueDate != null
                                 ? '${dueDate.day}/${dueDate.month}/${dueDate.year}'
                                 : 'No date',
@@ -10414,7 +10415,7 @@ class _DashboardPageState extends State<DashboardPage>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                LiveTranslatedText(
                                   l10n.performanceOverview,
                                   style: GoogleFonts.poppins(
                                     fontSize: 17,
@@ -10422,7 +10423,7 @@ class _DashboardPageState extends State<DashboardPage>
                                     color: const Color(0xFF1F2937),
                                   ),
                                 ),
-                                Text(
+                                LiveTranslatedText(
                                   'Today vs yesterday at a glance',
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
@@ -10510,7 +10511,7 @@ class _DashboardPageState extends State<DashboardPage>
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: Text(
+                              child: LiveTranslatedText(
                                 _getSalesAnalysisSentence(),
                                 style: GoogleFonts.poppins(
                                   fontSize: 12.5,
@@ -10563,7 +10564,7 @@ class _DashboardPageState extends State<DashboardPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           'Quick Actions',
           style: GoogleFonts.poppins(
             fontSize: 16,
@@ -10664,7 +10665,7 @@ class _DashboardPageState extends State<DashboardPage>
               size: 28,
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
@@ -10741,7 +10742,7 @@ class _DashboardPageState extends State<DashboardPage>
                           Row(
                             children: [
                               Expanded(
-                                child: Text(
+                                child: LiveTranslatedText(
                                   'Enable Payment Detection',
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.w800,
@@ -10759,7 +10760,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   color: const Color(0xFFDC2626),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
-                                child: Text(
+                                child: LiveTranslatedText(
                                   'ACTION REQUIRED',
                                   style: GoogleFonts.poppins(
                                     color: Colors.white,
@@ -10772,7 +10773,7 @@ class _DashboardPageState extends State<DashboardPage>
                             ],
                           ),
                           const SizedBox(height: 5),
-                          Text(
+                          LiveTranslatedText(
                             'Automatic UPI/payment detection is disabled until the required Android permissions are enabled.',
                             style: GoogleFonts.poppins(
                               color: const Color(0xFFB91C1C),
@@ -10806,7 +10807,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ],
                 ),
                 const SizedBox(height: 14),
-                Text(
+                LiveTranslatedText(
                   'This reminder will remain visible and highlighted until both required permissions are enabled.',
                   style: GoogleFonts.poppins(
                     fontSize: 11.5,
@@ -10852,7 +10853,7 @@ class _DashboardPageState extends State<DashboardPage>
                       await _checkPermissions(showReminderIfMissing: false);
                     },
                     icon: const Icon(Icons.lock_open_rounded, size: 20),
-                    label: Text(
+                    label: LiveTranslatedText(
                       'ENABLE PAYMENT DETECTION',
                       style: GoogleFonts.poppins(
                         fontSize: 13,
@@ -10933,11 +10934,11 @@ class _DashboardPageState extends State<DashboardPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                const LiveTranslatedText(
                   'Payment detection may have stopped',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
-                Text(
+                LiveTranslatedText(
                   subtitle,
                   style: TextStyle(fontSize: 12, color: Colors.grey[700]),
                 ),
@@ -10953,7 +10954,7 @@ class _DashboardPageState extends State<DashboardPage>
               } catch (_) {}
               setState(() {});
             },
-            child: const Text('Retry', style: TextStyle(fontSize: 12)),
+            child: const LiveTranslatedText('Retry', style: TextStyle(fontSize: 12)),
           ),
         ],
       ),
@@ -10989,7 +10990,7 @@ class _DashboardPageState extends State<DashboardPage>
               Icon(icon, size: 16, color: color),
               const SizedBox(width: 6),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   label,
                   style: GoogleFonts.poppins(
                     fontSize: 10.5,
@@ -11050,7 +11051,7 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                     ),
                     child: Center(
-                      child: Text(
+                      child: LiveTranslatedText(
                         initial,
                         style: GoogleFonts.poppins(
                           color: Colors.white,
@@ -11133,7 +11134,7 @@ class _DashboardPageState extends State<DashboardPage>
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(result['message']),
+                content: LiveTranslatedText(result['message']),
                 backgroundColor: result['success'] ? Colors.green : Colors.red,
               ),
             );
@@ -11161,7 +11162,7 @@ class _DashboardPageState extends State<DashboardPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Saved on this device, but cloud save needs a valid login session.'),
+            content: LiveTranslatedText('Saved on this device, but cloud save needs a valid login session.'),
           ),
         );
       }
@@ -11190,7 +11191,7 @@ class _DashboardPageState extends State<DashboardPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
+              content: LiveTranslatedText(
                 'Shop details remain local; backend save failed '
                 '(HTTP ${profileResponse.statusCode}): $detail',
               ),
@@ -11269,7 +11270,7 @@ class _DashboardPageState extends State<DashboardPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: LiveTranslatedText(
               logoBytes != null
                   ? (logoUploaded
                       ? 'Shop details and logo saved to cloud.'
@@ -11290,7 +11291,7 @@ class _DashboardPageState extends State<DashboardPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Cloud save failed: ${e.runtimeType}. Local data was kept.'),
+            content: LiveTranslatedText('Cloud save failed: ${e.runtimeType}. Local data was kept.'),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
           ),
@@ -11308,7 +11309,7 @@ class _DashboardPageState extends State<DashboardPage>
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E293B),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
+        title: LiveTranslatedText(
           'App Security PIN',
           style: GoogleFonts.poppins(
             color: Colors.white,
@@ -11318,7 +11319,7 @@ class _DashboardPageState extends State<DashboardPage>
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            LiveTranslatedText(
               'Set a PIN to protect sensitive areas',
               style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12),
             ),
@@ -11359,7 +11360,7 @@ class _DashboardPageState extends State<DashboardPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('CANCEL'),
+            child: const LiveTranslatedText('CANCEL'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -11374,14 +11375,14 @@ class _DashboardPageState extends State<DashboardPage>
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('✅ Master PIN updated!'),
+                      content: LiveTranslatedText('✅ Master PIN updated!'),
                       backgroundColor: Color(0xFF10B981),
                     ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('❌ New PIN must be 4 digits'),
+                      content: LiveTranslatedText('❌ New PIN must be 4 digits'),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -11389,7 +11390,7 @@ class _DashboardPageState extends State<DashboardPage>
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('❌ Current PIN is incorrect'),
+                    content: LiveTranslatedText('❌ Current PIN is incorrect'),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -11398,7 +11399,7 @@ class _DashboardPageState extends State<DashboardPage>
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4F46E5),
             ),
-            child: const Text('UPDATE'),
+            child: const LiveTranslatedText('UPDATE'),
           ),
         ],
       ),
@@ -11433,7 +11434,7 @@ class _DashboardPageState extends State<DashboardPage>
               ),
             ),
             const SizedBox(width: 12),
-            Text(
+            LiveTranslatedText(
               'Biometric Security',
               style: GoogleFonts.poppins(
                 color: Colors.white,
@@ -11464,7 +11465,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         'Biometric auth not available on this device',
                         style: GoogleFonts.poppins(
                           color: Colors.red,
@@ -11476,7 +11477,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
               )
             else ...[
-              Text(
+              LiveTranslatedText(
                 'Enable fingerprint or face recognition for faster owner login',
                 style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12),
               ),
@@ -11495,7 +11496,7 @@ class _DashboardPageState extends State<DashboardPage>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           'Status',
                           style: GoogleFonts.poppins(
                             color: Colors.white60,
@@ -11513,7 +11514,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 : Colors.grey.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Text(
+                          child: LiveTranslatedText(
                             isEnabled ? '✓ Enabled' : '○ Disabled',
                             style: GoogleFonts.poppins(
                               color: isEnabled ? Colors.green : Colors.grey,
@@ -11533,7 +11534,7 @@ class _DashboardPageState extends State<DashboardPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('CLOSE'),
+            child: const LiveTranslatedText('CLOSE'),
           ),
           if (isSupported)
             ElevatedButton(
@@ -11556,7 +11557,7 @@ class _DashboardPageState extends State<DashboardPage>
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(
+                          content: LiveTranslatedText(
                             '✅ Biometric authentication enabled!',
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w600,
@@ -11572,7 +11573,7 @@ class _DashboardPageState extends State<DashboardPage>
                     if (ctx.mounted) {
                       ScaffoldMessenger.of(ctx).showSnackBar(
                         SnackBar(
-                          content: Text(
+                          content: LiveTranslatedText(
                             '❌ Biometric verification failed',
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.w600,
@@ -11588,7 +11589,7 @@ class _DashboardPageState extends State<DashboardPage>
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
                       SnackBar(
-                        content: Text(
+                        content: LiveTranslatedText(
                           '⚠️ Error: $e',
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w600,
@@ -11604,7 +11605,7 @@ class _DashboardPageState extends State<DashboardPage>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF8B5CF6),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 isEnabled ? 'DISABLE' : 'ENABLE',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
@@ -11641,7 +11642,7 @@ class _DashboardPageState extends State<DashboardPage>
           setState(() => _isStaffMode = false);
           if (mounted)
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Welcome back, Owner')),
+              const SnackBar(content: LiveTranslatedText('Welcome back, Owner')),
             );
           return;
         }
@@ -11653,7 +11654,7 @@ class _DashboardPageState extends State<DashboardPage>
             setState(() => _isStaffMode = false);
             if (mounted)
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Welcome back, Owner')),
+                const SnackBar(content: LiveTranslatedText('Welcome back, Owner')),
               );
           }
         });
@@ -11664,7 +11665,7 @@ class _DashboardPageState extends State<DashboardPage>
       setState(() => _isStaffMode = false);
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Switched back to Owner Mode')),
+          const SnackBar(content: LiveTranslatedText('Switched back to Owner Mode')),
         );
     } else {
       // Trying to enter Owner Mode (Owner Login clicked)
@@ -11684,7 +11685,7 @@ class _DashboardPageState extends State<DashboardPage>
             setState(() => _isStaffMode = false);
             if (mounted)
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Welcome back, Owner')),
+                const SnackBar(content: LiveTranslatedText('Welcome back, Owner')),
               );
           }
         });
@@ -11702,7 +11703,7 @@ class _DashboardPageState extends State<DashboardPage>
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlgState) => AlertDialog(
           backgroundColor: const Color(0xFF1E293B),
-          title: Text(
+          title: LiveTranslatedText(
             'Enter Master PIN',
             style: GoogleFonts.poppins(color: Colors.white),
           ),
@@ -11737,7 +11738,7 @@ class _DashboardPageState extends State<DashboardPage>
                       if (ctx.mounted) {
                         ScaffoldMessenger.of(ctx).showSnackBar(
                           SnackBar(
-                            content: Text('Biometric failed: $e'),
+                            content: LiveTranslatedText('Biometric failed: $e'),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -11748,7 +11749,7 @@ class _DashboardPageState extends State<DashboardPage>
                     Icons.fingerprint_rounded,
                     semanticLabel: 'Fingerprint Rounded',
                   ),
-                  label: Text(
+                  label: LiveTranslatedText(
                     'Or Use Biometric',
                     style: GoogleFonts.poppins(fontSize: 12),
                   ),
@@ -11766,7 +11767,7 @@ class _DashboardPageState extends State<DashboardPage>
                 Navigator.pop(ctx);
                 onResult(false);
               },
-              child: const Text('CANCEL'),
+              child: const LiveTranslatedText('CANCEL'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -11781,7 +11782,7 @@ class _DashboardPageState extends State<DashboardPage>
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
                       const SnackBar(
-                        content: Text(
+                        content: LiveTranslatedText(
                           'Incorrect PIN',
                           style: TextStyle(color: Colors.white),
                         ),
@@ -11791,7 +11792,7 @@ class _DashboardPageState extends State<DashboardPage>
                   }
                 }
               },
-              child: const Text('UNLOCK'),
+              child: const LiveTranslatedText('UNLOCK'),
             ),
           ],
         ),
@@ -11819,7 +11820,7 @@ class _DashboardPageState extends State<DashboardPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ Backup created: ${result['size']} KB'),
+              content: LiveTranslatedText('✅ Backup created: ${result['size']} KB'),
               backgroundColor: const Color(0xFF10B981),
             ),
           );
@@ -11828,7 +11829,7 @@ class _DashboardPageState extends State<DashboardPage>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⚠️ No backup file found'),
+              content: LiveTranslatedText('⚠️ No backup file found'),
               backgroundColor: Color(0xFFFB923C),
             ),
           );
@@ -11838,7 +11839,7 @@ class _DashboardPageState extends State<DashboardPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Backup failed: $e'),
+            content: LiveTranslatedText('❌ Backup failed: $e'),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -11851,14 +11852,14 @@ class _DashboardPageState extends State<DashboardPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please go to Shop Settings to perform a restore.'),
+            content: LiveTranslatedText('Please go to Shop Settings to perform a restore.'),
           ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ).showSnackBar(SnackBar(content: LiveTranslatedText('Error: $e')));
     }
   }
 
@@ -11910,14 +11911,14 @@ class _DashboardPageState extends State<DashboardPage>
               : 'No retryable sale/payment changes were found. The queued record, if any, has not been deleted.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: LiveTranslatedText(message),
           duration: const Duration(seconds: 4),
         ),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start sync retry: ${e.runtimeType}')),
+          SnackBar(content: LiveTranslatedText('Could not start sync retry: ${e.runtimeType}')),
         );
       }
     } finally {
@@ -11949,7 +11950,7 @@ class _DashboardPageState extends State<DashboardPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   count == 1
                       ? '1 sale/payment update awaiting cloud confirmation'
                       : '$count sale/payment updates awaiting cloud confirmation',
@@ -11960,7 +11961,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
+                LiveTranslatedText(
                   'A live internet connection does not guarantee this upload was accepted. Keep app data intact; this warning clears only after the server acknowledges the queued record.',
                   style: GoogleFonts.poppins(
                     fontSize: 11.5,
@@ -11969,7 +11970,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
                 if (_unsyncedSyncDetail.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Text(
+                  LiveTranslatedText(
                     _unsyncedSyncDetail,
                     style: GoogleFonts.poppins(
                       fontSize: 11,
@@ -11989,7 +11990,7 @@ class _DashboardPageState extends State<DashboardPage>
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.sync_rounded, size: 18),
-                    label: Text(
+                    label: LiveTranslatedText(
                       _retryingUnsyncedBills ? 'Retrying sync...' : 'Retry sync now',
                     ),
                     style: TextButton.styleFrom(
@@ -12028,7 +12029,7 @@ class _DashboardPageState extends State<DashboardPage>
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LiveTranslatedText(
               '$count sale${count == 1 ? '' : 's'} need date verification. They are excluded from sales totals until a valid business date is available.',
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
@@ -12092,7 +12093,7 @@ class _DashboardPageState extends State<DashboardPage>
                   color: const Color(0xFF4F46E5).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   dateStr,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
@@ -12107,7 +12108,7 @@ class _DashboardPageState extends State<DashboardPage>
             ],
           ),
           const SizedBox(height: 12),
-          Text(
+          LiveTranslatedText(
             _getGreeting(),
             style: GoogleFonts.poppins(
               fontSize: 26,
@@ -12120,7 +12121,7 @@ class _DashboardPageState extends State<DashboardPage>
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
-          Text(
+          LiveTranslatedText(
             shopName,
             style: GoogleFonts.poppins(
               fontSize: 16,
@@ -12202,7 +12203,7 @@ class _DashboardPageState extends State<DashboardPage>
         children: [
           Icon(icon, color: color, size: 18),
           const SizedBox(height: 6),
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               fontSize: 10,
@@ -12211,7 +12212,7 @@ class _DashboardPageState extends State<DashboardPage>
             ),
           ),
           const SizedBox(height: 2),
-          Text(
+          LiveTranslatedText(
             value,
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -12309,12 +12310,12 @@ class _DashboardPageState extends State<DashboardPage>
       ),
       child: Row(
         children: [
-          Text(
+          LiveTranslatedText(
             label,
             style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
           ),
           const SizedBox(width: 4),
-          Text(
+          LiveTranslatedText(
             value,
             style: const TextStyle(
               fontSize: 12,
@@ -12356,7 +12357,7 @@ class _DashboardPageState extends State<DashboardPage>
                 color: Color(0xFF6366F1),
               ),
               const SizedBox(width: 8),
-              Text(
+              LiveTranslatedText(
                 'Live Activity',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
@@ -12382,7 +12383,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
+                    child: LiveTranslatedText(
                       activity,
                       style: const TextStyle(
                         fontSize: 14,
@@ -12431,7 +12432,7 @@ class _DashboardPageState extends State<DashboardPage>
                 color: Colors.white,
               ),
               const SizedBox(width: 8),
-              Text(
+              LiveTranslatedText(
                 'Today\'s Live Sales',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
@@ -12473,7 +12474,7 @@ class _DashboardPageState extends State<DashboardPage>
         children: [
           Icon(icon, color: Colors.white.withValues(alpha: 0.8), size: 24),
           const SizedBox(height: 4),
-          Text(
+          LiveTranslatedText(
             value,
             style: GoogleFonts.poppins(
               fontSize: 18,
@@ -12481,7 +12482,7 @@ class _DashboardPageState extends State<DashboardPage>
               color: Colors.white,
             ),
           ),
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -12498,7 +12499,7 @@ class _DashboardPageState extends State<DashboardPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -12513,7 +12514,7 @@ class _DashboardPageState extends State<DashboardPage>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Flexible(
-                child: Text(
+                child: LiveTranslatedText(
                   value,
                   style: GoogleFonts.poppins(
                     fontSize: 16,
@@ -12527,7 +12528,7 @@ class _DashboardPageState extends State<DashboardPage>
               if (growth != null && growth != 0) ...[
                 const SizedBox(width: 4),
                 if (growth <= -100) ...[
-                  Text(
+                  LiveTranslatedText(
                     "–",
                     style: GoogleFonts.poppins(
                       fontSize: 14,
@@ -12545,7 +12546,7 @@ class _DashboardPageState extends State<DashboardPage>
                         : Colors.redAccent,
                     size: 14,
                   ),
-                  Text(
+                  LiveTranslatedText(
                     "${growth.abs().toStringAsFixed(1)}%",
                     style: GoogleFonts.poppins(
                       fontSize: 11,
@@ -12606,7 +12607,7 @@ class _DashboardPageState extends State<DashboardPage>
             ),
           ),
           const SizedBox(height: 32),
-          Text(
+          LiveTranslatedText(
             'Your Business Journey Starts Here',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
@@ -12617,7 +12618,7 @@ class _DashboardPageState extends State<DashboardPage>
             ),
           ),
           const SizedBox(height: 12),
-          Text(
+          LiveTranslatedText(
             'Experience real-time billing, voice analytics, and premium shop management. Add your first sale to unlock powerful insights.',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
@@ -12652,7 +12653,7 @@ class _DashboardPageState extends State<DashboardPage>
                   size: 20,
                 ),
                 const SizedBox(width: 12),
-                Text(
+                LiveTranslatedText(
                   'Record First Sale',
                   style: GoogleFonts.poppins(
                     fontSize: 16,
@@ -12722,7 +12723,7 @@ class _DashboardPageState extends State<DashboardPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Complete Setup',
                       style: GoogleFonts.poppins(
                         fontSize: 22,
@@ -12731,7 +12732,7 @@ class _DashboardPageState extends State<DashboardPage>
                         letterSpacing: -0.5,
                       ),
                     ),
-                    Text(
+                    LiveTranslatedText(
                       'Personalize your shop experience',
                       style: GoogleFonts.poppins(
                         fontSize: 13,
@@ -12821,7 +12822,7 @@ class _DashboardPageState extends State<DashboardPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     title,
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
@@ -12831,7 +12832,7 @@ class _DashboardPageState extends State<DashboardPage>
                           : const Color(0xFF1F2937),
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     desc,
                     style: GoogleFonts.poppins(
                       fontSize: 11,
@@ -12872,7 +12873,7 @@ class _DashboardPageState extends State<DashboardPage>
               color: Colors.grey[300],
             ),
             const SizedBox(height: 20),
-            Text(
+            LiveTranslatedText(
               message,
               style: TextStyle(
                 color: Colors.grey[400],
@@ -12882,7 +12883,7 @@ class _DashboardPageState extends State<DashboardPage>
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               'Add sales data to see visualizations',
               style: TextStyle(color: Colors.grey[300], fontSize: 13),
               textAlign: TextAlign.center,
@@ -12943,7 +12944,7 @@ class _DashboardPageState extends State<DashboardPage>
                   // provide quick visual feedback in case user is unsure
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Filter: ${filters[index]['label']}'),
+                      content: LiveTranslatedText('Filter: ${filters[index]['label']}'),
                       duration: const Duration(milliseconds: 500),
                     ),
                   );
@@ -12976,7 +12977,7 @@ class _DashboardPageState extends State<DashboardPage>
                         color: isSelected ? Colors.white : Colors.grey[600],
                       ),
                       const SizedBox(width: 6),
-                      Text(
+                      LiveTranslatedText(
                         filters[index]['label'],
                         style: TextStyle(
                           fontSize: 13,
@@ -13027,7 +13028,7 @@ class _DashboardPageState extends State<DashboardPage>
               child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               title,
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -13082,7 +13083,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  LiveTranslatedText(
                     AppLocalizations.of(context).products,
                     style: const TextStyle(
                       color: Colors.black87,
@@ -13093,7 +13094,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ],
               ),
               const SizedBox(height: 16),
-              Text(
+              LiveTranslatedText(
                 '${AppLocalizations.of(context).total} ${AppLocalizations.of(context).products}: ${uniqueProducts.length}',
                 style: TextStyle(
                   color: Colors.grey[700],
@@ -13109,7 +13110,7 @@ class _DashboardPageState extends State<DashboardPage>
                 width: double.maxFinite,
                 child: uniqueProducts.isEmpty
                     ? Center(
-                        child: Text(
+                        child: LiveTranslatedText(
                           AppLocalizations.of(context).noProductData,
                           style: TextStyle(color: Colors.grey[500]),
                         ),
@@ -13134,7 +13135,7 @@ class _DashboardPageState extends State<DashboardPage>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      LiveTranslatedText(
                                         _cleanProductName(product, ''),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w600,
@@ -13143,7 +13144,7 @@ class _DashboardPageState extends State<DashboardPage>
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(
+                                      LiveTranslatedText(
                                         'Sold $count times • ₹${(total as double).toStringAsFixed(0)}',
                                         style: TextStyle(
                                           fontSize: 11,
@@ -13164,7 +13165,7 @@ class _DashboardPageState extends State<DashboardPage>
                                     ).withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     ((data['percentage'] as num?)?.toDouble() ??
                                             0.0)
                                         .toStringAsFixed(1),
@@ -13195,7 +13196,7 @@ class _DashboardPageState extends State<DashboardPage>
                     vertical: 12,
                   ),
                 ),
-                child: Text(AppLocalizations.of(context).goToDashboard),
+                child: LiveTranslatedText(AppLocalizations.of(context).goToDashboard),
               ),
             ],
           ),
@@ -13263,7 +13264,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  LiveTranslatedText(
                     'Settings',
                     style: TextStyle(
                       color: isDarkMode ? Colors.white : Colors.black87,
@@ -13287,7 +13288,7 @@ class _DashboardPageState extends State<DashboardPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Store Information',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -13321,7 +13322,7 @@ class _DashboardPageState extends State<DashboardPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'App Settings',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -13342,7 +13343,7 @@ class _DashboardPageState extends State<DashboardPage>
                           await context.read<AppThemeController>().setAuto();
                         },
                         icon: const Icon(Icons.wb_twilight_rounded, size: 16),
-                        label: const Text('Use automatic day / night'),
+                        label: const LiveTranslatedText('Use automatic day / night'),
                       ),
                     ),
                   ],
@@ -13364,7 +13365,7 @@ class _DashboardPageState extends State<DashboardPage>
                         side: BorderSide(color: Colors.grey[300]!),
                       ),
                     ),
-                    child: const Text('Close'),
+                    child: const LiveTranslatedText('Close'),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -13375,7 +13376,7 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                     ),
                     onPressed: () => _performLogout(context),
-                    child: const Text('Logout'),
+                    child: const LiveTranslatedText('Logout'),
                   ),
                 ],
               ),
@@ -13390,14 +13391,14 @@ class _DashboardPageState extends State<DashboardPage>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
+        LiveTranslatedText(
           label,
           style: TextStyle(
             fontSize: 13,
             color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
           ),
         ),
-        Text(
+        LiveTranslatedText(
           value,
           style: TextStyle(
             fontSize: 13,
@@ -13413,7 +13414,7 @@ class _DashboardPageState extends State<DashboardPage>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
+        LiveTranslatedText(
           label,
           style: TextStyle(
             fontSize: 13,
@@ -13459,7 +13460,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
+              LiveTranslatedText(
                 'Receive Payment',
                 style: GoogleFonts.poppins(
                   color: Colors.white,
@@ -13477,7 +13478,7 @@ class _DashboardPageState extends State<DashboardPage>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'Upload your UPI / bank QR code so customers can scan and pay you directly.',
                     style: GoogleFonts.poppins(
                       color: const Color(0xFF6B7280),
@@ -13584,7 +13585,7 @@ class _DashboardPageState extends State<DashboardPage>
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
+                                  content: LiveTranslatedText(
                                     "The selected image does not contain a valid QR code. Please upload a QR code image.",
                                   ),
                                   backgroundColor: Colors.redAccent,
@@ -13616,7 +13617,7 @@ class _DashboardPageState extends State<DashboardPage>
                               color: Color(0xFF22C55E),
                             ),
                             const SizedBox(height: 10),
-                            Text(
+                            LiveTranslatedText(
                               'Tap to upload QR',
                               style: GoogleFonts.poppins(
                                 color: const Color(0xFF22C55E),
@@ -13625,7 +13626,7 @@ class _DashboardPageState extends State<DashboardPage>
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
+                            LiveTranslatedText(
                               'PNG / JPG from gallery',
                               style: GoogleFonts.poppins(
                                 color: Colors.grey[500],
@@ -13657,7 +13658,7 @@ class _DashboardPageState extends State<DashboardPage>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  LiveTranslatedText(
                                     'Payment Sound',
                                     style: GoogleFonts.poppins(
                                       color: Colors.white,
@@ -13665,7 +13666,7 @@ class _DashboardPageState extends State<DashboardPage>
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  Text(
+                                  LiveTranslatedText(
                                     'Voice announcement on credit',
                                     style: GoogleFonts.poppins(
                                       color: Colors.white38,
@@ -13700,7 +13701,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 semanticLabel: 'Play Arrow Rounded',
                                 color: Colors.white,
                               ),
-                              label: Text(
+                              label: LiveTranslatedText(
                                 'TEST ANNOUNCEMENTS',
                                 style: GoogleFonts.poppins(color: Colors.white),
                               ),
@@ -13721,7 +13722,7 @@ class _DashboardPageState extends State<DashboardPage>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  LiveTranslatedText(
                                     'Notification Access',
                                     style: GoogleFonts.poppins(
                                       color: Colors.white,
@@ -13734,7 +13735,7 @@ class _DashboardPageState extends State<DashboardPage>
                                         PaymentDetectionService.hasNotificationPermission(),
                                     builder: (context, snapshot) {
                                       bool granted = snapshot.data ?? false;
-                                      return Text(
+                                      return LiveTranslatedText(
                                         granted
                                             ? 'Permission Granted ✅'
                                             : 'Access Required ⚠️',
@@ -13767,7 +13768,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              child: Text(
+                              child: LiveTranslatedText(
                                 'ENABLE',
                                 style: GoogleFonts.poppins(
                                   color: Colors.white70,
@@ -13785,7 +13786,7 @@ class _DashboardPageState extends State<DashboardPage>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  LiveTranslatedText(
                                     'High-Performance Background Mode',
                                     style: GoogleFonts.poppins(
                                       color: Colors.white,
@@ -13798,7 +13799,7 @@ class _DashboardPageState extends State<DashboardPage>
                                         PaymentDetectionService.isBatteryOptimizationIgnored(),
                                     builder: (context, snapshot) {
                                       bool ignored = snapshot.data ?? false;
-                                      return Text(
+                                      return LiveTranslatedText(
                                         ignored
                                             ? 'Optimized for Reliability ✅'
                                             : 'Enable for seamless detection ⚠️',
@@ -13831,7 +13832,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              child: Text(
+                              child: LiveTranslatedText(
                                 'FIX',
                                 style: GoogleFonts.poppins(
                                   color: Colors.white70,
@@ -13849,7 +13850,7 @@ class _DashboardPageState extends State<DashboardPage>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  LiveTranslatedText(
                                     'Accessibility (High Accuracy)',
                                     style: GoogleFonts.poppins(
                                       color: Colors.white,
@@ -13862,7 +13863,7 @@ class _DashboardPageState extends State<DashboardPage>
                                         PaymentDetectionService.hasAccessibilityPermission(),
                                     builder: (context, snapshot) {
                                       bool granted = snapshot.data ?? false;
-                                      return Text(
+                                      return LiveTranslatedText(
                                         granted
                                             ? 'Ultra Detection Active 🚀'
                                             : 'Disabled ⚠️',
@@ -13895,7 +13896,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              child: Text(
+                              child: LiveTranslatedText(
                                 'ENABLE',
                                 style: GoogleFonts.poppins(
                                   color: Colors.white70,
@@ -13925,7 +13926,7 @@ class _DashboardPageState extends State<DashboardPage>
                                     size: 14,
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(
+                                  LiveTranslatedText(
                                     'Play Store Compliance',
                                     style: GoogleFonts.poppins(
                                       color: Colors.white70,
@@ -13936,7 +13937,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              Text(
+                              LiveTranslatedText(
                                 'Privacy First: Accessibility and Notification services are ONLY used to detect payment confirmations within trusted apps. No bank balances, passwords, or personal chats are accessed. Detection happens locally on your device.',
                                 style: GoogleFonts.poppins(
                                   color: Colors.white38,
@@ -14000,7 +14001,7 @@ class _DashboardPageState extends State<DashboardPage>
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
+                                  content: LiveTranslatedText(
                                     "The selected image does not contain a valid QR code. Please upload a QR code image.",
                                   ),
                                   backgroundColor: Colors.redAccent,
@@ -14016,7 +14017,7 @@ class _DashboardPageState extends State<DashboardPage>
                         size: 18,
                         color: Color(0xFF22C55E),
                       ),
-                      label: Text(
+                      label: LiveTranslatedText(
                         'Change QR',
                         style: GoogleFonts.poppins(
                           color: const Color(0xFF22C55E),
@@ -14031,7 +14032,7 @@ class _DashboardPageState extends State<DashboardPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text(
+              child: LiveTranslatedText(
                 'Close',
                 style: GoogleFonts.poppins(color: const Color(0xFF6B7280)),
               ),
@@ -14112,7 +14113,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
+              LiveTranslatedText(
                 'Recent Transactions Heat',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
@@ -14159,7 +14160,7 @@ class _DashboardPageState extends State<DashboardPage>
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 45,
-                      getTitlesWidget: (value, meta) => Text(
+                      getTitlesWidget: (value, meta) => LiveTranslatedText(
                         '₹${value.toStringAsFixed(0)}',
                         style: GoogleFonts.poppins(
                           color: Colors.grey[500],
@@ -14223,7 +14224,7 @@ class _DashboardPageState extends State<DashboardPage>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LiveTranslatedText(
                 shopName.isNotEmpty ? shopName : 'AI Shop Pro',
                 style: const TextStyle(
                   fontSize: 18,
@@ -14233,7 +14234,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
+              LiveTranslatedText(
                 AppLocalizations.of(context).dashboard,
                 style: TextStyle(
                   fontSize: 11,
@@ -14417,7 +14418,7 @@ class _DashboardPageState extends State<DashboardPage>
           color: Colors.redAccent,
           size: 20,
         ),
-        title: Text(
+        title: LiveTranslatedText(
           title,
           style: const TextStyle(
             fontSize: 15,
@@ -14459,7 +14460,7 @@ class _DashboardPageState extends State<DashboardPage>
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 title,
                 style: TextStyle(
                   fontSize: 16,
@@ -14563,20 +14564,20 @@ class _DashboardPageState extends State<DashboardPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(label, style: GoogleFonts.poppins(
+                      LiveTranslatedText(label, style: GoogleFonts.poppins(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey.shade600,
                       )),
                       const SizedBox(height: 2),
-                      Text(value, style: GoogleFonts.poppins(
+                      LiveTranslatedText(value, style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF111827),
                       )),
                       if (helper != null) ...[
                         const SizedBox(height: 2),
-                        Text(helper, style: GoogleFonts.poppins(
+                        LiveTranslatedText(helper, style: GoogleFonts.poppins(
                           fontSize: 9.5,
                           color: Colors.grey.shade500,
                         )),
@@ -14634,7 +14635,7 @@ class _DashboardPageState extends State<DashboardPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             'Daily Closing',
                             style: GoogleFonts.poppins(
                               fontSize: 21,
@@ -14642,7 +14643,7 @@ class _DashboardPageState extends State<DashboardPage>
                               color: const Color(0xFF111827),
                             ),
                           ),
-                          Text(
+                          LiveTranslatedText(
                             '${DateFormat('EEEE, dd MMMM yyyy').format(today)} • ${bills} bills',
                             style: GoogleFonts.poppins(
                               fontSize: 11,
@@ -14718,7 +14719,7 @@ class _DashboardPageState extends State<DashboardPage>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               'Top product',
                               style: GoogleFonts.poppins(
                                 fontSize: 10,
@@ -14728,7 +14729,7 @@ class _DashboardPageState extends State<DashboardPage>
                               ),
                             ),
                             const SizedBox(height: 3),
-                            Text(
+                            LiveTranslatedText(
                               topProduct,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -14760,13 +14761,13 @@ class _DashboardPageState extends State<DashboardPage>
                           Clipboard.setData(ClipboardData(text: message)).then((_) {
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Closing summary copied.')),
+                                const SnackBar(content: LiveTranslatedText('Closing summary copied.')),
                               );
                             }
                           });
                         },
                         icon: const Icon(Icons.copy_rounded),
-                        label: const Text('Copy summary'),
+                        label: const LiveTranslatedText('Copy summary'),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -14777,7 +14778,7 @@ class _DashboardPageState extends State<DashboardPage>
                           await _closeDayAndSendEmail();
                         },
                         icon: const Icon(Icons.lock_clock_rounded),
-                        label: const Text('Close day'),
+                        label: const LiveTranslatedText('Close day'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF111827),
                           foregroundColor: Colors.white,
@@ -14788,7 +14789,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(
+                LiveTranslatedText(
                   'Closing uses the same canonical daily analytics shown on the dashboard, so the values stay consistent.',
                   style: GoogleFonts.poppins(
                     fontSize: 10.5,
@@ -14830,18 +14831,18 @@ class _DashboardPageState extends State<DashboardPage>
             await showDialog<bool>(
               context: context,
               builder: (ctx) => AlertDialog(
-                title: const Text('Pending data'),
-                content: Text(
+                title: const LiveTranslatedText('Pending data'),
+                content: LiveTranslatedText(
                   '''${remaining.toString()} item(s) still need synchronization. They will remain safely in the encrypted, user-scoped outbox and retry after the next login.\n\nYou can logout now without losing the pending records.''',
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('CANCEL'),
+                    child: const LiveTranslatedText('CANCEL'),
                   ),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('LOGOUT SAFELY'),
+                    child: const LiveTranslatedText('LOGOUT SAFELY'),
                   ),
                 ],
               ),
@@ -14857,14 +14858,14 @@ class _DashboardPageState extends State<DashboardPage>
         await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Logout?'),
-            content: const Text(
+            title: const LiveTranslatedText('Logout?'),
+            content: const LiveTranslatedText(
               'Are you sure you want to logout? Your synced data will safely return when you log back in.',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
+                child: const LiveTranslatedText('Cancel'),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -14872,7 +14873,7 @@ class _DashboardPageState extends State<DashboardPage>
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Logout'),
+                child: const LiveTranslatedText('Logout'),
               ),
             ],
           ),
@@ -14926,7 +14927,7 @@ class _DashboardPageState extends State<DashboardPage>
               children: [
                 Icon(icon, size: 18, color: color),
                 const SizedBox(width: 6),
-                Text(
+                LiveTranslatedText(
                   label,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
@@ -15058,7 +15059,7 @@ class _DashboardPageState extends State<DashboardPage>
                               color: Colors.redAccent,
                               shape: BoxShape.circle,
                             ),
-                            child: const Text(
+                            child: const LiveTranslatedText(
                               '1',
                               style: TextStyle(
                                 color: Colors.white,
@@ -15326,7 +15327,7 @@ class _DashboardPageState extends State<DashboardPage>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              LiveTranslatedText(
                                 'Complete Customer Profile',
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
@@ -15335,7 +15336,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
+                              LiveTranslatedText(
                                 'Please fill your profile details to get started.',
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
@@ -15363,7 +15364,7 @@ class _DashboardPageState extends State<DashboardPage>
                             ),
                             elevation: 0,
                           ),
-                          child: Text(
+                          child: LiveTranslatedText(
                             'Fill Now',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
@@ -15475,7 +15476,7 @@ class _DashboardPageState extends State<DashboardPage>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                LiveTranslatedText(
                                   AppLocalizations.of(context).shopDetails,
                                   style: const TextStyle(
                                     color: Colors.white,
@@ -15483,7 +15484,7 @@ class _DashboardPageState extends State<DashboardPage>
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                Text(
+                                LiveTranslatedText(
                                   AppLocalizations.of(
                                     context,
                                   ).allContactIncluded,
@@ -15679,7 +15680,7 @@ class _DashboardPageState extends State<DashboardPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     label,
                     style: GoogleFonts.poppins(
                       color: Colors.white70,
@@ -15731,7 +15732,7 @@ class _DashboardPageState extends State<DashboardPage>
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
+                        child: LiveTranslatedText(
                           currentPath != null
                               ? p.basename(currentPath)
                               : 'System Default',
@@ -15789,7 +15790,7 @@ class _DashboardPageState extends State<DashboardPage>
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            title: Text(
+            title: LiveTranslatedText(
               'Custom Voice Settings',
               style: GoogleFonts.poppins(
                 color: Colors.white,
@@ -15851,7 +15852,7 @@ class _DashboardPageState extends State<DashboardPage>
                           );
                         }
                         if (voices.isEmpty) {
-                          return Text(
+                          return LiveTranslatedText(
                             'No voices found for current language.\nInstall TTS voices in Android Settings.',
                             style: GoogleFonts.poppins(
                               color: Colors.white54,
@@ -15871,7 +15872,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   size: 18,
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
+                                LiveTranslatedText(
                                   'AI Voice Selection',
                                   style: GoogleFonts.poppins(
                                     color: Colors.white,
@@ -15901,7 +15902,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 color: Colors.white,
                                 fontSize: 12,
                               ),
-                              hint: Text(
+                              hint: LiveTranslatedText(
                                 'Select a voice...',
                                 style: GoogleFonts.poppins(
                                   color: Colors.white38,
@@ -15918,7 +15919,7 @@ class _DashboardPageState extends State<DashboardPage>
                                       '🤖 ${displayName.split('x').last.trim()}';
                                 return DropdownMenuItem<String>(
                                   value: v['name'],
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     displayName,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -15951,7 +15952,7 @@ class _DashboardPageState extends State<DashboardPage>
                               },
                             ),
                             const SizedBox(height: 6),
-                            Text(
+                            LiveTranslatedText(
                               'A preview will play when you select a voice.',
                               style: GoogleFonts.poppins(
                                 color: Colors.white38,
@@ -15964,7 +15965,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text(
+                  LiveTranslatedText(
                     'Custom Alert Recordings (play before announcement):',
                     style: GoogleFonts.poppins(
                       color: Colors.white38,
@@ -16003,7 +16004,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                   const Divider(color: Colors.white12, height: 32),
                   SwitchListTile(
-                    title: Text(
+                    title: LiveTranslatedText(
                       'Use My Exact Voice for Amounts',
                       style: GoogleFonts.poppins(
                         color: Colors.white,
@@ -16011,7 +16012,7 @@ class _DashboardPageState extends State<DashboardPage>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    subtitle: Text(
+                    subtitle: LiveTranslatedText(
                       'Announces amounts using your recorded numbers instead of AI voice.',
                       style: GoogleFonts.poppins(
                         color: Colors.white38,
@@ -16033,7 +16034,7 @@ class _DashboardPageState extends State<DashboardPage>
                           semanticLabel: 'Settings Voice',
                           color: Colors.blueAccent,
                         ),
-                        label: Text(
+                        label: LiveTranslatedText(
                           'OPEN VOICE STUDIO',
                           style: GoogleFonts.poppins(
                             color: Colors.blueAccent,
@@ -16052,7 +16053,7 @@ class _DashboardPageState extends State<DashboardPage>
                         semanticLabel: 'Play Arrow Rounded',
                         color: Colors.white,
                       ),
-                      label: Text(
+                      label: LiveTranslatedText(
                         'TEST ANNOUNCEMENTS',
                         style: GoogleFonts.poppins(color: Colors.white),
                       ),
@@ -16070,7 +16071,7 @@ class _DashboardPageState extends State<DashboardPage>
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
+                child: const LiveTranslatedText(
                   'CANCEL',
                   style: TextStyle(color: Colors.white54),
                 ),
@@ -16093,7 +16094,7 @@ class _DashboardPageState extends State<DashboardPage>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF22C55E),
                 ),
-                child: const Text(
+                child: const LiveTranslatedText(
                   'SAVE SETTINGS',
                   style: TextStyle(
                     color: Colors.white,
@@ -16168,14 +16169,14 @@ class _DashboardPageState extends State<DashboardPage>
                   size: 40,
                 ),
                 const SizedBox(height: 12),
-                Text(
+                LiveTranslatedText(
                   'Voice Studio',
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
+                LiveTranslatedText(
                   'Record each word clearly',
                   style: GoogleFonts.poppins(
                     color: Colors.white38,
@@ -16190,7 +16191,7 @@ class _DashboardPageState extends State<DashboardPage>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(height: 20),
-                  Text(
+                  LiveTranslatedText(
                     items[currentIndex].toUpperCase(),
                     style: GoogleFonts.poppins(
                       color: Colors.white,
@@ -16200,7 +16201,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Text(
+                  LiveTranslatedText(
                     'Step ${currentIndex + 1} of ${items.length}',
                     style: GoogleFonts.poppins(
                       color: Colors.white24,
@@ -16276,7 +16277,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text(
+                  LiveTranslatedText(
                     isRecording ? 'RELEASE TO STOP' : 'HOLD TO RECORD',
                     style: GoogleFonts.poppins(
                       color: isRecording ? Colors.redAccent : Colors.white38,
@@ -16295,7 +16296,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 isRecording = false;
                               })
                             : null,
-                        child: const Text(
+                        child: const LiveTranslatedText(
                           'BACK',
                           style: TextStyle(color: Colors.white30),
                         ),
@@ -16310,7 +16311,7 @@ class _DashboardPageState extends State<DashboardPage>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white10,
                         ),
-                        child: Text(
+                        child: LiveTranslatedText(
                           currentIndex < items.length - 1 ? 'NEXT' : 'FINISH',
                           style: const TextStyle(color: Colors.white),
                         ),
@@ -16334,7 +16335,7 @@ class _DashboardPageState extends State<DashboardPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           title,
           style: GoogleFonts.poppins(
             color: Colors.white,
@@ -16359,7 +16360,7 @@ class _DashboardPageState extends State<DashboardPage>
                   .map(
                     (hero) => DropdownMenuItem(
                       value: hero,
-                      child: Text(
+                      child: LiveTranslatedText(
                         hero,
                         style: GoogleFonts.poppins(
                           color: Colors.white,
@@ -16386,7 +16387,7 @@ class _DashboardPageState extends State<DashboardPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           label,
           style: GoogleFonts.poppins(
             color: Colors.white,
@@ -16394,7 +16395,7 @@ class _DashboardPageState extends State<DashboardPage>
             fontWeight: FontWeight.w600,
           ),
         ),
-        Text(
+        LiveTranslatedText(
           sub,
           style: GoogleFonts.poppins(color: Colors.white38, fontSize: 12),
         ),
@@ -16535,7 +16536,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
+            LiveTranslatedText(
               'Shop Settings Hub',
               style: GoogleFonts.poppins(
                 fontSize: 20,
@@ -16543,7 +16544,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               'Manage branding, payments & data',
               style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500]),
             ),
@@ -16592,7 +16593,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               isConnected
                                   ? 'Cloud Sync Active'
                                   : 'Cloud Sync Offline',
@@ -16603,7 +16604,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
+                            LiveTranslatedText(
                               isConnected
                                   ? 'Your data is being synced securely'
                                   : 'Enable internet to sync sales & backups',
@@ -16636,7 +16637,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Live Activity',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
@@ -16691,7 +16692,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: Text(
+                                child: LiveTranslatedText(
                                   activity,
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
@@ -16762,7 +16763,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
+                        child: LiveTranslatedText(
                           'Add your UPI ID to enable online payment detection and dynamic QR.',
                           style: GoogleFonts.poppins(
                             color: Colors.amber[900],
@@ -16871,7 +16872,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                 title: Row(
                   children: [
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         widget.isAutoTheme
                             ? 'Day / Night • Automatic'
                             : widget.isDarkMode
@@ -16894,7 +16895,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                           color: const Color(0xFFEEF2FF),
                           borderRadius: BorderRadius.circular(999),
                         ),
-                        child: const Text(
+                        child: const LiveTranslatedText(
                           'AUTO',
                           style: TextStyle(
                             color: Color(0xFF4F46E5),
@@ -16905,7 +16906,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                       ),
                   ],
                 ),
-                subtitle: Text(
+                subtitle: LiveTranslatedText(
                   widget.isAutoTheme
                       ? 'Light 07:00–19:00 • Dark 19:00–07:00'
                       : 'Manual palette enabled',
@@ -16920,7 +16921,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                     if (!widget.isAutoTheme)
                       TextButton(
                         onPressed: widget.onSetAutoTheme,
-                        child: const Text('Auto'),
+                        child: const LiveTranslatedText('Auto'),
                       ),
                     Switch(
                       value: widget.isDarkMode,
@@ -16956,7 +16957,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                   ),
                   elevation: 0,
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   'SAVE ALL SETTINGS',
                   style: GoogleFonts.poppins(
                     color: Colors.white,
@@ -17009,7 +17010,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                         ),
                       ),
                       child: Center(
-                        child: Text(
+                        child: LiveTranslatedText(
                           initial,
                           style: GoogleFonts.poppins(
                             color: Colors.white,
@@ -17022,7 +17023,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
+          LiveTranslatedText(
             _shopCtrl.text.isEmpty ? 'My Shop' : _shopCtrl.text,
             style: GoogleFonts.poppins(
               fontSize: 18,
@@ -17030,7 +17031,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
               color: const Color(0xFF1F2937),
             ),
           ),
-          Text(
+          LiveTranslatedText(
             _userCtrl.text.isEmpty ? 'Owner' : _userCtrl.text,
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[500]),
           ),
@@ -17046,7 +17047,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
         children: [
           Icon(icon, size: 18, color: const Color(0xFF1F2937)),
           const SizedBox(width: 10),
-          Text(
+          LiveTranslatedText(
             title,
             style: GoogleFonts.poppins(
               fontSize: 15,
@@ -17114,7 +17115,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               fontSize: 13,
@@ -17122,7 +17123,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          Text(
+          LiveTranslatedText(
             subtitle,
             style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500]),
           ),
@@ -17178,7 +17179,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
                           size: 32,
                         ),
                         const SizedBox(height: 8),
-                        Text(
+                        LiveTranslatedText(
                           'TAP TO UPLOAD',
                           style: GoogleFonts.poppins(
                             fontSize: 11,
@@ -17216,7 +17217,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
           ),
           child: Icon(icon, color: color, size: 20),
         ),
-        title: Text(
+        title: LiveTranslatedText(
           title,
           style: GoogleFonts.poppins(
             fontSize: 14,
@@ -17224,7 +17225,7 @@ class _ShopSettingsBottomSheetState extends State<_ShopSettingsBottomSheet> {
             color: const Color(0xFF1F2937),
           ),
         ),
-        subtitle: Text(
+        subtitle: LiveTranslatedText(
           sub,
           style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500]),
         ),
@@ -17367,7 +17368,7 @@ class _AiFeatureCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     title,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
@@ -17375,7 +17376,7 @@ class _AiFeatureCard extends StatelessWidget {
                       color: const Color(0xFF1F2937),
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     desc,
                     style: GoogleFonts.poppins(
                       fontSize: 12,

@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:async';
 import 'cache_consistency_service.dart';
 import 'dart:convert';
@@ -433,7 +434,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not refresh products — showing last known list ($e)'),
+          content: LiveTranslatedText('Could not refresh products — showing last known list ($e)'),
           backgroundColor: Colors.red,
         ),
       );
@@ -496,13 +497,13 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
           !imageUrlValue.startsWith('http://') &&
           !imageUrlValue.startsWith('data:image/')))) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Use an http(s) image URL or upload a supported image.')),
+        const SnackBar(content: LiveTranslatedText('Use an http(s) image URL or upload a supported image.')),
       );
       return;
     }
     if (_nameC.text.isEmpty || _priceC.text.isEmpty || purchasePrice == null || !purchasePrice.isFinite || purchasePrice <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product name, selling price, and purchase cost (greater than zero) are required')));
+        const SnackBar(content: LiveTranslatedText('Product name, selling price, and purchase cost (greater than zero) are required')));
       return;
     }
 
@@ -551,7 +552,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Product saved on this device and queued for sync'),
+            content: LiveTranslatedText('✅ Product saved on this device and queued for sync'),
           ),
         );
       }
@@ -559,7 +560,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       if (kDebugMode) debugPrint('❌ Error adding product: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: LiveTranslatedText('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -637,12 +638,12 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     return showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Choose a matching image', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 17)),
+        title: LiveTranslatedText('Choose a matching image', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 17)),
         content: SizedBox(
           width: 440,
           height: 420,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Suggestions for ' + productName + '. Check the package/brand before saving.',
+            LiveTranslatedText('Suggestions for ' + productName + '. Check the package/brand before saving.',
               style: GoogleFonts.poppins(fontSize: 11, color: Colors.blueGrey.shade600)),
             const SizedBox(height: 10),
             Expanded(
@@ -665,13 +666,13 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                         _productImagePreview(null, url, size: 66),
                         const SizedBox(width: 10),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(item['title']?.toString() ?? productName, maxLines: 2, overflow: TextOverflow.ellipsis,
+                          LiveTranslatedText(item['title']?.toString() ?? productName, maxLines: 2, overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 3),
-                          Text(item['source']?.toString() ?? 'Online image result', maxLines: 1, overflow: TextOverflow.ellipsis,
+                          LiveTranslatedText(item['source']?.toString() ?? 'Online image result', maxLines: 1, overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.poppins(fontSize: 9, color: Colors.blueGrey.shade500)),
                           const SizedBox(height: 3),
-                          Text('Use this image', style: GoogleFonts.poppins(fontSize: 9, color: _primary, fontWeight: FontWeight.w800)),
+                          LiveTranslatedText('Use this image', style: GoogleFonts.poppins(fontSize: 9, color: _primary, fontWeight: FontWeight.w800)),
                         ])),
                         const Icon(Icons.chevron_right_rounded),
                       ]),
@@ -682,7 +683,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
             ),
           ]),
         ),
-        actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel'))],
+        actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const LiveTranslatedText('Cancel'))],
       ),
     );
   }
@@ -701,7 +702,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       if (bytes.length > 45 * 1024) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Choose a smaller image. Please crop it or use a lower-resolution photo (45 KB max).')),
+            const SnackBar(content: LiveTranslatedText('Choose a smaller image. Please crop it or use a lower-resolution photo (45 KB max).')),
           );
         }
         return;
@@ -714,7 +715,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not select image: ' + error.toString())),
+          SnackBar(content: LiveTranslatedText('Could not select image: ' + error.toString())),
         );
       }
     }
@@ -723,7 +724,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
   Future<void> _lookupProductImageForAdd(StateSetter updateDialog) async {
     final name = _nameC.text.trim();
     if (name.length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter the product name first.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Enter the product name first.')));
       return;
     }
     updateDialog(() => _imageLookupLoading = true);
@@ -731,7 +732,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       final suggestions = await _findProductImageSuggestions(name, _catC.text);
       if (suggestions.isEmpty) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No online images found. You can upload a photo or paste an image URL.')),
+          const SnackBar(content: LiveTranslatedText('No online images found. You can upload a photo or paste an image URL.')),
         );
         return;
       }
@@ -746,7 +747,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       }
     } catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: LiveTranslatedText(error.toString().replaceFirst('Exception: ', ''))),
       );
     } finally {
       try { updateDialog(() => _imageLookupLoading = false); } catch (_) {}
@@ -782,7 +783,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                 Row(children: [
                   const Icon(Icons.photo_camera_back_rounded, color: _primary),
                   const SizedBox(width: 9),
-                  Expanded(child: Text('Product image · ' + productName, maxLines: 2, overflow: TextOverflow.ellipsis,
+                  Expanded(child: LiveTranslatedText('Product image · ' + productName, maxLines: 2, overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800))),
                   IconButton(onPressed: () => Navigator.pop(sheetContext), icon: const Icon(Icons.close)),
                 ]),
@@ -797,7 +798,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                         if (picked == null) return;
                         final bytes = await picked.readAsBytes();
                         if (bytes.isEmpty || bytes.length > 45 * 1024) {
-                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Choose a smaller image (45 KB max).')));
+                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Choose a smaller image (45 KB max).')));
                           return;
                         }
                         ss(() {
@@ -806,11 +807,11 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                           urlController.clear();
                         });
                       } catch (error) {
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Image selection failed: ' + error.toString())));
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText('Image selection failed: ' + error.toString())));
                       }
                     },
                     icon: const Icon(Icons.upload_rounded),
-                    label: const Text('Upload photo'),
+                    label: const LiveTranslatedText('Upload photo'),
                   ),
                   OutlinedButton.icon(
                     onPressed: saving || lookupLoading ? null : () async {
@@ -819,7 +820,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                         final suggestions = await _findProductImageSuggestions(productName, category);
                         if (!mounted) return;
                         if (suggestions.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No matching images found.')));
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('No matching images found.')));
                         } else {
                           final selected = await _chooseProductImage(productName, suggestions);
                           if (selected != null) ss(() {
@@ -829,13 +830,13 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                           });
                         }
                       } catch (error) {
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))));
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText(error.toString().replaceFirst('Exception: ', ''))));
                       } finally {
                         try { ss(() => lookupLoading = false); } catch (_) {}
                       }
                     },
                     icon: lookupLoading ? const SizedBox(width: 14,height: 14,child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore_rounded),
-                    label: const Text('Find online image'),
+                    label: const LiveTranslatedText('Find online image'),
                   ),
                 ]),
                 const SizedBox(height: 10),
@@ -854,7 +855,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                   onPressed: saving ? null : () async {
                     final imageUrl = selectedDataUrl ?? (urlController.text.trim().isEmpty ? null : urlController.text.trim());
                     if (imageUrl != null && !imageUrl.startsWith('https://') && !imageUrl.startsWith('http://') && !imageUrl.startsWith('data:image/')) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Use an http(s) image URL or upload a photo.')));
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Use an http(s) image URL or upload a photo.')));
                       return;
                     }
                     ss(() => saving = true);
@@ -971,16 +972,16 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                           if (index >= 0) _products[index] = updated;
                         });
                         Navigator.pop(sheetContext);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Product image saved locally and queued to sync.')));
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Product image saved locally and queued to sync.')));
                       }
                     } catch (error) {
-                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save image: ' + error.toString())));
+                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText('Could not save image: ' + error.toString())));
                     } finally {
                       try { ss(() => saving = false); } catch (_) {}
                     }
                   },
                   icon: saving ? const SizedBox(width: 15,height: 15,child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_rounded),
-                  label: Text(saving ? 'Saving…' : 'Save product image'),
+                  label: LiveTranslatedText(saving ? 'Saving…' : 'Save product image'),
                 )),
               ]),
             ),
@@ -1016,7 +1017,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
               Row(children: [
                 Container(width: 4, height: 28, color: _primary,
                     margin: const EdgeInsets.only(right: 12)),
-                Text('Add New Product',
+                LiveTranslatedText('Add New Product',
                     style: GoogleFonts.poppins(
                         fontSize: 18, fontWeight: FontWeight.w700)),
                 const Spacer(),
@@ -1083,7 +1084,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                           });
                           
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('⏳ Searching Global CDN...'), duration: Duration(milliseconds: 700)),
+                            const SnackBar(content: LiveTranslatedText('⏳ Searching Global CDN...'), duration: Duration(milliseconds: 700)),
                           );
 
                           final prefs = await SharedPreferences.getInstance();
@@ -1103,7 +1104,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                             });
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
+                                content: LiveTranslatedText(
                                   '✅ Product found: ' +
                                       magicProduct.name +
                                       '. Verify the selling price and MRP.',
@@ -1114,7 +1115,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                           } else if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
+                                content: LiveTranslatedText(
                                   'Barcode ' +
                                       code +
                                       ' was not matched to a real catalog item. '
@@ -1164,8 +1165,8 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                     const Icon(Icons.add_photo_alternate_rounded, color: _primary, size: 20),
                     const SizedBox(width: 8),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Product image', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700)),
-                      Text('Optional · upload your own or choose a matching online image', style: GoogleFonts.poppins(fontSize: 10, color: Colors.blueGrey.shade500)),
+                      LiveTranslatedText('Product image', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700)),
+                      LiveTranslatedText('Optional · upload your own or choose a matching online image', style: GoogleFonts.poppins(fontSize: 10, color: Colors.blueGrey.shade500)),
                     ])),
                   ]),
                   const SizedBox(height: 11),
@@ -1177,18 +1178,18 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                         OutlinedButton.icon(
                           onPressed: () => _pickProductImage(ss),
                           icon: const Icon(Icons.upload_rounded, size: 16),
-                          label: const Text('Upload'),
+                          label: const LiveTranslatedText('Upload'),
                         ),
                         OutlinedButton.icon(
                           onPressed: _imageLookupLoading ? null : () => _lookupProductImageForAdd(ss),
                           icon: _imageLookupLoading
                             ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
                             : const Icon(Icons.travel_explore_rounded, size: 16),
-                          label: const Text('Find online'),
+                          label: const LiveTranslatedText('Find online'),
                         ),
                       ]),
                       const SizedBox(height: 5),
-                      Text('Confirm the brand/package before using an online suggestion.', style: GoogleFonts.poppins(fontSize: 9, color: Colors.blueGrey.shade500, height: 1.4)),
+                      LiveTranslatedText('Confirm the brand/package before using an online suggestion.', style: GoogleFonts.poppins(fontSize: 9, color: Colors.blueGrey.shade500, height: 1.4)),
                     ])),
                   ]),
                   const SizedBox(height: 10),
@@ -1219,7 +1220,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                   filled: true, fillColor: Colors.grey.shade50,
                 ),
                 items: ['pcs', 'kg', 'g', 'litre', 'ml', 'dozen', 'box', 'pack']
-                    .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                    .map((u) => DropdownMenuItem(value: u, child: LiveTranslatedText(u)))
                     .toList(),
                 onChanged: (v) => _unitC.text = v ?? 'pcs',
               ),
@@ -1271,7 +1272,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                             color: Colors.white,
                           ),
                         )
-                      : Text('Add Product',
+                      : LiveTranslatedText('Add Product',
                           style: GoogleFonts.poppins(
                               fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
@@ -1320,7 +1321,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).inventory, style: GoogleFonts.poppins(
+        title: LiveTranslatedText(AppLocalizations.of(context).inventory, style: GoogleFonts.poppins(
             fontWeight: FontWeight.w800, color: const Color(0xFF172554))),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF172554),
@@ -1358,14 +1359,14 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                 
                 if (foundLocal) {
                    ScaffoldMessenger.of(context).showSnackBar(
-                     const SnackBar(content: Text('✅ Product found in local inventory!'), backgroundColor: Colors.green),
+                     const SnackBar(content: LiveTranslatedText('✅ Product found in local inventory!'), backgroundColor: Colors.green),
                    );
                    return;
                 }
 
                 // If not found locally, suggest adding it via Global CDN!
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Product not found locally. Querying Global CDN for $code...')),
+                  SnackBar(content: LiveTranslatedText('Product not found locally. Querying Global CDN for $code...')),
                 );
                 
                 final prefs = await SharedPreferences.getInstance();
@@ -1380,12 +1381,12 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                      _priceC.text = magicProduct.adjustedPrice.toString();
                    });
                    ScaffoldMessenger.of(context).showSnackBar(
-                     SnackBar(content: Text('✨ Auto-filled ${magicProduct.name} from CDN!'), backgroundColor: Colors.green),
+                     SnackBar(content: LiveTranslatedText('✨ Auto-filled ${magicProduct.name} from CDN!'), backgroundColor: Colors.green),
                    );
                 } else if (mounted) {
                    _fetch(); // Reset view
                    ScaffoldMessenger.of(context).showSnackBar(
-                     const SnackBar(content: Text('❌ Not found in Local Inventory or Global CDN.'), backgroundColor: Colors.red),
+                     const SnackBar(content: LiveTranslatedText('❌ Not found in Local Inventory or Global CDN.'), backgroundColor: Colors.red),
                    );
                 }
               }
@@ -1404,7 +1405,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
         backgroundColor: _primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: Text(AppLocalizations.of(context).addProduct,
+        label: LiveTranslatedText(AppLocalizations.of(context).addProduct,
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
       ),
     );
@@ -1434,7 +1435,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
               child: Icon(Icons.inventory_2_outlined, size: 62, color: _primary),
             ),
             const SizedBox(height: 22),
-            Text(
+            LiveTranslatedText(
               'Your inventory is empty',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
@@ -1444,7 +1445,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
               ),
             ),
             const SizedBox(height: 10),
-            Text(
+            LiveTranslatedText(
               'Add your first product and it will appear here instantly.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
@@ -1467,7 +1468,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                     const Icon(Icons.cloud_off_rounded, size: 18, color: Colors.orange),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         'The server could not be refreshed just now. Your local data is untouched. Retry to sync again.',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
@@ -1483,7 +1484,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
               OutlinedButton.icon(
                 onPressed: () => _fetch(forceRemote: true),
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry Sync'),
+                label: const LiveTranslatedText('Retry Sync'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _primary,
                   side: BorderSide(color: _primary.withValues(alpha: 0.35)),
@@ -1528,14 +1529,14 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
         Container(
           width: 32, height: 32,
           decoration: BoxDecoration(color: _primary, shape: BoxShape.circle),
-          child: Center(child: Text(num,
+          child: Center(child: LiveTranslatedText(num,
               style: const TextStyle(color: Colors.white,
                   fontWeight: FontWeight.bold))),
         ),
         const SizedBox(width: 12),
         Icon(icon, size: 20, color: _primary),
         const SizedBox(width: 8),
-        Text(text, style: GoogleFonts.poppins(fontSize: 13,
+        LiveTranslatedText(text, style: GoogleFonts.poppins(fontSize: 13,
             color: Colors.grey.shade700)),
       ]),
     );
@@ -1566,7 +1567,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
-        label: Text('$filter (' + _inventoryFilterCount(filter).toString() + ')'),
+        label: LiveTranslatedText('$filter (' + _inventoryFilterCount(filter).toString() + ')'),
         selected: selected,
         onSelected: (_) => setState(() => _stockFilter = filter),
         showCheckmark: false,
@@ -1663,14 +1664,14 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                       children: [
                         Container(padding: const EdgeInsets.all(18), decoration: const BoxDecoration(color: Color(0xFFEDE9FE), shape: BoxShape.circle), child: const Icon(Icons.search_off_rounded, color: _primary, size: 34)),
                         const SizedBox(height: 14),
-                        Text('No matching products', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF172554))),
+                        LiveTranslatedText('No matching products', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF172554))),
                         const SizedBox(height: 5),
-                        Text('Try another search or stock filter.', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF64748B))),
+                        LiveTranslatedText('Try another search or stock filter.', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF64748B))),
                         const SizedBox(height: 12),
                         TextButton.icon(
                           onPressed: () => setState(() { _inventorySearch = ''; _stockFilter = 'All'; }),
                           icon: const Icon(Icons.refresh_rounded, size: 17),
-                          label: const Text('Reset filters'),
+                          label: const LiveTranslatedText('Reset filters'),
                         ),
                       ],
                     ),
@@ -1705,9 +1706,9 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(val, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 17, height: 1.2, fontWeight: FontWeight.w800, color: const Color(0xFF172554))),
+                LiveTranslatedText(val, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 17, height: 1.2, fontWeight: FontWeight.w800, color: const Color(0xFF172554))),
                 const SizedBox(height: 2),
-                Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 9.5, color: const Color(0xFF64748B), fontWeight: FontWeight.w500)),
+                LiveTranslatedText(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 9.5, color: const Color(0xFF64748B), fontWeight: FontWeight.w500)),
               ],
             ),
           ),
@@ -1764,17 +1765,17 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
           const SizedBox(width: 12),
           Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${p['product_name'] ?? ''}',
+            LiveTranslatedText('${p['product_name'] ?? ''}',
                 style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600, fontSize: 14),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
-            Text('${p['sku'] != null && p['sku'].toString().isNotEmpty ? 'Barcode: ${p['sku']} · ' : ''}${p['category'] ?? 'General'}',
+            LiveTranslatedText('${p['sku'] != null && p['sku'].toString().isNotEmpty ? 'Barcode: ${p['sku']} · ' : ''}${p['category'] ?? 'General'}',
                 style: GoogleFonts.poppins(
                     fontSize: 12, color: Colors.grey.shade500),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
-            Text('\u20b9${p['unit_price'] ?? 0}',
+            LiveTranslatedText('\u20b9${p['unit_price'] ?? 0}',
                 style: GoogleFonts.poppins(
                     fontSize: 12, color: _primary,
                     fontWeight: FontWeight.w600)),
@@ -1798,7 +1799,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                     color: statusColor,
                   ),
                   const SizedBox(width: 4),
-                  Text(statusText, style: GoogleFonts.poppins(
+                  LiveTranslatedText(statusText, style: GoogleFonts.poppins(
                       fontSize: 11, fontWeight: FontWeight.bold,
                       color: statusColor)),
                 ],
@@ -1811,9 +1812,9 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
               style: GoogleFonts.poppins(
                   fontSize: 24, fontWeight: FontWeight.w700,
                   color: statusColor),
-              child: Text('${p['current_stock']}'),
+              child: LiveTranslatedText('${p['current_stock']}'),
             ),
-            Text('${p['unit'] ?? 'pcs'}',
+            LiveTranslatedText('${p['unit'] ?? 'pcs'}',
                 style: GoogleFonts.poppins(
                     fontSize: 10, color: Colors.grey.shade400)),
             const SizedBox(height: 6),
@@ -1854,7 +1855,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                 GestureDetector(
                   onTap: () async {
                     // Show a quick loading toast/snackbar
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🤖 AI is thinking... generating negotiation message.')));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('🤖 AI is thinking... generating negotiation message.')));
                     
                     final msg = await AiNegotiationService.generateNegotiationMessage(
                       productName: p['product_name'] ?? 'Product',
@@ -1902,12 +1903,12 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Delete Product?', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
-        content: Text('Are you sure you want to remove "${p['product_name']}" from inventory?',
+        title: LiveTranslatedText('Delete Product?', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+        content: LiveTranslatedText('Are you sure you want to remove "${p['product_name']}" from inventory?',
             style: GoogleFonts.poppins(fontSize: 13)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: GoogleFonts.poppins())),
+              child: LiveTranslatedText('Cancel', style: GoogleFonts.poppins())),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
@@ -1920,7 +1921,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                 return _deleteProduct(p);
               });
             },
-            child: Text('Delete', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+            child: LiveTranslatedText('Delete', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -2041,7 +2042,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Local product removed. It was not synced to the backend yet.'),
+                content: LiveTranslatedText('✅ Local product removed. It was not synced to the backend yet.'),
               ),
             );
           }
@@ -2049,7 +2050,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Could not remove local product: $e'),
+                content: LiveTranslatedText('Could not remove local product: $e'),
                 backgroundColor: Colors.red,
               ),
             );
@@ -2061,7 +2062,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
+            content: LiveTranslatedText(
               'This product has no valid server ID. Refresh inventory and try again.',
             ),
           ),
@@ -2122,7 +2123,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Product deletion queued and syncing.'),
+            content: LiveTranslatedText('✅ Product deletion queued and syncing.'),
           ),
         );
       }
@@ -2130,7 +2131,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Delete failed: $e'),
+            content: LiveTranslatedText('Delete failed: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -2164,7 +2165,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Container(width: 4, height: 28, color: _primary, margin: const EdgeInsets.only(right: 12)),
-              Text('Edit Product', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700)),
+              LiveTranslatedText('Edit Product', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700)),
               const Spacer(),
               IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
             ]),
@@ -2247,7 +2248,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
 
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('✅ Product updated locally and queued for sync.'), backgroundColor: _warning),
+                        const SnackBar(content: LiveTranslatedText('✅ Product updated locally and queued for sync.'), backgroundColor: _warning),
                       );
                     }
                   } finally {
@@ -2260,7 +2261,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
                         width: 20, height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
                       )
-                    : Text('Save Changes', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                    : LiveTranslatedText('Save Changes', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
             const SizedBox(height: 12),
@@ -2279,7 +2280,7 @@ class _InventoryPageState extends State<InventoryPage> with WidgetsBindingObserv
       itemBuilder: (ctx) => LanguageProvider.languages.map((l) {
         return PopupMenuItem<String>(
           value: l['code'],
-          child: Text('${l['nativeName']} (${l['name']})'),
+          child: LiveTranslatedText('${l['nativeName']} (${l['name']})'),
         );
       }).toList(),
     );

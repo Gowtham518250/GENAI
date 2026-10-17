@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -551,7 +552,7 @@ class _AttendancePageState extends State<AttendancePage>
   void _showSnack(String msg, Color color) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: const TextStyle(fontWeight: FontWeight.w600)),
+      content: LiveTranslatedText(msg, style: const TextStyle(fontWeight: FontWeight.w600)),
       backgroundColor: color,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -578,7 +579,7 @@ class _AttendancePageState extends State<AttendancePage>
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).attendance, style: GoogleFonts.poppins(
+        title: LiveTranslatedText(AppLocalizations.of(context).attendance, style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700, color: Colors.white)),
         backgroundColor: _primary,
         foregroundColor: Colors.white,
@@ -663,11 +664,11 @@ class _AttendancePageState extends State<AttendancePage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   morning ? 'Morning Session' : 'Afternoon Session',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 15),
                 ),
-                Text(
+                LiveTranslatedText(
                   morning ? 'Check-ins before 2:00 PM' : 'Check-ins from 2:00 PM onward',
                   style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade600),
                 ),
@@ -677,8 +678,8 @@ class _AttendancePageState extends State<AttendancePage>
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('$present/$staffCount', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, color: color)),
-              Text('$active active', style: GoogleFonts.poppins(fontSize: 9, color: Colors.grey.shade600)),
+              LiveTranslatedText('$present/$staffCount', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, color: color)),
+              LiveTranslatedText('$active active', style: GoogleFonts.poppins(fontSize: 9, color: Colors.grey.shade600)),
             ],
           ),
         ],
@@ -722,7 +723,7 @@ class _AttendancePageState extends State<AttendancePage>
               const Icon(Icons.calendar_today, color: Colors.white70, size: 18),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(today, style: GoogleFonts.poppins(
+                child: LiveTranslatedText(today, style: GoogleFonts.poppins(
                     color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
               ),
             ]),
@@ -743,7 +744,7 @@ class _AttendancePageState extends State<AttendancePage>
               child: ElevatedButton.icon(
                 onPressed: () => _openWorkerManagement(openAddWorker: true),
                 icon: const Icon(Icons.person_add_alt_1, size: 18),
-                label: Text(
+                label: LiveTranslatedText(
                   'Add Worker',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -767,7 +768,7 @@ class _AttendancePageState extends State<AttendancePage>
               child: OutlinedButton.icon(
                 onPressed: () => _openWorkerManagement(openAddWorker: false),
                 icon: const Icon(Icons.groups_2_outlined, size: 18),
-                label: Text(
+                label: LiveTranslatedText(
                   'Manage Workers',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -792,13 +793,13 @@ class _AttendancePageState extends State<AttendancePage>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Staff attendance', style: GoogleFonts.poppins(
+            LiveTranslatedText('Staff attendance', style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w800, fontSize: 18, color: const Color(0xFF1F2937))),
             if (_staff.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: _primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-                child: Text('${_staff.length} on roster', style: GoogleFonts.poppins(
+                child: LiveTranslatedText('${_staff.length} on roster', style: GoogleFonts.poppins(
                     fontSize: 11, color: _primary, fontWeight: FontWeight.bold)),
               ),
           ],
@@ -845,7 +846,7 @@ class _AttendancePageState extends State<AttendancePage>
         const Divider(thickness: 1, height: 1),
         const SizedBox(height: 24),
 
-        Text('My sessions today', style: GoogleFonts.poppins(
+        LiveTranslatedText('My sessions today', style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700, fontSize: 16)),
         const SizedBox(height: 12),
         Container(
@@ -864,11 +865,11 @@ class _AttendancePageState extends State<AttendancePage>
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(AppLocalizations.of(context).todayStatus,
+                LiveTranslatedText(AppLocalizations.of(context).todayStatus,
                     style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
-                Text(statusLabel, style: GoogleFonts.poppins(
+                LiveTranslatedText(statusLabel, style: GoogleFonts.poppins(
                     fontSize: 17, fontWeight: FontWeight.w700, color: statusColor)),
-                Text(
+                LiveTranslatedText(
                   hasOpenSession
                       ? 'Session ${_sessionIndex(_mySession!) + 1} is open. End it when you step out.'
                       : (mySessions.isEmpty
@@ -890,7 +891,7 @@ class _AttendancePageState extends State<AttendancePage>
         ],
 
         const SizedBox(height: 32),
-        Text('Attendance Guide', style: GoogleFonts.poppins(
+        LiveTranslatedText('Attendance Guide', style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700, fontSize: 16)),
         const SizedBox(height: 12),
         _guide('Each check-in and check-out is one session (lunch break = two sessions).', Icons.layers, _primary),
@@ -906,7 +907,7 @@ class _AttendancePageState extends State<AttendancePage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -916,7 +917,7 @@ class _AttendancePageState extends State<AttendancePage>
               fontSize: 18,
             ),
           ),
-          Text(
+          LiveTranslatedText(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -983,7 +984,7 @@ class _AttendancePageState extends State<AttendancePage>
               color: _primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(999),
             ),
-            child: Text(
+            child: LiveTranslatedText(
               hasQuery
                   ? filteredCount.toString() + '/' + _staff.length.toString()
                   : _staff.length.toString(),
@@ -1013,7 +1014,7 @@ class _AttendancePageState extends State<AttendancePage>
         children: [
           Icon(Icons.person_search_rounded, size: 32, color: Colors.grey.shade400),
           const SizedBox(height: 7),
-          Text(
+          LiveTranslatedText(
             'No workers found',
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w700,
@@ -1021,7 +1022,7 @@ class _AttendancePageState extends State<AttendancePage>
             ),
           ),
           const SizedBox(height: 3),
-          Text(
+          LiveTranslatedText(
             'Try the worker name, ID, phone number or position.',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
@@ -1049,11 +1050,11 @@ class _AttendancePageState extends State<AttendancePage>
         children: [
           Icon(Icons.group_off, size: 32, color: Colors.grey.shade500),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             'No workers added',
             style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
           ),
-          Text(
+          LiveTranslatedText(
             'Add workers to manage their attendance here.',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
@@ -1074,7 +1075,7 @@ class _AttendancePageState extends State<AttendancePage>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
+          LiveTranslatedText(
             value,
             maxLines: 1,
             style: GoogleFonts.poppins(
@@ -1083,7 +1084,7 @@ class _AttendancePageState extends State<AttendancePage>
               fontSize: 16,
             ),
           ),
-          Text(
+          LiveTranslatedText(
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -1121,11 +1122,11 @@ class _AttendancePageState extends State<AttendancePage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Session ${_sessionIndex(session) + 1}',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                 ),
-                Text(
+                LiveTranslatedText(
                   'In ${_fmtClock(session['check_in_time'])}  ·  Out ${_fmtClock(session['check_out_time'])}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1138,7 +1139,7 @@ class _AttendancePageState extends State<AttendancePage>
             ),
           ),
           const SizedBox(width: 8),
-          Text(
+          LiveTranslatedText(
             '$hours hrs',
             style: GoogleFonts.poppins(
               color: statusColor,
@@ -1249,12 +1250,12 @@ class _AttendancePageState extends State<AttendancePage>
             ),
             leading: CircleAvatar(
               backgroundColor: _primary.withValues(alpha: 0.1),
-              child: Text(worker.name[0], style: TextStyle(color: _primary, fontWeight: FontWeight.bold)),
+              child: LiveTranslatedText(worker.name[0], style: TextStyle(color: _primary, fontWeight: FontWeight.bold)),
             ),
-            title: Text(worker.name, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+            title: LiveTranslatedText(worker.name, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
             subtitle: Row(children: [
               Flexible(
-                child: Text('${worker.position} • $monthlyHours hrs this month',
+                child: LiveTranslatedText('${worker.position} • $monthlyHours hrs this month',
                     style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
               if (isLateToday) ...[
@@ -1262,7 +1263,7 @@ class _AttendancePageState extends State<AttendancePage>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-                  child: const Text('LATE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.orange)),
+                  child: const LiveTranslatedText('LATE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.orange)),
                 ),
               ],
             ]),
@@ -1290,7 +1291,7 @@ class _AttendancePageState extends State<AttendancePage>
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       elevation: 0,
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       isIn ? 'CHECK OUT' : (sessionCompleted ? 'DONE' : 'CHECK IN'),
                       style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
                     ),
@@ -1325,7 +1326,7 @@ class _AttendancePageState extends State<AttendancePage>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     attendanceSyncPending
                         ? 'Predicted Salary · sync pending'
                         : 'Predicted Salary:',
@@ -1334,7 +1335,7 @@ class _AttendancePageState extends State<AttendancePage>
                       color: attendanceSyncPending ? Colors.orange.shade700 : Colors.grey,
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     '₹${predictedSalary.toStringAsFixed(2)}',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -1369,9 +1370,9 @@ class _AttendancePageState extends State<AttendancePage>
             child: const Icon(Icons.fingerprint, size: 44, color: Color(0xFF6366F1)),
         ),
         const SizedBox(height: 16),
-        Text("Not checked in yet", style: GoogleFonts.poppins(
+        LiveTranslatedText("Not checked in yet", style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700, fontSize: 16)),
-        Text("Tap the Check In button below to mark attendance",
+        LiveTranslatedText("Tap the Check In button below to mark attendance",
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey)),
       ]),
@@ -1399,9 +1400,9 @@ class _AttendancePageState extends State<AttendancePage>
                 color: Colors.white)),
         const SizedBox(width: 14),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(AppLocalizations.of(context).todayStatus, style: GoogleFonts.poppins(
+          LiveTranslatedText(AppLocalizations.of(context).todayStatus, style: GoogleFonts.poppins(
               fontSize: 12, color: Colors.grey.shade600)),
-          Text(status, style: GoogleFonts.poppins(
+          LiveTranslatedText(status, style: GoogleFonts.poppins(
               fontSize: 18, fontWeight: FontWeight.w700, color: color)),
         ]),
       ]),
@@ -1424,9 +1425,9 @@ class _AttendancePageState extends State<AttendancePage>
       child: Column(children: [
         Icon(icon, color: color, size: 28),
         const SizedBox(height: 8),
-        Text(label, style: GoogleFonts.poppins(
+        LiveTranslatedText(label, style: GoogleFonts.poppins(
             fontSize: 11, color: Colors.grey.shade500)),
-        Text(t, style: GoogleFonts.poppins(
+        LiveTranslatedText(t, style: GoogleFonts.poppins(
             fontSize: 16, fontWeight: FontWeight.w700, color: color)),
       ]),
     );
@@ -1457,10 +1458,10 @@ class _AttendancePageState extends State<AttendancePage>
                 ),
                 const SizedBox(width: 10),
               ],
-              Text(isLive ? 'Live Working Hours' : 'Working Hours', style: GoogleFonts.poppins(
+              LiveTranslatedText(isLive ? 'Live Working Hours' : 'Working Hours', style: GoogleFonts.poppins(
                   color: Colors.white70, fontSize: 13)),
             ]),
-            Text('$hours hrs', style: GoogleFonts.poppins(
+            LiveTranslatedText('$hours hrs', style: GoogleFonts.poppins(
                 color: Colors.white, fontSize: 20,
                 fontWeight: FontWeight.w700)),
           ]),
@@ -1476,7 +1477,7 @@ class _AttendancePageState extends State<AttendancePage>
                 color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
             child: Icon(icon, size: 18, color: color)),
         const SizedBox(width: 12),
-        Expanded(child: Text(text, style: GoogleFonts.poppins(
+        Expanded(child: LiveTranslatedText(text, style: GoogleFonts.poppins(
             fontSize: 13, color: Colors.grey.shade700))),
       ]),
     );
@@ -1486,7 +1487,7 @@ class _AttendancePageState extends State<AttendancePage>
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_records.isEmpty) {
       return Center(
-        child: Text('No attendance records', style: GoogleFonts.poppins()),
+        child: LiveTranslatedText('No attendance records', style: GoogleFonts.poppins()),
       );
     }
 
@@ -1555,14 +1556,14 @@ class _AttendancePageState extends State<AttendancePage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           dateText,
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
                         ),
-                        Text(
+                        LiveTranslatedText(
                           label,
                           style: GoogleFonts.poppins(
                             fontSize: 11,
@@ -1570,7 +1571,7 @@ class _AttendancePageState extends State<AttendancePage>
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text(
+                        LiveTranslatedText(
                           'In: $inTime  ·  Out: $outTime',
                           style: GoogleFonts.poppins(
                             fontSize: 11,
@@ -1589,7 +1590,7 @@ class _AttendancePageState extends State<AttendancePage>
                           color: color.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
+                        child: LiveTranslatedText(
                           status == 'PRESENT' && _sessionIndex(r) >= 0 ? 'PRESENT' : status,
                           style: GoogleFonts.poppins(
                             fontSize: 10,
@@ -1599,7 +1600,7 @@ class _AttendancePageState extends State<AttendancePage>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      LiveTranslatedText(
                         '${hours.toStringAsFixed(2)} hrs',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
@@ -1620,7 +1621,7 @@ class _AttendancePageState extends State<AttendancePage>
                     color: Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Session detail: ${sessions.length} recorded session(s)',
                     style: GoogleFonts.poppins(
                       fontSize: 10,
@@ -1635,7 +1636,7 @@ class _AttendancePageState extends State<AttendancePage>
                   alignment: Alignment.centerRight,
                   child: Padding(
                     padding: const EdgeInsets.only(top: 5),
-                    child: Text(
+                    child: LiveTranslatedText(
                       'LATE',
                       style: GoogleFonts.poppins(
                         fontSize: 9,
@@ -1655,7 +1656,7 @@ class _AttendancePageState extends State<AttendancePage>
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_staff.isEmpty) {
       return Center(
-          child: Text('Add staff to see payroll summaries', style: GoogleFonts.poppins(color: Colors.grey.shade600)));
+          child: LiveTranslatedText('Add staff to see payroll summaries', style: GoogleFonts.poppins(color: Colors.grey.shade600)));
     }
 
     double totalPayroll = 0;
@@ -1684,9 +1685,9 @@ class _AttendancePageState extends State<AttendancePage>
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text('Total Payroll · ${DateFormat('MMMM').format(DateTime.now())}',
+            LiveTranslatedText('Total Payroll · ${DateFormat('MMMM').format(DateTime.now())}',
                 style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13)),
-            Text('₹${totalPayroll.toStringAsFixed(0)}',
+            LiveTranslatedText('₹${totalPayroll.toStringAsFixed(0)}',
                 style: GoogleFonts.poppins(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
           ]),
         ),
@@ -1707,13 +1708,13 @@ class _AttendancePageState extends State<AttendancePage>
                 child: Row(children: [
                   CircleAvatar(
                     backgroundColor: _primary.withValues(alpha: 0.1),
-                    child: Text(r.worker.name[0], style: TextStyle(color: _primary, fontWeight: FontWeight.bold)),
+                    child: LiveTranslatedText(r.worker.name[0], style: TextStyle(color: _primary, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(r.worker.name, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
-                      Text(
+                      LiveTranslatedText(r.worker.name, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
+                      LiveTranslatedText(
                         '${r.hours.toStringAsFixed(1)} hrs × ₹${r.rate.toStringAsFixed(2)}/hr${r.syncPending ? ' · SYNC PENDING' : ''}',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
@@ -1723,7 +1724,7 @@ class _AttendancePageState extends State<AttendancePage>
                       ),
                     ]),
                   ),
-                  Text('₹${r.amount.toStringAsFixed(0)}',
+                  LiveTranslatedText('₹${r.amount.toStringAsFixed(0)}',
                       style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 15, color: _primary)),
                   const SizedBox(width: 4),
                   Icon(Icons.chevron_right, color: Colors.grey.shade400),
@@ -1743,7 +1744,7 @@ class _AttendancePageState extends State<AttendancePage>
       itemBuilder: (context) => LanguageProvider.languages.map((l) {
         return PopupMenuItem<String>(
           value: l['code'],
-          child: Text('${l['nativeName']} (${l['name']})'),
+          child: LiveTranslatedText('${l['nativeName']} (${l['name']})'),
         );
       }).toList(),
     );
@@ -1838,11 +1839,11 @@ class _AttendancePageState extends State<AttendancePage>
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Enter PIN for ${worker.name}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        title: LiveTranslatedText('Enter PIN for ${worker.name}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Please enter your 4-digit attendance PIN to verify identity.'),
+            const LiveTranslatedText('Please enter your 4-digit attendance PIN to verify identity.'),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
@@ -1861,7 +1862,7 @@ class _AttendancePageState extends State<AttendancePage>
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const LiveTranslatedText('CANCEL')),
           ElevatedButton(
             onPressed: () {
               if (controller.text == worker.pin) {
@@ -1871,7 +1872,7 @@ class _AttendancePageState extends State<AttendancePage>
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: Colors.white),
-            child: const Text('VERIFY'),
+            child: const LiveTranslatedText('VERIFY'),
           ),
         ],
       ),

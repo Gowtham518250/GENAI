@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -113,7 +114,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Order #$orderId ${action.toUpperCase()}!'),
+            content: LiveTranslatedText('Order #$orderId ${action.toUpperCase()}!'),
             backgroundColor: action.toUpperCase() == 'ACCEPT' ? Colors.green : Colors.redAccent,
           ),
         );
@@ -143,7 +144,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
         debugPrint('Cannot launch WhatsApp');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('WhatsApp not available on this device.')),
+            const SnackBar(content: LiveTranslatedText('WhatsApp not available on this device.')),
           );
         }
       }
@@ -164,23 +165,23 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
       builder: (ctx) => AlertDialog(
         backgroundColor: _card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
+        title: LiveTranslatedText(
           '✅ Accept Order #$orderId?',
           style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        content: Text(
+        content: LiveTranslatedText(
           'The customer will be notified via WhatsApp that their order has been accepted.',
           style: GoogleFonts.poppins(color: Colors.white60, fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.white38)),
+            child: LiveTranslatedText('Cancel', style: GoogleFonts.poppins(color: Colors.white38)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: Text('Accept & Notify', style: GoogleFonts.poppins(color: Colors.white)),
+            child: LiveTranslatedText('Accept & Notify', style: GoogleFonts.poppins(color: Colors.white)),
           ),
         ],
       ),
@@ -213,7 +214,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
     if (orderId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to identify this order.')),
+          const SnackBar(content: LiveTranslatedText('Unable to identify this order.')),
         );
       }
       return;
@@ -227,7 +228,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
     if (sendResult['success'] != true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LiveTranslatedText(
             sendResult['message']?.toString() ??
                 'Unable to send the customer delivery OTP.',
           ),
@@ -293,7 +294,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Verify Delivery',
                     style: GoogleFonts.poppins(
                       color: Colors.white,
@@ -307,7 +308,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   'A one-time delivery OTP was sent to the customer\'s registered email:',
                   style: GoogleFonts.poppins(
                     color: Colors.white60,
@@ -315,7 +316,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
+                LiveTranslatedText(
                   maskedEmail,
                   style: GoogleFonts.poppins(
                     color: Colors.tealAccent,
@@ -358,7 +359,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                 ),
                 if (dialogError != null) ...[
                   const SizedBox(height: 8),
-                  Text(
+                  LiveTranslatedText(
                     dialogError!,
                     style: GoogleFonts.poppins(
                       color: Colors.redAccent,
@@ -367,7 +368,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                   ),
                 ],
                 const SizedBox(height: 8),
-                Text(
+                LiveTranslatedText(
                   'The OTP expires in 10 minutes and is required before the order can be marked delivered.',
                   style: GoogleFonts.poppins(
                     color: Colors.white30,
@@ -381,7 +382,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                 onPressed: verifying
                     ? null
                     : () => Navigator.of(dialogContext).pop(false),
-                child: Text(
+                child: LiveTranslatedText(
                   'Cancel',
                   style: GoogleFonts.poppins(color: Colors.white38),
                 ),
@@ -395,7 +396,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.done_all_rounded, size: 17),
-                label: Text(
+                label: LiveTranslatedText(
                   verifying ? 'Verifying...' : 'Verify & Deliver',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                 ),
@@ -420,7 +421,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: LiveTranslatedText(
               'Order #$orderId verified by customer OTP and marked delivered.',
             ),
             backgroundColor: Colors.teal,
@@ -441,7 +442,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
       builder: (ctx) => AlertDialog(
         backgroundColor: _card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
+        title: LiveTranslatedText(
           '❌ Reject Order #$orderId',
           style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
         ),
@@ -449,7 +450,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LiveTranslatedText(
               'Please provide a reason for rejection (customer will be notified):',
               style: GoogleFonts.poppins(color: Colors.white60, fontSize: 13),
             ),
@@ -478,12 +479,12 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, null),
-            child: Text('Cancel', style: GoogleFonts.poppins(color: Colors.white38)),
+            child: LiveTranslatedText('Cancel', style: GoogleFonts.poppins(color: Colors.white38)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, reasonController.text.trim()),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: Text('Reject & Notify', style: GoogleFonts.poppins(color: Colors.white)),
+            child: LiveTranslatedText('Reject & Notify', style: GoogleFonts.poppins(color: Colors.white)),
           ),
         ],
       ),
@@ -531,7 +532,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: _card,
-        title: Text(
+        title: LiveTranslatedText(
           'Incoming Orders',
           style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
         ),
@@ -561,12 +562,12 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                         children: [
                           const Icon(Icons.inbox_rounded, size: 80, color: Colors.white12),
                           const SizedBox(height: 16),
-                          Text(
+                          LiveTranslatedText(
                             'No orders yet',
                             style: GoogleFonts.poppins(color: Colors.white38, fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
-                          Text(
+                          LiveTranslatedText(
                             'Share your QR code to start receiving orders!',
                             style: GoogleFonts.poppins(color: Colors.white24, fontSize: 13),
                           ),
@@ -632,7 +633,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
+                                    LiveTranslatedText(
                                       'Order #$orderId',
                                       style: GoogleFonts.poppins(
                                         color: Colors.white,
@@ -651,7 +652,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                         children: [
                                           Icon(_statusIcon(status), color: _statusColor(status), size: 12),
                                           const SizedBox(width: 4),
-                                          Text(
+                                          LiveTranslatedText(
                                             status,
                                             style: GoogleFonts.poppins(
                                               color: _statusColor(status),
@@ -673,7 +674,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                   children: [
                                     const Icon(Icons.person_rounded, color: Colors.white38, size: 14),
                                     const SizedBox(width: 6),
-                                    Text(
+                                    LiveTranslatedText(
                                       o['customer_name']?.toString() ?? 'Guest Customer',
                                       style: GoogleFonts.poppins(color: Colors.white60, fontSize: 13),
                                     ),
@@ -681,7 +682,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                       const SizedBox(width: 8),
                                       const Icon(Icons.phone_rounded, color: Colors.white24, size: 14),
                                       const SizedBox(width: 4),
-                                      Text(
+                                      LiveTranslatedText(
                                         phone,
                                         style: GoogleFonts.poppins(color: Colors.white38, fontSize: 12),
                                       ),
@@ -706,7 +707,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
+                                        LiveTranslatedText(
                                           localizations
                                               .translate('paymentStatusLine')
                                               .replaceAll('{method}', paymentMethod)
@@ -720,7 +721,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                         if (paymentConfirmationSource == 'OWNER_DEVICE_NOTIFICATION_MATCH')
                                           Padding(
                                             padding: const EdgeInsets.only(top: 4),
-                                            child: Text(
+                                            child: LiveTranslatedText(
                                               localizations.translate('paymentMatchedNotificationHint'),
                                               style: GoogleFonts.poppins(
                                                 color: Colors.orangeAccent,
@@ -731,7 +732,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                         else if (paymentMethod == 'UPI' && paymentStatus != 'PAID')
                                           Padding(
                                             padding: const EdgeInsets.only(top: 4),
-                                            child: Text(
+                                            child: LiveTranslatedText(
                                               localizations.translate('paymentPendingHint'),
                                               style: GoogleFonts.poppins(
                                                 color: Colors.orangeAccent,
@@ -754,7 +755,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                       const Icon(Icons.location_on_rounded, color: Colors.white24, size: 14),
                                       const SizedBox(width: 6),
                                       Expanded(
-                                        child: Text(
+                                        child: LiveTranslatedText(
                                           o['delivery_address'].toString(),
                                           style: GoogleFonts.poppins(color: Colors.white38, fontSize: 12),
                                           maxLines: 2,
@@ -783,12 +784,12 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
                                               Expanded(
-                                                child: Text(
+                                                child: LiveTranslatedText(
                                                   '• ${it['product_name']} x${it['quantity']}',
                                                   style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12),
                                                 ),
                                               ),
-                                              Text(
+                                              LiveTranslatedText(
                                                 '₹${it['line_total']}',
                                                 style: GoogleFonts.poppins(
                                                   color: Colors.orangeAccent,
@@ -810,11 +811,11 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
+                                    LiveTranslatedText(
                                       'Total Amount',
                                       style: GoogleFonts.poppins(color: Colors.white54, fontSize: 13),
                                     ),
-                                    Text(
+                                    LiveTranslatedText(
                                       '₹${o['total_amount'] ?? 0}',
                                       style: GoogleFonts.poppins(
                                         color: Colors.orangeAccent,
@@ -837,7 +838,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                         child: ElevatedButton.icon(
                                           onPressed: () => _handleAccept(o),
                                           icon: const Icon(Icons.check_rounded, size: 16),
-                                          label: Text(
+                                          label: LiveTranslatedText(
                                             'Accept',
                                             style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                                           ),
@@ -854,7 +855,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                         child: ElevatedButton.icon(
                                           onPressed: () => _handleReject(o),
                                           icon: const Icon(Icons.close_rounded, size: 16),
-                                          label: Text(
+                                          label: LiveTranslatedText(
                                             'Reject',
                                             style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                                           ),
@@ -889,7 +890,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                       }
                                     },
                                     icon: const Icon(Icons.delivery_dining_rounded, size: 18),
-                                    label: Text(
+                                    label: LiveTranslatedText(
                                       'Mark as Dispatched & Notify',
                                       style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                                     ),
@@ -915,7 +916,7 @@ class _OwnerOrdersPageState extends State<OwnerOrdersPage> {
                                       Icons.verified_rounded,
                                       size: 18,
                                     ),
-                                    label: Text(
+                                    label: LiveTranslatedText(
                                       'Verify Customer OTP & Mark Delivered',
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.bold,

@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'sharing_intent_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -921,7 +922,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ScaffoldMessenger.of(navigatorContext).clearSnackBars();
         ScaffoldMessenger.of(navigatorContext).showSnackBar(
           const SnackBar(
-            content: Text('Your session has expired. Please sign in again.'),
+            content: LiveTranslatedText('Your session has expired. Please sign in again.'),
             backgroundColor: Color(0xFFEF4444),
             duration: Duration(seconds: 4),
           ),
@@ -1534,7 +1535,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       return const MaterialApp(
         home: Scaffold(
           body: Center(
-            child: Text('Retail Mind test shell'),
+            child: LiveTranslatedText('Retail Mind test shell'),
           ),
         ),
       );
@@ -1748,14 +1749,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     onUnknownRoute: (settings) {
                       return MaterialPageRoute<void>(
                         builder: (context) => Scaffold(
-                          appBar: AppBar(title: const Text('Not found')),
+                          appBar: AppBar(title: const LiveTranslatedText('Not found')),
                           body: Center(
                             child: Padding(
                               padding: const EdgeInsets.all(24),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
+                                  LiveTranslatedText(
                                     'This screen is not available.',
                                     textAlign: TextAlign.center,
                                     style: Theme.of(
@@ -1772,7 +1773,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                                         nav.pushReplacementNamed('/login');
                                       }
                                     },
-                                    child: const Text('Go back'),
+                                    child: const LiveTranslatedText('Go back'),
                                   ),
                                 ],
                               ),
@@ -2054,7 +2055,7 @@ class _IdentityVerificationGateState extends State<_IdentityVerificationGate> {
               children: [
                 const Icon(Icons.verified_user_outlined, size: 52),
                 const SizedBox(height: 16),
-                Text(
+                LiveTranslatedText(
                   _error ?? 'Owner verification is unavailable.',
                   textAlign: TextAlign.center,
                 ),
@@ -2067,7 +2068,7 @@ class _IdentityVerificationGateState extends State<_IdentityVerificationGate> {
                       (_) => false,
                     );
                   },
-                  child: const Text('Login Again'),
+                  child: const LiveTranslatedText('Login Again'),
                 ),
               ],
             ),
@@ -2789,7 +2790,7 @@ class _LanguageSelector extends StatelessWidget {
               children: [
                 const Icon(Icons.language, size: 18, color: Colors.blueAccent),
                 const SizedBox(width: 12),
-                Text(
+                LiveTranslatedText(
                   lang['nativeName']!,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
@@ -2812,7 +2813,7 @@ class _LanguageSelector extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     AppLocalizations.of(context).language,
                     style: const TextStyle(
                       color: Colors.white,
@@ -2822,7 +2823,7 @@ class _LanguageSelector extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 1),
-                  Text(
+                  LiveTranslatedText(
                     currentName,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.8),
