@@ -49,6 +49,7 @@ import 'retail_growth_suite_page.dart';
 import 'reset_password_page.dart';
 import 'responsive.dart';
 import 'language_provider.dart';
+import 'language_selection_page.dart';
 import 'app_theme_controller.dart';
 import 'providers/setup.dart';
 import 'session_management.dart';
@@ -1509,6 +1510,24 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     });
   }
 
+  Future<void> _completeLanguageSelection(
+    String languageCode,
+    BuildContext pageContext,
+    LanguageProvider languageProvider,
+  ) async {
+    await languageProvider.completeInitialSelection(languageCode);
+    final authenticated = await _loggedInFuture;
+    final nextRoute = await _startupRouteFuture(
+      booting: false,
+      authenticated: authenticated,
+    );
+    if (!mounted || !pageContext.mounted) return;
+    Navigator.of(pageContext).pushNamedAndRemoveUntil(
+      nextRoute,
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.testMode) {
@@ -1553,10 +1572,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   // Wait on the boot splash while the saved user/role verification
                   // state is resolved. Do not briefly route authenticated users
                   // to identity verification just because the Future is pending.
-                  final resolvedRoute =
+                  final startupRoute =
                       routeSnapshot.connectionState == ConnectionState.waiting
                       ? '/_boot'
                       : (routeSnapshot.data ?? initialRoute);
+                  // First-launch language selection is shown before onboarding,
+                  // authentication, and any existing authenticated route.
+                  final resolvedRoute = !languageProvider.isInitialized
+                      ? '/_boot'
+                      : (!languageProvider.hasCompletedInitialSelection
+                          ? '/language-selection'
+                          : startupRoute);
                   return MaterialApp(
                     navigatorKey: globalNavigatorKey,
                     key: ValueKey<String>(
@@ -1758,6 +1784,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     routes: (() {
                       final Map<String, WidgetBuilder> routes = {
                         '/_boot': (context) => const _AppBootSplash(),
+                        '/language-selection': (context) =>
+                            LanguageSelectionPage(
+                              onContinue: (code, pageContext) =>
+                                  _completeLanguageSelection(
+                                    code,
+                                    pageContext,
+                                    languageProvider,
+                                  ),
+                            ),
                         '/onboarding': (context) => OnboardingPage(
                           onComplete: () async {
                             final prefs = await SharedPreferences.getInstance();
