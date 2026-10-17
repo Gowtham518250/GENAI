@@ -34,6 +34,8 @@ class SalesEntryProvider extends ChangeNotifier {
   String shopPhone = '';
   String shopEmail = '';
   String? _draftBillNumber;
+  Future<String>? _draftBillNumberInFlight;
+  Future<void>? _billPreviewInFlight;
   String? lastCompletedBillNumber;
   String? lastCreditError;
 
@@ -420,6 +422,7 @@ class SalesEntryProvider extends ChangeNotifier {
   }
 
   Future<bool> submitSale() async {
+    if (isSaving) return false;
     if (entries.isEmpty) return false;
     if (!_validateSaleDraftPrices()) return false;
     if (totalAmount <= 0) return false;
@@ -684,9 +687,26 @@ class SalesEntryProvider extends ChangeNotifier {
   }
 
   /// Reuse the same customer-facing number for preview, saving, printing and sharing.
-  Future<String> ensureDraftBillNumber() async {
-    if (_draftBillNumber != null && _draftBillNumber!.isNotEmpty) return _draftBillNumber!;
+  /// Multiple rapid taps/shortcuts share one allocation request.
+  Future<String> ensureDraftBillNumber() {
+    final existing = _draftBillNumber;
+    if (existing != null && existing.isNotEmpty) {
+      return Future<String>.value(existing);
+    }
+    final inFlight = _draftBillNumberInFlight;
+    if (inFlight != null) return inFlight;
 
+    late final Future<String> pending;
+    pending = _allocateDraftBillNumber().whenComplete(() {
+      if (identical(_draftBillNumberInFlight, pending)) {
+        _draftBillNumberInFlight = null;
+      }
+    });
+    _draftBillNumberInFlight = pending;
+    return pending;
+  }
+
+  Future<String> _allocateDraftBillNumber() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('user_id') ?? prefs.getInt('userId') ?? 0;
     final key = userId > 0 ? 'last_bill_number_$userId' : 'last_bill_number';
@@ -708,7 +728,9 @@ class SalesEntryProvider extends ChangeNotifier {
 
     // The backend sequence wins when reachable; local/offline billing still works if it is not.
     try {
-      final response = await ApiClient.getJson('/api/invoices/next-bill-number');
+      final response = await ApiClient
+          .getJson('/api/invoices/next-bill-number')
+          .timeout(const Duration(milliseconds: 800));
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final decoded = jsonDecode(response.body);
         if (decoded is Map) {
@@ -728,7 +750,21 @@ class SalesEntryProvider extends ChangeNotifier {
     return _draftBillNumber!;
   }
 
-  Future<void> generateBillPreview() async {
+  Future<void> generateBillPreview() {
+    final inFlight = _billPreviewInFlight;
+    if (inFlight != null) return inFlight;
+
+    late final Future<void> pending;
+    pending = _generateBillPreviewOnce().whenComplete(() {
+      if (identical(_billPreviewInFlight, pending)) {
+        _billPreviewInFlight = null;
+      }
+    });
+    _billPreviewInFlight = pending;
+    return pending;
+  }
+
+  Future<void> _generateBillPreviewOnce() async {
     isGeneratingBill = true;
     notifyListeners();
     try {
