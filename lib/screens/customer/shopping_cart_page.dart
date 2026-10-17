@@ -334,7 +334,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                 child: TextField(
                   controller: _couponController,
                   decoration: InputDecoration(
-                    hintText: 'Enter coupon code',
+                    hint: LiveTranslatedText('Enter coupon code'),
                     hintStyle: GoogleFonts.poppins(color: const Color(0xFF9CA3AF)),
                     filled: true,
                     fillColor: const Color(0xFFF3F4F6),

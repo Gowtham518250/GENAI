@@ -186,7 +186,7 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
                   onSubmitted: (_) => _ask(),
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'e.g. low price rice at Ganesh Store',
+                    hint: LiveTranslatedText('e.g. low price rice at Ganesh Store'),
                     hintStyle: const TextStyle(color: Colors.white54),
                     prefixIcon: const Icon(Icons.search_rounded, color: Colors.white70),
                     suffixIcon: _loading

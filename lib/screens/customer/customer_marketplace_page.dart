@@ -389,7 +389,7 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search_rounded),
-                      hintText: 'Search shops, products, brands…',
+                      hint: LiveTranslatedText('Search shops, products, brands…'),
                       filled: true,
                       fillColor: Colors.white,
                       suffixIcon: _loading
@@ -455,7 +455,7 @@ class _CustomerMarketplacePageState extends State<CustomerMarketplacePage> {
                     controller: _aiController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: 'e.g. Find low price rice or best rated atta',
+                      hint: LiveTranslatedText('e.g. Find low price rice or best rated atta'),
                       hintStyle: const TextStyle(color: Colors.white54),
                       prefixIcon: const Icon(Icons.psychology_alt_outlined, color: Colors.white70),
                       suffixIcon: IconButton(

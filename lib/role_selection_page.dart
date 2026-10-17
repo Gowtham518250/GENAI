@@ -601,7 +601,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
             style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
             decoration: InputDecoration(
               counterText: '',
-              hintText: '000000',
+              hint: LiveTranslatedText('000000'),
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
               filled: true,
               fillColor: Colors.black26,

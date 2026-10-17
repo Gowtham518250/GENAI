@@ -771,8 +771,8 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
                 keyboardType: TextInputType.number,
                 maxLength: 6,
                 decoration: const InputDecoration(
-                  labelText: 'Customer OTP',
-                  hintText: '000000',
+                  label: LiveTranslatedText('Customer OTP'),
+                  hint: LiveTranslatedText('000000'),
                   prefixIcon: Icon(Icons.verified_user_outlined),
                   border: OutlineInputBorder(),
                 ),
@@ -1178,7 +1178,7 @@ class _OnlineOrdersTabState extends State<OnlineOrdersTab>
           onChanged: _onOrderSearchChanged,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: 'Find an order or customer…',
+            hint: LiveTranslatedText('Find an order or customer…'),
             hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
             prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
             suffixIcon: query.isEmpty

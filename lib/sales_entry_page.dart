@@ -1322,7 +1322,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             controller: nameC,
                             enabled: fieldEnabled,
                             decoration: InputDecoration(
-                              labelText: 'Name *',
+                              label: LiveTranslatedText('Name *'),
                               prefixIcon: const Icon(
                                 Icons.person,
                                 color: Color(0xFF4F46E5),
@@ -1338,7 +1338,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             enabled: fieldEnabled,
                             keyboardType: TextInputType.phone,
                             decoration: InputDecoration(
-                              labelText: 'Phone *',
+                              label: LiveTranslatedText('Phone *'),
                               prefixIcon: const Icon(
                                 Icons.phone,
                                 color: Color(0xFF4F46E5),
@@ -1354,7 +1354,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
                             enabled: fieldEnabled,
                             maxLines: 2,
                             decoration: InputDecoration(
-                              labelText: 'Address',
+                              label: LiveTranslatedText('Address'),
                               prefixIcon: const Icon(
                                 Icons.location_on,
                                 color: Color(0xFF4F46E5),
@@ -2280,7 +2280,7 @@ class _SalesEntryPageState extends State<SalesEntryPage>
               autofocus: true,
               style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
               decoration: InputDecoration(
-                hintText: 'Enter cash amount',
+                hint: LiveTranslatedText('Enter cash amount'),
                 prefixText: '₹ ',
                 prefixStyle: GoogleFonts.poppins(color: Colors.black54, fontWeight: FontWeight.bold),
                 filled: true,
@@ -6986,9 +6986,9 @@ class _BillImageDialogState extends State<_BillImageDialog> {
           controller: controller,
           keyboardType: TextInputType.phone,
           decoration: const InputDecoration(
-            labelText: 'Customer WhatsApp number',
-            hintText: 'e.g. 919876543210 (with country code)',
-            helperText: 'You can send to non-contacts using wa.me link',
+            label: LiveTranslatedText('Customer WhatsApp number'),
+            hint: LiveTranslatedText('e.g. 919876543210 (with country code)'),
+            helper: LiveTranslatedText('You can send to non-contacts using wa.me link'),
           ),
         ),
         actions: [
