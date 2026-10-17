@@ -118,7 +118,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
                   child: TextField(
                     controller: _msgController,
                     decoration: InputDecoration(
-                      hintText: 'Type your question...',
+                      hint: LiveTranslatedText('Type your question...'),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
                       filled: true,
                       fillColor: Colors.grey.withValues(alpha: 0.1),

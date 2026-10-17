@@ -11331,7 +11331,7 @@ class _DashboardPageState extends State<DashboardPage>
               maxLength: 4,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'Current PIN (Default 0000)',
+                label: LiveTranslatedText('Current PIN (Default 0000)'),
                 labelStyle: const TextStyle(color: Colors.white60),
                 counterText: '',
                 border: OutlineInputBorder(
@@ -11347,7 +11347,7 @@ class _DashboardPageState extends State<DashboardPage>
               maxLength: 4,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'New 4-Digit PIN',
+                label: LiveTranslatedText('New 4-Digit PIN'),
                 labelStyle: const TextStyle(color: Colors.white60),
                 counterText: '',
                 border: OutlineInputBorder(
@@ -11717,7 +11717,7 @@ class _DashboardPageState extends State<DashboardPage>
                 maxLength: 4,
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
-                  labelText: 'PIN',
+                  label: LiveTranslatedText('PIN'),
                   labelStyle: TextStyle(color: Colors.white60),
                 ),
               ),

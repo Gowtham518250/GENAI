@@ -170,7 +170,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
             maxLength: 10,
             decoration: InputDecoration(
               counterText: '',
-              hintText: 'Phone Number',
+              hint: LiveTranslatedText('Phone Number'),
               hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: Colors.white.withOpacity(0.08),
@@ -185,7 +185,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
             keyboardType: TextInputType.emailAddress,
             style: const TextStyle(color: Colors.white, fontSize: 16),
             decoration: InputDecoration(
-              hintText: 'Email Address (required for login)',
+              hint: LiveTranslatedText('Email Address (required for login)'),
               hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: Colors.white.withOpacity(0.08),
@@ -200,7 +200,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
             obscureText: true,
             style: const TextStyle(color: Colors.white, fontSize: 16),
             decoration: InputDecoration(
-              hintText: 'Password (required for login)',
+              hint: LiveTranslatedText('Password (required for login)'),
               hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: Colors.white.withOpacity(0.08),

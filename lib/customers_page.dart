@@ -285,7 +285,7 @@ class _CustomersPageState extends State<CustomersPage> {
           child: TextField(
             controller: _search,
             decoration: InputDecoration(
-              hintText: 'Search by name, phone or city...',
+              hint: LiveTranslatedText('Search by name, phone or city...'),
               prefixIcon: const Icon(Icons.search, color: Color(0xFF6366F1)),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -600,9 +600,9 @@ class _CustomersPageState extends State<CustomersPage> {
                 autofocus: true,
                 style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
-                  hintText: '0',
+                  hint: LiveTranslatedText('0'),
                   prefixIcon: Icon(Icons.currency_rupee, color: isPayment ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
-                  labelText: 'Amount (₹)',
+                  label: LiveTranslatedText('Amount (₹)'),
                   labelStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   focusedBorder: OutlineInputBorder(
@@ -615,9 +615,9 @@ class _CustomersPageState extends State<CustomersPage> {
               TextField(
                 controller: noteC,
                 decoration: InputDecoration(
-                  hintText: 'Add a note (e.g. For Groceries)',
+                  hint: LiveTranslatedText('Add a note (e.g. For Groceries)'),
                   prefixIcon: const Icon(Icons.note_alt_outlined),
-                  labelText: 'Remarks',
+                  label: LiveTranslatedText('Remarks'),
                   labelStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                 ),

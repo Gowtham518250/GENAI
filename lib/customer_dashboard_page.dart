@@ -103,7 +103,7 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
                   maxLength: 500,
                   maxLines: 3,
                   decoration: const InputDecoration(
-                    labelText: 'Comment (optional)',
+                    label: LiveTranslatedText('Comment (optional)'),
                     border: OutlineInputBorder(),
                   ),
                 ),

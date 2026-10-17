@@ -376,7 +376,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                   maxLines: 3,
                   style: const TextStyle(fontSize: 16, color: Color(0xFF1F2937)),
                   decoration: InputDecoration(
-                    hintText: 'e.g., "Show total sales by product category"',
+                    hint: LiveTranslatedText('e.g., "Show total sales by product category"'),
                     hintStyle: TextStyle(color: Colors.white54),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.all(20),

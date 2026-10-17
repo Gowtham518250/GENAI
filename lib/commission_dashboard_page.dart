@@ -250,7 +250,7 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
             TextField(
               controller: bankController,
               decoration: InputDecoration(
-                hintText: 'Bank Account (Last 4 digits)',
+                hint: LiveTranslatedText('Bank Account (Last 4 digits)'),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
@@ -259,7 +259,7 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
               controller: amountController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                hintText: 'Amount (₹)',
+                hint: LiveTranslatedText('Amount (₹)'),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),

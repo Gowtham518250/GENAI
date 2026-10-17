@@ -170,7 +170,7 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
             keyboardType: TextInputType.emailAddress,
             style: const TextStyle(color: Colors.white, fontSize: 18),
             decoration: InputDecoration(
-              hintText: 'Email Address', hintStyle: const TextStyle(color: Colors.white38),
+              hint: LiveTranslatedText('Email Address'), hintStyle: const TextStyle(color: Colors.white38),
               filled: true, fillColor: Colors.white.withOpacity(0.08),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               prefixIcon: const Icon(Icons.email, color: Colors.blueAccent),
@@ -255,7 +255,7 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
             controller: _newPassController, obscureText: true,
             style: const TextStyle(color: Colors.white, fontSize: 18),
             decoration: InputDecoration(
-              hintText: 'New Password', hintStyle: const TextStyle(color: Colors.white38),
+              hint: LiveTranslatedText('New Password'), hintStyle: const TextStyle(color: Colors.white38),
               filled: true, fillColor: Colors.white.withOpacity(0.08),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               prefixIcon: const Icon(Icons.lock_outline, color: Colors.blueAccent),

@@ -79,7 +79,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             controller: _addressC,
             maxLines: 2,
             decoration: InputDecoration(
-              hintText: 'Delivery Address',
+              hint: LiveTranslatedText('Delivery Address'),
               filled: true, fillColor: Colors.white,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               prefixIcon: const Icon(Icons.location_on),
