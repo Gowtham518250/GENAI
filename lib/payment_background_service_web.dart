@@ -18,7 +18,7 @@ Future<void> initializeBackgroundService() async {
     pds.onSpeak = (text) async {
       final prefs = await SharedPreferences.getInstance();
       final lang = prefs.getString('payment_sound_lang') ?? 'en-US';
-      PaymentAnnouncementService().speakSimple(text, lang);
+      PaymentAnnouncementService().speakPaymentInstant(text, lang);
     };
 
     await pds.start();
