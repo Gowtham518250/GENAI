@@ -292,6 +292,21 @@ void main() {
       );
     });
 
+    test('incoming PSP wording is not mislabeled as a debit', () {
+      expect(
+        VoiceBuilder.detectDirection('PhonePe: ₹500 paid to your account'),
+        equals(PaymentDirection.credited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('₹500 sent to you by Ravi'),
+        equals(PaymentDirection.credited),
+      );
+      expect(
+        VoiceBuilder.detectDirection('You paid ₹500 to Ravi'),
+        equals(PaymentDirection.debited),
+      );
+    });
+
     test('ambiguous text is never mislabeled as credit or debit', () {
       expect(
         VoiceBuilder.detectDirection('Payment of INR 1000'),
