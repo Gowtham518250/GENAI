@@ -99,7 +99,7 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
       if (_paymentMode == 'upi' && _shopUpi != null && _shopUpi!.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Order placed. UPI payment remains pending until Retail Mind records a matching confirmation; opening or returning from the UPI app alone does not mark it paid.'),
+            content: LiveTranslatedText('Order placed. UPI payment remains pending until Retail Mind records a matching confirmation; opening or returning from the UPI app alone does not mark it paid.'),
             duration: Duration(seconds: 4),
           ),
         );
@@ -113,7 +113,7 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Order failed: $e'), backgroundColor: Colors.red),
+        SnackBar(content: LiveTranslatedText('Order failed: $e'), backgroundColor: Colors.red),
       );
       setState(() => _isPlacingOrder = false);
     }
@@ -124,13 +124,13 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceDark,
       appBar: AppBar(
-        title: const Text('Your Cart', style: TextStyle(color: Colors.white)),
+        title: const LiveTranslatedText('Your Cart', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _items.isEmpty
-          ? const Center(child: Text('Your cart is empty', style: TextStyle(color: Colors.white)))
+          ? const Center(child: LiveTranslatedText('Your cart is empty', style: TextStyle(color: Colors.white)))
           : Column(
               children: [
                 Expanded(
@@ -157,14 +157,14 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      Text(
+                                      LiveTranslatedText(
                                         '₹${item['price']} x ${item['qty']}',
                                         style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                                       ),
                                     ],
                                   ),
                                 ),
-                                Text(
+                                LiveTranslatedText(
                                   '₹${(item['price'] as num) * (item['qty'] as num)}',
                                   style: const TextStyle(
                                     color: AppColors.primary,
@@ -182,24 +182,24 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Online setup / service', style: TextStyle(color: Colors.white70)),
-                            Text('₹${widget.onlineSetupFee.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            const LiveTranslatedText('Online setup / service', style: TextStyle(color: Colors.white70)),
+                            LiveTranslatedText('₹${widget.onlineSetupFee.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        LiveTranslatedText(
                           'Charged once for this online order. Store prices are unchanged.',
                           style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11),
                         ),
                       ],
                       const SizedBox(height: 10),
-                      const Text('Payment method', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                      const LiveTranslatedText('Payment method', style: TextStyle(color: Colors.white70, fontSize: 14)),
                       const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
                             child: ChoiceChip(
-                              label: const Text('Pay via UPI'),
+                              label: const LiveTranslatedText('Pay via UPI'),
                               selected: _paymentMode == 'upi',
                               onSelected: _shopUpi == null
                                   ? null
@@ -210,7 +210,7 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: ChoiceChip(
-                              label: const Text('Cash on delivery'),
+                              label: const LiveTranslatedText('Cash on delivery'),
                               selected: _paymentMode == 'cod',
                               onSelected: (_) => setState(() => _paymentMode = 'cod'),
                               selectedColor: AppColors.primary,
@@ -221,7 +221,7 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
                       if (_paymentMode == 'upi' && !_loadingUpi) ...[
                         const SizedBox(height: 16),
                         if (_shopUpi == null || _shopUpi!.isEmpty)
-                          const Text(
+                          const LiveTranslatedText(
                             'Shop has no UPI ID — use Cash on delivery.',
                             style: TextStyle(color: Colors.orangeAccent, fontSize: 12),
                           )
@@ -241,14 +241,14 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
+                          LiveTranslatedText(
                             'Scan & pay ₹${_totalAmount.toStringAsFixed(2)} to $_shopUpi',
                             textAlign: TextAlign.center,
                             style: const TextStyle(color: Colors.white70, fontSize: 12),
                           ),
                           TextButton(
                             onPressed: _openUpiApp,
-                            child: const Text('Open UPI app'),
+                            child: const LiveTranslatedText('Open UPI app'),
                           ),
                         ],
                       ],
@@ -266,8 +266,8 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Total', style: TextStyle(color: Colors.white, fontSize: 18)),
-                          Text(
+                          const LiveTranslatedText('Total', style: TextStyle(color: Colors.white, fontSize: 18)),
+                          LiveTranslatedText(
                             '₹${_totalAmount.toStringAsFixed(2)}',
                             style: const TextStyle(
                               color: AppColors.primary,
@@ -293,7 +293,7 @@ class _CustomerCartPageState extends State<CustomerCartPage> {
                                   height: 20,
                                   child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                 )
-                              : Text(
+                              : LiveTranslatedText(
                                   _paymentMode == 'upi' ? 'Place order & pay UPI' : 'Place order (COD)',
                                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
