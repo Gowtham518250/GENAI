@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -206,7 +207,7 @@ class _AdvancedVoiceBillingWidgetState extends State<AdvancedVoiceBillingWidget>
                 children: [
                   Icon(Icons.mic_rounded, color: const Color(0xFF6366F1)),
                   const SizedBox(width: AppSpacing.sm),
-                  Text(
+                  LiveTranslatedText(
                     'Voice Billing',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
@@ -238,7 +239,7 @@ class _AdvancedVoiceBillingWidgetState extends State<AdvancedVoiceBillingWidget>
                   items: _languages.entries.map((entry) {
                     return DropdownMenuItem(
                       value: entry.key,
-                      child: Text(entry.value),
+                      child: LiveTranslatedText(entry.value),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -315,7 +316,7 @@ class _AdvancedVoiceBillingWidgetState extends State<AdvancedVoiceBillingWidget>
           const SizedBox(height: AppSpacing.md),
 
           // Status text
-          Text(
+          LiveTranslatedText(
             _isListening
                 ? 'Listening... Say a command'
                 : _isProcessing
@@ -388,7 +389,7 @@ class _AdvancedVoiceBillingWidgetState extends State<AdvancedVoiceBillingWidget>
             children: [
               Icon(Icons.check_circle, color: const Color(0xFF10B981), size: 20),
               const SizedBox(width: AppSpacing.sm),
-              Text(
+              LiveTranslatedText(
                 'Recognized',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -410,7 +411,7 @@ class _AdvancedVoiceBillingWidgetState extends State<AdvancedVoiceBillingWidget>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Confidence: ${(_confidenceScore * 100).toInt()}%',
                       style: GoogleFonts.poppins(
                         fontSize: 10,
@@ -426,7 +427,7 @@ class _AdvancedVoiceBillingWidgetState extends State<AdvancedVoiceBillingWidget>
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             _recognizedText,
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -461,7 +462,7 @@ class _AdvancedVoiceBillingWidgetState extends State<AdvancedVoiceBillingWidget>
             Icon(Icons.lightbulb, color: const Color(0xFF6366F1), size: 16),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 'Tap to see voice commands',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -497,7 +498,7 @@ class _AdvancedVoiceBillingWidgetState extends State<AdvancedVoiceBillingWidget>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             'Voice Commands',
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -517,7 +518,7 @@ class _AdvancedVoiceBillingWidgetState extends State<AdvancedVoiceBillingWidget>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             command.command,
                             style: GoogleFonts.poppins(
                               fontSize: 13,
@@ -526,7 +527,7 @@ class _AdvancedVoiceBillingWidgetState extends State<AdvancedVoiceBillingWidget>
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
+                          LiveTranslatedText(
                             command.description,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
@@ -546,7 +547,7 @@ class _AdvancedVoiceBillingWidgetState extends State<AdvancedVoiceBillingWidget>
                                   color: const Color(0xFFF8FAFC),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: Text(
+                                child: LiveTranslatedText(
                                   '"$example"',
                                   style: GoogleFonts.poppins(
                                     fontSize: 10,
@@ -608,14 +609,14 @@ class ConfidenceIndicator extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
+            LiveTranslatedText(
               label,
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 color: const Color(0xFF64748B),
               ),
             ),
-            Text(
+            LiveTranslatedText(
               '${(confidence * 100).toInt()}%',
               style: GoogleFonts.poppins(
                 fontSize: 12,
@@ -682,7 +683,7 @@ class MultiLanguageIndicator extends StatelessWidget {
                     color: const Color(0xFF6366F1),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     lang.toUpperCase(),
                     style: GoogleFonts.poppins(
                       fontSize: 10,

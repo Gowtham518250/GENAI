@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -118,7 +119,7 @@ class NavyKpiCards extends StatelessWidget {
                           : const Color(0xFFEF4444).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       it['chg'] as String,
                       style: GoogleFonts.inter(
                         fontSize: 10,
@@ -130,7 +131,7 @@ class NavyKpiCards extends StatelessWidget {
                 ],
               ),
               const Spacer(),
-              Text(
+              LiveTranslatedText(
                 it['val'] as String,
                 style: GoogleFonts.inter(
                   fontSize: 20,
@@ -140,7 +141,7 @@ class NavyKpiCards extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
+              LiveTranslatedText(
                 it['lbl'] as String,
                 style: GoogleFonts.inter(
                   fontSize: 11,

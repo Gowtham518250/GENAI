@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -41,7 +42,7 @@ class NavyQuickActionsGrid extends StatelessWidget {
           children: [
             Icon(icon, color: isDark ? color.withValues(alpha: 0.9) : color, size: 28),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
@@ -62,7 +63,7 @@ class NavyQuickActionsGrid extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           'Quick Actions',
           style: GoogleFonts.inter(
             fontSize: 15,

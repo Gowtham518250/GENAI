@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
@@ -52,7 +53,7 @@ class _CompactQuickActionsState extends State<CompactQuickActions>
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Text(
+            child: LiveTranslatedText(
               'Quick Actions',
               style: GoogleFonts.poppins(
                 fontSize: 12,
@@ -159,7 +160,7 @@ class _CompactQuickActionsState extends State<CompactQuickActions>
               children: [
                 Icon(icon, color: color, size: 18),
                 const SizedBox(height: 4),
-                Text(
+                LiveTranslatedText(
                   label,
                   style: GoogleFonts.poppins(
                     fontSize: 10,

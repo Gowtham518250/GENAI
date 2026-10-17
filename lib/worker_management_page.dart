@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -186,13 +187,13 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
     final bool confirm = await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: const Text('Are you sure you want to remove this worker?'),
+        title: const LiveTranslatedText('Confirm Delete'),
+        content: const LiveTranslatedText('Are you sure you want to remove this worker?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const LiveTranslatedText('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true), 
-            child: const Text('Delete', style: TextStyle(color: Colors.red))
+            child: const LiveTranslatedText('Delete', style: TextStyle(color: Colors.red))
           ),
         ],
       ),
@@ -210,7 +211,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
         _fetchWorkers();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Worker removed successfully'), backgroundColor: Colors.green),
+            const SnackBar(content: LiveTranslatedText('Worker removed successfully'), backgroundColor: Colors.green),
           );
         }
       } else {
@@ -219,7 +220,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: LiveTranslatedText('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -240,7 +241,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
           return AlertDialog(
-            title: Text('Add New Worker', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+            title: LiveTranslatedText('Add New Worker', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -279,12 +280,12 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
             actions: [
               TextButton(
                 onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: const LiveTranslatedText('Cancel'),
               ),
               ElevatedButton(
                 onPressed: isSubmitting ? null : () async {
                   if (nameCtrl.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name is required')));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Name is required')));
                     return;
                   }
 
@@ -298,7 +299,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
 
                     if (userId == 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('User ID not found. Please login again.'), backgroundColor: Colors.red),
+                        const SnackBar(content: LiveTranslatedText('User ID not found. Please login again.'), backgroundColor: Colors.red),
                       );
                       setModalState(() => isSubmitting = false);
                       return;
@@ -321,14 +322,14 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
                       Navigator.pop(ctx);
                       _fetchWorkers();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Worker added successfully!'), backgroundColor: Colors.green),
+                        const SnackBar(content: LiveTranslatedText('Worker added successfully!'), backgroundColor: Colors.green),
                       );
                     } else {
                       throw Exception('Failed to create worker');
                     }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                      SnackBar(content: LiveTranslatedText('Error: $e'), backgroundColor: Colors.red),
                     );
                     setModalState(() => isSubmitting = false);
                   }
@@ -336,7 +337,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
                 child: isSubmitting 
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Add Worker'),
+                  : const LiveTranslatedText('Add Worker'),
               ),
             ],
           );
@@ -359,7 +360,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
             elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-              title: Text('Worker Management',
+              title: LiveTranslatedText('Worker Management',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 18)),
               background: Container(
                 decoration: const BoxDecoration(
@@ -414,9 +415,9 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
                   children: [
                     const Icon(Icons.error_outline, color: Colors.red, size: 48),
                     const SizedBox(height: 16),
-                    Text(_errorMessage, style: const TextStyle(color: Colors.red)),
+                    LiveTranslatedText(_errorMessage, style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 16),
-                    ElevatedButton(onPressed: _fetchWorkers, child: const Text('Retry')),
+                    ElevatedButton(onPressed: _fetchWorkers, child: const LiveTranslatedText('Retry')),
                   ],
                 ),
               ),
@@ -429,9 +430,9 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
                   children: [
                     Icon(Icons.people_outline, size: 80, color: Colors.grey.shade400),
                     const SizedBox(height: 16),
-                    Text('No workers found', style: GoogleFonts.poppins(fontSize: 18, color: Colors.grey.shade600)),
+                    LiveTranslatedText('No workers found', style: GoogleFonts.poppins(fontSize: 18, color: Colors.grey.shade600)),
                     const SizedBox(height: 8),
-                    Text('Add your staff to manage attendance', style: TextStyle(color: Colors.grey.shade500)),
+                    LiveTranslatedText('Add your staff to manage attendance', style: TextStyle(color: Colors.grey.shade500)),
                   ],
                 ),
               ),
@@ -444,7 +445,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
                   children: [
                     Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
                     const SizedBox(height: 12),
-                    Text('No workers match "$_query"', style: GoogleFonts.poppins(color: Colors.grey.shade600)),
+                    LiveTranslatedText('No workers match "$_query"', style: GoogleFonts.poppins(color: Colors.grey.shade600)),
                   ],
                 ),
               ),
@@ -463,7 +464,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
         onPressed: _showAddWorkerDialog,
         backgroundColor: Colors.indigo,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Add Worker', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        label: const LiveTranslatedText('Add Worker', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -502,7 +503,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
             ),
             if (breakdown.isNotEmpty) ...[
               const SizedBox(height: 18),
-              Text('TEAM BY ROLE', style: GoogleFonts.poppins(
+              LiveTranslatedText('TEAM BY ROLE', style: GoogleFonts.poppins(
                   fontSize: 10, letterSpacing: 1, fontWeight: FontWeight.w700, color: Colors.white60)),
               const SizedBox(height: 10),
               ...breakdown.take(4).map((e) => _breakdownRow(e.key, e.value, maxCount)),
@@ -519,8 +520,8 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
       children: [
         Icon(icon, color: Colors.white70, size: 18),
         const SizedBox(height: 6),
-        Text(value, style: GoogleFonts.poppins(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
-        Text(label, style: GoogleFonts.poppins(color: Colors.white60, fontSize: 10)),
+        LiveTranslatedText(value, style: GoogleFonts.poppins(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
+        LiveTranslatedText(label, style: GoogleFonts.poppins(color: Colors.white60, fontSize: 10)),
       ],
     );
   }
@@ -533,7 +534,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
         children: [
           SizedBox(
             width: 78,
-            child: Text(position, maxLines: 1, overflow: TextOverflow.ellipsis,
+            child: LiveTranslatedText(position, maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
           ),
           Expanded(
@@ -548,7 +549,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
             ),
           ),
           const SizedBox(width: 8),
-          Text('$count', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w700)),
+          LiveTranslatedText('$count', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -587,14 +588,14 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
                   radius: 26,
                   backgroundColor: color.withValues(alpha: 0.15),
                   foregroundColor: color,
-                  child: Text(initial, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                  child: LiveTranslatedText(initial, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name.isEmpty ? 'Unnamed' : name,
+                      LiveTranslatedText(name.isEmpty ? 'Unnamed' : name,
                           style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 15),
                           maxLines: 1, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 6),
@@ -609,9 +610,9 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('₹${salary.toStringAsFixed(0)}',
+                    LiveTranslatedText('₹${salary.toStringAsFixed(0)}',
                         style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 14, color: Colors.indigo)),
-                    Text('/mo', style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                    LiveTranslatedText('/mo', style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
                     const SizedBox(height: 4),
                     IconButton(
                       padding: EdgeInsets.zero,
@@ -635,7 +636,7 @@ class _WorkerManagementPageState extends State<WorkerManagementPage> {
       decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         if (icon != null) ...[Icon(icon, size: 11, color: color), const SizedBox(width: 3)],
-        Text(label, style: TextStyle(fontSize: 10.5, color: color, fontWeight: FontWeight.w600)),
+        LiveTranslatedText(label, style: TextStyle(fontSize: 10.5, color: color, fontWeight: FontWeight.w600)),
       ]),
     );
   }

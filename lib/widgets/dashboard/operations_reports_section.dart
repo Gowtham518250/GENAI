@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 ﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -121,7 +122,7 @@ class _OperationsReportsSectionState extends State<OperationsReportsSection> {
                     child: const Icon(Icons.layers_rounded, color: Color(0xFF4F46E5), size: 20),
                   ),
                   const SizedBox(width: 12),
-                  Text(
+                  LiveTranslatedText(
                     'Operations & Reports',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
@@ -141,7 +142,7 @@ class _OperationsReportsSectionState extends State<OperationsReportsSection> {
                 ),
                 child: Row(
                   children: [
-                    Text('View All', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
+                    LiveTranslatedText('View All', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
                     const SizedBox(width: 4),
                     const Icon(Icons.arrow_forward_ios_rounded, size: 12),
                   ],
@@ -223,7 +224,7 @@ class _OperationsReportsSectionState extends State<OperationsReportsSection> {
               child: Icon(icon, color: color, size: 18),
             ),
             const SizedBox(height: 6),
-            Text(
+            LiveTranslatedText(
               label,
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -236,7 +237,7 @@ class _OperationsReportsSectionState extends State<OperationsReportsSection> {
               ),
             ),
             const SizedBox(height: 2),
-            Text(
+            LiveTranslatedText(
               subtitle,
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -285,7 +286,7 @@ class _OperationsSheet extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Operations & Reports',
                   style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF1F2937)),
                 ),
@@ -396,7 +397,7 @@ class _OperationsSheet extends StatelessWidget {
               child: Icon(icon, color: color, size: 28),
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
@@ -408,7 +409,7 @@ class _OperationsSheet extends StatelessWidget {
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 2),
-              Text(
+              LiveTranslatedText(
                 subtitle,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
