@@ -199,6 +199,23 @@ void main() {
     });
   });
 
+  group('Bill settlement reservation', () {
+    test('only one notification can reserve the same active bill settlement', () {
+      final bill = BillContext();
+      bill.setExpected(500);
+
+      expect(bill.tryReserveSettlement('event-one'), isTrue);
+      expect(bill.isSettlementLocked, isTrue);
+      expect(bill.tryReserveSettlement('event-two'), isFalse);
+
+      bill.releaseSettlementReservation('event-one');
+      expect(bill.isSettlementLocked, isFalse);
+      expect(bill.tryReserveSettlement('event-two'), isTrue);
+      bill.markSettled();
+      expect(bill.isSettlementLocked, isTrue);
+    });
+  });
+
   group('Payment voice direction', () {
     test('detects credited payment from bank/UPI text', () {
       expect(
