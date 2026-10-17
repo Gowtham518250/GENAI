@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -44,7 +45,7 @@ class _SmartPaymentSectionState extends State<SmartPaymentSection>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LiveTranslatedText(
                 'PAYMENT METHOD',
                 style: GoogleFonts.poppins(
                   color: const Color(0xFF4B5563),
@@ -123,7 +124,7 @@ class _SmartPaymentSectionState extends State<SmartPaymentSection>
                       const SizedBox(height: 12),
                       AnimatedBuilder(
                         animation: _pulseController,
-                        builder: (context, child) => Text(
+                        builder: (context, child) => LiveTranslatedText(
                           'Scan to Pay Exactly ₹${provider.totalAmount.toStringAsFixed(2)}',
                           style: GoogleFonts.poppins(
                             fontSize: 13,
@@ -192,7 +193,7 @@ class _PayModeSegment extends StatelessWidget {
                   : const Color(0xFF9CA3AF),
             ),
             const SizedBox(width: 6),
-            Text(
+            LiveTranslatedText(
               label,
               style: GoogleFonts.poppins(
                 fontSize: 12,

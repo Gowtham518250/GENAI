@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 
 class EmptySearchState extends StatelessWidget {
@@ -6,7 +7,7 @@ class EmptySearchState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: Text('No Results Found'),
+      child: LiveTranslatedText('No Results Found'),
     );
   }
 }

@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
@@ -275,7 +276,7 @@ class _VoiceBillingAnimationState extends State<VoiceBillingAnimation>
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: Text(
+                child: LiveTranslatedText(
                   _getStateText(),
                   textAlign: TextAlign.center,
                   style: const TextStyle(

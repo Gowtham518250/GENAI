@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -168,7 +169,7 @@ class _QueryInputCardState extends State<QueryInputCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              LiveTranslatedText(
                 'e.g. "What were my sales yesterday?"',
                 style: GoogleFonts.inter(
                   fontSize: 11,
@@ -204,7 +205,7 @@ class _QueryInputCardState extends State<QueryInputCard> {
                         children: [
                           const Icon(Icons.auto_awesome, size: 16),
                           const SizedBox(width: 6),
-                          Text(
+                          LiveTranslatedText(
                             'Ask',
                             style: GoogleFonts.inter(
                               fontSize: 13.5,

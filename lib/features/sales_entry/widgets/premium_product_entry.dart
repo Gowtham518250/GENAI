@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -152,7 +153,7 @@ class _ProductEntryCardState extends State<_ProductEntryCard> {
                 color: const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 'ITEM ',
                 style: GoogleFonts.spaceMono(
                   color: Colors.white,
@@ -262,7 +263,7 @@ class _ProductEntryCardState extends State<_ProductEntryCard> {
         if (widget.item.subtotal > 0)
           Align(
             alignment: Alignment.centerRight,
-            child: Text(
+            child: LiveTranslatedText(
               'Item Total: ₹',
               style: GoogleFonts.spaceMono(
                 color: const Color(0xFF10B981),
