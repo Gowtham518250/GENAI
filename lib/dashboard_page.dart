@@ -88,6 +88,7 @@ import 'package:local_auth/local_auth.dart';
 import 'format_helper.dart';
 import 'user_data_clear_service.dart';
 import 'payment_event.dart';
+import 'payment_idempotency_service.dart';
 import 'notification_service.dart';
 import 'inventory_management_service.dart';
 import 'inventory_sync_service.dart';
@@ -198,6 +199,8 @@ class _DashboardPageState extends State<DashboardPage>
 
   // Concurrency protection flags
   bool _isSaving = false;
+  final Set<String> _paymentReconciliationInFlight = <String>{};
+  final Set<String> _paymentReconciledThisSession = <String>{};
 
   // payment qr image path (saved by user)
   String? _qrImagePath;
@@ -657,13 +660,25 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Future<void> _reconcileDetectedPaymentToInvoice(dynamic event) async {
+    String? paymentKey;
     try {
-      // Never mutate invoice money for a LIKELY notification. The detection
-      // engine requires an independent confirmation anchor; only CONFIRMED
+      // Never mutate invoice money for a LIKELY notification. Only CONFIRMED
       // events may automatically settle or partially settle an invoice.
       if (event.decision != PaymentDecision.confirmed) return;
       final amount = (event.amount as num?)?.toDouble() ?? 0.0;
       if (amount <= 0) return;
+
+      paymentKey = 'invoice_payment_' + event.fingerprint.toString();
+      if (_paymentReconciledThisSession.contains(paymentKey)) return;
+      if (!_paymentReconciliationInFlight.add(paymentKey)) return;
+
+      // Persistent, user/shop-scoped guard also prevents a replay after the
+      // dashboard screen is recreated or a queued event is delivered again.
+      if (await PaymentIdempotencyService.instance.isKeyUsed(paymentKey)) {
+        _rememberReconciledPayment(paymentKey);
+        return;
+      }
+
       final rawInvoices = await LocalStorageService.loadLocalInvoices();
       if (rawInvoices.isEmpty) return;
 
@@ -773,6 +788,10 @@ class _DashboardPageState extends State<DashboardPage>
         return recordId(row) == targetId ? updated : raw;
       }).toList();
       await LocalStorageService.saveLocalInvoices(updatedInvoices);
+      // Mark only after the local ledger write succeeds. Failed writes remain
+      // retryable; repeat event delivery cannot add the same amount again.
+      await PaymentIdempotencyService.instance.markKeyUsed(paymentKey);
+      _rememberReconciledPayment(paymentKey);
 
       await SyncQueueManager.enqueue('update_invoice_paid', {
         'invoice_number': invoiceNumber,
@@ -797,6 +816,16 @@ class _DashboardPageState extends State<DashboardPage>
         debugPrint('❌ Detected payment → invoice reconciliation failed: $e');
         debugPrint(st.toString());
       }
+    } finally {
+      if (paymentKey != null) _paymentReconciliationInFlight.remove(paymentKey);
+    }
+  }
+
+  void _rememberReconciledPayment(String key) {
+    _paymentReconciledThisSession.add(key);
+    // Bound memory use for long-running shop sessions.
+    if (_paymentReconciledThisSession.length > 500) {
+      _paymentReconciledThisSession.remove(_paymentReconciledThisSession.first);
     }
   }
 
