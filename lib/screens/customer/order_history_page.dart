@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -143,7 +144,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(
+        title: LiveTranslatedText(
           'My Orders',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: const Color(0xFF1F2937)),
         ),
@@ -197,7 +198,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search orders by ID, name, or phone',
+          hintText: AppLocalizations.of(context).translate('searchQuery'),
           hintStyle: GoogleFonts.poppins(color: const Color(0xFF9CA3AF)),
           prefixIcon: const Icon(Icons.search, color: Color(0xFF6B7280)),
           suffixIcon: _searchController.text.isNotEmpty
@@ -242,7 +243,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(filter),
+              label: LiveTranslatedText(filter),
               selected: isSelected,
               onSelected: (selected) {
                 setState(() => _selectedFilter = filter);
@@ -268,7 +269,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         children: [
           Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          Text(
+          LiveTranslatedText(
             'No orders found',
             style: GoogleFonts.poppins(
               fontSize: 18,
@@ -277,7 +278,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             'Start shopping to see your orders here',
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -355,7 +356,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           const SizedBox(height: 12),
           // Items preview
           if (items.isNotEmpty)
-            Text(
+            LiveTranslatedText(
               '${items.length} item${items.length > 1 ? 's' : ''}',
               style: GoogleFonts.poppins(
                 fontSize: 13,
@@ -473,7 +474,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color, width: 1),
       ),
-      child: Text(
+      child: LiveTranslatedText(
         status.replaceAll('_', ' '),
         style: GoogleFonts.poppins(
           fontSize: 12,
