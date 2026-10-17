@@ -115,7 +115,8 @@ Future<List<String>> translateEnglishTexts(
       texts.map((text) => translator.translateText(text)),
     );
   } catch (_) {
-    // Keep displayed information visible if a local model isn't available.
-    return texts;
+    // If local model download or translation fails, use the authenticated
+    // backend batch route before falling back to original text.
+    return translateEnglishBatchRemotely(texts, targetLanguageCode);
   }
 }
