@@ -256,7 +256,7 @@ abstract class VoiceBuilder {
     final englishDebit = RegExp(
       r'\b(debited|debit|deducted|withdrawn|spent|purchase|you sent|you paid'
       r'|sent to (?!your\b|you\b)|paid to (?!your\b|you\b)'
-      r'|payment to (?!your\b|you\b)|transferred to (?!your\b|you\b))',
+      r'|payment to (?!your\b|you\b)|transferred to (?!your\b|you\b))\b',
     ).hasMatch(t);
     final romanizedDebit = RegExp(
       r'\b(kata(?:\s+gaya)?|kat gaya|nikala|bheja gaya|paise bheje|debit hua|paise kate)\b',
