@@ -33,6 +33,7 @@ Future<List<String>> translateEnglishBatchRemotely(
   final baseUrl = configuredBase.trim().replaceFirst(RegExp(r'/+$'), '');
   final result = List<String>.of(texts);
   final segments = <_TextSegment>[];
+  final expectedSegments = <int, int>{};
 
   // The API caps each item, so long descriptions are split on word boundaries
   // and reassembled in their original display order after translation.
@@ -40,6 +41,7 @@ Future<List<String>> translateEnglishBatchRemotely(
     final text = texts[index];
     if (text.length <= _maxRemoteItemChars) {
       segments.add(_TextSegment(index, text));
+      expectedSegments[index] = (expectedSegments[index] ?? 0) + 1;
       continue;
     }
 
@@ -52,7 +54,10 @@ Future<List<String>> translateEnglishBatchRemotely(
       }
       if (end <= start) end = math.min(start + _maxRemoteItemChars, text.length);
       final piece = text.substring(start, end).trim();
-      if (piece.isNotEmpty) segments.add(_TextSegment(index, piece));
+      if (piece.isNotEmpty) {
+        segments.add(_TextSegment(index, piece));
+        expectedSegments[index] = (expectedSegments[index] ?? 0) + 1;
+      }
       start = end;
       while (start < text.length && text[start].trim().isEmpty) {
         start++;
@@ -123,7 +128,10 @@ Future<List<String>> translateEnglishBatchRemotely(
   }
 
   for (final entry in translatedSegments.entries) {
-    if (entry.value.isNotEmpty) {
+    // Do not display a partially translated long description if only some
+    // batches succeeded; it is safer to show the original string in full.
+    if (entry.value.length == expectedSegments[entry.key] &&
+        entry.value.isNotEmpty) {
       result[entry.key] = entry.value.join(' ');
     }
   }
