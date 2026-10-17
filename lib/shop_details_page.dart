@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'secure_token_storage.dart';
@@ -174,7 +175,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e'), backgroundColor: Colors.red),
+        SnackBar(content: LiveTranslatedText('Error picking image: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -189,13 +190,13 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
       
       if (permission == LocationPermission.deniedForever) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location permission denied. Please enable in settings.')),
+          const SnackBar(content: LiveTranslatedText('Location permission denied. Please enable in settings.')),
         );
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fetching location...')),
+        const SnackBar(content: LiveTranslatedText('Fetching location...')),
       );
 
       final position = await Geolocator.getCurrentPosition();
@@ -232,7 +233,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
           });
           
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location fetched successfully!')),
+            const SnackBar(content: LiveTranslatedText('Location fetched successfully!')),
           );
         }
       } catch (e) {
@@ -240,12 +241,12 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
           locationController.text = '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not get address, showing coordinates.')),
+          const SnackBar(content: LiveTranslatedText('Could not get address, showing coordinates.')),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching location: $e')),
+        SnackBar(content: LiveTranslatedText('Error fetching location: $e')),
       );
     }
   }
@@ -482,7 +483,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text(
+                    LiveTranslatedText(
                       'Complete Your Shop Details',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
@@ -565,7 +566,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
             ),
             const SizedBox(height: 16),
             Center(
-              child: Text(
+              child: LiveTranslatedText(
                 'Tap to upload shop logo',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.6),
@@ -592,7 +593,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Shop Type / Category',
                   style: GoogleFonts.poppins(
                     color: Colors.white,
@@ -613,7 +614,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
                     underline: const SizedBox(),
                     isExpanded: true,
                     dropdownColor: const Color(0xFF111827), // Fix: explicitly set dark dropdown background
-                    hint: Text(
+                    hint: LiveTranslatedText(
                       'Select shop type',
                       style: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.4)),
                     ),
@@ -621,7 +622,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
                     items: shopTypeOptions
                         .map((type) => DropdownMenuItem(
                               value: type,
-                              child: Text(
+                              child: LiveTranslatedText(
                                 type,
                                 style: GoogleFonts.poppins(
                                   color: Colors.white,
@@ -640,7 +641,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Product Categories',
                   style: GoogleFonts.poppins(
                     color: Colors.white,
@@ -657,7 +658,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
                     color: const Color(0xFF020617),
                   ),
                   child: selectedCategories.isEmpty
-                      ? Text(
+                      ? LiveTranslatedText(
                           'Select categories (tap to add)',
                           style: GoogleFonts.poppins(
                             color: Colors.white.withValues(alpha: 0.4),
@@ -670,7 +671,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
                           children: selectedCategories
                               .map(
                                 (cat) => Chip(
-                                  label: Text(
+                                  label: LiveTranslatedText(
                                     cat,
                                     style: GoogleFonts.poppins(
                                       fontSize: 13,
@@ -704,7 +705,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
                                 }
                               });
                             },
-                            title: Text(
+                            title: LiveTranslatedText(
                               cat,
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
@@ -846,7 +847,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
                     const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 20),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         errorMessage!,
                         style: GoogleFonts.poppins(
                           color: const Color(0xFFDC2626),
@@ -873,7 +874,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
                     const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 20),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         successMessage!,
                         style: GoogleFonts.poppins(
                           color: const Color(0xFF059669),
@@ -911,7 +912,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
                           strokeWidth: 2,
                         ),
                       )
-                    : Text(
+                    : LiveTranslatedText(
                         'Continue to Dashboard',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
@@ -939,7 +940,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
   }
 
   Widget _buildSectionHeader(String title) {
-    return Text(
+    return LiveTranslatedText(
       title,
       style: GoogleFonts.poppins(
         fontSize: 14,
@@ -975,7 +976,7 @@ class _StyledFormField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           label,
           style: GoogleFonts.poppins(
             color: Colors.white,
@@ -1047,7 +1048,7 @@ class _StyledTimeField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           label,
           style: GoogleFonts.poppins(
             color: Colors.white,

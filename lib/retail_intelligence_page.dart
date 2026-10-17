@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -84,7 +85,7 @@ class _RetailIntelligencePageState extends State<RetailIntelligencePage>
                   Color.lerp(const Color(0xFF06B6D4), const Color(0xFF3B82F6), _glowAnimation.value)!,
                 ],
               ).createShader(bounds),
-              child: Text(
+              child: LiveTranslatedText(
                 'Retail Intelligence',
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w900, // Black bold text as requested
@@ -94,7 +95,7 @@ class _RetailIntelligencePageState extends State<RetailIntelligencePage>
               ),
             ),
           ),
-          Text(
+          LiveTranslatedText(
             'AI-Powered Business Operations',
             style: GoogleFonts.poppins(fontSize: 11, color: Colors.black54),
           ),
@@ -178,8 +179,8 @@ Widget _buildStatPill(String label, String value, Color color) {
     ),
     child: Column(
       children: [
-        Text(value, style: GoogleFonts.poppins(color: color, fontWeight: FontWeight.w700, fontSize: 16)),
-        Text(label, style: GoogleFonts.poppins(color: color.withValues(alpha: 0.8), fontSize: 10)),
+        LiveTranslatedText(value, style: GoogleFonts.poppins(color: color, fontWeight: FontWeight.w700, fontSize: 16)),
+        LiveTranslatedText(label, style: GoogleFonts.poppins(color: color.withValues(alpha: 0.8), fontSize: 10)),
       ],
     ),
   );
@@ -303,7 +304,7 @@ class _FlashSaleTabState extends State<_FlashSaleTab> with SingleTickerProviderS
     if (selectedCategory.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LiveTranslatedText(
             '⚠️ Select a category first',
             style: GoogleFonts.poppins(),
           ),
@@ -388,7 +389,7 @@ class _FlashSaleTabState extends State<_FlashSaleTab> with SingleTickerProviderS
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LiveTranslatedText(
             normalizedCategory == 'ALL'
                 ? '⚡ Flash Sale launched for all products'
                 : '⚡ Flash Sale launched for $normalizedCategory',
@@ -409,7 +410,7 @@ class _FlashSaleTabState extends State<_FlashSaleTab> with SingleTickerProviderS
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: LiveTranslatedText(
               'Flash Sale could not be launched. Please check your connection and try again.',
               style: GoogleFonts.poppins(),
             ),
@@ -453,15 +454,15 @@ class _FlashSaleTabState extends State<_FlashSaleTab> with SingleTickerProviderS
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Flash Sale Engine', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16)),
-                        Text('Timed discount across a category or all products', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
+                        LiveTranslatedText('Flash Sale Engine', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16)),
+                        LiveTranslatedText('Timed discount across a category or all products', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
                       ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
                 // Category presets
-                Text('Quick Presets:', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
+                LiveTranslatedText('Quick Presets:', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -482,7 +483,7 @@ class _FlashSaleTabState extends State<_FlashSaleTab> with SingleTickerProviderS
                               : Colors.white12,
                         ),
                       ),
-                      child: Text(cat, style: GoogleFonts.poppins(
+                      child: LiveTranslatedText(cat, style: GoogleFonts.poppins(
                         color: Colors.black87,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -520,7 +521,7 @@ class _FlashSaleTabState extends State<_FlashSaleTab> with SingleTickerProviderS
                             children: [
                               const Icon(Icons.campaign_rounded, size: 22),
                               const SizedBox(width: 8),
-                              Text('LAUNCH FLASH SALE ⚡', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 15)),
+                              LiveTranslatedText('LAUNCH FLASH SALE ⚡', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 15)),
                             ],
                           ),
                   ),
@@ -552,7 +553,7 @@ class _FlashSaleTabState extends State<_FlashSaleTab> with SingleTickerProviderS
                 ),
               ),
               const SizedBox(width: 10),
-              Text('ACTIVE FLASH SALE', style: GoogleFonts.poppins(color: Colors.greenAccent, fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 1)),
+              LiveTranslatedText('ACTIVE FLASH SALE', style: GoogleFonts.poppins(color: Colors.greenAccent, fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 1)),
             ],
           ),
           const SizedBox(height: 12),
@@ -695,8 +696,8 @@ class _ChurnRiskTabState extends State<_ChurnRiskTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Churn Risk Predictor', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16)),
-                    Text('Customers inactive for ${_selectedDays}+ days', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
+                    LiveTranslatedText('Churn Risk Predictor', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16)),
+                    LiveTranslatedText('Customers inactive for ${_selectedDays}+ days', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
                   ],
                 ),
               ),
@@ -706,7 +707,7 @@ class _ChurnRiskTabState extends State<_ChurnRiskTab> {
                 initialValue: _selectedDays,
                 onSelected: (v) { setState(() => _selectedDays = v); _loadChurn(); },
                 itemBuilder: (_) => [15, 30, 45, 60].map((d) =>
-                  PopupMenuItem(value: d, child: Text('$d days', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w600)))
+                  PopupMenuItem(value: d, child: LiveTranslatedText('$d days', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w600)))
                 ).toList(),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -717,7 +718,7 @@ class _ChurnRiskTabState extends State<_ChurnRiskTab> {
                   ),
                   child: Row(
                     children: [
-                      Text('${_selectedDays}d', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
+                      LiveTranslatedText('${_selectedDays}d', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
                       const Icon(Icons.arrow_drop_down, color: Colors.black54, size: 18),
                     ],
                   ),
@@ -773,7 +774,7 @@ class _ChurnRiskTabState extends State<_ChurnRiskTab> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: Text(
+              child: LiveTranslatedText(
                 (c['name'] ?? 'U').substring(0, 1).toUpperCase(),
                 style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 18),
               ),
@@ -786,7 +787,7 @@ class _ChurnRiskTabState extends State<_ChurnRiskTab> {
               children: [
                 Row(
                   children: [
-                    Text(c['name'] ?? 'Unknown', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700)),
+                    LiveTranslatedText(c['name'] ?? 'Unknown', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700)),
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -794,11 +795,11 @@ class _ChurnRiskTabState extends State<_ChurnRiskTab> {
                         color: riskColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(riskLevel, style: GoogleFonts.poppins(color: riskColor, fontSize: 9, fontWeight: FontWeight.w700)),
+                      child: LiveTranslatedText(riskLevel, style: GoogleFonts.poppins(color: riskColor, fontSize: 9, fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
-                Text('Last visit: ${(c['last_visit'] ?? '').toString().split('T').first}',
+                LiveTranslatedText('Last visit: ${(c['last_visit'] ?? '').toString().split('T').first}',
                     style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 11)),
               ],
             ),
@@ -843,9 +844,9 @@ class _ChurnRiskTabState extends State<_ChurnRiskTab> {
             child: const Icon(Icons.people_alt_rounded, color: Colors.greenAccent, size: 48),
           ),
           const SizedBox(height: 20),
-          Text('All Customers Active! 🎉', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 18)),
+          LiveTranslatedText('All Customers Active! 🎉', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 18)),
           const SizedBox(height: 8),
-          Text('No churn risk detected in the last $_selectedDays days.',
+          LiveTranslatedText('No churn risk detected in the last $_selectedDays days.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(color: Colors.white38, fontSize: 13)),
           const SizedBox(height: 24),
@@ -855,7 +856,7 @@ class _ChurnRiskTabState extends State<_ChurnRiskTab> {
               backgroundColor: const Color(0xFF6366F1),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text('Refresh', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w600)),
+            child: LiveTranslatedText('Refresh', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -938,8 +939,8 @@ class _AutoPOTabState extends State<_AutoPOTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Auto PO Generator', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16)),
-                    Text('${_pos.length} suppliers • $_totalItems items need restock', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
+                    LiveTranslatedText('Auto PO Generator', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16)),
+                    LiveTranslatedText('${_pos.length} suppliers • $_totalItems items need restock', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
                   ],
                 ),
               ),
@@ -984,8 +985,8 @@ class _AutoPOTabState extends State<_AutoPOTab> {
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           iconColor: Colors.white54,
           collapsedIconColor: Colors.white54,
-          title: Text(supplier, style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700)),
-          subtitle: Text('${items.length} items need restock', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 11)),
+          title: LiveTranslatedText(supplier, style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700)),
+          subtitle: LiveTranslatedText('${items.length} items need restock', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 11)),
           leading: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -1007,13 +1008,13 @@ class _AutoPOTabState extends State<_AutoPOTab> {
                 children: [
                   Icon(Icons.shopping_bag_outlined, color: Colors.grey[700], size: 16),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(i['product'] ?? '', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13))),
-                  Text('Stock: ${i['current_stock']}', style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 12)),
+                  Expanded(child: LiveTranslatedText(i['product'] ?? '', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13))),
+                  LiveTranslatedText('Stock: ${i['current_stock']}', style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 12)),
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-                    child: Text('Order ${i['recommended_order_qty']}', style: GoogleFonts.poppins(color: Colors.greenAccent, fontSize: 11, fontWeight: FontWeight.w600)),
+                    child: LiveTranslatedText('Order ${i['recommended_order_qty']}', style: GoogleFonts.poppins(color: Colors.greenAccent, fontSize: 11, fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
@@ -1029,7 +1030,7 @@ class _AutoPOTabState extends State<_AutoPOTab> {
                   launchUrlString('https://wa.me/?text=${Uri.encodeComponent(msg)}');
                 },
                 icon: const Icon(Icons.send_rounded, size: 16),
-                label: Text('Send PO to $supplier', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                label: LiveTranslatedText('Send PO to $supplier', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
@@ -1051,9 +1052,9 @@ class _AutoPOTabState extends State<_AutoPOTab> {
         children: [
           const Icon(Icons.verified_rounded, color: Colors.greenAccent, size: 64),
           const SizedBox(height: 16),
-          Text('Inventory is Healthy! ✅', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 18)),
+          LiveTranslatedText('Inventory is Healthy! ✅', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 18)),
           const SizedBox(height: 8),
-          Text('No purchase orders needed right now.', textAlign: TextAlign.center, style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13)),
+          LiveTranslatedText('No purchase orders needed right now.', textAlign: TextAlign.center, style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13)),
         ],
       ),
     );
@@ -1121,8 +1122,8 @@ class _SmartReorderTabState extends State<_SmartReorderTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Smart Reorder AI', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16)),
-                    Text('Stockout predictions from sales velocity', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
+                    LiveTranslatedText('Smart Reorder AI', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16)),
+                    LiveTranslatedText('Stockout predictions from sales velocity', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
                   ],
                 ),
               ),
@@ -1162,7 +1163,7 @@ class _SmartReorderTabState extends State<_SmartReorderTab> {
           Row(
             children: [
               Expanded(
-                child: Text(alert['product_name'] ?? '', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 15)),
+                child: LiveTranslatedText(alert['product_name'] ?? '', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 15)),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1171,7 +1172,7 @@ class _SmartReorderTabState extends State<_SmartReorderTab> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: urgencyColor.withValues(alpha: 0.5)),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   days <= 1 ? '🔴 CRITICAL' : days <= 3 ? '🟠 URGENT' : '🟡 WARNING',
                   style: GoogleFonts.poppins(color: urgencyColor, fontSize: 10, fontWeight: FontWeight.w700),
                 ),
@@ -1217,7 +1218,7 @@ class _SmartReorderTabState extends State<_SmartReorderTab> {
                         : 'https://wa.me/?text=$encoded');
                   },
                   icon: const Icon(Icons.send_rounded, size: 16),
-                  label: Text('WhatsApp Supplier', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
+                  label: LiveTranslatedText('WhatsApp Supplier', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -1247,9 +1248,9 @@ class _SmartReorderTabState extends State<_SmartReorderTab> {
             child: const Icon(Icons.check_circle_rounded, color: Colors.cyanAccent, size: 56),
           ),
           const SizedBox(height: 20),
-          Text('Stock Levels Safe! 📦', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18)),
+          LiveTranslatedText('Stock Levels Safe! 📦', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18)),
           const SizedBox(height: 8),
-          Text('No products running critically low.\nKeep selling! 🚀',
+          LiveTranslatedText('No products running critically low.\nKeep selling! 🚀',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(color: Colors.white38, fontSize: 13)),
           const SizedBox(height: 24),
@@ -1263,7 +1264,7 @@ class _SmartReorderTabState extends State<_SmartReorderTab> {
                 side: const BorderSide(color: Colors.cyanAccent, width: 1),
               ),
             ),
-            child: Text('Refresh Analysis', style: GoogleFonts.poppins()),
+            child: LiveTranslatedText('Refresh Analysis', style: GoogleFonts.poppins()),
           ),
         ],
       ),

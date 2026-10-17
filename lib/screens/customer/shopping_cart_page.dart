@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/cart_service.dart';
@@ -78,7 +79,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(
+        title: LiveTranslatedText(
           'Shopping Cart',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: const Color(0xFF1F2937)),
         ),
@@ -94,7 +95,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
             TextButton.icon(
               onPressed: _clearCart,
               icon: const Icon(Icons.delete_outline, color: Color(0xFFEF4444)),
-              label: Text(
+              label: LiveTranslatedText(
                 'Clear',
                 style: GoogleFonts.poppins(color: const Color(0xFFEF4444), fontWeight: FontWeight.w600),
               ),
@@ -133,7 +134,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
         children: [
           Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 24),
-          Text(
+          LiveTranslatedText(
             'Your cart is empty',
             style: GoogleFonts.poppins(
               fontSize: 20,
@@ -142,7 +143,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             'Add items to get started',
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -153,7 +154,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.shopping_bag_outlined),
-            label: const Text('Continue Shopping'),
+            label: const LiveTranslatedText('Continue Shopping'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6366F1),
               foregroundColor: Colors.white,
@@ -211,7 +212,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   name,
                   style: GoogleFonts.poppins(
                     fontSize: 14,
@@ -222,7 +223,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LiveTranslatedText(
                   '₹${price.toString()}',
                   style: GoogleFonts.poppins(
                     fontSize: 16,
@@ -239,7 +240,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                       color: const Color(0xFFFEE2E2),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Only $stock available',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -269,7 +270,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                       padding: const EdgeInsets.all(4),
                       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     ),
-                    Text(
+                    LiveTranslatedText(
                       quantity.toString(),
                       style: GoogleFonts.poppins(
                         fontSize: 14,
@@ -290,7 +291,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
               // Remove button
               InkWell(
                 onTap: () => _removeItem(productId),
-                child: Text(
+                child: LiveTranslatedText(
                   'REMOVE',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
@@ -318,7 +319,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             'Apply Coupon',
             style: GoogleFonts.poppins(
               fontSize: 16,
@@ -357,7 +358,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   'Apply',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                 ),
@@ -366,7 +367,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
           ),
           if (_couponMessage.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               _couponMessage,
               style: GoogleFonts.poppins(
                 fontSize: 12,
@@ -398,7 +399,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             'Price Details',
             style: GoogleFonts.poppins(
               fontSize: 18,
@@ -420,7 +421,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
               onPressed: () {
                 // Navigate to checkout
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Proceeding to checkout...')),
+                  const SnackBar(content: LiveTranslatedText('Proceeding to checkout...')),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -431,7 +432,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 'PROCEED TO CHECKOUT',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
@@ -452,7 +453,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -460,7 +461,7 @@ class _ShoppingCartPageState extends State<ShoppingCartPage> {
               color: isTotal ? const Color(0xFF1F2937) : const Color(0xFF6B7280),
             ),
           ),
-          Text(
+          LiveTranslatedText(
             isDiscount ? '-₹${value.abs().toStringAsFixed(2)}' : '₹${value.toStringAsFixed(2)}',
             style: GoogleFonts.poppins(
               fontSize: isTotal ? 18 : 14,

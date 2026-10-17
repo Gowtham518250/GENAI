@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -13,7 +14,7 @@ class ShareShopPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(
+        title: LiveTranslatedText(
           'Online Store',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w800),
         ),
@@ -44,7 +45,7 @@ class ShareShopPage extends StatelessWidget {
                   size: 38,
                 ),
                 const SizedBox(height: 14),
-                Text(
+                LiveTranslatedText(
                   'Your shop is discoverable through the marketplace',
                   style: GoogleFonts.poppins(
                     fontSize: 21,
@@ -53,7 +54,7 @@ class ShareShopPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
+                LiveTranslatedText(
                   'Customers can search for your shop by name or discover your products across the marketplace. You do not need to send a shop link to every customer.',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
@@ -132,7 +133,7 @@ class _ActionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       title,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w800,
@@ -140,7 +141,7 @@ class _ActionCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    LiveTranslatedText(
                       subtitle,
                       style: GoogleFonts.poppins(
                         fontSize: 12,

@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../api_client.dart';
@@ -154,7 +155,7 @@ class _NearbyShopsPageState extends State<NearbyShopsPage> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('Nearby Shops', style: TextStyle(color: textColor)),
+        title: LiveTranslatedText('Nearby Shops', style: TextStyle(color: textColor)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: textColor),
@@ -166,7 +167,7 @@ class _NearbyShopsPageState extends State<NearbyShopsPage> {
                 children: [
                   const CircularProgressIndicator(color: AppColors.primary),
                   const SizedBox(height: 16),
-                  Text(
+                  LiveTranslatedText(
                     'Finding nearby shops...',
                     style: TextStyle(color: textColor),
                   ),
@@ -182,14 +183,14 @@ class _NearbyShopsPageState extends State<NearbyShopsPage> {
                   children: [
                     Icon(_errorIcon, size: 64, color: Colors.redAccent),
                     const SizedBox(height: 16),
-                    Text(_errorMessage, style: TextStyle(color: textColor), textAlign: TextAlign.center),
+                    LiveTranslatedText(_errorMessage, style: TextStyle(color: textColor), textAlign: TextAlign.center),
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: () {
                         setState(() { _isLoading = true; _errorMessage = ''; });
                         _fetchLocationAndShops();
                       },
-                      child: const Text('Try Again'),
+                      child: const LiveTranslatedText('Try Again'),
                     )
                   ],
                 ),
@@ -203,7 +204,7 @@ class _NearbyShopsPageState extends State<NearbyShopsPage> {
                       children: [
                         const SizedBox(height: 100),
                         Center(
-                          child: Text(
+                          child: LiveTranslatedText(
                             'No registered shops found nearby.\nCheck back later!',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: subTextColor, fontSize: 16),
@@ -241,7 +242,7 @@ class _NearbyShopsPageState extends State<NearbyShopsPage> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
+                                        LiveTranslatedText(
                                           shop['name'],
                                           style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold),
                                         ),
@@ -250,11 +251,11 @@ class _NearbyShopsPageState extends State<NearbyShopsPage> {
                                           children: [
                                             const Icon(Icons.location_on, color: AppColors.primary, size: 14),
                                             const SizedBox(width: 4),
-                                            Text(shop['distance'], style: TextStyle(color: subTextColor, fontSize: 13)),
+                                            LiveTranslatedText(shop['distance'], style: TextStyle(color: subTextColor, fontSize: 13)),
                                             const SizedBox(width: 16),
                                             const Icon(Icons.star, color: Colors.amber, size: 14),
                                             const SizedBox(width: 4),
-                                            Text(shop['rating'], style: TextStyle(color: subTextColor, fontSize: 13)),
+                                            LiveTranslatedText(shop['rating'], style: TextStyle(color: subTextColor, fontSize: 13)),
                                           ],
                                         ),
                                       ],

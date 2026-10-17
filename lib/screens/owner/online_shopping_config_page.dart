@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -119,7 +120,7 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: LiveTranslatedText(
               value
                   ? 'Shop is now Live & Visible to Customers!'
                   : 'Shop is now offline.',
@@ -131,7 +132,7 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
       if (mounted) setState(() => _isOnline = previous);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update online store: $e')),
+          SnackBar(content: LiveTranslatedText('Failed to update online store: $e')),
         );
       }
     }
@@ -188,7 +189,7 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Online Stock'),
+        title: const LiveTranslatedText('Add Online Stock'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -210,18 +211,18 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
                   final file = await picker.pickImage(source: ImageSource.gallery);
                   if (file != null && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Paste image URL above after uploading photo elsewhere.')),
+                      const SnackBar(content: LiveTranslatedText('Paste image URL above after uploading photo elsewhere.')),
                     );
                   }
                 },
                 icon: const Icon(Icons.photo_library),
-                label: const Text('Pick from gallery'),
+                label: const LiveTranslatedText('Pick from gallery'),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('Cancel')),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -244,19 +245,19 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
                 
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Saved — visible to customers when in stock')),
+                    const SnackBar(content: LiveTranslatedText('Saved — visible to customers when in stock')),
                   );
                 }
                 _loadShopData();
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to save: $e')),
+                    SnackBar(content: LiveTranslatedText('Failed to save: $e')),
                   );
                 }
               }
             },
-            child: const Text('Save to Inventory'),
+            child: const LiveTranslatedText('Save to Inventory'),
           ),
         ],
       ),
@@ -268,7 +269,7 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Online Shopping Setup', style: TextStyle(color: Colors.black87)),
+        title: const LiveTranslatedText('Online Shopping Setup', style: TextStyle(color: Colors.black87)),
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black87),
         elevation: 1,
@@ -277,7 +278,7 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
         onPressed: _isListening ? _stopListening : _startListening,
         backgroundColor: _isListening ? Colors.red : AppColors.primary,
         icon: Icon(_isListening ? Icons.mic_off : Icons.mic),
-        label: Text(_isListening ? 'Listening...' : 'Voice Add Stock'),
+        label: LiveTranslatedText(_isListening ? 'Listening...' : 'Voice Add Stock'),
       ),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator(color: Colors.black))
@@ -296,9 +297,9 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Enable Online Store', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const LiveTranslatedText('Enable Online Store', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 4),
-                          Text(
+                          LiveTranslatedText(
                             _isOnline ? 'Customers can see your shop on the map.' : 'Your shop is currently hidden.',
                             style: TextStyle(color: Colors.grey[600], fontSize: 13),
                           ),
@@ -317,7 +318,7 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Online Inventory', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const LiveTranslatedText('Online Inventory', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   IconButton(
                     icon: const Icon(Icons.add_circle, color: AppColors.primary),
                     onPressed: _showAddItemDialog,
@@ -328,7 +329,7 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
               if (_inventory.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(24.0),
-                  child: Center(child: Text('No items in online inventory. Add some using the Voice button!')),
+                  child: Center(child: LiveTranslatedText('No items in online inventory. Add some using the Voice button!')),
                 )
               else
                 ..._inventory.map((item) {
@@ -351,9 +352,9 @@ class _OnlineShoppingConfigPageState extends State<OnlineShoppingConfigPage> {
                               backgroundColor: AppColors.primary,
                               child: Icon(Icons.image, color: Colors.white),
                             ),
-                      title: Text(name.toString()),
-                      subtitle: Text(stock == 0 ? 'Out of stock (hidden online)' : 'Stock: $stock'),
-                      trailing: Text(
+                      title: LiveTranslatedText(name.toString()),
+                      subtitle: LiveTranslatedText(stock == 0 ? 'Out of stock (hidden online)' : 'Stock: $stock'),
+                      trailing: LiveTranslatedText(
                         'Rs ${item['price'] ?? 0}',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),

@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -112,7 +113,7 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
-        title: const Text('AI Shopping', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const LiveTranslatedText('AI Shopping', style: TextStyle(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF0F172A),
         elevation: 0,
@@ -159,9 +160,9 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Retail Mind AI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+                          LiveTranslatedText('Retail Mind AI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
                           SizedBox(height: 2),
-                          Text('Real shop + product data', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                          LiveTranslatedText('Real shop + product data', style: TextStyle(color: Colors.white60, fontSize: 11)),
                         ],
                       ),
                     ),
@@ -169,12 +170,12 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
                   ],
                 ),
                 const SizedBox(height: 18),
-                const Text(
+                const LiveTranslatedText(
                   'Ask naturally. Compare real shops.',
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 25, height: 1.05),
                 ),
                 const SizedBox(height: 7),
-                const Text(
+                const LiveTranslatedText(
                   'Ask for low price, best rating, a budget, or a specific shop. '
                   'Products are returned only when they exist in an online-enabled shop.',
                   style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.45),
@@ -216,7 +217,7 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
                   children: [
                     for (final example in examples)
                       ActionChip(
-                        label: Text(example, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700)),
+                        label: LiveTranslatedText(example, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700)),
                         backgroundColor: Colors.white.withValues(alpha: 0.07),
                         side: BorderSide(color: Colors.white.withValues(alpha: 0.09)),
                         onPressed: () => _ask(example),
@@ -241,11 +242,11 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
                 children: [
                   const Padding(
                     padding: EdgeInsets.only(top: 5),
-                    child: Text('Recent', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                    child: LiveTranslatedText('Recent', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
                   ),
                   for (final item in _recent)
                     InputChip(
-                      label: Text(item, style: const TextStyle(fontSize: 10)),
+                      label: LiveTranslatedText(item, style: const TextStyle(fontSize: 10)),
                       avatar: const Icon(Icons.history_rounded, size: 14),
                       onPressed: () => _ask(item),
                     ),
@@ -272,13 +273,13 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
                     children: [
                       const Icon(Icons.psychology_alt_rounded, color: AppColors.brand),
                       const SizedBox(width: 8),
-                      const Text('AI answer', style: TextStyle(color: AppColors.brand, fontWeight: FontWeight.w900)),
+                      const LiveTranslatedText('AI answer', style: TextStyle(color: AppColors.brand, fontWeight: FontWeight.w900)),
                       const Spacer(),
                       if (_intent.isNotEmpty) _lightTag(_intent, AppColors.brand),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(_message, style: const TextStyle(color: Color(0xFF1E1B4B), fontWeight: FontWeight.w700, height: 1.45)),
+                  LiveTranslatedText(_message, style: const TextStyle(color: Color(0xFF1E1B4B), fontWeight: FontWeight.w700, height: 1.45)),
                   const SizedBox(height: 9),
                   Wrap(
                     spacing: 7,
@@ -292,7 +293,7 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
               ),
             ),
             const SizedBox(height: 15),
-            Text(
+            LiveTranslatedText(
               '${_results.length} verified product option${_results.length == 1 ? '' : 's'}',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
             ),
@@ -341,7 +342,7 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
-                  child: Text('${index + 1}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.brand, fontSize: 17)),
+                  child: LiveTranslatedText('${index + 1}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.brand, fontSize: 17)),
                 ),
               ),
               const SizedBox(width: 11),
@@ -349,13 +350,13 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(product, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                    LiveTranslatedText(product, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                     const SizedBox(height: 3),
-                    Text(shop, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.brand, fontSize: 12, fontWeight: FontWeight.w700)),
+                    LiveTranslatedText(shop, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.brand, fontSize: 12, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
-              Text('₹${price.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.brand, fontSize: 18, fontWeight: FontWeight.w900)),
+              LiveTranslatedText('₹${price.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.brand, fontSize: 18, fontWeight: FontWeight.w900)),
             ],
           ),
           const SizedBox(height: 12),
@@ -371,11 +372,11 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: Text('Open the shop to view details and order', style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500))),
+              Expanded(child: LiveTranslatedText('Open the shop to view details and order', style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500))),
               FilledButton.icon(
                 onPressed: () => _openShop(shopId),
                 icon: const Icon(Icons.storefront_rounded, size: 16),
-                label: const Text('View shop'),
+                label: const LiveTranslatedText('View shop'),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.brand,
                   foregroundColor: Colors.white,
@@ -402,7 +403,7 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
-          Text(text, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w800)),
+          LiveTranslatedText(text, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w800)),
         ],
       ),
     );
@@ -412,7 +413,7 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(999)),
-      child: Text(text, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w800)),
+      child: LiveTranslatedText(text, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w800)),
     );
   }
 
@@ -420,7 +421,7 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.09), borderRadius: BorderRadius.circular(999)),
-      child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.w900)),
+      child: LiveTranslatedText(text, style: const TextStyle(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.w900)),
     );
   }
 
@@ -441,9 +442,9 @@ class _CustomerAiShoppingPageState extends State<CustomerAiShoppingPage> {
             child: Icon(icon, color: color),
           ),
           const SizedBox(height: 9),
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+          LiveTranslatedText(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
           const SizedBox(height: 5),
-          Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.45)),
+          LiveTranslatedText(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.45)),
         ],
       ),
     );

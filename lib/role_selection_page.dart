@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
@@ -93,14 +94,14 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('No Staff Accounts'),
-          content: const Text(
+          title: const LiveTranslatedText('No Staff Accounts'),
+          content: const LiveTranslatedText(
             'No staff account is configured for this shop. The owner must create a worker with a staff PIN before Staff Mode can be used.',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
+              child: const LiveTranslatedText('OK'),
             ),
           ],
         ),
@@ -114,14 +115,14 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: const Color(0xFF1E293B),
-          title: Text(
+          title: LiveTranslatedText(
             'Staff Login',
             style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              LiveTranslatedText(
                 'Enter your 4-digit Staff PIN',
                 style: GoogleFonts.poppins(color: Colors.grey),
               ),
@@ -150,12 +151,12 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.grey)),
+              child: const LiveTranslatedText('CANCEL', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, controller.text.trim()),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.indigoAccent),
-              child: const Text('LOGIN'),
+              child: const LiveTranslatedText('LOGIN'),
             ),
           ],
         ),
@@ -177,7 +178,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Invalid Staff PIN'),
+              content: LiveTranslatedText('❌ Invalid Staff PIN'),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -236,11 +237,11 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E293B),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
+        title: LiveTranslatedText(
           'Owner Authentication',
           style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        content: Text(
+        content: LiveTranslatedText(
           'How would you like to verify your identity?',
           style: GoogleFonts.poppins(color: Colors.white60, fontSize: 13),
         ),
@@ -250,7 +251,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
               Navigator.pop(ctx);
               _proceedWithOTPVerification();
             },
-            child: Text(
+            child: LiveTranslatedText(
               'Email OTP',
               style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
             ),
@@ -261,7 +262,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
               _authenticateWithBiometric();
             },
             icon: const Icon(Icons.fingerprint_rounded),
-            label: const Text('Biometric'),
+            label: const LiveTranslatedText('Biometric'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF8B5CF6),
             ),
@@ -297,7 +298,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
               children: [
                 const Icon(Icons.verified_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 12),
-                Text(
+                LiveTranslatedText(
                   '✓ Welcome back, Owner!',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                 ),
@@ -319,7 +320,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
+              content: LiveTranslatedText(
                 'Biometric verification failed. Using Email OTP instead.',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
@@ -338,7 +339,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: LiveTranslatedText(
               'Biometric error: $e. Using Email OTP instead.',
               style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
             ),
@@ -383,7 +384,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
               const Icon(Icons.mark_email_read_rounded, color: Colors.white, size: 20),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   'Verification PIN dispatched! Please check ${widget.email}',
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                 ),
@@ -500,7 +501,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
                             ),
                           ),
                           const SizedBox(height: 24),
-                          Text(
+                          LiveTranslatedText(
                             'Identity Verification',
                             style: GoogleFonts.poppins(
                               color: Colors.white,
@@ -510,7 +511,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
+                          LiveTranslatedText(
                             'Are you the Owner or a Staff Member?',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
@@ -527,7 +528,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
 
                           if (_error != null) ...[
                             const SizedBox(height: 16),
-                            Text(
+                            LiveTranslatedText(
                               _error!,
                               style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold),
                             ),
@@ -581,12 +582,12 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
         children: [
           const Icon(Icons.mail_outline_rounded, color: Colors.indigoAccent, size: 48),
           const SizedBox(height: 16),
-          Text(
+          LiveTranslatedText(
             'Check your Email',
             style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             'We sent a 6-digit PIN to ${widget.email}',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(color: Colors.white60, fontSize: 12),
@@ -619,12 +620,12 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> with TickerProvid
               ),
               child: _sendingOTP
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Verify PIN'),
+                  : const LiveTranslatedText('Verify PIN'),
             ),
           ),
           TextButton(
             onPressed: () => setState(() => _isVerifying = false),
-            child: const Text('Go Back', style: TextStyle(color: Colors.white54)),
+            child: const LiveTranslatedText('Go Back', style: TextStyle(color: Colors.white54)),
           ),
         ],
       ),
@@ -678,12 +679,12 @@ class _RoleCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     title,
                     style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  LiveTranslatedText(
                     subtitle,
                     style: GoogleFonts.poppins(color: Colors.white54, fontSize: 11),
                   ),
