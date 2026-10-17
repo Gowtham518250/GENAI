@@ -274,7 +274,7 @@ class _BankStatementParserPageState extends State<BankStatementParserPage> {
           controller: _searchController,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: 'Search any name, UPI ID, phone or reference...',
+            hint: LiveTranslatedText('Search any name, UPI ID, phone or reference...'),
             prefixIcon: const Icon(Icons.search_rounded),
             suffixIcon: _searchQuery.isEmpty
                 ? null

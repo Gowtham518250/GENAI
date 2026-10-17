@@ -147,7 +147,7 @@ class SplitPaymentHandler {
               LiveTranslatedText('Total: ₹${totalAmount.toStringAsFixed(2)}'),
               const SizedBox(height: 20),
               TextField(
-                decoration: const InputDecoration(labelText: '💵 Cash Amount'),
+                decoration: const InputDecoration(label: LiveTranslatedText('💵 Cash Amount')),
                 keyboardType: TextInputType.number,
                 onChanged: (value) {
                   setState(() {

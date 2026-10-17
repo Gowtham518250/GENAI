@@ -322,7 +322,7 @@ class _AdvancedProductCatalogState extends State<AdvancedProductCatalog> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search for products, brands and more',
+          hint: LiveTranslatedText('Search for products, brands and more'),
           prefixIcon: const Icon(Icons.search),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(

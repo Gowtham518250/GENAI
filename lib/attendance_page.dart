@@ -958,7 +958,7 @@ class _AttendancePageState extends State<AttendancePage>
               },
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Search worker by name, ID, phone or role',
+                hint: LiveTranslatedText('Search worker by name, ID, phone or role'),
                 hintStyle: TextStyle(
                   color: Colors.grey.shade500,
                   fontSize: 12,
