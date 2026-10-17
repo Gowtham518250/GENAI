@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'payment_event.dart';
 
@@ -68,14 +69,14 @@ class _ManualPaymentFallbackWidgetState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        const LiveTranslatedText(
                           'Manual Payment Entry',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Text(
+                        LiveTranslatedText(
                           'Auto-detection failed. Record manually.',
                           style: TextStyle(
                             fontSize: 12,
@@ -101,7 +102,7 @@ class _ManualPaymentFallbackWidgetState
                 controller: _amountCtrl,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: 'Amount Received (₹)',
+                  label: LiveTranslatedText('Amount Received (₹)'),
                   suffixText: '₹',
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -116,7 +117,7 @@ class _ManualPaymentFallbackWidgetState
               DropdownButtonFormField<String>(
                 value: _selectedMethod,
                 decoration: InputDecoration(
-                  labelText: 'Payment Method',
+                  label: LiveTranslatedText('Payment Method'),
                   filled: true,
                   fillColor: Colors.grey[50],
                   border: OutlineInputBorder(
@@ -124,11 +125,11 @@ class _ManualPaymentFallbackWidgetState
                   ),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'CASH', child: Text('💵 Cash')),
-                  DropdownMenuItem(value: 'UPI', child: Text('📱 UPI')),
-                  DropdownMenuItem(value: 'CARD', child: Text('💳 Card')),
-                  DropdownMenuItem(value: 'BANK', child: Text('🏦 Bank Transfer')),
-                  DropdownMenuItem(value: 'CHEQUE', child: Text('📄 Cheque')),
+                  DropdownMenuItem(value: 'CASH', child: LiveTranslatedText('💵 Cash')),
+                  DropdownMenuItem(value: 'UPI', child: LiveTranslatedText('📱 UPI')),
+                  DropdownMenuItem(value: 'CARD', child: LiveTranslatedText('💳 Card')),
+                  DropdownMenuItem(value: 'BANK', child: LiveTranslatedText('🏦 Bank Transfer')),
+                  DropdownMenuItem(value: 'CHEQUE', child: LiveTranslatedText('📄 Cheque')),
                 ]
                     .map((item) => DropdownMenuItem(
                       value: item.value,
@@ -144,7 +145,7 @@ class _ManualPaymentFallbackWidgetState
                 DropdownButtonFormField<String>(
                   value: _selectedBank,
                   decoration: InputDecoration(
-                    labelText: 'Bank / UPI App',
+                    label: LiveTranslatedText('Bank / UPI App'),
                     filled: true,
                     fillColor: Colors.grey[50],
                     border: OutlineInputBorder(
@@ -163,7 +164,7 @@ class _ManualPaymentFallbackWidgetState
                   ]
                       .map((bank) => DropdownMenuItem(
                         value: bank,
-                        child: Text(bank),
+                        child: LiveTranslatedText(bank),
                       ))
                       .toList(),
                   onChanged: (value) => setState(() => _selectedBank = value),
@@ -203,7 +204,7 @@ class _ManualPaymentFallbackWidgetState
                     Icon(Icons.info, color: Colors.blue[700], size: 20),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         'This payment will be recorded immediately. You can verify it in the transaction history.',
                         style: TextStyle(
                           fontSize: 12,
@@ -226,7 +227,7 @@ class _ManualPaymentFallbackWidgetState
                         backgroundColor: Colors.grey[300],
                         foregroundColor: Colors.grey[800],
                       ),
-                      child: const Text('Cancel'),
+                      child: const LiveTranslatedText('Cancel'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -242,7 +243,7 @@ class _ManualPaymentFallbackWidgetState
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          : const Text('✓ Record Payment'),
+                          : const LiveTranslatedText('✓ Record Payment'),
                     ),
                   ),
                 ],
@@ -270,18 +271,18 @@ class _ManualPaymentFallbackWidgetState
         final confirm = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('⚠️ Amount Mismatch'),
-            content: Text(
+            title: const LiveTranslatedText('⚠️ Amount Mismatch'),
+            content: LiveTranslatedText(
               'Received amount (₹$amount) is more than 2x the sale amount (₹${widget.saleAmount}).\n\nContinue?'
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
+                child: const LiveTranslatedText('Cancel'),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Continue'),
+                child: const LiveTranslatedText('Continue'),
               ),
             ],
           ),
@@ -321,7 +322,7 @@ class _ManualPaymentFallbackWidgetState
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: LiveTranslatedText(message),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 3),
       ),
@@ -331,7 +332,7 @@ class _ManualPaymentFallbackWidgetState
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: LiveTranslatedText(message),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 2),
       ),

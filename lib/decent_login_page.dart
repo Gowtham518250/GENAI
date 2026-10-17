@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -545,7 +546,7 @@ class _DecentLoginPageState extends State<DecentLoginPage>
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text(
+                      LiveTranslatedText(
                         l.appTitle,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
@@ -556,7 +557,7 @@ class _DecentLoginPageState extends State<DecentLoginPage>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      LiveTranslatedText(
                         l.tagline,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
@@ -596,7 +597,7 @@ class _DecentLoginPageState extends State<DecentLoginPage>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
+                                        LiveTranslatedText(
                                           l.signIn,
                                           style: GoogleFonts.inter(
                                             color: const Color(0xFF0F172A),
@@ -606,7 +607,7 @@ class _DecentLoginPageState extends State<DecentLoginPage>
                                           ),
                                         ),
                                         const SizedBox(height: 3),
-                                        Text(
+                                        LiveTranslatedText(
                                           l.enterCredentials,
                                           style: GoogleFonts.inter(
                                             color: const Color(0xFF64748B),
@@ -642,7 +643,7 @@ class _DecentLoginPageState extends State<DecentLoginPage>
                                           color: Color(0xFF1B3A6B),
                                         ),
                                         const SizedBox(width: 4),
-                                        Text(
+                                        LiveTranslatedText(
                                           'Secure',
                                           style: GoogleFonts.inter(
                                             color: const Color(0xFF1B3A6B),
@@ -679,7 +680,7 @@ class _DecentLoginPageState extends State<DecentLoginPage>
                                       ),
                                       const SizedBox(width: 8),
                                       Expanded(
-                                        child: Text(
+                                        child: LiveTranslatedText(
                                           errorMessage,
                                           style: GoogleFonts.inter(
                                             color: const Color(0xFFDC2626),
@@ -817,7 +818,7 @@ class _DecentLoginPageState extends State<DecentLoginPage>
                                           context,
                                           '/forgot-password',
                                         ),
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     l.forgotPassword,
                                     style: GoogleFonts.inter(
                                       color: const Color(0xFF1B3A6B),
@@ -848,7 +849,7 @@ class _DecentLoginPageState extends State<DecentLoginPage>
                                         color: Colors.white,
                                         size: 28,
                                       )
-                                    : Text(
+                                    : LiveTranslatedText(
                                         l.signIn,
                                         style: GoogleFonts.inter(
                                           fontWeight: FontWeight.w700,
@@ -870,7 +871,7 @@ class _DecentLoginPageState extends State<DecentLoginPage>
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
                                     ),
-                                    child: Text(
+                                    child: LiveTranslatedText(
                                       'OR',
                                       style: GoogleFonts.inter(
                                         color: const Color(0xFF94A3B8),
@@ -931,7 +932,7 @@ class _DecentLoginPageState extends State<DecentLoginPage>
                                             ),
                                           ),
                                           const SizedBox(width: 10),
-                                          Text(
+                                          LiveTranslatedText(
                                             'Continue with Google',
                                             style: GoogleFonts.inter(
                                               color: const Color(0xFF0F172A),
@@ -1019,7 +1020,7 @@ class _LoginLanguageSelector extends StatelessWidget {
                 value: lang['code']!,
                 child: Row(
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       lang['nativeName']!,
                       style: const TextStyle(color: Colors.white),
                     ),
@@ -1038,7 +1039,7 @@ class _LoginLanguageSelector extends StatelessWidget {
             children: [
               const Icon(Icons.language_rounded, size: 18, color: Colors.white),
               const SizedBox(width: 6),
-              Text(
+              LiveTranslatedText(
                 AppLocalizations.of(context).language,
                 style: const TextStyle(
                   color: Colors.white,
@@ -1047,7 +1048,7 @@ class _LoginLanguageSelector extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              Text(
+              LiveTranslatedText(
                 current['nativeName']!,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),

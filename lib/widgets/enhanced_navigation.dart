@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -210,7 +211,7 @@ class _EnhancedNavigationState extends State<EnhancedNavigation> {
             ),
             if (widget.showLabels) ...[
               const SizedBox(height: 4),
-              Text(
+              LiveTranslatedText(
                 item.label,
                 style: GoogleFonts.poppins(
                   fontSize: 10,
@@ -306,7 +307,7 @@ class _DrawerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AccessibilityHelper.accessibleListTile(
-      title: Text(
+      title: LiveTranslatedText(
         item.label,
         style: GoogleFonts.poppins(
           fontSize: AccessibilityHelper.minFontSize,
@@ -399,7 +400,7 @@ class BreadcrumbNavigation extends StatelessWidget {
             if (item.icon != null && item.label != null)
               const SizedBox(width: 4),
             if (item.label != null)
-              Text(
+              LiveTranslatedText(
                 item.label!,
                 style: GoogleFonts.poppins(
                   fontSize: 13,
@@ -418,9 +419,9 @@ class BreadcrumbNavigation extends StatelessWidget {
       case BreadcrumbStyle.arrow:
         return const Icon(Icons.chevron_right, size: 16, color: Color(0xFF94A3B8));
       case BreadcrumbStyle.slash:
-        return const Text('/', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14));
+        return const LiveTranslatedText('/', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14));
       case BreadcrumbStyle.dot:
-        return const Text('•', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14));
+        return const LiveTranslatedText('•', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14));
       case BreadcrumbStyle.greater:
         return const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF94A3B8));
     }
@@ -510,7 +511,7 @@ class _QuickActionChip extends StatelessWidget {
           children: [
             Icon(action.icon, size: 16, color: action.color),
             const SizedBox(width: 6),
-            Text(
+            LiveTranslatedText(
               action.label,
               style: GoogleFonts.poppins(
                 fontSize: 12,

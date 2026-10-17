@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -58,7 +59,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                     Icon(Icons.keyboard, color: const Color(0xFF64748B)),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         'Billing',
                         style: GoogleFonts.poppins(
                           fontSize: 20,
@@ -80,7 +81,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             'Ctrl+G Generate Bill  Ctrl+S Save',
                             style: GoogleFonts.poppins(
                               fontSize: 10,
@@ -152,7 +153,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
     final number = provider.draftBillNumber;
     if (number == null || number.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not allocate a bill number. Please try again.')),
+        const SnackBar(content: LiveTranslatedText('Could not allocate a bill number. Please try again.')),
       );
       return;
     }
@@ -199,7 +200,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                   children: [
                     Icon(Icons.payment_rounded, size: 28, color: const Color(0xFF6366F1)),
                     const SizedBox(width: AppSpacing.sm),
-                    Text(
+                    LiveTranslatedText(
                       'Payment Method',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
@@ -287,7 +288,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     label,
                     style: GoogleFonts.poppins(
                       fontSize: 16,
@@ -298,7 +299,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                   if (isSelected)
                     const SizedBox(height: 4),
                   if (isSelected)
-                    Text(
+                    LiveTranslatedText(
                       'Selected',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -338,7 +339,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
             children: [
               Icon(Icons.wallet_rounded, size: 28, color: const Color(0xFF6366F1)),
               const SizedBox(width: AppSpacing.sm),
-              Text(
+              LiveTranslatedText(
                 'Partial Payment',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
@@ -365,7 +366,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: AppSpacing.sm),
-                    Text(
+                    LiveTranslatedText(
                       'Enter Payment Amount',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -394,7 +395,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                                 keyboardType: TextInputType.number,
                                 decoration: const InputDecoration(
                                   border: InputBorder.none,
-                                  hintText: 'Enter amount',
+                                  hint: LiveTranslatedText('Enter amount'),
                                   hintStyle: TextStyle(fontSize: 16),
                                 ),
                                 style: GoogleFonts.poppins(
@@ -417,7 +418,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: AppSpacing.sm),
-                    Text(
+                    LiveTranslatedText(
                       'Balance Due',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -425,7 +426,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    Text(
+                    LiveTranslatedText(
                       '₹${provider.totalAmount.toStringAsFixed(2)}',
                       style: GoogleFonts.poppins(
                         fontSize: 24,
@@ -528,7 +529,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                     ..hideCurrentSnackBar()
                     ..showSnackBar(
                       SnackBar(
-                        content: Text(message),
+                        content: LiveTranslatedText(message),
                         behavior: SnackBarBehavior.floating,
                         backgroundColor: saved
                             ? const Color(0xFF166534)
@@ -554,7 +555,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
             children: [
               Icon(Icons.keyboard, size: 16, color: const Color(0xFF6366F1)),
               const SizedBox(width: AppSpacing.sm),
-              Text(
+              LiveTranslatedText(
                 'Shortcuts: Ctrl+G Generate Bill | Ctrl+S Save | Ctrl+P Print | Esc Cancel',
                 style: GoogleFonts.poppins(
                   fontSize: 11,
@@ -620,7 +621,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                   children: [
                     Icon(icon, color: Colors.white, size: iconSize),
                     const SizedBox(width: AppSpacing.sm),
-                    Text(
+                    LiveTranslatedText(
                       label,
                       style: GoogleFonts.poppins(
                         fontSize: 14,
@@ -639,7 +640,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                           color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(
+                        child: LiveTranslatedText(
                           shortcut,
                           style: GoogleFonts.poppins(
                             fontSize: 10,
@@ -692,7 +693,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
             children: [
               Icon(icon, color: color, size: iconSize),
               const SizedBox(height: 4),
-              Text(
+              LiveTranslatedText(
                 label,
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -728,7 +729,7 @@ class KeyboardShortcutsDialog extends StatelessWidget {
         children: [
           Icon(Icons.keyboard, color: const Color(0xFF6366F1)),
           const SizedBox(width: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             'Keyboard Shortcuts',
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
           ),
@@ -754,7 +755,7 @@ class KeyboardShortcutsDialog extends StatelessWidget {
                   ),
                 ),
                 alignment: Alignment.center,
-                child: Text(
+                child: LiveTranslatedText(
                   item['shortcut']?.toString() ?? '',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
@@ -763,7 +764,7 @@ class KeyboardShortcutsDialog extends StatelessWidget {
                   ),
                 ),
               ),
-              title: Text(
+              title: LiveTranslatedText(
                 item['action']?.toString() ?? '',
                 style: GoogleFonts.poppins(fontSize: 14),
               ),
@@ -775,7 +776,7 @@ class KeyboardShortcutsDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Close'),
+          child: const LiveTranslatedText('Close'),
         ),
       ],
     );

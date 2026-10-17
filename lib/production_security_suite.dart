@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,7 +31,7 @@ class ProductionSecuritySuite {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
+        title: LiveTranslatedText(
           title,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
@@ -38,7 +39,7 @@ class ProductionSecuritySuite {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(description, style: const TextStyle(fontSize: 14)),
+            LiveTranslatedText(description, style: const TextStyle(fontSize: 14)),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -50,8 +51,8 @@ class ProductionSecuritySuite {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Amount:', style: TextStyle(fontWeight: FontWeight.w500)),
-                  Text(
+                  const LiveTranslatedText('Amount:', style: TextStyle(fontWeight: FontWeight.w500)),
+                  LiveTranslatedText(
                     '₹${currentAmount.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 16,
@@ -75,7 +76,7 @@ class ProductionSecuritySuite {
                   Icon(Icons.info_outline, color: Colors.orange, size: 18),
                   SizedBox(width: 8),
                   Expanded(
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Verify amount before confirming',
                       style: TextStyle(fontSize: 12, color: Colors.orange),
                     ),
@@ -88,7 +89,7 @@ class ProductionSecuritySuite {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const LiveTranslatedText('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -98,7 +99,7 @@ class ProductionSecuritySuite {
               confirmed = true;
               Navigator.pop(ctx);
             },
-            child: Text(action),
+            child: LiveTranslatedText(action),
           ),
         ],
       ),
@@ -133,8 +134,8 @@ class ProductionSecuritySuite {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Session Expired'),
-        content: const Text(
+        title: const LiveTranslatedText('Session Expired'),
+        content: const LiveTranslatedText(
           'Your session has expired for security reasons. Please login again.\n\n'
           'Your data is safe and will be synced on next login.',
         ),
@@ -146,7 +147,7 @@ class ProductionSecuritySuite {
                 Navigator.pushNamedAndRemoveUntil(ctx, '/login', (_) => false);
               }
             },
-            child: const Text('Go to Login'),
+            child: const LiveTranslatedText('Go to Login'),
           ),
         ],
       ),
@@ -313,11 +314,11 @@ class ProductionSecuritySuite {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         icon: const Icon(Icons.error_outline, color: Colors.red, size: 32),
-        title: const Text('Error Occurred'),
+        title: const LiveTranslatedText('Error Occurred'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(error, style: const TextStyle(fontSize: 14)),
+            LiveTranslatedText(error, style: const TextStyle(fontSize: 14)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(10),
@@ -330,7 +331,7 @@ class ProductionSecuritySuite {
                   Icon(Icons.lightbulb_outline, color: Colors.blue, size: 18),
                   SizedBox(width: 8),
                   Expanded(
-                    child: Text(
+                    child: LiveTranslatedText(
                       '💡 Try: Check internet, wait, or retry',
                       style: TextStyle(fontSize: 12),
                     ),
@@ -343,7 +344,7 @@ class ProductionSecuritySuite {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Dismiss'),
+            child: const LiveTranslatedText('Dismiss'),
           ),
           if (onRetry != null)
             FilledButton(
@@ -351,7 +352,7 @@ class ProductionSecuritySuite {
                 Navigator.pop(ctx);
                 onRetry();
               },
-              child: const Text('Retry'),
+              child: const LiveTranslatedText('Retry'),
             ),
         ],
       ),

@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../analytics_engine.dart';
@@ -34,7 +35,7 @@ class RevenueLineChart extends StatelessWidget {
           children: [
             Icon(Icons.show_chart, size: 48, color: Colors.grey[600]),
             const SizedBox(height: 16),
-            Text(
+            LiveTranslatedText(
               message,
               style: TextStyle(color: Colors.grey[500], fontSize: 14),
             ),
@@ -127,7 +128,7 @@ class RevenueLineChart extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         '${AppLocalizations.of(context).salesTrend}${currentFilterLabel.isNotEmpty ? ' ($currentFilterLabel)' : ''}',
                         style: TextStyle(
                           fontSize: 18,
@@ -148,7 +149,7 @@ class RevenueLineChart extends StatelessWidget {
                             const Icon(Icons.timeline,
                                 size: 14, color: Color(0xFF00E5FF)),
                             const SizedBox(width: 6),
-                            Text(
+                            LiveTranslatedText(
                               AppLocalizations.of(context).last7Days,
                               style: const TextStyle(
                                 color: Color(0xFF00E5FF),
@@ -242,7 +243,7 @@ class RevenueLineChart extends StatelessWidget {
                                 if (index >= 0 && index < labels.length) {
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 8),
-                                    child: Text(
+                                    child: LiveTranslatedText(
                                       labels[index],
                                       style: TextStyle(
                                         fontSize: 11,
@@ -252,7 +253,7 @@ class RevenueLineChart extends StatelessWidget {
                                     ),
                                   );
                                 }
-                                return const Text('');
+                                return const LiveTranslatedText('');
                               },
                               reservedSize: 32,
                             ),
@@ -263,7 +264,7 @@ class RevenueLineChart extends StatelessWidget {
                               getTitlesWidget: (value, meta) {
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 8),
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     '\u20b9${(value >= 1000 ? (value/1000).toStringAsFixed(1)+'k' : value.toInt().toString())}',
                                     style: TextStyle(
                                       fontSize: 9,
@@ -310,7 +311,7 @@ class RevenueLineChart extends StatelessWidget {
                         size: 16,
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      LiveTranslatedText(
                         _calculateTrend(entries) >= 0
                             ? AppLocalizations.of(context).upwardTrend
                             : AppLocalizations.of(context).downwardTrend,
@@ -323,7 +324,7 @@ class RevenueLineChart extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      Text(
+                      LiveTranslatedText(
                         '${_calculateTrend(entries).abs().toStringAsFixed(1)}% ${AppLocalizations.of(context).avgChange}',
                         style: TextStyle(
                           fontSize: 12,

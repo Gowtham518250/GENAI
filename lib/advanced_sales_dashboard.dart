@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -87,7 +88,7 @@ class _AdvancedSalesDashboardState extends State<AdvancedSalesDashboard> with Si
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(
+        title: LiveTranslatedText(
           'Fast Billing',
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.w600,
@@ -151,7 +152,7 @@ class _AdvancedSalesDashboardState extends State<AdvancedSalesDashboard> with Si
                             children: [
                               Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.white.withOpacity(0.2)),
                               const SizedBox(height: 16),
-                              Text(
+                              LiveTranslatedText(
                                 'Cart is empty',
                                 style: GoogleFonts.inter(
                                   color: Colors.white.withOpacity(0.5),
@@ -198,7 +199,7 @@ class _AdvancedSalesDashboardState extends State<AdvancedSalesDashboard> with Si
                     elevation: 8,
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Voice Engine coming soon!')),
+                        const SnackBar(content: LiveTranslatedText('Voice Engine coming soon!')),
                       );
                     },
                     child: const Icon(Icons.mic, size: 32, color: Colors.white),
@@ -260,7 +261,7 @@ class _AdvancedSalesDashboardState extends State<AdvancedSalesDashboard> with Si
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           item.name,
                           style: GoogleFonts.inter(
                             color: Colors.white,
@@ -271,7 +272,7 @@ class _AdvancedSalesDashboardState extends State<AdvancedSalesDashboard> with Si
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               '\u20B9${item.price} / ${item.unit}',
                               style: GoogleFonts.inter(
                                 color: Colors.white.withOpacity(0.6),
@@ -288,7 +289,7 @@ class _AdvancedSalesDashboardState extends State<AdvancedSalesDashboard> with Si
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         '\u20B9${item.total.toStringAsFixed(2)}',
                         style: GoogleFonts.outfit(
                           color: Colors.greenAccent,
@@ -308,7 +309,7 @@ class _AdvancedSalesDashboardState extends State<AdvancedSalesDashboard> with Si
                           }),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Text(
+                            child: LiveTranslatedText(
                               '${item.quantity}',
                               style: GoogleFonts.inter(
                                 color: Colors.white,
@@ -375,14 +376,14 @@ class _AdvancedSalesDashboardState extends State<AdvancedSalesDashboard> with Si
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Total Amount',
                       style: GoogleFonts.inter(
                         color: Colors.white.withOpacity(0.7),
                         fontSize: 16,
                       ),
                     ),
-                    Text(
+                    LiveTranslatedText(
                       '\u20B9${cartTotal.toStringAsFixed(2)}',
                       style: GoogleFonts.outfit(
                         color: Colors.white,
@@ -407,7 +408,7 @@ class _AdvancedSalesDashboardState extends State<AdvancedSalesDashboard> with Si
                           ),
                           elevation: 0,
                         ),
-                        child: Text(
+                        child: LiveTranslatedText(
                           'CLEAR',
                           style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                         ),
@@ -445,7 +446,7 @@ class _AdvancedSalesDashboardState extends State<AdvancedSalesDashboard> with Si
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
+                              LiveTranslatedText(
                                 'CHECKOUT',
                                 style: GoogleFonts.inter(
                                   fontWeight: FontWeight.bold,

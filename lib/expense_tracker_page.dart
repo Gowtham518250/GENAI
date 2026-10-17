@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
@@ -203,7 +204,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text('Expense Tracker', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('Expense Tracker', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -232,7 +233,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: Colors.orange.shade200),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       _loadWarning!,
                       style: GoogleFonts.poppins(fontSize: 12, color: Colors.brown.shade800),
                     ),
@@ -293,7 +294,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             _filterBy == 'all' ? 'Total Expenses' : 'Expenses (${_filterBy})',
             style: GoogleFonts.poppins(
               color: Colors.white.withValues(alpha: 0.8),
@@ -301,7 +302,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             '₹${total.toStringAsFixed(0)}',
             style: GoogleFonts.poppins(
               color: Colors.white,
@@ -316,14 +317,14 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'Top Category',
                     style: GoogleFonts.poppins(
                       color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 12,
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     topCategory.key.name.toUpperCase(),
                     style: GoogleFonts.poppins(
                       color: Colors.white,
@@ -336,14 +337,14 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'Count',
                     style: GoogleFonts.poppins(
                       color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 12,
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     '${filtered.length}',
                     style: GoogleFonts.poppins(
                       color: Colors.white,
@@ -364,7 +365,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
     final isSelected = _filterBy == value;
     
     return FilterChip(
-      label: Text(label, style: GoogleFonts.poppins()),
+      label: LiveTranslatedText(label, style: GoogleFonts.poppins()),
       selected: isSelected,
       onSelected: (selected) {
         setState(() => _filterBy = value);
@@ -391,7 +392,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
           children: [
             Icon(Icons.receipt, size: 60, color: Colors.grey.shade300),
             const SizedBox(height: 16),
-            Text('No expenses', style: GoogleFonts.poppins()),
+            LiveTranslatedText('No expenses', style: GoogleFonts.poppins()),
           ],
         ),
       );
@@ -420,14 +421,14 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     date,
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
                       color: Colors.grey.shade700,
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     '₹${dayTotal.toStringAsFixed(0)}',
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
@@ -492,11 +493,11 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     expense.description,
                     style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     expense.category.name,
                     style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
                   ),
@@ -506,14 +507,14 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
+                LiveTranslatedText(
                   '₹${expense.amount.toStringAsFixed(0)}',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
-                Text(
+                LiveTranslatedText(
                   DateFormat('HH:mm').format(expense.date),
                   style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade600),
                 ),
@@ -534,7 +535,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: Text('Add Expense', style: GoogleFonts.poppins()),
+          title: LiveTranslatedText('Add Expense', style: GoogleFonts.poppins()),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -542,7 +543,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                 TextField(
                   controller: descriptionController,
                   decoration: InputDecoration(
-                    hintText: 'Description',
+                    hint: LiveTranslatedText('Description'),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
@@ -551,7 +552,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                   controller: amountController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    hintText: 'Amount',
+                    hint: LiveTranslatedText('Amount'),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
@@ -562,7 +563,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                   items: ExpenseCategory.values
                       .map((e) => DropdownMenuItem(
                             value: e,
-                            child: Text(e.name),
+                            child: LiveTranslatedText(e.name),
                           ))
                       .toList(),
                   onChanged: (value) {
@@ -577,7 +578,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: const LiveTranslatedText('Cancel'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -586,7 +587,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                   final description = descriptionController.text.trim();
                   if (amount == null || !amount.isFinite || amount <= 0 || description.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Enter a description and an amount greater than zero.')),
+                      const SnackBar(content: LiveTranslatedText('Enter a description and an amount greater than zero.')),
                     );
                     return;
                   }
@@ -613,7 +614,7 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                     );
                     if (response.statusCode < 200 || response.statusCode >= 300) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Expense was not saved on the server (HTTP ${response.statusCode}). Please retry.')),
+                        SnackBar(content: LiveTranslatedText('Expense was not saved on the server (HTTP ${response.statusCode}). Please retry.')),
                       );
                       return;
                     }
@@ -628,20 +629,20 @@ class _ExpenseTrackerPageState extends State<ExpenseTrackerPage>
                   Navigator.pop(context);
                   if (token == null || token.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Saved on this device only. This expense has not been sent to the server.')),
+                      const SnackBar(content: LiveTranslatedText('Saved on this device only. This expense has not been sent to the server.')),
                     );
                   }
                   await _loadExpenses();
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Could not save expense: $e')),
+                      SnackBar(content: LiveTranslatedText('Could not save expense: $e')),
                     );
                   }
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
-              child: const Text('Add'),
+              child: const LiveTranslatedText('Add'),
             ),
           ],
         ),

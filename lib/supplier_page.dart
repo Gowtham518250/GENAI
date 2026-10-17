@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -48,7 +49,7 @@ class _SupplierPageState extends State<SupplierPage> {
     } catch (e) {
       setState(() => _loading = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText('Error: $e')));
     }
   }
 
@@ -73,18 +74,18 @@ class _SupplierPageState extends State<SupplierPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Supplier'),
+        title: const LiveTranslatedText('Add Supplier'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: _nameCtrl, decoration: const InputDecoration(labelText: 'Supplier Name')),
-              TextField(controller: _phoneCtrl, decoration: const InputDecoration(labelText: 'Phone Number')),
-              TextField(controller: _emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
+              TextField(controller: _nameCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Supplier Name'))),
+              TextField(controller: _phoneCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Phone Number'))),
+              TextField(controller: _emailCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Email'))),
               DropdownButton<String>(
                 value: _categoryCtrl.text.isEmpty ? 'General' : _categoryCtrl.text,
                 items: ['General', 'Grocery', 'Clothes', 'Electronics', 'Other']
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                    .map((c) => DropdownMenuItem(value: c, child: LiveTranslatedText(c)))
                     .toList(),
                 onChanged: (val) => setState(() => _categoryCtrl.text = val ?? 'General'),
               ),
@@ -92,11 +93,11 @@ class _SupplierPageState extends State<SupplierPage> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('Cancel')),
           FilledButton(
             onPressed: () {
               if (_nameCtrl.text.isEmpty || _phoneCtrl.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name and phone required')));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Name and phone required')));
                 return;
               }
 
@@ -113,9 +114,9 @@ class _SupplierPageState extends State<SupplierPage> {
               _filterSuppliers();
               _saveSuppliers();
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Supplier added')));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Supplier added')));
             },
-            child: const Text('Add'),
+            child: const LiveTranslatedText('Add'),
           ),
         ],
       ),
@@ -126,7 +127,7 @@ class _SupplierPageState extends State<SupplierPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Suppliers'),
+        title: const LiveTranslatedText('Suppliers'),
         backgroundColor: _primary,
         foregroundColor: Colors.white,
       ),
@@ -139,7 +140,7 @@ class _SupplierPageState extends State<SupplierPage> {
                   child: TextField(
                     controller: _search,
                     decoration: InputDecoration(
-                      labelText: 'Search supplier',
+                      label: LiveTranslatedText('Search supplier'),
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -147,14 +148,14 @@ class _SupplierPageState extends State<SupplierPage> {
                 ),
                 Expanded(
                   child: _filtered.isEmpty
-                      ? Center(child: Text('No suppliers. Tap + to add.'))
+                      ? Center(child: LiveTranslatedText('No suppliers. Tap + to add.'))
                       : ListView.builder(
                           itemCount: _filtered.length,
                           itemBuilder: (_, idx) {
                             final s = _filtered[idx];
                             return ListTile(
-                              title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text('${s.phone} • ${s.category}'),
+                              title: LiveTranslatedText(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: LiveTranslatedText('${s.phone} • ${s.category}'),
                               trailing: IconButton(
                                 icon: const Icon(Icons.call),
                                 onPressed: () async {
@@ -166,18 +167,18 @@ class _SupplierPageState extends State<SupplierPage> {
                                 showDialog(
                                   context: context,
                                   builder: (ctx) => AlertDialog(
-                                    title: const Text('Delete?'),
+                                    title: const LiveTranslatedText('Delete?'),
                                     actions: [
-                                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                                      TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('Cancel')),
                                       FilledButton(
                                         onPressed: () {
                                           setState(() => _suppliers.removeWhere((x) => x.id == s.id));
                                           _filterSuppliers();
                                           _saveSuppliers();
                                           Navigator.pop(ctx);
-                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deleted')));
+                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Deleted')));
                                         },
-                                        child: const Text('Delete'),
+                                        child: const LiveTranslatedText('Delete'),
                                       ),
                                     ],
                                   ),

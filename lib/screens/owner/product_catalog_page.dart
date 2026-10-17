@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/product_catalog_service.dart';
@@ -196,7 +197,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(
+        title: LiveTranslatedText(
           'Product Catalog',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: const Color(0xFF1F2937)),
         ),
@@ -222,11 +223,11 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
               _filterProducts();
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'relevance', child: Text('Relevance')),
-              const PopupMenuItem(value: 'price_low', child: Text('Price: Low to High')),
-              const PopupMenuItem(value: 'price_high', child: Text('Price: High to Low')),
-              const PopupMenuItem(value: 'rating', child: Text('Customer Rating')),
-              const PopupMenuItem(value: 'newest', child: Text('Newest First')),
+              const PopupMenuItem(value: 'relevance', child: LiveTranslatedText('Relevance')),
+              const PopupMenuItem(value: 'price_low', child: LiveTranslatedText('Price: Low to High')),
+              const PopupMenuItem(value: 'price_high', child: LiveTranslatedText('Price: High to Low')),
+              const PopupMenuItem(value: 'rating', child: LiveTranslatedText('Customer Rating')),
+              const PopupMenuItem(value: 'newest', child: LiveTranslatedText('Newest First')),
             ],
           ),
         ],
@@ -274,7 +275,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Filters',
                       style: GoogleFonts.poppins(
                         fontSize: 20,
@@ -293,7 +294,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
                               _selectedBrands.clear();
                             });
                           },
-                          child: Text(
+                          child: LiveTranslatedText(
                             'Clear All',
                             style: GoogleFonts.poppins(
                               color: const Color(0xFF6366F1),
@@ -351,7 +352,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Apply Filters',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
@@ -372,7 +373,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           'Price Range',
           style: GoogleFonts.poppins(
             fontSize: 16,
@@ -403,14 +404,14 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              LiveTranslatedText(
                 '₹${_selectedMinPrice.toInt()}',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   color: const Color(0xFF6B7280),
                 ),
               ),
-              Text(
+              LiveTranslatedText(
                 '₹${_selectedMaxPrice.toInt()}',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -426,7 +427,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
 
   Widget _buildStockFilter(StateSetter setModalState) {
     return SwitchListTile(
-      title: Text(
+      title: LiveTranslatedText(
         'In Stock Only',
         style: GoogleFonts.poppins(
           fontSize: 16,
@@ -434,7 +435,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
           color: const Color(0xFF1F2937),
         ),
       ),
-      subtitle: Text(
+      subtitle: LiveTranslatedText(
         'Show only products with available stock',
         style: GoogleFonts.poppins(
           fontSize: 14,
@@ -465,7 +466,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           'Brand',
           style: GoogleFonts.poppins(
             fontSize: 16,
@@ -480,7 +481,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
           children: brands.take(10).map((brand) {
             final isSelected = _selectedBrands.contains(brand);
             return FilterChip(
-              label: Text(brand),
+              label: LiveTranslatedText(brand),
               selected: isSelected,
               onSelected: (selected) {
                 setModalState(() {
@@ -520,7 +521,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search products...',
+          hint: LiveTranslatedText('Search products...'),
           hintStyle: GoogleFonts.poppins(color: const Color(0xFF9CA3AF)),
           prefixIcon: const Icon(Icons.search, color: Color(0xFF6B7280)),
           suffixIcon: _searchQuery.isNotEmpty
@@ -619,7 +620,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
             children: [
               Icon(icon, size: 18, color: isSelected ? Colors.white : const Color(0xFF6B7280)),
               const SizedBox(width: 8),
-              Text(
+              LiveTranslatedText(
                 name,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -672,7 +673,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
                     width: 1,
                   ),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   subcategory['name'],
                   style: GoogleFonts.poppins(
                     fontSize: 13,
@@ -696,7 +697,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
           children: [
             Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[300]),
             const SizedBox(height: 16),
-            Text(
+            LiveTranslatedText(
               'No products found',
               style: GoogleFonts.poppins(
                 fontSize: 18,
@@ -705,7 +706,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               'Try a different category or search term',
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -773,7 +774,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
           ),
           const SizedBox(height: 12),
           // Product name
-          Text(
+          LiveTranslatedText(
             name,
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -785,7 +786,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
           ),
           const SizedBox(height: 4),
           // Price
-          Text(
+          LiveTranslatedText(
             '₹${price.toString()}',
             style: GoogleFonts.poppins(
               fontSize: 16,
@@ -803,7 +804,7 @@ class _ProductCatalogPageState extends State<ProductCatalogPage> {
                 color: stock > 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),
               ),
               const SizedBox(width: 4),
-              Text(
+              LiveTranslatedText(
                 stock > 0 ? 'In Stock ($stock)' : 'Out of Stock',
                 style: GoogleFonts.poppins(
                   fontSize: 12,

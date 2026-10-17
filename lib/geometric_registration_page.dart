@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 
@@ -48,7 +49,7 @@ class _GeometricRegistrationPageState extends State<GeometricRegistrationPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Geometric registration created successfully.'),
+        content: LiveTranslatedText('Geometric registration created successfully.'),
       ),
     );
 
@@ -63,7 +64,7 @@ class _GeometricRegistrationPageState extends State<GeometricRegistrationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Geometric Registration'),
+        title: const LiveTranslatedText('Geometric Registration'),
         elevation: 0,
       ),
       body: Stack(
@@ -78,12 +79,12 @@ class _GeometricRegistrationPageState extends State<GeometricRegistrationPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                const LiveTranslatedText(
                   'Design + Register',
                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                const LiveTranslatedText(
                   'Use geometric registration examples to create a structured pattern asset or ID.',
                   style: TextStyle(fontSize: 16, color: Colors.black87),
                 ),
@@ -103,7 +104,7 @@ class _GeometricRegistrationPageState extends State<GeometricRegistrationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        const LiveTranslatedText(
           'Registration Examples',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
         ),
@@ -116,8 +117,8 @@ class _GeometricRegistrationPageState extends State<GeometricRegistrationPage> {
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   leading: const Icon(Icons.auto_awesome_rounded, color: Colors.indigo),
-                  title: Text(example['title']!, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: Text(example['subtitle']!),
+                  title: LiveTranslatedText(example['title']!, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: LiveTranslatedText(example['subtitle']!),
                   trailing: TextButton(
                     onPressed: () {
                       setState(() {
@@ -130,7 +131,7 @@ class _GeometricRegistrationPageState extends State<GeometricRegistrationPage> {
                         _detailsController.text = example['subtitle']!;
                       });
                     },
-                    child: const Text('Use'),
+                    child: const LiveTranslatedText('Use'),
                   ),
                 ),
               ),
@@ -150,13 +151,13 @@ class _GeometricRegistrationPageState extends State<GeometricRegistrationPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('New Geometric Registration', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+              const LiveTranslatedText('New Geometric Registration', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _shapeType,
-                decoration: const InputDecoration(labelText: 'Shape type'),
+                decoration: const InputDecoration(label: LiveTranslatedText('Shape type')),
                 items: _shapeOptions
-                    .map((option) => DropdownMenuItem(value: option, child: Text(option)))
+                    .map((option) => DropdownMenuItem(value: option, child: LiveTranslatedText(option)))
                     .toList(),
                 onChanged: (value) {
                   if (value != null) {
@@ -169,13 +170,13 @@ class _GeometricRegistrationPageState extends State<GeometricRegistrationPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Registration name'),
+                decoration: const InputDecoration(label: LiveTranslatedText('Registration name')),
                 validator: (value) => (value == null || value.trim().isEmpty) ? 'Enter a name' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _detailsController,
-                decoration: const InputDecoration(labelText: 'Details'),
+                decoration: const InputDecoration(label: LiveTranslatedText('Details')),
                 maxLines: 3,
                 validator: (value) => (value == null || value.trim().isEmpty) ? 'Enter details' : null,
               ),
@@ -188,11 +189,11 @@ class _GeometricRegistrationPageState extends State<GeometricRegistrationPage> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                     ),
-                    child: const Text('Register asset'),
+                    child: const LiveTranslatedText('Register asset'),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Current shape: $_shapeType',
                       style: const TextStyle(fontSize: 15, color: Colors.black54),
                     ),

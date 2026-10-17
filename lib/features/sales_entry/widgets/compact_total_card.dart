@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
@@ -49,7 +50,7 @@ class CompactTotalCard extends StatelessWidget {
                     child: const Icon(Icons.receipt, color: Color(0xFF4F46E5), size: 18),
                   ),
                   const SizedBox(width: 10),
-                  Text(
+                  LiveTranslatedText(
                     'BILL SUMMARY',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
@@ -85,7 +86,7 @@ class CompactTotalCard extends StatelessWidget {
                             color: provider.withTax ? const Color(0xFF059669) : const Color(0xFFDC2626),
                           ),
                           const SizedBox(width: 4),
-                          Text(
+                          LiveTranslatedText(
                             provider.withTax ? 'GST ON' : 'GST OFF',
                             style: GoogleFonts.poppins(
                               fontSize: 10,
@@ -105,7 +106,7 @@ class CompactTotalCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     '₹',
                     style: GoogleFonts.spaceMono(
                       fontSize: 22,
@@ -114,7 +115,7 @@ class CompactTotalCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Text(
+                  LiveTranslatedText(
                     totalAmount.toStringAsFixed(0),
                     style: GoogleFonts.spaceMono(
                       fontSize: 42,
@@ -132,7 +133,7 @@ class CompactTotalCard extends StatelessWidget {
                       color: const Color(0xFFF3F4F6),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       '${provider.entries.length} items',
                       style: GoogleFonts.poppins(
                         fontSize: 10,
@@ -188,11 +189,11 @@ class _TaxRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
+        LiveTranslatedText(
           label,
           style: GoogleFonts.poppins(fontSize: fontSize, fontWeight: weight, color: textColor),
         ),
-        Text(
+        LiveTranslatedText(
           value,
           style: GoogleFonts.spaceMono(fontSize: fontSize, fontWeight: weight, color: textColor),
         ),

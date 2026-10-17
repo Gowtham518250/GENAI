@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -48,7 +49,7 @@ class NavyProfileHeader extends StatelessWidget {
         children: [
           Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 14),
           const SizedBox(width: 4),
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.inter(
               color: Colors.white,
@@ -101,7 +102,7 @@ class NavyProfileHeader extends StatelessWidget {
                 child: logoBytes != null
                     ? ClipOval(child: Image.memory(logoBytes!, fit: BoxFit.cover))
                     : Center(
-                        child: Text(
+                        child: LiveTranslatedText(
                           shopName.isNotEmpty ? shopName[0].toUpperCase() : 'S',
                           style: GoogleFonts.inter(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                         ),
@@ -112,8 +113,8 @@ class NavyProfileHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(greeting, style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.75), fontSize: 12, fontWeight: FontWeight.w500)),
-                    Text(shopName, style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    LiveTranslatedText(greeting, style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.75), fontSize: 12, fontWeight: FontWeight.w500)),
+                    LiveTranslatedText(shopName, style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
@@ -130,9 +131,9 @@ class NavyProfileHeader extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           // Revenue display
-          Text('Today\'s Revenue', style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w500)),
+          LiveTranslatedText('Today\'s Revenue', style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w500)),
           const SizedBox(height: 4),
-          Text(
+          LiveTranslatedText(
             '₹${_formatCompactNumber(todayRevenue)}',
             style: GoogleFonts.inter(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: -1),
           ),
@@ -142,7 +143,7 @@ class NavyProfileHeader extends StatelessWidget {
               Icon(dailyGrowth >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
                   color: dailyGrowth >= 0 ? const Color(0xFF34D399) : const Color(0xFFFCA5A5), size: 16),
               const SizedBox(width: 4),
-              Text(
+              LiveTranslatedText(
                 '${dailyGrowth >= 0 ? '+' : ''}${dailyGrowth.toStringAsFixed(1)}% from yesterday',
                 style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.w500),
               ),

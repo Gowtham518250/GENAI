@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'hybrid_accuracy_test_suite.dart';
 
@@ -37,7 +38,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🧪 Hybrid System Accuracy Test'),
+        title: const LiveTranslatedText('🧪 Hybrid System Accuracy Test'),
         // subtitle removed - not supported in this context
         elevation: 2,
       ),
@@ -65,7 +66,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
           ? FloatingActionButton.extended(
               onPressed: _startTests,
               icon: const Icon(Icons.play_arrow),
-              label: const Text('Start Test Suite'),
+              label: const LiveTranslatedText('Start Test Suite'),
               backgroundColor: Colors.blue,
             )
           : null,
@@ -85,7 +86,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          const LiveTranslatedText(
             '100% Accuracy Verification Test',
             style: TextStyle(
               fontSize: 18,
@@ -93,7 +94,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          const LiveTranslatedText(
             'Testing Hybrid Payment Pipeline on millions of scenarios',
             style: TextStyle(fontSize: 13, color: Colors.grey),
           ),
@@ -104,7 +105,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
               color: Colors.blue[100],
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Text(
+            child: const LiveTranslatedText(
               '5 comprehensive tests • 10,000+ scenarios • Real-world edge cases',
               style: TextStyle(fontSize: 11),
             ),
@@ -134,7 +135,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   _currentTest,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
@@ -150,7 +151,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             '${(_progress * 100).toStringAsFixed(0)}% Complete',
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
@@ -195,7 +196,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
           ),
           child: Column(
             children: [
-              Text(
+              LiveTranslatedText(
                 '${overallAccuracy.toStringAsFixed(2)}%',
                 style: TextStyle(
                   fontSize: 48,
@@ -204,7 +205,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              LiveTranslatedText(
                 ratingText,
                 style: TextStyle(
                   fontSize: 14,
@@ -219,7 +220,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
                   color: Colors.white.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   overallAccuracy >= 95
                       ? '✅ PRODUCTION READY'
                       : '⚠️ STAGING RECOMMENDED',
@@ -237,7 +238,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
         const SizedBox(height: 20),
 
         // Test Breakdown
-        const Text(
+        const LiveTranslatedText(
           'Test Results Breakdown',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
@@ -266,7 +267,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
         const SizedBox(height: 20),
 
         // Statistics
-        const Text(
+        const LiveTranslatedText(
           'Detailed Statistics',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
@@ -293,12 +294,12 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              const LiveTranslatedText(
                 'Conclusion',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               ),
               const SizedBox(height: 8),
-              Text(
+              LiveTranslatedText(
                 overallAccuracy >= 98
                     ? '✅ The hybrid system demonstrates EXCELLENT accuracy with comprehensive '
                         'conflict resolution and edge case handling. Recommended for immediate production '
@@ -322,7 +323,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
           child: ElevatedButton.icon(
             onPressed: _exportResults,
             icon: const Icon(Icons.file_download),
-            label: const Text('Export Test Results'),
+            label: const LiveTranslatedText('Export Test Results'),
           ),
         ),
       ],
@@ -354,13 +355,13 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LiveTranslatedText(
                 name,
                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 2),
-                Text(
+                LiveTranslatedText(
                   subtitle,
                   style: TextStyle(fontSize: 10, color: Colors.grey[600]),
                 ),
@@ -370,7 +371,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
+              LiveTranslatedText(
                 '${accuracy.toStringAsFixed(1)}%',
                 style: TextStyle(
                   fontSize: 14,
@@ -378,7 +379,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
                   color: color,
                 ),
               ),
-              Text(
+              LiveTranslatedText(
                 count,
                 style: const TextStyle(fontSize: 10, color: Colors.grey),
               ),
@@ -395,11 +396,11 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
+          LiveTranslatedText(
             label,
             style: const TextStyle(fontSize: 12),
           ),
-          Text(
+          LiveTranslatedText(
             value,
             style: TextStyle(
               fontSize: 12,
@@ -423,12 +424,12 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          const LiveTranslatedText(
             'Ready to Test',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          const Text(
+          const LiveTranslatedText(
             'This test will verify the accuracy of the Hybrid Payment System by running:',
             style: TextStyle(fontSize: 12),
           ),
@@ -439,7 +440,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
           _buildTestListItem('Edge cases (invalid amounts, time gaps, etc)'),
           _buildTestListItem('Phone number disambiguation accuracy'),
           const SizedBox(height: 12),
-          const Text(
+          const LiveTranslatedText(
             'Estimated time: 2-3 minutes',
             style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
           ),
@@ -456,7 +457,7 @@ class _HybridAccuracyTestPageState extends State<HybridAccuracyTestPage> {
           const Icon(Icons.check_circle, size: 16, color: Colors.green),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: LiveTranslatedText(
               text,
               style: const TextStyle(fontSize: 11),
             ),
@@ -575,7 +576,7 @@ ${stats.totalAccuracy >= 98 ? '✅ EXCELLENT - Production Ready' : '⚠️ Stagi
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Report copied to clipboard'),
+        content: const LiveTranslatedText('Report copied to clipboard'),
         backgroundColor: Colors.green,
       ),
     );

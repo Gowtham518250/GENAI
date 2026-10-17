@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -163,9 +164,9 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 12, fontWeight: FontWeight.w600)),
+            LiveTranslatedText(title, style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 12, fontWeight: FontWeight.w600)),
             const SizedBox(height: 10),
-            Text(value, style: GoogleFonts.poppins(color: color, fontSize: 22, fontWeight: FontWeight.w700)),
+            LiveTranslatedText(value, style: GoogleFonts.poppins(color: color, fontSize: 22, fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -176,7 +177,7 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profit & Loss'),
+        title: const LiveTranslatedText('Profit & Loss'),
         backgroundColor: const Color(0xFF10B981),
       ),
       body: _loading
@@ -189,7 +190,7 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Revenue vs Expenses', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700)),
+                    LiveTranslatedText('Revenue vs Expenses', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 16),
                     Row(children: [
                       _statCard('Today Revenue', '₹${_todayRevenue.toStringAsFixed(0)}', const Color(0xFF0F766E)),
@@ -203,7 +204,7 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
                       _statCard('Net Profit', '₹${_netProfit.toStringAsFixed(0)}', _netProfit >= 0 ? const Color(0xFF15803D) : const Color(0xFFB91C1C)),
                     ]),
                     const SizedBox(height: 24),
-                    Text('Top Details', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700)),
+                    LiveTranslatedText('Top Details', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 12),
                     _detailTile('Total sales records', '${_sales.length}'),
                     _detailTile('Expense entries', '${_expensesList.length}'),
@@ -211,7 +212,7 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
                     _detailTile('Sale loss this month', '₹${_monthSaleLoss.toStringAsFixed(2)}'),
                     _detailTile('Month profit percentage', _monthRevenue == 0.0 ? '0%' : '${((_netProfit / _monthRevenue) * 100).toStringAsFixed(1)}%'),
                     const SizedBox(height: 24),
-                    Text('This page combines sales and expense data to give a real store-level profit view.', style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 13)),
+                    LiveTranslatedText('This page combines sales and expense data to give a real store-level profit view.', style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 13)),
                   ],
                 ),
               ),
@@ -230,8 +231,8 @@ class _ProfitLossPageState extends State<ProfitLossPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[700])),
-          Text(value, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700)),
+          LiveTranslatedText(title, style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[700])),
+          LiveTranslatedText(value, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700)),
         ],
       ),
     );

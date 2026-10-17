@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
@@ -62,9 +63,9 @@ class _EnterprisePnlPageState extends State<EnterprisePnlPage> with SingleTicker
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12)),
+            LiveTranslatedText(label, style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12)),
             const SizedBox(height: 8),
-            Text(value, style: GoogleFonts.poppins(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
+            LiveTranslatedText(value, style: GoogleFonts.poppins(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -83,7 +84,7 @@ class _EnterprisePnlPageState extends State<EnterprisePnlPage> with SingleTicker
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Revenue vs Expenses (7 Days)', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+          LiveTranslatedText('Revenue vs Expenses (7 Days)', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           Expanded(
             child: LineChart(
@@ -147,7 +148,7 @@ class _EnterprisePnlPageState extends State<EnterprisePnlPage> with SingleTicker
                 child: Row(children: [
                   Container(width: 12, height: 12, decoration: BoxDecoration(shape: BoxShape.circle, color: colors[e.key % colors.length])),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(e.value['category']?.toString() ?? '', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                  Expanded(child: LiveTranslatedText(e.value['category']?.toString() ?? '', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12), overflow: TextOverflow.ellipsis)),
                 ]),
               )).toList(),
             ),
@@ -181,7 +182,7 @@ class _EnterprisePnlPageState extends State<EnterprisePnlPage> with SingleTicker
   }
 
   Widget _buildTransactionsTab() {
-    if (_transactions.isEmpty) return Center(child: Text('No transactions found', style: GoogleFonts.poppins(color: Colors.white54)));
+    if (_transactions.isEmpty) return Center(child: LiveTranslatedText('No transactions found', style: GoogleFonts.poppins(color: Colors.white54)));
     return ListView.builder(
       itemCount: _transactions.length,
       itemBuilder: (ctx, i) {
@@ -201,12 +202,12 @@ class _EnterprisePnlPageState extends State<EnterprisePnlPage> with SingleTicker
               const SizedBox(width: 16),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(tx['description']?.toString() ?? 'Transaction', style: GoogleFonts.poppins(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+                  LiveTranslatedText(tx['description']?.toString() ?? 'Transaction', style: GoogleFonts.poppins(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
                   const SizedBox(height: 4),
-                  Text(tx['date']?.toString() ?? '', style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12)),
+                  LiveTranslatedText(tx['date']?.toString() ?? '', style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12)),
                 ]),
               ),
-              Text('Rs ${tx['amount']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: isCredit ? Colors.greenAccent : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+              LiveTranslatedText('Rs ${tx['amount']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: isCredit ? Colors.greenAccent : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
         );
@@ -216,7 +217,7 @@ class _EnterprisePnlPageState extends State<EnterprisePnlPage> with SingleTicker
 
   Widget _buildStockTab() {
     final items = (_stockAnalysis['products'] as List?) ?? (_stockAnalysis['items'] as List?) ?? [];
-    if (items.isEmpty) return Center(child: Text('No stock data', style: GoogleFonts.poppins(color: Colors.white54)));
+    if (items.isEmpty) return Center(child: LiveTranslatedText('No stock data', style: GoogleFonts.poppins(color: Colors.white54)));
     return ListView.builder(
       itemCount: items.length,
       itemBuilder: (ctx, i) {
@@ -227,15 +228,15 @@ class _EnterprisePnlPageState extends State<EnterprisePnlPage> with SingleTicker
           decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16)),
           child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(p['product_name']?.toString() ?? '', style: GoogleFonts.poppins(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+              LiveTranslatedText(p['product_name']?.toString() ?? '', style: GoogleFonts.poppins(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(color: Colors.tealAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                child: Text('Stock: ${p['current_stock']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: Colors.tealAccent, fontSize: 11, fontWeight: FontWeight.w600)),
+                child: LiveTranslatedText('Stock: ${p['current_stock']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: Colors.tealAccent, fontSize: 11, fontWeight: FontWeight.w600)),
               ),
             ]),
-            Text('Rs ${p['stock_value']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+            LiveTranslatedText('Rs ${p['stock_value']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: Colors.amberAccent, fontWeight: FontWeight.bold, fontSize: 16)),
           ]),
         );
       },
@@ -249,7 +250,7 @@ class _EnterprisePnlPageState extends State<EnterprisePnlPage> with SingleTicker
       appBar: AppBar(
         backgroundColor: _bg,
         elevation: 0,
-        title: Text('Enterprise Intelligence', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: LiveTranslatedText('Enterprise Intelligence', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold)),
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.tealAccent, unselectedLabelColor: Colors.white54, indicatorColor: Colors.tealAccent,

@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -71,7 +72,7 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
-        title: Text(
+        title: LiveTranslatedText(
           'Online Store',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w800,
@@ -120,7 +121,7 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
             Row(
               children: [
                 Expanded(
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Store management',
                     style: GoogleFonts.poppins(
                       fontSize: 17,
@@ -129,7 +130,7 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
                     ),
                   ),
                 ),
-                Text(
+                LiveTranslatedText(
                   'Owner tools',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
@@ -215,7 +216,7 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   _online
                       ? 'Your online store is live'
                       : 'Your online store is offline',
@@ -230,7 +231,7 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
+          LiveTranslatedText(
             _online
                 ? 'Customers can discover your shop and place online orders.'
                 : 'Turn on Online Shopping from Store Setup to start receiving orders.',
@@ -290,7 +291,7 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
             ),
           ),
           const SizedBox(width: 6),
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               color: Colors.white,
@@ -324,14 +325,14 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     label,
                     style: GoogleFonts.poppins(
                       color: Colors.white60,
                       fontSize: 9,
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     value,
                     style: GoogleFonts.poppins(
                       color: Colors.white,
@@ -379,7 +380,7 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'Store performance',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
@@ -388,7 +389,7 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LiveTranslatedText(
                       'Same live data used by Online Orders',
                       style: GoogleFonts.poppins(
                         fontSize: 10.5,
@@ -453,7 +454,7 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Today: ' +
                         todayOrders.toString() +
                         ' orders · ₹' +
@@ -498,7 +499,7 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
           children: [
             Icon(icon, size: 16, color: color),
             const SizedBox(height: 6),
-            Text(
+            LiveTranslatedText(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -509,7 +510,7 @@ class _OnlineStoreHubPageState extends State<OnlineStoreHubPage> {
               ),
             ),
             const SizedBox(height: 2),
-            Text(
+            LiveTranslatedText(
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -590,7 +591,7 @@ class _HubTile extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
+                            child: LiveTranslatedText(
                               title,
                               style: GoogleFonts.poppins(
                                 fontSize: 15,
@@ -608,7 +609,7 @@ class _HubTile extends StatelessWidget {
                               color: color.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(999),
                             ),
-                            child: Text(
+                            child: LiveTranslatedText(
                               badge,
                               style: GoogleFonts.poppins(
                                 color: color,
@@ -621,7 +622,7 @@ class _HubTile extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      LiveTranslatedText(
                         subtitle,
                         style: GoogleFonts.poppins(
                           fontSize: 11.5,

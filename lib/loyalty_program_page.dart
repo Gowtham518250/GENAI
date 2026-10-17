@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'loyalty_program_service.dart';
@@ -34,7 +35,7 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Loyalty Program',
+        title: LiveTranslatedText('Loyalty Program',
             style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF635BFF),
         elevation: 0,
@@ -70,7 +71,7 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
-                        child: Text(
+                        child: LiveTranslatedText(
                           widget.customerName[0].toUpperCase(),
                           style: const TextStyle(
                               color: Colors.white,
@@ -84,7 +85,7 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(widget.customerName,
+                          LiveTranslatedText(widget.customerName,
                               style: GoogleFonts.poppins(
                                   fontSize: 16, fontWeight: FontWeight.bold)),
                           Container(
@@ -94,7 +95,7 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
                               color: _getTierColor(tier),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(tier.toUpperCase(),
+                            child: LiveTranslatedText(tier.toUpperCase(),
                                 style: GoogleFonts.poppins(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
@@ -120,19 +121,19 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Available Points',
+                      LiveTranslatedText('Available Points',
                           style: GoogleFonts.poppins(
                               fontSize: 12, color: Colors.white70)),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('$points',
+                          LiveTranslatedText('$points',
                               style: GoogleFonts.poppins(
                                   fontSize: 32,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white)),
-                          Text('₹${redeemValue.toStringAsFixed(0)}',
+                          LiveTranslatedText('₹${redeemValue.toStringAsFixed(0)}',
                               style: GoogleFonts.poppins(
                                   fontSize: 18,
                                   color: Colors.white70)),
@@ -148,7 +149,7 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
                                 backgroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                               ),
-                              child: Text('Redeem',
+                              child: LiveTranslatedText('Redeem',
                                   style: GoogleFonts.poppins(
                                       color: const Color(0xFF635BFF),
                                       fontWeight: FontWeight.bold)),
@@ -162,7 +163,7 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
                 const SizedBox(height: 24),
                 
                 // 📊 Tier Progress
-                Text('Tier Progress',
+                LiveTranslatedText('Tier Progress',
                     style: GoogleFonts.poppins(
                         fontSize: 14, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
@@ -171,9 +172,9 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(tier,
+                        LiveTranslatedText(tier,
                             style: GoogleFonts.poppins(fontSize: 12)),
-                        Text(nextTier,
+                        LiveTranslatedText(nextTier,
                             style: GoogleFonts.poppins(fontSize: 12)),
                       ],
                     ),
@@ -189,14 +190,14 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text('$pointsToNext points to $nextTier',
+                    LiveTranslatedText('$pointsToNext points to $nextTier',
                         style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey)),
                   ],
                 ),
                 const SizedBox(height: 24),
                 
                 // 🎁 Tier Benefits
-                Text('Your Benefits',
+                LiveTranslatedText('Your Benefits',
                     style: GoogleFonts.poppins(
                         fontSize: 14, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
@@ -246,13 +247,13 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
         children: [
           Row(
             children: [
-              Text(item['icon']!, style: const TextStyle(fontSize: 20)),
+              LiveTranslatedText(item['icon']!, style: const TextStyle(fontSize: 20)),
               const SizedBox(width: 12),
-              Text(item['title']!,
+              LiveTranslatedText(item['title']!,
                   style: GoogleFonts.poppins(fontSize: 12)),
             ],
           ),
-          Text(item['value']!,
+          LiveTranslatedText(item['value']!,
               style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold, fontSize: 12)),
         ],
@@ -281,7 +282,7 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Redeem Points', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        title: LiveTranslatedText('Redeem Points', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -289,7 +290,7 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
               controller: pointsController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                hintText: 'Points to redeem',
+                hint: LiveTranslatedText('Points to redeem'),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
@@ -298,7 +299,7 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const LiveTranslatedText('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -313,7 +314,7 @@ class _LoyaltyProgramPageState extends State<LoyaltyProgramPage> {
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF635BFF)),
-            child: const Text('Redeem', style: TextStyle(color: Colors.white)),
+            child: const LiveTranslatedText('Redeem', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

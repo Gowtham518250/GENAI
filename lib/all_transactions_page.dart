@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'whatsapp_message_service.dart';
@@ -311,7 +312,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('📊 All Transactions'),
+        title: const LiveTranslatedText('📊 All Transactions'),
         elevation: 0,
         backgroundColor: const Color(0xFF1F2937),
         foregroundColor: Colors.white,
@@ -340,12 +341,12 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                     children: [
                       const Icon(Icons.error_outline, size: 48, color: Colors.red),
                       const SizedBox(height: 16),
-                      Text(_errorMessage),
+                      LiveTranslatedText(_errorMessage),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: _loadAllTransactions,
                         icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
+                        label: const LiveTranslatedText('Retry'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF59E0B),
                         ),
@@ -381,7 +382,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
 
   Widget _buildPaidCustomersList() {
     if (_paidCustomers.isEmpty) {
-      return const Center(child: Text('No paid customers', style: TextStyle(color: Colors.white70)));
+      return const Center(child: LiveTranslatedText('No paid customers', style: TextStyle(color: Colors.white70)));
     }
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -394,10 +395,10 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
           color: Colors.grey[900],
           child: ListTile(
             leading: const CircleAvatar(backgroundColor: Color(0xFF10B981), child: Icon(Icons.person, color: Colors.white)),
-            title: Text(c['customer']?.toString() ?? 'Unknown Customer', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-            subtitle: Text('${c['customer_phone'] ?? 'No phone'}\nInvoice: ${c['invoice_number'] ?? '-'}\nPaid: $dateText', style: const TextStyle(color: Colors.white70)),
+            title: LiveTranslatedText(c['customer']?.toString() ?? 'Unknown Customer', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            subtitle: LiveTranslatedText('${c['customer_phone'] ?? 'No phone'}\nInvoice: ${c['invoice_number'] ?? '-'}\nPaid: $dateText', style: const TextStyle(color: Colors.white70)),
             isThreeLine: true,
-            trailing: Text('₹${(c['amount'] as num?)?.toStringAsFixed(2) ?? '0.00'}', style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+            trailing: LiveTranslatedText('₹${(c['amount'] as num?)?.toStringAsFixed(2) ?? '0.00'}', style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
           ),
         );
       },
@@ -416,7 +417,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             'Transaction Summary',
             style: TextStyle(
               color: Colors.white,
@@ -451,11 +452,11 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         'Total Amount',
                         style: TextStyle(color: Colors.amber[600], fontSize: 11),
                       ),
-                      Text(
+                      LiveTranslatedText(
                         '₹${totalAmount.toStringAsFixed(0)}',
                         style: const TextStyle(
                           color: Colors.white,
@@ -485,11 +486,11 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LiveTranslatedText(
               label,
               style: TextStyle(color: color, fontSize: 11),
             ),
-            Text(
+            LiveTranslatedText(
               count,
               style: const TextStyle(
                 color: Colors.white,
@@ -513,7 +514,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
             Icon(Icons.receipt_long_outlined,
                 size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            Text('No $emptyLabel',
+            LiveTranslatedText('No $emptyLabel',
                 style: TextStyle(color: Colors.grey[500], fontSize: 16)),
           ],
         ),
@@ -588,7 +589,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                         Row(
                           children: [
                             Expanded(
-                              child: Text(
+                              child: LiveTranslatedText(
                                 txn['type'].toString(),
                                 style: const TextStyle(
                                   color: Colors.white,
@@ -605,7 +606,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                                   color: const Color(0xFF10B981).withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(3),
                                 ),
-                                child: const Text(
+                                child: const LiveTranslatedText(
                                   '🔍 APP DETECTED',
                                   style: TextStyle(
                                     color: Color(0xFF10B981),
@@ -617,7 +618,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        LiveTranslatedText(
                           formattedDate,
                           style: TextStyle(
                             color: Colors.grey[400],
@@ -627,7 +628,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                       ],
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     '₹${amount.toStringAsFixed(2)}',
                     style: TextStyle(
                       color: badgeColor,
@@ -653,7 +654,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                       const Icon(Icons.phone, color: Colors.blue, size: 16),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
+                        child: LiveTranslatedText(
                           customerPhone.toString(),
                           style: const TextStyle(
                             color: Colors.white,
@@ -723,14 +724,14 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Status', style: TextStyle(color: Colors.grey)),
+              const LiveTranslatedText('Status', style: TextStyle(color: Colors.grey)),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   txn['status'].toString(),
                   style: TextStyle(color: statusColor, fontSize: 12),
                 ),
@@ -760,12 +761,12 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
+        LiveTranslatedText(
           label,
           style: TextStyle(color: Colors.grey[400], fontSize: 12),
         ),
         Expanded(
-          child: Text(
+          child: LiveTranslatedText(
             value,
             textAlign: TextAlign.end,
             style: const TextStyle(color: Colors.white, fontSize: 12),
@@ -789,7 +790,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
             child: ElevatedButton.icon(
               onPressed: () => _markInvoiceAsPaid(txn),
               icon: const Icon(Icons.check_circle),
-              label: const Text('Mark Paid'),
+              label: const LiveTranslatedText('Mark Paid'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF10B981),
                 foregroundColor: Colors.white,
@@ -811,7 +812,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
                 children: [
                   const Icon(Icons.check_circle, color: Colors.green, size: 18),
                   const SizedBox(width: 6),
-                  const Text(
+                  const LiveTranslatedText(
                     'Paid',
                     style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
                   ),
@@ -823,7 +824,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
           ElevatedButton.icon(
             onPressed: () => _markInvoiceAsUnpaid(txn),
             icon: const Icon(Icons.undo),
-            label: const Text('Unpaid'),
+            label: const LiveTranslatedText('Unpaid'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
@@ -849,14 +850,14 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Mark as Paid?'),
-        content: Text('Mark invoice $invoiceNum as PAID?'),
+        title: const LiveTranslatedText('Mark as Paid?'),
+        content: LiveTranslatedText('Mark invoice $invoiceNum as PAID?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const LiveTranslatedText('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
-            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+            child: const LiveTranslatedText('Confirm', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -992,7 +993,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: LiveTranslatedText(
               backendConfirmed
                   ? '✅ Invoice marked as PAID'
                   : '✅ Marked PAID — pending server sync',
@@ -1009,7 +1010,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not mark invoice paid: $e'),
+            content: LiveTranslatedText('Could not mark invoice paid: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1028,14 +1029,14 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Mark as Unpaid?'),
-        content: Text('Revert invoice $invoiceNum back to UNPAID status?'),
+        title: const LiveTranslatedText('Mark as Unpaid?'),
+        content: LiveTranslatedText('Revert invoice $invoiceNum back to UNPAID status?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const LiveTranslatedText('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+            child: const LiveTranslatedText('Confirm', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1102,7 +1103,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('↩️ Invoice reverted to UNPAID'),
+            content: LiveTranslatedText('↩️ Invoice reverted to UNPAID'),
             backgroundColor: Colors.orange,
             duration: Duration(seconds: 2),
           ),
@@ -1116,7 +1117,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: LiveTranslatedText('Error: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 2),
           ),

@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -181,7 +182,7 @@ class _HomeScreenWidgetPageState extends State<HomeScreenWidgetPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text('Widget Preview', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('Widget Preview', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         elevation: 0,
         backgroundColor: Colors.white,
       ),
@@ -208,7 +209,7 @@ class _HomeScreenWidgetPageState extends State<HomeScreenWidgetPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     '₹${totalSales.toStringAsFixed(0)}',
                     style: GoogleFonts.poppins(
                       fontSize: 48,
@@ -216,7 +217,7 @@ class _HomeScreenWidgetPageState extends State<HomeScreenWidgetPage> {
                       color: const Color(0xFF6366F1),
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     '$transactionCount sales',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
@@ -226,7 +227,7 @@ class _HomeScreenWidgetPageState extends State<HomeScreenWidgetPage> {
                   ElevatedButton.icon(
                     onPressed: () => _speakSummary(),
                     icon: const Icon(Icons.volume_up),
-                    label: const Text('Speak Summary'),
+                    label: const LiveTranslatedText('Speak Summary'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6366F1),
                     ),
@@ -247,7 +248,7 @@ class _HomeScreenWidgetPageState extends State<HomeScreenWidgetPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Today\'s Breakdown', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  LiveTranslatedText('Today\'s Breakdown', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   _buildStatRow('UPI Sales', '₹${upiSales.toStringAsFixed(0)}', Colors.blue),
                   const SizedBox(height: 8),
@@ -267,8 +268,8 @@ class _HomeScreenWidgetPageState extends State<HomeScreenWidgetPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GoogleFonts.poppins(color: Colors.grey.shade600)),
-        Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: color)),
+        LiveTranslatedText(label, style: GoogleFonts.poppins(color: Colors.grey.shade600)),
+        LiveTranslatedText(value, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: color)),
       ],
     );
   }

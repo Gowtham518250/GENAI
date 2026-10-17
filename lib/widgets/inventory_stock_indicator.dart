@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -36,7 +37,7 @@ class InventoryStockIndicator extends StatelessWidget {
               children: [
                 _buildStockIcon(isOutOfStock, isLowStock),
                 const SizedBox(width: AppSpacing.sm),
-                Text(
+                LiveTranslatedText(
                   _getStockStatusText(isOutOfStock, isLowStock),
                   style: GoogleFonts.poppins(
                     fontSize: 12,
@@ -46,7 +47,7 @@ class InventoryStockIndicator extends StatelessWidget {
                 ),
               ],
             ),
-            Text(
+            LiveTranslatedText(
               '$currentStock / $totalStock',
               style: GoogleFonts.poppins(
                 fontSize: 12,
@@ -132,7 +133,7 @@ class StockWarningDialog extends StatelessWidget {
             color: hasOutOfStock ? const Color(0xFFEF4444) : const Color(0xFFF59E0B),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             hasOutOfStock ? 'Out of Stock Items' : 'Low Stock Warning',
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.bold,
@@ -175,7 +176,7 @@ class StockWarningDialog extends StatelessWidget {
                     Icon(Icons.info_rounded, size: 16, color: const Color(0xFFEF4444)),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         'You cannot proceed with the sale as some items are out of stock.',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
@@ -192,7 +193,7 @@ class StockWarningDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: onCancel,
-          child: const Text('Go Back'),
+          child: const LiveTranslatedText('Go Back'),
         ),
         if (!hasOutOfStock)
           ElevatedButton(
@@ -201,7 +202,7 @@ class StockWarningDialog extends StatelessWidget {
               backgroundColor: const Color(0xFF6366F1),
               foregroundColor: Colors.white,
             ),
-            child: const Text('Proceed'),
+            child: const LiveTranslatedText('Proceed'),
           ),
       ],
     );
@@ -211,7 +212,7 @@ class StockWarningDialog extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           title,
           style: GoogleFonts.poppins(
             fontSize: 12,
@@ -226,7 +227,7 @@ class StockWarningDialog extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(width: 20),
-                Text(
+                LiveTranslatedText(
                   '• ${entry.key}',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
@@ -234,7 +235,7 @@ class StockWarningDialog extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Text(
+                LiveTranslatedText(
                   'Stock: ${entry.value}',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
@@ -293,7 +294,7 @@ class _LowStockThresholdSettingsState extends State<LowStockThresholdSettings> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             'Low Stock Alert Threshold',
             style: GoogleFonts.poppins(
               fontSize: 16,
@@ -302,7 +303,7 @@ class _LowStockThresholdSettingsState extends State<LowStockThresholdSettings> {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             'Alert me when stock falls below this value',
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -335,7 +336,7 @@ class _LowStockThresholdSettingsState extends State<LowStockThresholdSettings> {
                   ),
                 ),
                 child: Center(
-                  child: Text(
+                  child: LiveTranslatedText(
                     '$_threshold',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
@@ -397,7 +398,7 @@ class ProductAlternativesSuggestion extends StatelessWidget {
               Icon(Icons.swap_horiz_rounded, color: const Color(0xFF6366F1)),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   'Alternatives for $outOfStockProduct',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
@@ -436,7 +437,7 @@ class ProductAlternativesSuggestion extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               alternative['name'] ?? 'Unknown',
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
@@ -447,7 +448,7 @@ class ProductAlternativesSuggestion extends StatelessWidget {
                             const SizedBox(height: 2),
                             Row(
                               children: [
-                                Text(
+                                LiveTranslatedText(
                                   '₹${alternative['price'] ?? '0.00'}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 11,
@@ -464,7 +465,7 @@ class ProductAlternativesSuggestion extends StatelessWidget {
                                     color: const Color(0xFF10B981).withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     'In Stock',
                                     style: GoogleFonts.poppins(
                                       fontSize: 10,
@@ -498,7 +499,7 @@ class ProductAlternativesSuggestion extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'View all ${alternatives.length} alternatives',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -554,7 +555,7 @@ class CartStockLevelIndicator extends StatelessWidget {
             children: [
               Icon(Icons.warning_amber_rounded, color: const Color(0xFFF59E0B), size: 20),
               const SizedBox(width: AppSpacing.sm),
-              Text(
+              LiveTranslatedText(
                 'Stock Alert',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -565,7 +566,7 @@ class CartStockLevelIndicator extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             'Some items in your cart have insufficient stock:',
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -581,7 +582,7 @@ class CartStockLevelIndicator extends StatelessWidget {
                 children: [
                   const SizedBox(width: 28),
                   Expanded(
-                    child: Text(
+                    child: LiveTranslatedText(
                       entry.key,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -598,7 +599,7 @@ class CartStockLevelIndicator extends StatelessWidget {
                       color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Need ${entry.value}, Have $available',
                       style: GoogleFonts.poppins(
                         fontSize: 10,
@@ -674,7 +675,7 @@ class QuickStockCheck extends StatelessWidget {
                       : const Color(0xFF10B981),
             ),
             const SizedBox(width: 4),
-            Text(
+            LiveTranslatedText(
               '$currentStock left',
               style: GoogleFonts.poppins(
                 fontSize: 10,

@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
@@ -258,7 +259,7 @@ class _CustomersPageState extends State<CustomersPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).customers, style: GoogleFonts.poppins(
+        title: LiveTranslatedText(AppLocalizations.of(context).customers, style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700, color: Colors.white)),
         backgroundColor: _primary,
         foregroundColor: Colors.white,
@@ -284,7 +285,7 @@ class _CustomersPageState extends State<CustomersPage> {
           child: TextField(
             controller: _search,
             decoration: InputDecoration(
-              hintText: 'Search by name, phone or city...',
+              hint: LiveTranslatedText('Search by name, phone or city...'),
               prefixIcon: const Icon(Icons.search, color: Color(0xFF6366F1)),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -325,9 +326,9 @@ class _CustomersPageState extends State<CustomersPage> {
         Icon(icon, size: 16, color: Colors.white70),
         const SizedBox(width: 6),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(val, style: GoogleFonts.poppins(
+          LiveTranslatedText(val, style: GoogleFonts.poppins(
               fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
-          Text(label, style: GoogleFonts.poppins(
+          LiveTranslatedText(label, style: GoogleFonts.poppins(
               fontSize: 10, color: Colors.white70)),
         ]),
       ]),
@@ -344,10 +345,10 @@ class _CustomersPageState extends State<CustomersPage> {
                   color: _primary.withValues(alpha: 0.1), shape: BoxShape.circle),
               child: Icon(Icons.people_outline, size: 54, color: _primary)),
           const SizedBox(height: 24),
-          Text(AppLocalizations.of(context).noCustomersYet, style: GoogleFonts.poppins(
+          LiveTranslatedText(AppLocalizations.of(context).noCustomersYet, style: GoogleFonts.poppins(
               fontSize: 20, fontWeight: FontWeight.w700)),
           const SizedBox(height: 10),
-          Text('Add your first customer by tapping the\n+ button below',
+          LiveTranslatedText('Add your first customer by tapping the\n+ button below',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                   fontSize: 13, color: Colors.grey.shade600)),
@@ -386,14 +387,14 @@ class _CustomersPageState extends State<CustomersPage> {
             leading: CircleAvatar(
               backgroundColor: color.withValues(alpha: 0.15),
               radius: 26,
-              child: Text(initial,
+              child: LiveTranslatedText(initial,
                   style: TextStyle(color: color,
                       fontWeight: FontWeight.bold, fontSize: 18)),
             ),
             title: Row(
               children: [
                 Expanded(
-                  child: Text(name, style: GoogleFonts.poppins(
+                  child: LiveTranslatedText(name, style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w600, fontSize: 14),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
@@ -407,7 +408,7 @@ class _CustomersPageState extends State<CustomersPage> {
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Owes ₹$creditBalance',
                       style: GoogleFonts.poppins(
                         fontSize: 10,
@@ -425,14 +426,14 @@ class _CustomersPageState extends State<CustomersPage> {
                 Row(children: [
                   Icon(Icons.phone, size: 12, color: Colors.grey.shade400),
                   const SizedBox(width: 4),
-                  Text(c['phone'], style: GoogleFonts.poppins(
+                  LiveTranslatedText(c['phone'], style: GoogleFonts.poppins(
                       fontSize: 12, color: Colors.grey.shade500)),
                 ]),
               if (c['city'] != null && c['city'] != '')
                 Row(children: [
                   Icon(Icons.location_on, size: 12, color: Colors.grey.shade400),
                   const SizedBox(width: 4),
-                  Text(c['city'], style: GoogleFonts.poppins(
+                  LiveTranslatedText(c['city'], style: GoogleFonts.poppins(
                       fontSize: 11, color: Colors.grey.shade400)),
                 ]),
             ]),
@@ -442,10 +443,10 @@ class _CustomersPageState extends State<CustomersPage> {
                 Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  Text('₹$credit',
+                  LiveTranslatedText('₹$credit',
                       style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700, color: _primary, fontSize: 13)),
-                  Text('Limit', style: GoogleFonts.poppins(
+                  LiveTranslatedText('Limit', style: GoogleFonts.poppins(
                       fontSize: 9, color: Colors.grey.shade400)),
                 ]),
                 const SizedBox(width: 8),
@@ -467,7 +468,7 @@ class _CustomersPageState extends State<CustomersPage> {
                   child: ElevatedButton.icon(
                     onPressed: () => _showAddCreditDialog(c),
                     icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Add Credit'),
+                    label: const LiveTranslatedText('Add Credit'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.15),
                       foregroundColor: const Color(0xFF6366F1),
@@ -481,7 +482,7 @@ class _CustomersPageState extends State<CustomersPage> {
                   child: ElevatedButton.icon(
                     onPressed: () => _sendWhatsappReminder(c),
                     icon: const Icon(Icons.send, size: 16),
-                    label: const Text('WhatsApp'),
+                    label: const LiveTranslatedText('WhatsApp'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.15),
                       foregroundColor: const Color(0xFF10B981),
@@ -524,7 +525,7 @@ class _CustomersPageState extends State<CustomersPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'Khata Entry',
                     style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
@@ -532,7 +533,7 @@ class _CustomersPageState extends State<CustomersPage> {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
+              LiveTranslatedText(
                 customer['customer_name'] ?? 'Customer',
                 style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey.shade600),
               ),
@@ -555,7 +556,7 @@ class _CustomersPageState extends State<CustomersPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Center(
-                            child: Text(
+                            child: LiveTranslatedText(
                               'Gave Credit',
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
@@ -577,7 +578,7 @@ class _CustomersPageState extends State<CustomersPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Center(
-                            child: Text(
+                            child: LiveTranslatedText(
                               'Got Payment',
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
@@ -599,9 +600,9 @@ class _CustomersPageState extends State<CustomersPage> {
                 autofocus: true,
                 style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
-                  hintText: '0',
+                  hint: LiveTranslatedText('0'),
                   prefixIcon: Icon(Icons.currency_rupee, color: isPayment ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
-                  labelText: 'Amount (₹)',
+                  label: LiveTranslatedText('Amount (₹)'),
                   labelStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   focusedBorder: OutlineInputBorder(
@@ -614,9 +615,9 @@ class _CustomersPageState extends State<CustomersPage> {
               TextField(
                 controller: noteC,
                 decoration: InputDecoration(
-                  hintText: 'Add a note (e.g. For Groceries)',
+                  hint: LiveTranslatedText('Add a note (e.g. For Groceries)'),
                   prefixIcon: const Icon(Icons.note_alt_outlined),
-                  labelText: 'Remarks',
+                  label: LiveTranslatedText('Remarks'),
                   labelStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                 ),
@@ -629,7 +630,7 @@ class _CustomersPageState extends State<CustomersPage> {
                     final amount = double.tryParse(amountC.text) ?? 0;
                     if (amount <= 0) {
                       ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(content: Text('Please enter a valid amount')),
+                        const SnackBar(content: LiveTranslatedText('Please enter a valid amount')),
                       );
                       return;
                     }
@@ -659,7 +660,7 @@ class _CustomersPageState extends State<CustomersPage> {
                       await _fetch();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(isPayment 
+                          content: LiveTranslatedText(isPayment 
                               ? '✅ Payment of ₹${amount.toStringAsFixed(0)} recorded' 
                               : '🔴 Credit of ₹${amount.toStringAsFixed(0)} added'),
                           backgroundColor: isPayment ? const Color(0xFF10B981) : const Color(0xFFEF4444),
@@ -674,7 +675,7 @@ class _CustomersPageState extends State<CustomersPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     elevation: 4,
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     isPayment ? 'SAVE PAYMENT' : 'ADD CREDIT',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
@@ -691,7 +692,7 @@ class _CustomersPageState extends State<CustomersPage> {
     final phone = customer['phone']?.toString().replaceAll(RegExp(r'[^\d]'), '') ?? '';
     if (phone.isEmpty || phone == 'N/A') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ No phone number available for this customer')),
+        const SnackBar(content: LiveTranslatedText('❌ No phone number available for this customer')),
       );
       return;
     }
@@ -699,7 +700,7 @@ class _CustomersPageState extends State<CustomersPage> {
     final creditBalance = double.tryParse(customer['credit_balance']?.toString() ?? '0') ?? 0;
     if (creditBalance <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ℹ️ This customer has no pending balance')),
+        const SnackBar(content: LiveTranslatedText('ℹ️ This customer has no pending balance')),
       );
       return;
     }
@@ -731,7 +732,7 @@ class _CustomersPageState extends State<CustomersPage> {
       await launchUrl(webUrl, mode: LaunchMode.externalApplication);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open WhatsApp. Use this link manually if needed: $whatsappUrl')),
+        SnackBar(content: LiveTranslatedText('Could not open WhatsApp. Use this link manually if needed: $whatsappUrl')),
       );
     }
   }
@@ -757,7 +758,7 @@ class _CustomersPageState extends State<CustomersPage> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Container(width: 4, height: 28, color: _primary, margin: const EdgeInsets.only(right: 12)),
-              Text('Add Customer', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700)),
+              LiveTranslatedText('Add Customer', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700)),
               const Spacer(),
               IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
             ]),
@@ -778,7 +779,7 @@ class _CustomersPageState extends State<CustomersPage> {
                 onPressed: () async {
                   if (nameC.text.trim().isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter customer name')));
+                        const SnackBar(content: LiveTranslatedText('Please enter customer name')));
                     return;
                   }
                   final List<dynamic> customers = await LocalStorageService.loadLocalCustomers();
@@ -796,11 +797,11 @@ class _CustomersPageState extends State<CustomersPage> {
                   await _fetch();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: const Text('\u2705 Customer added!'),
+                        content: const LiveTranslatedText('\u2705 Customer added!'),
                         backgroundColor: _primary));
                   }
                 },
-                child: Text('Add Customer', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                child: LiveTranslatedText('Add Customer', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               ),
             ),
             const SizedBox(height: 12),
@@ -842,7 +843,7 @@ class _CustomersPageState extends State<CustomersPage> {
         padding: const EdgeInsets.all(24),
         child: Column(mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(c['customer_name'] ?? '', style: GoogleFonts.poppins(
+          LiveTranslatedText(c['customer_name'] ?? '', style: GoogleFonts.poppins(
               fontSize: 20, fontWeight: FontWeight.w700)),
           const Divider(height: 24),
           _detailRow(Icons.phone, 'Phone', c['phone'] ?? '--'),
@@ -853,7 +854,7 @@ class _CustomersPageState extends State<CustomersPage> {
           _detailRow(Icons.payment, 'Payment Terms',
               c['payment_terms'] ?? '--'),
           const SizedBox(height: 16),
-          Text('Transaction History', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16, color: _primary)),
+          LiveTranslatedText('Transaction History', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16, color: _primary)),
           const SizedBox(height: 12),
           Expanded(
             child: FutureBuilder<List<dynamic>>(
@@ -861,7 +862,7 @@ class _CustomersPageState extends State<CustomersPage> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
                 final history = snapshot.data!;
-                if (history.isEmpty) return Center(child: Text('No transactions yet', style: GoogleFonts.poppins(color: Colors.grey)));
+                if (history.isEmpty) return Center(child: LiveTranslatedText('No transactions yet', style: GoogleFonts.poppins(color: Colors.grey)));
                 
                 return ListView.builder(
                   itemCount: history.length,
@@ -872,10 +873,10 @@ class _CustomersPageState extends State<CustomersPage> {
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(isPayment ? Icons.arrow_downward : Icons.arrow_upward, 
                                    color: isPayment ? Colors.green : Colors.red, size: 18),
-                      title: Text(isPayment ? 'Payment Received' : 'Purchase / Credit', 
+                      title: LiveTranslatedText(isPayment ? 'Payment Received' : 'Purchase / Credit', 
                                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
-                      subtitle: Text(item['date']?.toString().substring(0, 10) ?? '', style: GoogleFonts.poppins(fontSize: 11)),
-                      trailing: Text('₹${item['amount']}', 
+                      subtitle: LiveTranslatedText(item['date']?.toString().substring(0, 10) ?? '', style: GoogleFonts.poppins(fontSize: 11)),
+                      trailing: LiveTranslatedText('₹${item['amount']}', 
                                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, 
                                                             color: isPayment ? Colors.green : Colors.red)),
                     );
@@ -928,9 +929,9 @@ class _CustomersPageState extends State<CustomersPage> {
       child: Row(children: [
         Icon(icon, size: 18, color: _primary),
         const SizedBox(width: 10),
-        Text('$label: ', style: GoogleFonts.poppins(
+        LiveTranslatedText('$label: ', style: GoogleFonts.poppins(
             fontSize: 13, color: Colors.grey.shade600)),
-        Expanded(child: Text(val, style: GoogleFonts.poppins(
+        Expanded(child: LiveTranslatedText(val, style: GoogleFonts.poppins(
             fontSize: 13, fontWeight: FontWeight.w600))),
       ]),
     );

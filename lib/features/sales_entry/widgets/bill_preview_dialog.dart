@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -50,7 +51,7 @@ class BillPreviewDialog extends StatelessWidget {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not print bill: ' + error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: LiveTranslatedText('Could not print bill: ' + error.toString().replaceFirst('Exception: ', ''))),
       );
     }
   }
@@ -65,7 +66,7 @@ class BillPreviewDialog extends StatelessWidget {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not share bill: ' + error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: LiveTranslatedText('Could not share bill: ' + error.toString().replaceFirst('Exception: ', ''))),
       );
     }
   }
@@ -94,7 +95,7 @@ class BillPreviewDialog extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         'Invoice Preview',
                         style: GoogleFonts.poppins(
                           color: Colors.white,
@@ -133,7 +134,7 @@ class BillPreviewDialog extends StatelessWidget {
                         child: ElevatedButton.icon(
                           onPressed: () => _printBill(context, context.read<SalesEntryProvider>()),
                           icon: const Icon(Icons.print_rounded, size: 18),
-                          label: const Text('PRINT'),
+                          label: const LiveTranslatedText('PRINT'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white10,
                             foregroundColor: Colors.white,
@@ -149,7 +150,7 @@ class BillPreviewDialog extends StatelessWidget {
                         child: ElevatedButton.icon(
                           onPressed: () => _shareBill(context, context.read<SalesEntryProvider>()),
                           icon: const Icon(Icons.share_rounded, size: 18),
-                          label: const Text('SHARE'),
+                          label: const LiveTranslatedText('SHARE'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4F46E5),
                             foregroundColor: Colors.white,
@@ -190,14 +191,14 @@ class _ReceiptPaper extends StatelessWidget {
               Center(
                 child: Column(
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       provider.shopName.toUpperCase(),
                       style: GoogleFonts.spaceMono(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    Text(
+                    LiveTranslatedText(
                       provider.shopLocation,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -210,15 +211,15 @@ class _ReceiptPaper extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              Text(
+              LiveTranslatedText(
                 'Bill No: ' + invoiceNumber,
                 style: GoogleFonts.spaceMono(fontSize: 12, fontWeight: FontWeight.w900),
               ),
-              Text(
+              LiveTranslatedText(
                 'Date: ' + DateTime.now().toLocal().toString().split('.').first,
                 style: GoogleFonts.poppins(fontSize: 10, color: Colors.black54),
               ),
-              Text(
+              LiveTranslatedText(
                 'Payment: ' + provider.selectedPaymentMethod +
                     '  •  ' + (provider.selectedPaymentMethod.toLowerCase() == 'credit' ? 'UNPAID' : 'PAID'),
                 style: GoogleFonts.poppins(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.w600),
@@ -227,12 +228,12 @@ class _ReceiptPaper extends StatelessWidget {
               // Customer Details
               if (provider.customerNameController.text.isNotEmpty ||
                   provider.customerPhoneController.text.isNotEmpty) ...[
-                Text(
+                LiveTranslatedText(
                   'To: ${provider.customerNameController.text}',
                   style: GoogleFonts.poppins(fontSize: 12),
                 ),
                 if (provider.customerPhoneController.text.isNotEmpty)
-                  Text(
+                  LiveTranslatedText(
                     'Phone: ${provider.customerPhoneController.text}',
                     style: GoogleFonts.poppins(fontSize: 12),
                   ),
@@ -246,7 +247,7 @@ class _ReceiptPaper extends StatelessWidget {
                 children: [
                   Expanded(
                     flex: 3,
-                    child: Text(
+                    child: LiveTranslatedText(
                       'ITEM',
                       style: GoogleFonts.spaceMono(
                         fontSize: 10,
@@ -256,7 +257,7 @@ class _ReceiptPaper extends StatelessWidget {
                   ),
                   Expanded(
                     flex: 1,
-                    child: Text(
+                    child: LiveTranslatedText(
                       'QTY',
                       style: GoogleFonts.spaceMono(
                         fontSize: 10,
@@ -266,7 +267,7 @@ class _ReceiptPaper extends StatelessWidget {
                   ),
                   Expanded(
                     flex: 1,
-                    child: Text(
+                    child: LiveTranslatedText(
                       'RATE',
                       style: GoogleFonts.spaceMono(
                         fontSize: 10,
@@ -278,7 +279,7 @@ class _ReceiptPaper extends StatelessWidget {
                     flex: 1,
                     child: Align(
                       alignment: Alignment.centerRight,
-                      child: Text(
+                      child: LiveTranslatedText(
                         'AMT',
                         style: GoogleFonts.spaceMono(
                           fontSize: 10,
@@ -302,21 +303,21 @@ class _ReceiptPaper extends StatelessWidget {
                     children: [
                       Expanded(
                         flex: 3,
-                        child: Text(
+                        child: LiveTranslatedText(
                           item.itemName,
                           style: GoogleFonts.poppins(fontSize: 11),
                         ),
                       ),
                       Expanded(
                         flex: 1,
-                        child: Text(
+                        child: LiveTranslatedText(
                           item.quantity.toString(),
                           style: GoogleFonts.spaceMono(fontSize: 11),
                         ),
                       ),
                       Expanded(
                         flex: 1,
-                        child: Text(
+                        child: LiveTranslatedText(
                           item.price.toStringAsFixed(0),
                           style: GoogleFonts.spaceMono(fontSize: 11),
                         ),
@@ -325,7 +326,7 @@ class _ReceiptPaper extends StatelessWidget {
                         flex: 1,
                         child: Align(
                           alignment: Alignment.centerRight,
-                          child: Text(
+                          child: LiveTranslatedText(
                             item.subtotal.toStringAsFixed(0),
                             style: GoogleFonts.spaceMono(fontSize: 11),
                           ),
@@ -362,7 +363,7 @@ class _ReceiptPaper extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       'GRAND TOTAL',
                       style: GoogleFonts.poppins(
                         color: Colors.white,
@@ -370,7 +371,7 @@ class _ReceiptPaper extends StatelessWidget {
                         fontSize: 14,
                       ),
                     ),
-                    Text(
+                    LiveTranslatedText(
                       '₹${provider.totalAmount.toStringAsFixed(2)}',
                       style: GoogleFonts.spaceMono(
                         color: Colors.white,
@@ -383,7 +384,7 @@ class _ReceiptPaper extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Center(
-                child: Text(
+                child: LiveTranslatedText(
                   'Thank you for shopping with us!',
                   style: GoogleFonts.poppins(
                     fontSize: 10,
@@ -412,8 +413,8 @@ class _TotalRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: GoogleFonts.poppins(fontSize: 11)),
-          Text(
+          LiveTranslatedText(label, style: GoogleFonts.poppins(fontSize: 11)),
+          LiveTranslatedText(
             amount.toStringAsFixed(2),
             style: GoogleFonts.spaceMono(fontSize: 11),
           ),

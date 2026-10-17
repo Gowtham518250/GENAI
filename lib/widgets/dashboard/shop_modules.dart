@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -32,7 +33,7 @@ class NavyShopModulesSection extends StatelessWidget {
       children: [
         Icon(icon, color: const Color(0xFF1B3A6B), size: 20),
         const SizedBox(width: 8),
-        Text(
+        LiveTranslatedText(
           title,
           style: GoogleFonts.inter(
             fontSize: 18,
@@ -76,7 +77,7 @@ class NavyShopModulesSection extends StatelessWidget {
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               label,
               style: GoogleFonts.inter(
                 fontSize: 10,
@@ -106,7 +107,7 @@ class NavyShopModulesSection extends StatelessWidget {
           children: [
             const Icon(Icons.layers_rounded, color: Color(0xFF1B3A6B), size: 14),
             const SizedBox(width: 6),
-            Text(
+            LiveTranslatedText(
               'Operations',
               style: GoogleFonts.inter(
                 fontSize: 13,
@@ -142,7 +143,7 @@ class NavyShopModulesSection extends StatelessWidget {
           children: [
             const Icon(Icons.payments_rounded, color: Color(0xFF1B3A6B), size: 14),
             const SizedBox(width: 6),
-            Text(
+            LiveTranslatedText(
               'Money & Closing',
               style: GoogleFonts.inter(
                 fontSize: 13,

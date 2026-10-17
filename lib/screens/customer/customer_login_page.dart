@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -106,7 +107,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           // Registered successfully, now login
           setState(() => _isLogin = true);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context).translate('registrationSuccessLogin')), backgroundColor: Colors.green),
+            SnackBar(content: LiveTranslatedText(AppLocalizations.of(context).translate('registrationSuccessLogin')), backgroundColor: Colors.green),
           );
         }
       } else {
@@ -115,7 +116,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+          SnackBar(content: LiveTranslatedText(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -133,7 +134,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
     final email = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(l.translate('resetCustomerPassword')),
+        title: LiveTranslatedText(l.translate('resetCustomerPassword')),
         content: TextField(
           controller: emailController,
           keyboardType: TextInputType.emailAddress,
@@ -143,14 +144,14 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(l.translate('cancel')),
+            child: LiveTranslatedText(l.translate('cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(
               dialogContext,
               emailController.text.trim().toLowerCase(),
             ),
-            child: Text(l.translate('sendOtp')),
+            child: LiveTranslatedText(l.translate('sendOtp')),
           ),
         ],
       ),
@@ -182,7 +183,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
-          title: Text(l.translate('enterVerificationCode')),
+          title: LiveTranslatedText(l.translate('enterVerificationCode')),
           content: TextField(
             controller: otpController,
             keyboardType: TextInputType.number,
@@ -196,14 +197,14 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: Text(l.translate('cancel')),
+              child: LiveTranslatedText(l.translate('cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(
                 dialogContext,
                 otpController.text.trim(),
               ),
-              child: Text(l.translate('verify')),
+              child: LiveTranslatedText(l.translate('verify')),
             ),
           ],
         ),
@@ -234,7 +235,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
-          title: Text(l.translate('chooseNewPassword')),
+          title: LiveTranslatedText(l.translate('chooseNewPassword')),
           content: TextField(
             controller: passwordController,
             obscureText: true,
@@ -246,14 +247,14 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: Text(l.translate('cancel')),
+              child: LiveTranslatedText(l.translate('cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(
                 dialogContext,
                 passwordController.text,
               ),
-              child: Text(l.translate('updatePassword')),
+              child: LiveTranslatedText(l.translate('updatePassword')),
             ),
           ],
         ),
@@ -286,7 +287,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l.translate('passwordUpdatedLogin')),
+            content: LiveTranslatedText(l.translate('passwordUpdatedLogin')),
             backgroundColor: Colors.green,
           ),
         );
@@ -295,7 +296,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            content: LiveTranslatedText(e.toString().replaceFirst('Exception: ', '')),
             backgroundColor: Colors.red,
           ),
         );
@@ -317,8 +318,8 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
               children: [
                 Icon(Icons.shopping_bag_rounded, size: 80, color: Colors.teal.shade600),
                 const SizedBox(height: 16),
-                Text('Retail Mind Market', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.teal.shade900)),
-                Text(_isLogin ? l.translate('welcomeBackShopper') : l.translate('createYourAccount'), style: GoogleFonts.poppins(color: Colors.teal.shade700)),
+                LiveTranslatedText('Retail Mind Market', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.teal.shade900)),
+                LiveTranslatedText(_isLogin ? l.translate('welcomeBackShopper') : l.translate('createYourAccount'), style: GoogleFonts.poppins(color: Colors.teal.shade700)),
                 const SizedBox(height: 40),
                 
                 Card(
@@ -365,7 +366,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                             onPressed: _isLoading ? null : _submit,
                             child: _isLoading 
                               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white))
-                               : Text(_isLogin ? l.login : l.register, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                               : LiveTranslatedText(_isLogin ? l.login : l.register, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
                         ),
                         if (_isLogin)
@@ -373,18 +374,18 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> {
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: _isLoading ? null : _showForgotPasswordFlow,
-                              child: Text(l.forgotPassword),
+                              child: LiveTranslatedText(l.forgotPassword),
                             ),
                           ),
                         const SizedBox(height: 16),
                         TextButton(
                           onPressed: () => setState(() => _isLogin = !_isLogin),
-                          child: Text(_isLogin ? l.translate('needAccountRegister') : l.translate('alreadyHaveAccountLogin'), style: TextStyle(color: Colors.teal.shade700)),
+                          child: LiveTranslatedText(_isLogin ? l.translate('needAccountRegister') : l.translate('alreadyHaveAccountLogin'), style: TextStyle(color: Colors.teal.shade700)),
                         ),
                         const SizedBox(height: 8),
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: Text(l.translate('backToHome'), style: TextStyle(color: Colors.grey.shade600)),
+                          child: LiveTranslatedText(l.translate('backToHome'), style: TextStyle(color: Colors.grey.shade600)),
                         )
                       ],
                     ),

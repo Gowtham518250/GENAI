@@ -1,9 +1,11 @@
+import '../../../live_translated_text.dart';
 import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -18,6 +20,7 @@ import '../widgets/product_discovery_card.dart';
 import '../widgets/suggestion_chip.dart';
 import 'ai_query_history_screen.dart';
 import 'voice_language_option.dart';
+import '../../../language_provider.dart';
 
 /// Ask Retail Mind: text or voice in an Indian language, followed by the
 /// existing authenticated RAG -> SQL -> result pipeline.
@@ -43,16 +46,34 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
   bool _isLoading = false;
   bool _isRecording = false;
   bool _isVoiceProcessing = false;
-  String _inputLanguageCode = 'te';
+  String _inputLanguageCode = 'en';
+  bool _voiceLanguageManuallySelected = false;
   AIQueryResponse? _currentResponse;
   String? _errorMessage;
   String? _originalTranscript;
   String? _translatedEnglish;
   VoiceLanguageOption _selectedLanguage = kVoiceLanguages.firstWhere(
-    (language) => language.code == 'te',
+    (language) => language.code == 'en',
   );
   Timer? _recordTimer;
   int _recordSeconds = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final appLanguageCode =
+        Provider.of<LanguageProvider>(context).locale.languageCode;
+    if (!_voiceLanguageManuallySelected) {
+      final matches = kVoiceLanguages.where(
+        (language) => language.code == appLanguageCode,
+      );
+      final defaultLanguage = matches.isNotEmpty
+          ? matches.first
+          : kVoiceLanguages.firstWhere((language) => language.code == 'en');
+      _selectedLanguage = defaultLanguage;
+      _inputLanguageCode = defaultLanguage.code;
+    }
+  }
 
   @override
   void initState() {
@@ -416,7 +437,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      SnackBar(content: LiveTranslatedText(message), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -463,8 +484,8 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Ask Retail Mind', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
-                  Text('Sales · Stock · Attendance insights', style: GoogleFonts.inter(fontSize: 10.5, color: Colors.white70, fontWeight: FontWeight.w500)),
+                  LiveTranslatedText('Ask Retail Mind', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                  LiveTranslatedText('Sales · Stock · Attendance insights', style: GoogleFonts.inter(fontSize: 10.5, color: Colors.white70, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
@@ -475,7 +496,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
             TextButton.icon(
               onPressed: _openHistory,
               icon: const Icon(Icons.history_rounded, size: 19),
-              label: Text('Query History', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
+              label: LiveTranslatedText('Query History', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
               style: TextButton.styleFrom(foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10)),
             )
           else
@@ -545,12 +566,12 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
             const Icon(Icons.lightbulb_rounded, size: 20, color: Color(0xFFF59E0B)),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 'Suggested questions',
                 style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF18284A)),
               ),
             ),
-            Text('Quick prompts', style: GoogleFonts.inter(fontSize: 10.5, color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
+            LiveTranslatedText('Quick prompts', style: GoogleFonts.inter(fontSize: 10.5, color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
           ],
         ),
         const SizedBox(height: 10),
@@ -599,7 +620,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                   _isSpeakingAnswer ? Icons.stop_circle_rounded : Icons.volume_up_rounded,
                   size: 18,
                 ),
-                label: Text(
+                label: LiveTranslatedText(
                   _isSpeakingAnswer ? 'Stop speaking' : 'Listen in ${_selectedLanguage.name}',
                   style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700),
                 ),
@@ -613,10 +634,10 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
               initialValue: _speechStyle,
               onSelected: (style) => unawaited(_applySpeechStyle(style)),
               itemBuilder: (context) => const [
-                PopupMenuItem(value: 'Natural', child: Text('Natural voice')),
-                PopupMenuItem(value: 'Professional', child: Text('Professional voice')),
-                PopupMenuItem(value: 'Calm', child: Text('Calm voice')),
-                PopupMenuItem(value: 'Energetic', child: Text('Energetic voice')),
+                PopupMenuItem(value: 'Natural', child: LiveTranslatedText('Natural voice')),
+                PopupMenuItem(value: 'Professional', child: LiveTranslatedText('Professional voice')),
+                PopupMenuItem(value: 'Calm', child: LiveTranslatedText('Calm voice')),
+                PopupMenuItem(value: 'Energetic', child: LiveTranslatedText('Energetic voice')),
               ],
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -625,7 +646,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                   children: [
                     const Icon(Icons.tune_rounded, size: 16),
                     const SizedBox(width: 5),
-                    Text('Voice: $_speechStyle', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                    LiveTranslatedText('Voice: $_speechStyle', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -666,7 +687,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                     child: const Icon(Icons.track_changes_rounded, color: Color(0xFF2563EB), size: 21),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(child: Text('Try asking', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF17264A)))),
+                  Expanded(child: LiveTranslatedText('Try asking', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF17264A)))),
                 ],
               ),
               const SizedBox(height: 14),
@@ -699,7 +720,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                     child: const Icon(Icons.settings_suggest_rounded, color: Color(0xFF6366F1), size: 21),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(child: Text('How it works', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF17264A)))),
+                  Expanded(child: LiveTranslatedText('How it works', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF17264A)))),
                 ],
               ),
               const SizedBox(height: 17),
@@ -723,9 +744,9 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Your data stays private', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF14532D))),
+                          LiveTranslatedText('Your data stays private', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF14532D))),
                           const SizedBox(height: 3),
-                          Text('Your question is sent through your authenticated Retail Mind session.', style: GoogleFonts.inter(fontSize: 10.5, height: 1.45, color: const Color(0xFF47705A))),
+                          LiveTranslatedText('Your question is sent through your authenticated Retail Mind session.', style: GoogleFonts.inter(fontSize: 10.5, height: 1.45, color: const Color(0xFF47705A))),
                         ],
                       ),
                     ),
@@ -763,7 +784,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
               ),
               const SizedBox(width: 11),
               Expanded(
-                child: Text(title, style: GoogleFonts.inter(fontSize: 11.5, height: 1.4, fontWeight: FontWeight.w600, color: const Color(0xFF22345B))),
+                child: LiveTranslatedText(title, style: GoogleFonts.inter(fontSize: 11.5, height: 1.4, fontWeight: FontWeight.w600, color: const Color(0xFF22345B))),
               ),
               const SizedBox(width: 6),
               const Icon(Icons.chevron_right_rounded, color: Color(0xFF2563EB), size: 20),
@@ -783,16 +804,16 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
           height: 32,
           decoration: const BoxDecoration(color: Color(0xFFEAF0FF), shape: BoxShape.circle),
           alignment: Alignment.center,
-          child: Text('$number', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF2563EB))),
+          child: LiveTranslatedText('$number', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF2563EB))),
         ),
         const SizedBox(width: 11),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF17264A))),
+              LiveTranslatedText(title, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF17264A))),
               const SizedBox(height: 3),
-              Text(subtitle, style: GoogleFonts.inter(fontSize: 10.5, height: 1.35, color: const Color(0xFF64748B))),
+              LiveTranslatedText(subtitle, style: GoogleFonts.inter(fontSize: 10.5, height: 1.35, color: const Color(0xFF64748B))),
             ],
           ),
         ),
@@ -838,7 +859,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                       children: [
                         const Icon(Icons.auto_awesome_rounded, size: 15, color: Color(0xFF6D45E8)),
                         const SizedBox(width: 6),
-                        Text('AI BUSINESS ASSISTANT', style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 0.55, color: const Color(0xFF5538C9))),
+                        LiveTranslatedText('AI BUSINESS ASSISTANT', style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 0.55, color: const Color(0xFF5538C9))),
                       ],
                     ),
                   ),
@@ -850,7 +871,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                       children: [
                         const Icon(Icons.circle, size: 7, color: Color(0xFF16A34A)),
                         const SizedBox(width: 6),
-                        Text('Ready to help', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF167342))),
+                        LiveTranslatedText('Ready to help', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF167342))),
                       ],
                     ),
                   ),
@@ -874,7 +895,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                           ),
                         ),
                         const SizedBox(height: 9),
-                        Text('Sales, stock, customers and invoices — in the language you speak.', style: GoogleFonts.inter(fontSize: compact ? 12 : 13.5, height: 1.5, fontWeight: FontWeight.w500, color: const Color(0xFF536584))),
+                        LiveTranslatedText('Sales, stock, customers and invoices — in the language you speak.', style: GoogleFonts.inter(fontSize: compact ? 12 : 13.5, height: 1.5, fontWeight: FontWeight.w500, color: const Color(0xFF536584))),
                       ],
                     ),
                   ),
@@ -931,7 +952,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         children: [
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 5),
-          Text(label, style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w700, color: const Color(0xFF435574))),
+          LiveTranslatedText(label, style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.w700, color: const Color(0xFF435574))),
         ],
       ),
     );
@@ -982,7 +1003,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Speak in your language',
                   style: GoogleFonts.inter(
                     fontSize: 11,
@@ -1011,7 +1032,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                         .map(
                           (language) => Align(
                             alignment: Alignment.centerLeft,
-                            child: Text(
+                            child: LiveTranslatedText(
                               languageLabel(language),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1031,7 +1052,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                             alignment: AlignmentDirectional.centerStart,
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 7),
-                              child: Text(
+                              child: LiveTranslatedText(
                                 languageLabel(language),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -1050,6 +1071,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                         : (language) {
                             if (language != null) {
                               setState(() {
+                                _voiceLanguageManuallySelected = true;
                                 _selectedLanguage = language;
                                 _inputLanguageCode = language.code;
                               });
@@ -1058,7 +1080,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
                   ),
                 ),
                 const SizedBox(height: 1),
-                Text(
+                LiveTranslatedText(
                   'Voice input and spoken answers use this language. Device voice support may vary.',
                   maxLines: 2,
                   style: GoogleFonts.inter(
@@ -1110,12 +1132,12 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
               height: 19,
               alignment: Alignment.center,
               decoration: const BoxDecoration(color: Color(0xFFE6EDFF), shape: BoxShape.circle),
-              child: Text((index + 1).toString(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: const Color(0xFF3159D8))),
+              child: LiveTranslatedText((index + 1).toString(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: const Color(0xFF3159D8))),
             ),
             const SizedBox(height: 5),
-            Text(item.$2, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w800, color: const Color(0xFF17264A))),
+            LiveTranslatedText(item.$2, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w800, color: const Color(0xFF17264A))),
             const SizedBox(height: 3),
-            Text(item.$3, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 9.5, height: 1.3, color: const Color(0xFF71809B))),
+            LiveTranslatedText(item.$3, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 9.5, height: 1.3, color: const Color(0xFF71809B))),
           ],
         ),
       );
@@ -1169,7 +1191,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
       final button = OutlinedButton.icon(
         onPressed: busy ? null : (_isRecording ? _stopRecordingAndAsk : _startRecording),
         icon: Icon(_isRecording ? Icons.stop_circle_rounded : Icons.mic_rounded, size: 20),
-        label: Text(_isRecording ? 'Stop recording · ${_recordSeconds}s' : 'Tap to speak', maxLines: 1, overflow: TextOverflow.ellipsis),
+        label: LiveTranslatedText(_isRecording ? 'Stop recording · ${_recordSeconds}s' : 'Tap to speak', maxLines: 1, overflow: TextOverflow.ellipsis),
         style: OutlinedButton.styleFrom(
           foregroundColor: _isRecording ? const Color(0xFFDC2626) : const Color(0xFF5546D8),
           backgroundColor: _isRecording ? const Color(0xFFFFF1F2) : const Color(0xFFF1EEFF),
@@ -1186,7 +1208,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
       final button = ElevatedButton.icon(
         onPressed: canAsk ? () => _executeQuery(_queryController.text, languageCode: _inputLanguageCode) : null,
         icon: const Icon(Icons.auto_awesome_rounded, size: 19),
-        label: const Text('Ask Retail Mind'),
+        label: const LiveTranslatedText('Ask Retail Mind'),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF315FF4),
           foregroundColor: Colors.white,
@@ -1224,9 +1246,9 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
               ),
               const SizedBox(width: 9),
               Expanded(
-                child: Text('Ask a business question', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF17264A))),
+                child: LiveTranslatedText('Ask a business question', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF17264A))),
               ),
-              Text('TEXT OR VOICE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.55, color: const Color(0xFF8592AB))),
+              LiveTranslatedText('TEXT OR VOICE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.55, color: const Color(0xFF8592AB))),
             ],
           ),
           const SizedBox(height: 12),
@@ -1241,7 +1263,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
             onSubmitted: (_) => _executeQuery(_queryController.text, languageCode: _inputLanguageCode),
             style: GoogleFonts.inter(fontSize: 14, height: 1.5, color: const Color(0xFF17264A), fontWeight: FontWeight.w500),
             decoration: InputDecoration(
-              hintText: 'Ask about sales, revenue, customers, stock…',
+              hint: LiveTranslatedText('Ask about sales, revenue, customers, stock…'),
               hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF9AA7BD), height: 1.5),
               prefixIcon: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF6878E8), size: 20),
               filled: true,
@@ -1282,10 +1304,10 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
               const Icon(Icons.lock_outline_rounded, size: 14, color: Color(0xFF71809B)),
               const SizedBox(width: 6),
               Expanded(
-                child: Text('Your question is translated to English before your shop data is queried.', style: GoogleFonts.inter(fontSize: 10, height: 1.4, color: const Color(0xFF71809B))),
+                child: LiveTranslatedText('Your question is translated to English before your shop data is queried.', style: GoogleFonts.inter(fontSize: 10, height: 1.4, color: const Color(0xFF71809B))),
               ),
               const SizedBox(width: 8),
-              Text('${_queryController.text.length}/500', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF71809B))),
+              LiveTranslatedText('${_queryController.text.length}/500', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF71809B))),
             ],
           ),
         ],
@@ -1301,8 +1323,8 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         children: [
           const Icon(Icons.fiber_manual_record_rounded, color: Color(0xFFDC2626), size: 16),
           const SizedBox(width: 10),
-          Expanded(child: Text('Recording in ${_selectedLanguage.nativeName}. Pause as needed; the recording is kept until you tap Stop.', style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF991B1B), fontWeight: FontWeight.w600))),
-          Text('${_recordSeconds}s', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF991B1B))),
+          Expanded(child: LiveTranslatedText('Recording in ${_selectedLanguage.nativeName}. Pause as needed; the recording is kept until you tap Stop.', style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF991B1B), fontWeight: FontWeight.w600))),
+          LiveTranslatedText('${_recordSeconds}s', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF991B1B))),
         ],
       ),
     );
@@ -1316,7 +1338,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
         children: [
           const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.3, color: Color(0xFF2563EB))),
           const SizedBox(width: 11),
-          Expanded(child: Text('Transcribing ${_selectedLanguage.name}, translating to English, then querying your shop data…', style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF1D4ED8), fontWeight: FontWeight.w600))),
+          Expanded(child: LiveTranslatedText('Transcribing ${_selectedLanguage.name}, translating to English, then querying your shop data…', style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF1D4ED8), fontWeight: FontWeight.w600))),
         ],
       ),
     );
@@ -1332,19 +1354,19 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
           Row(children: [
             const Icon(Icons.translate_rounded, size: 18, color: Color(0xFF6366F1)),
             const SizedBox(width: 8),
-            Text('Voice → English', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF142B52))),
+            LiveTranslatedText('Voice → English', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF142B52))),
           ]),
           if (_originalTranscript != null) ...[
             const SizedBox(height: 12),
-            Text('What you said · ${_selectedLanguage.name}', style: GoogleFonts.inter(fontSize: 10.5, color: AppColors.textSecondary, fontWeight: FontWeight.w700)),
+            LiveTranslatedText('What you said · ${_selectedLanguage.name}', style: GoogleFonts.inter(fontSize: 10.5, color: AppColors.textSecondary, fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text(_originalTranscript!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary, height: 1.45)),
+            LiveTranslatedText(_originalTranscript!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary, height: 1.45)),
           ],
           if (_translatedEnglish != null) ...[
             const SizedBox(height: 12),
-            Text('English question sent to Retail Mind', style: GoogleFonts.inter(fontSize: 10.5, color: AppColors.textSecondary, fontWeight: FontWeight.w700)),
+            LiveTranslatedText('English question sent to Retail Mind', style: GoogleFonts.inter(fontSize: 10.5, color: AppColors.textSecondary, fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text(_translatedEnglish!, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF4338CA), fontWeight: FontWeight.w700, height: 1.45)),
+            LiveTranslatedText(_translatedEnglish!, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF4338CA), fontWeight: FontWeight.w700, height: 1.45)),
           ],
         ],
       ),
@@ -1358,7 +1380,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 20),
         const SizedBox(width: 9),
-        Expanded(child: Text(message, style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF991B1B), height: 1.45))),
+        Expanded(child: LiveTranslatedText(message, style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF991B1B), height: 1.45))),
         IconButton(onPressed: () => setState(() => _errorMessage = null), icon: const Icon(Icons.close_rounded, size: 17, color: Color(0xFF991B1B)), visualDensity: VisualDensity.compact),
       ]),
     );
@@ -1370,7 +1392,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
       children: [
         const Icon(Icons.verified_user_outlined, color: Color(0xFF94A3B8), size: 14),
         const SizedBox(width: 6),
-        Flexible(child: Text('Groq speech recognition + English question translation', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10.5, color: AppColors.textTertiary, fontWeight: FontWeight.w500))),
+        Flexible(child: LiveTranslatedText('Groq speech recognition + English question translation', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 10.5, color: AppColors.textTertiary, fontWeight: FontWeight.w500))),
       ],
     );
   }

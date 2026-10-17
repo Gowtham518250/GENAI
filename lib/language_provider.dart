@@ -3,8 +3,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class LanguageProvider extends ChangeNotifier {
   Locale _locale = const Locale('en');
+  bool _hasCompletedInitialSelection = false;
+  bool _isInitialized = false;
+
+  static const String initialLanguageSelectionKey =
+      'language_selection_completed_v1';
 
   Locale get locale => _locale;
+  bool get hasCompletedInitialSelection => _hasCompletedInitialSelection;
+  bool get isInitialized => _isInitialized;
 
   int _selectionVersion = 0;
   late final Future<void> initialized;
@@ -48,11 +55,25 @@ class LanguageProvider extends ChangeNotifier {
     final saved = prefs.getString(key) ?? prefs.getString('language_code') ?? 'en';
     final languageCode = _isSupported(saved) ? saved : 'en';
     _locale = Locale(languageCode);
+    _hasCompletedInitialSelection =
+        prefs.getBool(initialLanguageSelectionKey) ?? false;
+    _isInitialized = true;
 
     if (key != 'language_code' && prefs.getString(key) == null) {
       await prefs.setString(key, languageCode);
     }
     notifyListeners();
+  }
+
+  /// Completes the one-time language choice shown before the login/onboarding
+  /// flow. This method intentionally does not notify listeners: the language
+  /// selection page navigates immediately after this completes, avoiding a
+  /// route rebuild while its button handler is still running.
+  Future<void> completeInitialSelection(String languageCode) async {
+    await setLanguage(languageCode);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(initialLanguageSelectionKey, true);
+    _hasCompletedInitialSelection = true;
   }
 
   Future<void> setLanguage(String languageCode) async {

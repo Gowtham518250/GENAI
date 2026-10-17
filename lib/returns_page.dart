@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -49,7 +50,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
       });
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
+          .showSnackBar(SnackBar(content: LiveTranslatedText('Error: $e')));
       setState(() => _loading = false);
     }
   }
@@ -69,7 +70,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
 
     if (originalSale.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Original invoice not found')),
+        const SnackBar(content: LiveTranslatedText('Original invoice not found')),
       );
       return;
     }
@@ -113,7 +114,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Return processed! Credit Note: ${returnRecord['return_id']}'),
+          content: LiveTranslatedText('Return processed! Credit Note: ${returnRecord['return_id']}'),
           backgroundColor: Colors.green,
         ),
       );
@@ -125,7 +126,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Returns & Credit Notes'), backgroundColor: _primary),
+        appBar: AppBar(title: const LiveTranslatedText('Returns & Credit Notes'), backgroundColor: _primary),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -135,7 +136,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Returns & Credit Notes'),
+        title: const LiveTranslatedText('Returns & Credit Notes'),
         backgroundColor: _primary,
         elevation: 0,
         bottom: TabBar(
@@ -182,7 +183,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                 const SizedBox(height: 24),
 
                 // Returns List
-                Text(
+                LiveTranslatedText(
                   'Return History',
                   style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
@@ -204,12 +205,12 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
           children: [
             Icon(Icons.inbox_outlined, size: 80, color: Colors.grey.shade300),
             const SizedBox(height: 20),
-            Text(
+            LiveTranslatedText(
               'No Sales Found',
               style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               'Create a sale first to process returns',
               style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey.shade600),
             ),
@@ -224,7 +225,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Phone Number Input
-          Text(
+          LiveTranslatedText(
             'Enter Phone Number',
             style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold),
           ),
@@ -234,7 +235,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
             keyboardType: TextInputType.phone,
             onChanged: (_) => setState(() => _selectedInvoiceId = ''),
             decoration: InputDecoration(
-              hintText: 'Enter customer phone (10 digits)',
+              hint: LiveTranslatedText('Enter customer phone (10 digits)'),
               prefixIcon: const Icon(Icons.phone_rounded),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -242,7 +243,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
           ),
           const SizedBox(height: 20),
           
-          Text(
+          LiveTranslatedText(
             'Select Original Invoice (Last 3)',
             style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold),
           ),
@@ -274,7 +275,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                       Icon(Icons.info_rounded, color: Colors.amber.shade700),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
+                        child: LiveTranslatedText(
                           'Enter phone number to see available invoices',
                           style: GoogleFonts.poppins(color: Colors.amber.shade700, fontSize: 13),
                         ),
@@ -297,7 +298,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                       Icon(Icons.error_outline, color: Colors.red.shade700),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
+                        child: LiveTranslatedText(
                           'No invoices found for this phone number',
                           style: GoogleFonts.poppins(color: Colors.red.shade700, fontSize: 13),
                         ),
@@ -322,14 +323,14 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                     
                     return DropdownMenuItem(
                       value: invoiceId.toString(),
-                      child: Text('$invoiceId - $customerName (₹$amount)'),
+                      child: LiveTranslatedText('$invoiceId - $customerName (₹$amount)'),
                     );
                   }).toList(),
                   onChanged: (val) => setState(() => _selectedInvoiceId = val ?? ''),
                   decoration: const InputDecoration(
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     border: InputBorder.none,
-                    hintText: 'Choose invoice',
+                    hint: LiveTranslatedText('Choose invoice'),
                   ),
                 ),
               );
@@ -348,7 +349,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                 border: Border.all(color: Colors.blue.shade200),
               ),
               child: Center(
-                child: Text(
+                child: LiveTranslatedText(
                   'Select an invoice above to create a return',
                   style: GoogleFonts.poppins(fontSize: 14, color: Colors.blue.shade700),
                 ),
@@ -385,24 +386,24 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Invoice', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
-                  Text(_selectedInvoiceId, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  LiveTranslatedText('Invoice', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
+                  LiveTranslatedText(_selectedInvoiceId, style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Customer', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
-                  Text(sale['customer_name'] ?? 'Other', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  LiveTranslatedText('Customer', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
+                  LiveTranslatedText(sale['customer_name'] ?? 'Other', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Total Amount', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
-                  Text('₹${sale['total']}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  LiveTranslatedText('Total Amount', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
+                  LiveTranslatedText('₹${sale['total']}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                 ],
               ),
             ],
@@ -411,7 +412,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
         const SizedBox(height: 24),
 
         // Product Selection for Return
-        Text(
+        LiveTranslatedText(
           'Select Product to Return',
           style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold),
         ),
@@ -442,11 +443,11 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           item['product_name']?.toString() ?? 'Unknown',
                           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                         ),
-                        Text(
+                        LiveTranslatedText(
                           'Qty: ${item['qty']} @ ₹${item['price']}',
                           style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
                         ),
@@ -476,15 +477,15 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: Text("Return $productName"),
+          title: LiveTranslatedText("Return $productName"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: 'Quantity to Return',
-                  hintText: '1',
+                  label: LiveTranslatedText('Quantity to Return'),
+                  hint: LiveTranslatedText('1'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 onChanged: (val) => returnQty = double.tryParse(val) ?? 1,
@@ -498,22 +499,22 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                   'Customer Return',
                   'Expired',
                   'Other',
-                ].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                ].map((r) => DropdownMenuItem(value: r, child: LiveTranslatedText(r))).toList(),
                 onChanged: (val) => setState(() => reason = val ?? 'Damage/Defect'),
                 decoration: InputDecoration(
-                  labelText: 'Return Reason',
+                  label: LiveTranslatedText('Return Reason'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
+              LiveTranslatedText(
                 'Return Amount: ₹${(returnQty * salePrice).toStringAsFixed(0)}',
                 style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: _primary),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('Cancel')),
             ElevatedButton(
               onPressed: () {
                 _processReturn(
@@ -527,7 +528,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                 _tabController.animateTo(1);
               },
               style: ElevatedButton.styleFrom(backgroundColor: _primary),
-              child: const Text('Process Return'),
+              child: const LiveTranslatedText('Process Return'),
             ),
           ],
         ),
@@ -539,7 +540,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
     return _returns.isEmpty
         ? [
             Center(
-              child: Text(
+              child: LiveTranslatedText(
                 'No returns yet',
                 style: GoogleFonts.poppins(color: Colors.grey.shade600),
               ),
@@ -560,7 +561,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         returnData['return_id']?.toString() ?? 'Unknown',
                         style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                       ),
@@ -570,7 +571,7 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                           color: Colors.green.shade100,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(
+                        child: LiveTranslatedText(
                           'PROCESSED',
                           style: GoogleFonts.poppins(
                             fontSize: 10,
@@ -582,15 +583,15 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  LiveTranslatedText(
                     'Invoice: ${returnData['original_invoice_id']}',
                     style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     'Product: ${returnData['product_name']} (Qty: ${returnData['quantity_returned']})',
                     style: GoogleFonts.poppins(fontSize: 12),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     'Reason: ${returnData['reason']}',
                     style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
                   ),
@@ -598,11 +599,11 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         DateFormat('yyyy-MM-dd').format(DateTime.parse(returnData['return_date']?.toString() ?? '')),
                         style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
                       ),
-                      Text(
+                      LiveTranslatedText(
                         '₹${returnData['return_amount']}',
                         style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.orange),
                       ),
@@ -627,9 +628,9 @@ class _ReturnsPageState extends State<ReturnsPage> with SingleTickerProviderStat
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 8),
-          Text(label, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600)),
+          LiveTranslatedText(label, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600)),
           const SizedBox(height: 4),
-          Text(value, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+          LiveTranslatedText(value, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
         ],
       ),
     );

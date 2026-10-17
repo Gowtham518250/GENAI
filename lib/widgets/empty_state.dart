@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -40,7 +41,7 @@ class ModernEmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
+            LiveTranslatedText(
               title,
               style: GoogleFonts.poppins(
                 fontSize: 18,
@@ -50,7 +51,7 @@ class ModernEmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               subtitle,
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -63,7 +64,7 @@ class ModernEmptyState extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onAction,
                 icon: const Icon(Icons.add_rounded),
-                label: Text(actionLabel!),
+                label: LiveTranslatedText(actionLabel!),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6366F1),
                   foregroundColor: Colors.white,

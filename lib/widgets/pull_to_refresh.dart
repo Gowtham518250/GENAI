@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -165,7 +166,7 @@ class _SmartRefreshIndicatorState extends State<SmartRefreshIndicator> {
                     color: Color(0xFF64748B),
                   ),
                   const SizedBox(width: 6),
-                  Text(
+                  LiveTranslatedText(
                     'Updated: ${_formatTime(widget.lastUpdated!)}',
                     style: GoogleFonts.poppins(
                       fontSize: 11,

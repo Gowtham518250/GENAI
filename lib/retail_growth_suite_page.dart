@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -160,8 +161,8 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                 Expanded(child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Create shop coupon', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 17)),
-                    Text('Customers can redeem it at your online shop.', style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF64748B))),
+                    LiveTranslatedText('Create shop coupon', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 17)),
+                    LiveTranslatedText('Customers can redeem it at your online shop.', style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF64748B))),
                   ],
                 )),
               ]),
@@ -174,8 +175,8 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                       textCapitalization: TextCapitalization.characters,
                       maxLength: 50,
                       decoration: InputDecoration(
-                        labelText: 'Coupon code',
-                        hintText: 'e.g. GOWTHAM10',
+                        label: LiveTranslatedText('Coupon code'),
+                        hint: LiveTranslatedText('e.g. GOWTHAM10'),
                         prefixIcon: const Icon(Icons.confirmation_number_outlined),
                         counterText: '',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -185,12 +186,12 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                     DropdownButtonFormField<String>(
                       value: discountType,
                       decoration: InputDecoration(
-                        labelText: 'Discount type',
+                        label: LiveTranslatedText('Discount type'),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'PERCENT', child: Text('Percentage discount')),
-                        DropdownMenuItem(value: 'FIXED', child: Text('Fixed amount discount')),
+                        DropdownMenuItem(value: 'PERCENT', child: LiveTranslatedText('Percentage discount')),
+                        DropdownMenuItem(value: 'FIXED', child: LiveTranslatedText('Fixed amount discount')),
                       ],
                       onChanged: saving ? null : (value) {
                         if (value != null) setDialogState(() => discountType = value);
@@ -211,8 +212,8 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                       controller: minimumController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: 'Minimum order amount (₹)',
-                        helperText: 'Set this above zero to reward larger orders.',
+                        label: LiveTranslatedText('Minimum order amount (₹)'),
+                        helper: LiveTranslatedText('Set this above zero to reward larger orders.'),
                         prefixIcon: const Icon(Icons.shopping_bag_outlined),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
@@ -223,7 +224,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                         controller: maximumController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(
-                          labelText: 'Maximum discount (₹, optional)',
+                          label: LiveTranslatedText('Maximum discount (₹, optional)'),
                           prefixIcon: const Icon(Icons.savings_outlined),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
@@ -234,8 +235,8 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                       controller: usageController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        labelText: 'Maximum redemptions (optional)',
-                        hintText: 'Unlimited if left blank',
+                        label: LiveTranslatedText('Maximum redemptions (optional)'),
+                        hint: LiveTranslatedText('Unlimited if left blank'),
                         prefixIcon: const Icon(Icons.group_outlined),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
@@ -254,16 +255,16 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                         if (selected != null) setDialogState(() => expiryDate = selected);
                       },
                       icon: const Icon(Icons.calendar_month_rounded),
-                      label: Text(expiryLabel),
+                      label: LiveTranslatedText(expiryLabel),
                     ),
                     if (expiryDate != null)
                       TextButton(
                         onPressed: saving ? null : () => setDialogState(() => expiryDate = null),
-                        child: const Text('Remove expiry date'),
+                        child: const LiveTranslatedText('Remove expiry date'),
                       ),
                     if (dialogError.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      Align(alignment: Alignment.centerLeft, child: Text(dialogError, style: GoogleFonts.poppins(color: const Color(0xFFBE123C), fontSize: 11))),
+                      Align(alignment: Alignment.centerLeft, child: LiveTranslatedText(dialogError, style: GoogleFonts.poppins(color: const Color(0xFFBE123C), fontSize: 11))),
                     ],
                   ]),
                 ),
@@ -271,7 +272,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
               actions: [
                 TextButton(
                   onPressed: saving ? null : () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'),
+                  child: const LiveTranslatedText('Cancel'),
                 ),
                 FilledButton.icon(
                   onPressed: saving ? null : () async {
@@ -343,7 +344,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                           : '') + '.';
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Coupon ' + code + ' created. Share the code with customers.'),
+                          content: LiveTranslatedText('Coupon ' + code + ' created. Share the code with customers.'),
                           backgroundColor: const Color(0xFF15803D),
                           action: SnackBarAction(
                             label: 'Share',
@@ -364,7 +365,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                   icon: saving
                     ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.add_rounded),
-                  label: Text(saving ? 'Creating…' : 'Create coupon'),
+                  label: LiveTranslatedText(saving ? 'Creating…' : 'Create coupon'),
                 ),
               ],
             );
@@ -402,10 +403,10 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
           ),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Reward bigger baskets', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 14, color: const Color(0xFF831843)),
+            LiveTranslatedText('Reward bigger baskets', style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 14, color: const Color(0xFF831843)),
             ),
             const SizedBox(height: 3),
-            Text('Create shop-only discount codes with minimum spend and redemption limits.', style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF9D6681), height: 1.35)),
+            LiveTranslatedText('Create shop-only discount codes with minimum spend and redemption limits.', style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF9D6681), height: 1.35)),
           ])),
         ]),
         const SizedBox(height: 13),
@@ -414,7 +415,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
           child: FilledButton.icon(
             onPressed: _showCreateCouponDialog,
             icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Create coupon for my shop'),
+            label: const LiveTranslatedText('Create coupon for my shop'),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFBE185D),
               foregroundColor: Colors.white,
@@ -458,7 +459,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                 const SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
-                    Expanded(child: Text(code, style: GoogleFonts.poppins(fontWeight: FontWeight.w900, letterSpacing: .7, color: const Color(0xFF831843))),
+                    Expanded(child: LiveTranslatedText(code, style: GoogleFonts.poppins(fontWeight: FontWeight.w900, letterSpacing: .7, color: const Color(0xFF831843))),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -466,14 +467,14 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                         color: active ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(999),
                       ),
-                      child: Text(active ? 'ACTIVE' : expired ? 'EXPIRED' : 'INACTIVE',
+                      child: LiveTranslatedText(active ? 'ACTIVE' : expired ? 'EXPIRED' : 'INACTIVE',
                         style: GoogleFonts.poppins(fontSize: 8, fontWeight: FontWeight.w900, color: active ? const Color(0xFF166534) : const Color(0xFF64748B))),
                     ),
                   ]),
                   const SizedBox(height: 4),
-                  Text(detail, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF1F2937))),
+                  LiveTranslatedText(detail, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF1F2937))),
                   const SizedBox(height: 3),
-                  Text(
+                  LiveTranslatedText(
                     (minimum > 0 ? 'Min. order ₹' + minimum.toStringAsFixed(0) : 'Any order') +
                     ' · ' + (limit == null ? 'Unlimited uses' : used.toString() + ' / ' + limit.toString() + ' uses'),
                     style: GoogleFonts.poppins(fontSize: 9.5, color: const Color(0xFF64748B)),
@@ -506,7 +507,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
     final branches=n(overview['branches']);
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
-      appBar: AppBar(title:Text('Retail Growth',style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),backgroundColor:Colors.white,foregroundColor:const Color(0xFF111827),elevation:0,actions:[IconButton(onPressed:loading?null:_load,icon:const Icon(Icons.refresh_rounded))]),
+      appBar: AppBar(title:LiveTranslatedText('Retail Growth',style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),backgroundColor:Colors.white,foregroundColor:const Color(0xFF111827),elevation:0,actions:[IconButton(onPressed:loading?null:_load,icon:const Icon(Icons.refresh_rounded))]),
       body:RefreshIndicator(onRefresh:_load,color:const Color(0xFF5B3DF5),child:ListView(padding:const EdgeInsets.all(16),children:[
         _hero(),
         if(error.isNotEmpty) ...[const SizedBox(height:12),_error(error)],
@@ -557,9 +558,9 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
     );
   }
 
-  Widget _hero()=>Container(padding:const EdgeInsets.all(20),decoration:BoxDecoration(gradient:const LinearGradient(colors:[Color(0xFF11183F),Color(0xFF4C1D95),Color(0xFF5B3DF5)]),borderRadius:BorderRadius.circular(26),boxShadow:[BoxShadow(color:Color(0x334C1D95),blurRadius:28,offset:Offset(0,14))]),child:Row(children:[Container(width:52,height:52,decoration:BoxDecoration(color:Colors.white12,borderRadius:BorderRadius.circular(16)),child:const Icon(Icons.auto_awesome_rounded,color:Colors.white,size:27)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Retail Growth Suite',style:GoogleFonts.poppins(color:Colors.white,fontSize:20,fontWeight:FontWeight.w800)),const SizedBox(height:3),Text('AI insights, smart inventory, branches, delivery, loyalty, promotions and security.',style:GoogleFonts.poppins(color:Colors.white70,fontSize:11.5,height:1.4))]))]));
-  Widget _title(String a,String b)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(a,style:GoogleFonts.poppins(fontSize:17,fontWeight:FontWeight.w800,color:const Color(0xFF111827))),const SizedBox(height:2),Text(b,style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF94A3B8)))]);
-  Widget _metric(IconData icon,String label,String value,Color color)=>Container(padding:const EdgeInsets.all(11),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(17),border:Border.all(color:color.withValues(alpha:.12))),child:Row(children:[Container(width:38,height:38,decoration:BoxDecoration(color:color.withValues(alpha:.1),borderRadius:BorderRadius.circular(12)),child:Icon(icon,color:color,size:18)),const SizedBox(width:8),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Text(label,maxLines:1,overflow:TextOverflow.ellipsis,style:GoogleFonts.poppins(fontSize:9,color:const Color(0xFF64748B))),const SizedBox(height:2),Text(value,maxLines:1,overflow:TextOverflow.ellipsis,style:GoogleFonts.poppins(fontSize:14,fontWeight:FontWeight.w800,color:const Color(0xFF172033)))]))]));
+  Widget _hero()=>Container(padding:const EdgeInsets.all(20),decoration:BoxDecoration(gradient:const LinearGradient(colors:[Color(0xFF11183F),Color(0xFF4C1D95),Color(0xFF5B3DF5)]),borderRadius:BorderRadius.circular(26),boxShadow:[BoxShadow(color:Color(0x334C1D95),blurRadius:28,offset:Offset(0,14))]),child:Row(children:[Container(width:52,height:52,decoration:BoxDecoration(color:Colors.white12,borderRadius:BorderRadius.circular(16)),child:const Icon(Icons.auto_awesome_rounded,color:Colors.white,size:27)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[LiveTranslatedText('Retail Growth Suite',style:GoogleFonts.poppins(color:Colors.white,fontSize:20,fontWeight:FontWeight.w800)),const SizedBox(height:3),LiveTranslatedText('AI insights, smart inventory, branches, delivery, loyalty, promotions and security.',style:GoogleFonts.poppins(color:Colors.white70,fontSize:11.5,height:1.4))]))]));
+  Widget _title(String a,String b)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[LiveTranslatedText(a,style:GoogleFonts.poppins(fontSize:17,fontWeight:FontWeight.w800,color:const Color(0xFF111827))),const SizedBox(height:2),LiveTranslatedText(b,style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF94A3B8)))]);
+  Widget _metric(IconData icon,String label,String value,Color color)=>Container(padding:const EdgeInsets.all(11),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(17),border:Border.all(color:color.withValues(alpha:.12))),child:Row(children:[Container(width:38,height:38,decoration:BoxDecoration(color:color.withValues(alpha:.1),borderRadius:BorderRadius.circular(12)),child:Icon(icon,color:color,size:18)),const SizedBox(width:8),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[LiveTranslatedText(label,maxLines:1,overflow:TextOverflow.ellipsis,style:GoogleFonts.poppins(fontSize:9,color:const Color(0xFF64748B))),const SizedBox(height:2),LiveTranslatedText(value,maxLines:1,overflow:TextOverflow.ellipsis,style:GoogleFonts.poppins(fontSize:14,fontWeight:FontWeight.w800,color:const Color(0xFF172033)))]))]));
   Widget _copilotCard() {
     return Container(
       padding: const EdgeInsets.all(15),
@@ -574,7 +575,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
             controller: copilot,
             onSubmitted: (_) => ask(),
             decoration: InputDecoration(
-              hintText: 'Ask about stock, profit, returns, delivery or online orders…',
+              hint: LiveTranslatedText('Ask about stock, profit, returns, delivery or online orders…'),
               prefixIcon: const Icon(
                 Icons.psychology_rounded,
                 color: Color(0xFF6366F1),
@@ -603,7 +604,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
               'Shop summary',
             ].map((question) {
               return ActionChip(
-                label: Text(
+                label: LiveTranslatedText(
                   question,
                   style: GoogleFonts.poppins(
                     fontSize: 9.5,
@@ -625,7 +626,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                   color: const Color(0xFFEEF2FF),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   answer,
                   style: GoogleFonts.poppins(
                     fontSize: 11.5,
@@ -640,7 +641,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
             const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text(
+              child: LiveTranslatedText(
                 'Recent Copilot questions',
                 style: GoogleFonts.poppins(
                   fontSize: 10,
@@ -659,7 +660,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                   size: 17,
                   color: Color(0xFF818CF8),
                 ),
-                title: Text(
+                title: LiveTranslatedText(
                   item['question']?.toString() ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -668,7 +669,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                subtitle: Text(
+                subtitle: LiveTranslatedText(
                   item['answer']?.toString() ?? '',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -685,7 +686,7 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
     );
   }
 
-  Widget _reorderRow(Map<String,dynamic> x)=>Container(margin:const EdgeInsets.only(bottom:8),padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFFE2E8F0))),child:Row(children:[Icon(x['priority']=='CRITICAL'?Icons.error_rounded:Icons.warning_amber_rounded,color:x['priority']=='CRITICAL'?Colors.red:Colors.orange),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(x['product_name']?.toString()??'Product',style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),Text('${x['current_stock']} stock · ${x['estimated_days_remaining']??'—'} days cover',style:GoogleFonts.poppins(fontSize:10,color:const Color(0xFF64748B)))])),Text('Order '+x['suggested_reorder_quantity'].toString(),style:GoogleFonts.poppins(fontSize:10.5,fontWeight:FontWeight.w800,color:const Color(0xFF4F46E5)))]));
+  Widget _reorderRow(Map<String,dynamic> x)=>Container(margin:const EdgeInsets.only(bottom:8),padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFFE2E8F0))),child:Row(children:[Icon(x['priority']=='CRITICAL'?Icons.error_rounded:Icons.warning_amber_rounded,color:x['priority']=='CRITICAL'?Colors.red:Colors.orange),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[LiveTranslatedText(x['product_name']?.toString()??'Product',style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),LiveTranslatedText('${x['current_stock']} stock · ${x['estimated_days_remaining']??'—'} days cover',style:GoogleFonts.poppins(fontSize:10,color:const Color(0xFF64748B)))])),LiveTranslatedText('Order '+x['suggested_reorder_quantity'].toString(),style:GoogleFonts.poppins(fontSize:10.5,fontWeight:FontWeight.w800,color:const Color(0xFF4F46E5)))]));
   Widget _returnRow(Map<String,dynamic> x){
     final id=n(x['id']);
     final status=x['status']?.toString()??'REQUESTED';
@@ -697,18 +698,18 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
         Row(children:[
           const Icon(Icons.assignment_return_rounded,color:Color(0xFFEF4444)),
           const SizedBox(width:8),
-          Expanded(child:Text('Order #${x['order_id']}',style:GoogleFonts.poppins(fontWeight:FontWeight.w800))),
-          Text('₹${d(x['refund_amount']).toStringAsFixed(0)}',style:GoogleFonts.poppins(fontWeight:FontWeight.w800,color:const Color(0xFFB91C1C))),
+          Expanded(child:LiveTranslatedText('Order #${x['order_id']}',style:GoogleFonts.poppins(fontWeight:FontWeight.w800))),
+          LiveTranslatedText('₹${d(x['refund_amount']).toStringAsFixed(0)}',style:GoogleFonts.poppins(fontWeight:FontWeight.w800,color:const Color(0xFFB91C1C))),
         ]),
         const SizedBox(height:6),
-        Text(x['reason']?.toString()??'No reason',style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF64748B))),
+        LiveTranslatedText(x['reason']?.toString()??'No reason',style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF64748B))),
         const SizedBox(height:10),
         if(status=='REQUESTED') Row(children:[
-          Expanded(child:OutlinedButton.icon(onPressed:()=>decideReturn(id,false),icon:const Icon(Icons.close_rounded,size:15),label:const Text('Reject'))),
+          Expanded(child:OutlinedButton.icon(onPressed:()=>decideReturn(id,false),icon:const Icon(Icons.close_rounded,size:15),label:const LiveTranslatedText('Reject'))),
           const SizedBox(width:8),
-          Expanded(child:FilledButton.icon(onPressed:()=>decideReturn(id,true),icon:const Icon(Icons.check_rounded,size:15),label:const Text('Approve'))),
+          Expanded(child:FilledButton.icon(onPressed:()=>decideReturn(id,true),icon:const Icon(Icons.check_rounded,size:15),label:const LiveTranslatedText('Approve'))),
         ]) else if(status=='REFUND_PENDING')
-          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:()=>markRefunded(id),icon:const Icon(Icons.payments_rounded,size:15),label:const Text('Mark refunded'))),
+          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:()=>markRefunded(id),icon:const Icon(Icons.payments_rounded,size:15),label:const LiveTranslatedText('Mark refunded'))),
       ]),
     );
   }
@@ -726,10 +727,10 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
         Container(width:42,height:42,decoration:BoxDecoration(color:const Color(0xFFEFF6FF),borderRadius:BorderRadius.circular(13)),child:const Icon(Icons.local_shipping_rounded,color:Color(0xFF2563EB))),
         const SizedBox(width:10),
         Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Text('Order #${x['order_id']}',style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),
-          Text('${x['driver_name']} · ${status.replaceAll('_',' ')}',style:GoogleFonts.poppins(fontSize:9.5,color:const Color(0xFF64748B))),
+          LiveTranslatedText('Order #${x['order_id']}',style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),
+          LiveTranslatedText('${x['driver_name']} · ${status.replaceAll('_',' ')}',style:GoogleFonts.poppins(fontSize:9.5,color:const Color(0xFF64748B))),
         ])),
-        if(next!=null) FilledButton(onPressed:()=>updateDelivery(id,next),child:Text(label,style:const TextStyle(fontSize:10))),
+        if(next!=null) FilledButton(onPressed:()=>updateDelivery(id,next),child:LiveTranslatedText(label,style:const TextStyle(fontSize:10))),
       ]),
     );
   }
@@ -739,18 +740,18 @@ class _RetailGrowthSuitePageState extends State<RetailGrowthSuitePage> {
     decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFFE2E8F0))),
     child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       Row(children:[
-        Expanded(child:Text('30-day intelligence',style:GoogleFonts.poppins(fontWeight:FontWeight.w800))),
-        Text('${List<dynamic>.from(analytics['top_products']??[]).length} top products',style:GoogleFonts.poppins(fontSize:10,color:const Color(0xFF64748B))),
+        Expanded(child:LiveTranslatedText('30-day intelligence',style:GoogleFonts.poppins(fontWeight:FontWeight.w800))),
+        LiveTranslatedText('${List<dynamic>.from(analytics['top_products']??[]).length} top products',style:GoogleFonts.poppins(fontSize:10,color:const Color(0xFF64748B))),
       ]),
       const SizedBox(height:10),
-      Text(
+      LiveTranslatedText(
         'Revenue ₹${d((analytics['sales']??{})['revenue']).toStringAsFixed(0)} · Online ₹${d((analytics['online']??{})['revenue']).toStringAsFixed(0)} · Profit estimate ₹${d((analytics['sales']??{})['profit_estimate']).toStringAsFixed(0)}',
         style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF475569)),
       ),
     ]),
   );
-  Widget _security()=>Container(padding:const EdgeInsets.all(15),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFFE2E8F0))),child:Text('JWT RBAC · rate limiting · restricted CORS · audit logging\n\nActive sessions: '+n(security['active_sessions']).toString(),style:GoogleFonts.poppins(fontSize:11,color:const Color(0xFF475569),height:1.5)));
-  Widget _feature(IconData icon,String title,String subtitle,Color color)=>Container(margin:const EdgeInsets.only(bottom:9),padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFFE2E8F0))),child:Row(children:[Container(width:42,height:42,decoration:BoxDecoration(color:color.withValues(alpha:.1),borderRadius:BorderRadius.circular(13)),child:Icon(icon,color:color)),const SizedBox(width:11),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),const SizedBox(height:3),Text(subtitle,style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF64748B)))]))]));
-  Widget _error(String s)=>Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:const Color(0xFFFFF1F2),borderRadius:BorderRadius.circular(14),border:Border.all(color:const Color(0xFFFECACA))),child:Text(s,style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFFBE123C))));
-  Widget _empty(String s)=>Container(width:double.infinity,padding:const EdgeInsets.all(17),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(15),border:Border.all(color:const Color(0xFFE2E8F0))),child:Text(s,style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF64748B))));
+  Widget _security()=>Container(padding:const EdgeInsets.all(15),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(18),border:Border.all(color:const Color(0xFFE2E8F0))),child:LiveTranslatedText('JWT RBAC · rate limiting · restricted CORS · audit logging\n\nActive sessions: '+n(security['active_sessions']).toString(),style:GoogleFonts.poppins(fontSize:11,color:const Color(0xFF475569),height:1.5)));
+  Widget _feature(IconData icon,String title,String subtitle,Color color)=>Container(margin:const EdgeInsets.only(bottom:9),padding:const EdgeInsets.all(14),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16),border:Border.all(color:const Color(0xFFE2E8F0))),child:Row(children:[Container(width:42,height:42,decoration:BoxDecoration(color:color.withValues(alpha:.1),borderRadius:BorderRadius.circular(13)),child:Icon(icon,color:color)),const SizedBox(width:11),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[LiveTranslatedText(title,style:GoogleFonts.poppins(fontWeight:FontWeight.w800)),const SizedBox(height:3),LiveTranslatedText(subtitle,style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF64748B)))]))]));
+  Widget _error(String s)=>Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:const Color(0xFFFFF1F2),borderRadius:BorderRadius.circular(14),border:Border.all(color:const Color(0xFFFECACA))),child:LiveTranslatedText(s,style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFFBE123C))));
+  Widget _empty(String s)=>Container(width:double.infinity,padding:const EdgeInsets.all(17),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(15),border:Border.all(color:const Color(0xFFE2E8F0))),child:LiveTranslatedText(s,style:GoogleFonts.poppins(fontSize:10.5,color:const Color(0xFF64748B))));
 }

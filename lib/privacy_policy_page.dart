@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -8,7 +9,7 @@ class PrivacyPolicyPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Privacy Policy',
+        title: LiveTranslatedText('Privacy Policy',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF1F2937),
@@ -52,11 +53,11 @@ class PrivacyPolicyPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.poppins(
+          LiveTranslatedText(title, style: GoogleFonts.poppins(
             fontSize: 15, fontWeight: FontWeight.w700,
             color: const Color(0xFF111827))),
           const SizedBox(height: 6),
-          Text(body, style: GoogleFonts.poppins(
+          LiveTranslatedText(body, style: GoogleFonts.poppins(
             fontSize: 13, height: 1.7,
             color: const Color(0xFF4B5563))),
         ],

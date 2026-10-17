@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -127,13 +128,13 @@ class _LanguageSwitcherState extends State<LanguageSwitcher> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            LiveTranslatedText(
               _languages[_currentLanguage]?.flag ?? '🌐',
               style: const TextStyle(fontSize: 20),
             ),
             if (widget.showLabel) ...[
               const SizedBox(width: AppSpacing.sm),
-              Text(
+              LiveTranslatedText(
                 _languages[_currentLanguage]?.name ?? 'English',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -180,7 +181,7 @@ class _LanguageDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(
+      title: LiveTranslatedText(
         'Select Language / భాష ఎంచుకోండి',
         style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
       ),
@@ -196,17 +197,17 @@ class _LanguageDialog extends StatelessWidget {
             final isSelected = langCode == currentLanguage;
 
             return ListTile(
-              leading: Text(
+              leading: LiveTranslatedText(
                 langInfo.flag,
                 style: const TextStyle(fontSize: 24),
               ),
-              title: Text(
+              title: LiveTranslatedText(
                 langInfo.name,
                 style: GoogleFonts.poppins(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
-              subtitle: Text(
+              subtitle: LiveTranslatedText(
                 langInfo.nativeName,
                 style: GoogleFonts.poppins(fontSize: 12),
               ),
@@ -330,7 +331,7 @@ class _LanguageTransitionOverlayState extends State<LanguageTransitionOverlay>
                         children: [
                           const CircularProgressIndicator(),
                           const SizedBox(height: AppSpacing.md),
-                          Text(
+                          LiveTranslatedText(
                             'Changing language...',
                             style: GoogleFonts.poppins(),
                           ),

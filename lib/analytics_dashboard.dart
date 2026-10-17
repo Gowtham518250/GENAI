@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:async';
 import 'sync_service.dart';
 import 'cache_consistency_service.dart';
@@ -158,7 +159,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
       });
     } catch (e) {
       if (mounted && !silent) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText('Error: $e')));
       }
       if (mounted) setState(() => _loading = false);
     }
@@ -168,7 +169,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Enterprise Analytics')),
+        appBar: AppBar(title: const LiveTranslatedText('Enterprise Analytics')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -191,7 +192,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Enterprise Analytics', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+        title: LiveTranslatedText('Enterprise Analytics', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
         elevation: 0,
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -212,7 +213,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                       segments: List.generate(_periodLabels.length, (i) {
                         return ButtonSegment(
                           value: i,
-                          label: Text(_periodLabels[i], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+                          label: LiveTranslatedText(_periodLabels[i], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
                         );
                       }),
                       selected: {_selectedFilter},
@@ -233,7 +234,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                       Icon(growth >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
                           size: 16, color: growth >= 0 ? Colors.green : Colors.red),
                       const SizedBox(width: 4),
-                      Text(
+                      LiveTranslatedText(
                         '${growth.abs().toStringAsFixed(1)}% vs previous period',
                         style: GoogleFonts.poppins(fontSize: 12, color: growth >= 0 ? Colors.green : Colors.red, fontWeight: FontWeight.w600),
                       ),
@@ -264,7 +265,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
 
               // Hourly Distribution Chart
               if (_hourlyDistribution.isNotEmpty) ...[
-                Text('Hourly Sales Distribution', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                LiveTranslatedText('Hourly Sales Distribution', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
                 const SizedBox(height: 12),
                 Container(
                   height: 250,
@@ -280,7 +281,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
               ],
 
               // Top Products
-              Text('Top Selling Products', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+              LiveTranslatedText('Top Selling Products', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
               const SizedBox(height: 12),
               ..._buildTopProductsList(),
               const SizedBox(height: 80), // room for the FAB
@@ -291,7 +292,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.indigoAccent,
         icon: const Icon(Icons.description, color: Colors.white),
-        label: Text('Export GST JSON (Tally)',
+        label: LiveTranslatedText('Export GST JSON (Tally)',
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
         onPressed: () async {
           final prefs = await SharedPreferences.getInstance();
@@ -300,14 +301,14 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('📄 Generating CA-ready GST Report...')));
+                const SnackBar(content: LiveTranslatedText('📄 Generating CA-ready GST Report...')));
           }
 
           final result = await TallyExportService.exportGstReturns(shopName, shopGst);
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(result['message'] ?? 'Export complete'),
+              content: LiveTranslatedText(result['message'] ?? 'Export complete'),
               backgroundColor: result['success'] == true ? Colors.green : Colors.red,
             ));
           }
@@ -330,9 +331,9 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
         children: [
           Icon(icon, color: color, size: 28),
           const SizedBox(height: 8),
-          Text(label, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black54)),
+          LiveTranslatedText(label, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black54)),
           const SizedBox(height: 4),
-          Text(value, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+          LiveTranslatedText(value, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
         ],
       ),
     );
@@ -369,7 +370,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
       return [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Text('No sales in this period', style: GoogleFonts.poppins(color: Colors.black54)),
+          child: LiveTranslatedText('No sales in this period', style: GoogleFonts.poppins(color: Colors.black54)),
         ),
       ];
     }
@@ -387,8 +388,8 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(entry.key, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.black)),
-            Text('${entry.value} sold', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.bold)),
+            LiveTranslatedText(entry.key, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.black)),
+            LiveTranslatedText('${entry.value} sold', style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.bold)),
           ],
         ),
       );

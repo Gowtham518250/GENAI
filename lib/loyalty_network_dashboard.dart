@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -39,7 +40,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xAA03030D),
-        title: Text(
+        title: LiveTranslatedText(
           '🌐 Loyalty Network & Tier Benefits',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
@@ -90,7 +91,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
             const SizedBox(height: 20),
 
             // Participating Shops
-            Text(
+            LiveTranslatedText(
               'Participating Shops (${shops.length})',
               style: GoogleFonts.poppins(
                 fontSize: 16,
@@ -105,7 +106,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
             const SizedBox(height: 20),
 
             // Transfer History
-            Text(
+            LiveTranslatedText(
               'Recent Transfers',
               style: GoogleFonts.poppins(
                 fontSize: 16,
@@ -127,7 +128,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                       border: Border.all(color: const Color(0xFFE5E7EB)),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       'No transfers yet. Start earning and transfer points across the network!',
                       style: GoogleFonts.poppins(
                         fontSize: 13,
@@ -155,14 +156,14 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                LiveTranslatedText(
                                   '${t['points']} points → Shop ${t['to_shop_id']}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                Text(
+                                LiveTranslatedText(
                                   '${t['tier']} • -${t['network_fee']} fee',
                                   style: GoogleFonts.poppins(
                                     fontSize: 11,
@@ -172,7 +173,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                               ],
                             ),
                           ),
-                          Text(
+                          LiveTranslatedText(
                             '+${t['effective_points']}',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
@@ -207,7 +208,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             'Loyalty Network',
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -215,7 +216,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             '${shops.length} shops • 45K+ customers',
             style: GoogleFonts.poppins(
               fontSize: 22,
@@ -240,7 +241,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
   Widget _buildStatPill(String value, String label) {
     return Column(
       children: [
-        Text(
+        LiveTranslatedText(
           value,
           style: GoogleFonts.poppins(
             fontSize: 16,
@@ -248,7 +249,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
             color: Colors.white,
           ),
         ),
-        Text(
+        LiveTranslatedText(
           label,
           style: GoogleFonts.poppins(
             fontSize: 11,
@@ -288,7 +289,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       shop['shop_name'] ?? 'Shop',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
@@ -296,7 +297,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                         color: const Color(0xFF1F2937),
                       ),
                     ),
-                    Text(
+                    LiveTranslatedText(
                       shop['category'] ?? 'General',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -314,7 +315,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                       : const Color(0xFFDEF7EC),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   '+${shop['tier_discount']}%',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
@@ -331,7 +332,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              LiveTranslatedText(
                 '${shop['customers_using_loyalty'] ?? 0} customers',
                 style: GoogleFonts.poppins(
                   fontSize: 11,
@@ -348,7 +349,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   'Transfer',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
@@ -368,18 +369,18 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
+        title: LiveTranslatedText(
           'Transfer Points',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
-        content: Text(
+        content: LiveTranslatedText(
           'Transfer loyalty points to ${shop['shop_name']}?',
           style: GoogleFonts.poppins(fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
+            child: LiveTranslatedText(
               'Cancel',
               style: GoogleFonts.poppins(color: const Color(0xFF6B7280)),
             ),
@@ -389,7 +390,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
+                  content: LiveTranslatedText(
                     '✅ Transfer initiated to ${shop['shop_name']}',
                     style: GoogleFonts.poppins(),
                   ),
@@ -400,7 +401,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6366F1),
             ),
-            child: Text(
+            child: LiveTranslatedText(
               'Transfer',
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
@@ -450,7 +451,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
             const SizedBox(height: 20),
 
             // Benefits list
-            Text(
+            LiveTranslatedText(
               'Your Benefits',
               style: GoogleFonts.poppins(
                 fontSize: 16,
@@ -476,7 +477,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
             const SizedBox(height: 20),
 
             // Benefit redemption history
-            Text(
+            LiveTranslatedText(
               'Redemption History',
               style: GoogleFonts.poppins(
                 fontSize: 16,
@@ -499,7 +500,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                       border: Border.all(color: const Color(0xFFE5E7EB)),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       'No redemptions yet. Activate a benefit to get started!',
                       style: GoogleFonts.poppins(
                         fontSize: 13,
@@ -542,7 +543,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             '🏆 Current Tier',
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -550,7 +551,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             currentTier,
             style: GoogleFonts.poppins(
               fontSize: 28,
@@ -565,14 +566,14 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'Progress to next',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.8),
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     '$totalPoints / ${totalPoints + pointsToNext} points',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -637,7 +638,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   isLocked ? '🔐 Tier Locked' : '🔓 Lock Expired',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
@@ -648,7 +649,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LiveTranslatedText(
                   isLocked
                       ? 'Expires ${lock['lock_expires_at']?.toString().split('T')[0]}'
                       : 'Tier can be downgraded',
@@ -678,7 +679,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
       ),
       child: Row(
         children: [
-          Text(
+          LiveTranslatedText(
             benefit['icon'] ?? '✓',
             style: const TextStyle(fontSize: 18),
           ),
@@ -687,14 +688,14 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   benefit['name'] ?? 'Benefit',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                Text(
+                LiveTranslatedText(
                   benefit['description'] ?? '',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
@@ -724,7 +725,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LiveTranslatedText(
                 redemption['benefit_id']?.toString().replaceAll('_', ' ') ??
                     'Benefit',
                 style: GoogleFonts.poppins(
@@ -732,7 +733,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              Text(
+              LiveTranslatedText(
                 redemption['redeemed_at']?.toString().split('T')[0] ?? '',
                 style: GoogleFonts.poppins(
                   fontSize: 10,
@@ -741,7 +742,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
               ),
             ],
           ),
-          Text(
+          LiveTranslatedText(
             '+${redemption['value']} value',
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -779,7 +780,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
             const SizedBox(height: 20),
 
             // Moat Factors Breakdown
-            Text(
+            LiveTranslatedText(
               'Moat Factors',
               style: GoogleFonts.poppins(
                 fontSize: 16,
@@ -803,7 +804,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'Tier Lock Status',
                     style: GoogleFonts.poppins(
                       fontSize: 13,
@@ -812,7 +813,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  LiveTranslatedText(
                     'Lock expires in ${moat['lock_days_remaining']} days',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -838,7 +839,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'Switching Cost',
                     style: GoogleFonts.poppins(
                       fontSize: 13,
@@ -850,7 +851,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         '${moat['switching_cost'] ?? 0} points',
                         style: GoogleFonts.poppins(
                           fontSize: 18,
@@ -858,7 +859,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                           color: Colors.white,
                         ),
                       ),
-                      Text(
+                      LiveTranslatedText(
                         'to switch',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
@@ -893,7 +894,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             '$scoreEmoji Your Retention Moat',
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -908,7 +909,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     '$score',
                     style: GoogleFonts.poppins(
                       fontSize: 44,
@@ -916,7 +917,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                       color: Colors.white,
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     strength,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -934,7 +935,7 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
                   color: Colors.white.withValues(alpha: 0.2),
                 ),
                 child: Center(
-                  child: Text(
+                  child: LiveTranslatedText(
                     _getMoatStrengthBars(strength),
                     style: const TextStyle(fontSize: 32),
                   ),
@@ -1001,14 +1002,14 @@ class _LoyaltyNetworkDashboardState extends State<LoyaltyNetworkDashboard>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     entry.key,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Text(
+                  LiveTranslatedText(
                     '${entry.value} pts',
                     style: GoogleFonts.poppins(
                       fontSize: 12,

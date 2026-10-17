@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -119,7 +120,7 @@ class _DefaultErrorWidget extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text(
+                LiveTranslatedText(
                   'Something went wrong',
                   style: GoogleFonts.poppins(
                     fontSize: 20,
@@ -128,7 +129,7 @@ class _DefaultErrorWidget extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(
+                LiveTranslatedText(
                   error.toString(),
                   style: GoogleFonts.poppins(
                     fontSize: 14,
@@ -140,7 +141,7 @@ class _DefaultErrorWidget extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: onRetry,
                   icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Try Again'),
+                  label: const LiveTranslatedText('Try Again'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFEF4444),
                     foregroundColor: Colors.white,
@@ -194,7 +195,7 @@ class ErrorSnackBar {
             const Icon(Icons.error_outline_rounded, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 message,
                 style: GoogleFonts.poppins(fontSize: 14),
               ),
@@ -223,7 +224,7 @@ class ErrorSnackBar {
             const Icon(Icons.check_circle_rounded, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 message,
                 style: GoogleFonts.poppins(fontSize: 14),
               ),
@@ -245,7 +246,7 @@ class ErrorSnackBar {
             const Icon(Icons.warning_rounded, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 message,
                 style: GoogleFonts.poppins(fontSize: 14),
               ),
@@ -267,7 +268,7 @@ class ErrorSnackBar {
             const Icon(Icons.info_rounded, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 message,
                 style: GoogleFonts.poppins(fontSize: 14),
               ),

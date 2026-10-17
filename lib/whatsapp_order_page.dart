@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 // =============================================================================
 // whatsapp_order_page.dart  —  V3 SMART WHATSAPP ORDER INTAKE
 // =============================================================================
@@ -290,7 +291,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
   void _snack(String msg, {bool error = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: GoogleFonts.rajdhani(fontSize: 14, fontWeight: FontWeight.w600)),
+      content: LiveTranslatedText(msg, style: GoogleFonts.rajdhani(fontSize: 14, fontWeight: FontWeight.w600)),
       backgroundColor: error ? const Color(0xFFBF360C) : const Color(0xFF1B5E20),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -359,9 +360,9 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('WhatsApp Order',
+              LiveTranslatedText('WhatsApp Order',
                 style: GoogleFonts.rajdhani(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-              Text('Paste → Parse → Bill',
+              LiveTranslatedText('Paste → Parse → Bill',
                 style: GoogleFonts.rajdhani(color: const Color(0xFF546E7A), fontSize: 11)),
             ],
           ),
@@ -400,7 +401,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('SUPPORTED FORMATS',
+            LiveTranslatedText('SUPPORTED FORMATS',
               style: GoogleFonts.rajdhani(
                 color: const Color(0xFF42A5F5), fontSize: 11,
                 fontWeight: FontWeight.w700, letterSpacing: 1.5,
@@ -411,7 +412,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(e.$1,
+                  LiveTranslatedText(e.$1,
                     style: GoogleFonts.rajdhani(color: const Color(0xFF7986CB), fontSize: 11,
                       fontWeight: FontWeight.w600, letterSpacing: 0.5)),
                   const SizedBox(height: 3),
@@ -428,7 +429,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: const Color(0xFF263238), width: 1),
                       ),
-                      child: Text(e.$2,
+                      child: LiveTranslatedText(e.$2,
                         style: GoogleFonts.sourceCodePro(
                           color: const Color(0xFF80CBC4), fontSize: 12, height: 1.5)),
                     ),
@@ -436,7 +437,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
                 ],
               ),
             )),
-            Text('Tap any example to load it',
+            LiveTranslatedText('Tap any example to load it',
               style: GoogleFonts.rajdhani(color: const Color(0xFF37474F), fontSize: 11)),
           ],
         ),
@@ -459,14 +460,14 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
               children: [
                 const Icon(Icons.message_rounded, color: Color(0xFF4CAF50), size: 16),
                 const SizedBox(width: 8),
-                Text('Order Text',
+                LiveTranslatedText('Order Text',
                   style: GoogleFonts.rajdhani(color: const Color(0xFF546E7A), fontSize: 12,
                     fontWeight: FontWeight.w600, letterSpacing: 0.5)),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: _pasteFromClipboard,
                   icon: const Icon(Icons.content_paste_rounded, size: 14),
-                  label: Text('Paste',
+                  label: LiveTranslatedText('Paste',
                     style: GoogleFonts.rajdhani(fontSize: 12, fontWeight: FontWeight.w600)),
                   style: TextButton.styleFrom(
                     foregroundColor: const Color(0xFF42A5F5),
@@ -488,7 +489,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
             maxLines: 7,
             style: GoogleFonts.notoSans(color: Colors.white, fontSize: 14, height: 1.6),
             decoration: InputDecoration(
-              hintText: 'Paste customer\'s WhatsApp order here…\n\nE.g:\n2 kg Atta 60, 1 Oil 150\nSugar 1kg 45',
+              hint: LiveTranslatedText('Paste customer\'s WhatsApp order here…\n\nE.g:\n2 kg Atta 60, 1 Oil 150\nSugar 1kg 45'),
               hintStyle: GoogleFonts.notoSans(
                 color: const Color(0xFF263238), fontSize: 13, height: 1.6),
               border: InputBorder.none,
@@ -518,7 +519,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
         children: [
           const Icon(Icons.auto_fix_high_rounded, size: 18),
           const SizedBox(width: 8),
-          Text('Smart Parse',
+          LiveTranslatedText('Smart Parse',
             style: GoogleFonts.rajdhani(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
         ],
       ),
@@ -543,14 +544,14 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
                     (_shimmerCtrl.value + 0.3).clamp(0.0, 1.0),
                   ],
                 ).createShader(bounds),
-                child: Text('Parsing order…',
+                child: LiveTranslatedText('Parsing order…',
                   style: GoogleFonts.rajdhani(fontSize: 16, fontWeight: FontWeight.w600,
                     color: Colors.white)),
               );
             },
           ),
           const SizedBox(height: 8),
-          Text('Detecting items, quantities & prices',
+          LiveTranslatedText('Detecting items, quantities & prices',
             style: GoogleFonts.rajdhani(color: const Color(0xFF37474F), fontSize: 12)),
         ],
       ),
@@ -563,13 +564,13 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          Text('PARSED ITEMS',
+          LiveTranslatedText('PARSED ITEMS',
             style: GoogleFonts.rajdhani(
               color: const Color(0xFF42A5F5), fontSize: 11,
               fontWeight: FontWeight.w700, letterSpacing: 1.5,
             )),
           const Spacer(),
-          Text('$selectedCount / ${_items.length} selected',
+          LiveTranslatedText('$selectedCount / ${_items.length} selected',
             style: GoogleFonts.rajdhani(color: const Color(0xFF546E7A), fontSize: 12)),
           const SizedBox(width: 8),
           GestureDetector(
@@ -577,7 +578,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
               final allSelected = _items.every((e) => e.selected);
               for (final item in _items) item.selected = !allSelected;
             }),
-            child: Text(
+            child: LiveTranslatedText(
               _items.every((e) => e.selected) ? 'Deselect all' : 'Select all',
               style: GoogleFonts.rajdhani(
                 color: const Color(0xFF1976D2), fontSize: 12, fontWeight: FontWeight.w600),
@@ -669,7 +670,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(color: const Color(0xFFBF360C).withValues(alpha: 0.4)),
                               ),
-                              child: Text('⚠️ Check',
+                              child: LiveTranslatedText('⚠️ Check',
                                 style: GoogleFonts.rajdhani(
                                   color: const Color(0xFFFF6D00), fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -684,11 +685,11 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
                         _fieldChip('Qty', _editCtrl[idx]!['qty']!),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(item.unit,
+                          child: LiveTranslatedText(item.unit,
                             style: GoogleFonts.rajdhani(color: const Color(0xFF546E7A), fontSize: 12)),
                         ),
                         const SizedBox(width: 8),
-                        Text('₹', style: GoogleFonts.rajdhani(color: const Color(0xFF546E7A), fontSize: 13)),
+                        LiveTranslatedText('₹', style: GoogleFonts.rajdhani(color: const Color(0xFF546E7A), fontSize: 13)),
                         _fieldChip('Price', _editCtrl[idx]!['price']!),
                       ],
                     ),
@@ -699,7 +700,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('₹${total.toStringAsFixed(0)}',
+                  LiveTranslatedText('₹${total.toStringAsFixed(0)}',
                     style: GoogleFonts.rajdhani(
                       color: item.selected ? const Color(0xFF82B1FF) : const Color(0xFF37474F),
                       fontSize: 16, fontWeight: FontWeight.w700,
@@ -756,9 +757,9 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('${selected.length} item${selected.length != 1 ? 's' : ''}',
+              LiveTranslatedText('${selected.length} item${selected.length != 1 ? 's' : ''}',
                 style: GoogleFonts.rajdhani(color: const Color(0xFF546E7A), fontSize: 12)),
-              Text('₹${total.toStringAsFixed(2)}',
+              LiveTranslatedText('₹${total.toStringAsFixed(2)}',
                 style: GoogleFonts.rajdhani(
                   color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700)),
             ],
@@ -767,7 +768,7 @@ class _WhatsAppOrderPageState extends State<WhatsAppOrderPage>
           ElevatedButton.icon(
             onPressed: selected.isEmpty ? null : _transfer,
             icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-            label: Text('Transfer to Bill',
+            label: LiveTranslatedText('Transfer to Bill',
               style: GoogleFonts.rajdhani(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4CAF50),

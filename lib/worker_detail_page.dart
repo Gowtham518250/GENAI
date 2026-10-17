@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -63,20 +64,20 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(builder: (context, setModalState) {
         return AlertDialog(
-          title: Text('Edit Worker', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          title: LiveTranslatedText('Edit Worker', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person))),
+              TextField(controller: nameCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Full Name'), prefixIcon: Icon(Icons.person))),
               const SizedBox(height: 12),
-              TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone))),
+              TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(label: LiveTranslatedText('Phone Number'), prefixIcon: Icon(Icons.phone))),
               const SizedBox(height: 12),
-              TextField(controller: positionCtrl, decoration: const InputDecoration(labelText: 'Position / Role', prefixIcon: Icon(Icons.work))),
+              TextField(controller: positionCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Position / Role'), prefixIcon: Icon(Icons.work))),
               const SizedBox(height: 12),
-              TextField(controller: salaryCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Salary', prefixIcon: Icon(Icons.attach_money))),
+              TextField(controller: salaryCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(label: LiveTranslatedText('Salary'), prefixIcon: Icon(Icons.attach_money))),
             ]),
           ),
           actions: [
-            TextButton(onPressed: isSubmitting ? null : () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: isSubmitting ? null : () => Navigator.pop(ctx), child: const LiveTranslatedText('Cancel')),
             ElevatedButton(
               onPressed: isSubmitting
                   ? null
@@ -113,7 +114,7 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                              SnackBar(content: LiveTranslatedText('Error: $e'), backgroundColor: Colors.red));
                         }
                         setModalState(() => isSubmitting = false);
                       }
@@ -121,7 +122,7 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
               style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: Colors.white),
               child: isSubmitting
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Save Changes'),
+                  : const LiveTranslatedText('Save Changes'),
             ),
           ],
         );
@@ -138,21 +139,21 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (context, setModalState) {
         return AlertDialog(
-          title: Text('Log Payment', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          title: LiveTranslatedText('Log Payment', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Amount (₹)', prefixIcon: Icon(Icons.currency_rupee))),
+            TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(label: LiveTranslatedText('Amount (₹)'), prefixIcon: Icon(Icons.currency_rupee))),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: type,
-              items: ['Salary', 'Advance', 'Bonus', 'Other'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+              items: ['Salary', 'Advance', 'Bonus', 'Other'].map((t) => DropdownMenuItem(value: t, child: LiveTranslatedText(t))).toList(),
               onChanged: (v) => setModalState(() => type = v ?? 'Salary'),
-              decoration: const InputDecoration(labelText: 'Type'),
+              decoration: const InputDecoration(label: LiveTranslatedText('Type')),
             ),
             const SizedBox(height: 12),
-            TextField(controller: noteCtrl, decoration: const InputDecoration(labelText: 'Note (optional)', prefixIcon: Icon(Icons.note_alt_outlined))),
+            TextField(controller: noteCtrl, decoration: const InputDecoration(label: LiveTranslatedText('Note (optional)'), prefixIcon: Icon(Icons.note_alt_outlined))),
           ]),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('Cancel')),
             ElevatedButton(
               onPressed: () async {
                 final amt = double.tryParse(amountCtrl.text.trim());
@@ -172,7 +173,7 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
                 await _loadPayments();
               },
               style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: Colors.white),
-              child: const Text('Save'),
+              child: const LiveTranslatedText('Save'),
             ),
           ],
         );
@@ -206,7 +207,7 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
-          title: Text('Worker Profile', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+          title: LiveTranslatedText('Worker Profile', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
           backgroundColor: _primary,
           foregroundColor: Colors.white,
           elevation: 0,
@@ -228,11 +229,11 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
                   radius: 32,
                   backgroundColor: _primary.withValues(alpha: 0.1),
                   foregroundColor: _primary.withValues(alpha: 0.8),
-                  child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+                  child: LiveTranslatedText(name.isNotEmpty ? name[0].toUpperCase() : '?', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: 12),
-                Text(name, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text(position, style: GoogleFonts.poppins(color: Colors.grey.shade600)),
+                LiveTranslatedText(name, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                LiveTranslatedText(position, style: GoogleFonts.poppins(color: Colors.grey.shade600)),
                 const SizedBox(height: 16),
                 Row(children: [
                   Expanded(child: _infoTile(Icons.phone_outlined, 'Phone', phone.isEmpty ? '—' : phone)),
@@ -252,7 +253,7 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
                       ),
                     ),
                     icon: const Icon(Icons.calendar_month),
-                    label: const Text('Attendance & Payroll'),
+                    label: const LiveTranslatedText('Attendance & Payroll'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _primary,
                       foregroundColor: Colors.white,
@@ -273,7 +274,7 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
                       ),
                     ),
                     icon: const Icon(Icons.lock_reset_rounded),
-                    label: const Text('Reset PIN'),
+                    label: const LiveTranslatedText('Reset PIN'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: _primary,
                       minimumSize: const Size(double.infinity, 48),
@@ -288,8 +289,8 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
             ),
             const SizedBox(height: 24),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('Payment History', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
-              TextButton.icon(onPressed: _showAddPaymentDialog, icon: const Icon(Icons.add, size: 18), label: const Text('Log Payment')),
+              LiveTranslatedText('Payment History', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
+              TextButton.icon(onPressed: _showAddPaymentDialog, icon: const Icon(Icons.add, size: 18), label: const LiveTranslatedText('Log Payment')),
             ]),
             const SizedBox(height: 8),
             if (_loadingPayments)
@@ -299,7 +300,7 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                child: Text('No payments logged yet', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade500)),
+                child: LiveTranslatedText('No payments logged yet', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade500)),
               )
             else
               ..._payments.map((p) => Container(
@@ -319,8 +320,8 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text('${p.type} • ₹${p.amount.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
-                          Text(DateFormat('dd MMM yyyy').format(p.date) + (p.note.isNotEmpty ? ' • ${p.note}' : ''),
+                          LiveTranslatedText('${p.type} • ₹${p.amount.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
+                          LiveTranslatedText(DateFormat('dd MMM yyyy').format(p.date) + (p.note.isNotEmpty ? ' • ${p.note}' : ''),
                               style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
                         ]),
                       ),
@@ -337,8 +338,8 @@ class _WorkerDetailPageState extends State<WorkerDetailPage> {
     return Column(children: [
       Icon(icon, color: Colors.grey.shade500, size: 20),
       const SizedBox(height: 4),
-      Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
-      Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+      LiveTranslatedText(value, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
+      LiveTranslatedText(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
     ]);
   }
 }

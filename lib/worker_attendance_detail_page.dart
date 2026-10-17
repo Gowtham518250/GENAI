@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -334,7 +335,7 @@ class _WorkerAttendanceDetailPageState
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(w.name, style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
+        title: LiveTranslatedText(w.name, style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
         backgroundColor: _primary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -362,21 +363,21 @@ class _WorkerAttendanceDetailPageState
                   const SizedBox(height: 16),
                   _insightsCard(),
                   const SizedBox(height: 24),
-                  Text('Calendar', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
+                  LiveTranslatedText('Calendar', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
                   const SizedBox(height: 12),
                   _calendar(),
                   const SizedBox(height: 12),
                   _legend(),
                   const SizedBox(height: 24),
-                  Text('Daily Hours Trend', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
+                  LiveTranslatedText('Daily Hours Trend', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
                   const SizedBox(height: 12),
                   _trendChart(),
                   const SizedBox(height: 24),
-                  Text('Late / Early Check-ins', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
+                  LiveTranslatedText('Late / Early Check-ins', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
                   const SizedBox(height: 12),
                   _lateEarlyList(),
                   const SizedBox(height: 24),
-                  Text('Payroll Summary', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
+                  LiveTranslatedText('Payroll Summary', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
                   const SizedBox(height: 12),
                   _payrollCard(monthHours, payroll, paid, balance),
                   const SizedBox(height: 80),
@@ -387,7 +388,7 @@ class _WorkerAttendanceDetailPageState
         onPressed: _shopkeeperId == null ? null : _showAddPaymentDialog,
         backgroundColor: _primary,
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Log Payment', style: TextStyle(color: Colors.white)),
+        label: const LiveTranslatedText('Log Payment', style: TextStyle(color: Colors.white)),
       ),
     );
   }
@@ -405,7 +406,7 @@ class _WorkerAttendanceDetailPageState
           icon: const Icon(Icons.chevron_left),
           onPressed: () => setState(() => _month = DateTime(_month.year, _month.month - 1)),
         ),
-        Text(DateFormat('MMMM yyyy').format(_month),
+        LiveTranslatedText(DateFormat('MMMM yyyy').format(_month),
             style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 15)),
         IconButton(
           icon: const Icon(Icons.chevron_right),
@@ -424,9 +425,9 @@ class _WorkerAttendanceDetailPageState
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6)],
       ),
       child: Column(children: [
-        Text(value, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w800, color: color)),
+        LiveTranslatedText(value, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w800, color: color)),
         const SizedBox(height: 4),
-        Text(label, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600)),
+        LiveTranslatedText(label, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600)),
       ]),
     );
   }
@@ -454,7 +455,7 @@ class _WorkerAttendanceDetailPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('PERFORMANCE INSIGHTS', style: GoogleFonts.poppins(
+          LiveTranslatedText('PERFORMANCE INSIGHTS', style: GoogleFonts.poppins(
               fontSize: 10, letterSpacing: 1, fontWeight: FontWeight.w700, color: Colors.white60)),
           const SizedBox(height: 14),
           Row(children: [
@@ -477,7 +478,7 @@ class _WorkerAttendanceDetailPageState
                         color: Colors.white, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         'vs last month: ${mom.pctDelta >= 0 ? '+' : ''}${mom.pctDelta.toStringAsFixed(0)}% attendance'
                         ' • ${mom.hrsDelta >= 0 ? '+' : ''}${mom.hrsDelta.toStringAsFixed(1)} hrs',
                         style: GoogleFonts.poppins(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
@@ -488,7 +489,7 @@ class _WorkerAttendanceDetailPageState
                     const Icon(Icons.info_outline_rounded, color: Colors.white70, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text('No data for ${DateFormat('MMMM').format(_prevMonth)} to compare against yet',
+                      child: LiveTranslatedText('No data for ${DateFormat('MMMM').format(_prevMonth)} to compare against yet',
                           style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12)),
                     ),
                   ]),
@@ -504,8 +505,8 @@ class _WorkerAttendanceDetailPageState
       children: [
         Icon(icon, color: Colors.white70, size: 18),
         const SizedBox(height: 6),
-        Text(value, style: GoogleFonts.poppins(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
-        Text(label, style: GoogleFonts.poppins(color: Colors.white60, fontSize: 10)),
+        LiveTranslatedText(value, style: GoogleFonts.poppins(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
+        LiveTranslatedText(label, style: GoogleFonts.poppins(color: Colors.white60, fontSize: 10)),
       ],
     );
   }
@@ -547,7 +548,7 @@ class _WorkerAttendanceDetailPageState
           margin: const EdgeInsets.all(3),
           decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
           alignment: Alignment.center,
-          child: Text('$d', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
+          child: LiveTranslatedText('$d', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: textColor)),
         ),
       ));
     }
@@ -564,7 +565,7 @@ class _WorkerAttendanceDetailPageState
           children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
               .map((d) => Expanded(
                   child: Center(
-                      child: Text(d,
+                      child: LiveTranslatedText(d,
                           style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w600)))))
               .toList(),
         ),
@@ -584,7 +585,7 @@ class _WorkerAttendanceDetailPageState
     Widget dot(Color c, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
           Container(width: 10, height: 10, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
           const SizedBox(width: 6),
-          Text(label, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600)),
+          LiveTranslatedText(label, style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600)),
         ]);
     return Wrap(spacing: 16, runSpacing: 8, children: [
       dot(_present, 'Present'),
@@ -621,7 +622,7 @@ class _WorkerAttendanceDetailPageState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(hours.toStringAsFixed(1), style: GoogleFonts.poppins(fontSize: 8, color: Colors.grey.shade500)),
+                  LiveTranslatedText(hours.toStringAsFixed(1), style: GoogleFonts.poppins(fontSize: 8, color: Colors.grey.shade500)),
                   const SizedBox(height: 2),
                   Container(
                     height: h.clamp(4, 90),
@@ -631,7 +632,7 @@ class _WorkerAttendanceDetailPageState
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(day != null ? '${day.day}' : '', style: GoogleFonts.poppins(fontSize: 8, color: Colors.grey.shade400)),
+                  LiveTranslatedText(day != null ? '${day.day}' : '', style: GoogleFonts.poppins(fontSize: 8, color: Colors.grey.shade400)),
                 ],
               ),
             ),
@@ -663,7 +664,7 @@ class _WorkerAttendanceDetailPageState
             Icon(Icons.warning_amber_rounded, color: Colors.orange.shade600, size: 20),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 '${r['attendance_date']}: ${[
                   if (late) 'Late check-in',
                   if (early) 'Early check-out',
@@ -700,8 +701,8 @@ class _WorkerAttendanceDetailPageState
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(label, style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13)),
-        Text(value, style: GoogleFonts.poppins(
+        LiveTranslatedText(label, style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13)),
+        LiveTranslatedText(value, style: GoogleFonts.poppins(
             color: Colors.white, fontSize: bold ? 16 : 13, fontWeight: bold ? FontWeight.w800 : FontWeight.w500)),
       ]),
     );
@@ -716,7 +717,7 @@ class _WorkerAttendanceDetailPageState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)],
       ),
-      child: Text(text, textAlign: TextAlign.center, style: GoogleFonts.poppins(color: Colors.grey.shade500, fontSize: 12)),
+      child: LiveTranslatedText(text, textAlign: TextAlign.center, style: GoogleFonts.poppins(color: Colors.grey.shade500, fontSize: 12)),
     );
   }
 
@@ -724,16 +725,16 @@ class _WorkerAttendanceDetailPageState
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(DateFormat('dd MMM yyyy').format(day), style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        title: LiveTranslatedText(DateFormat('dd MMM yyyy').format(day), style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Status: ${rec['status'] ?? 'N/A'}'),
+          LiveTranslatedText('Status: ${rec['status'] ?? 'N/A'}'),
           if (rec['check_in_time'] != null)
-            Text('Check-in: ${_fmtTime(rec['check_in_time'])}${_isLate(rec) ? ' (Late)' : ''}'),
+            LiveTranslatedText('Check-in: ${_fmtTime(rec['check_in_time'])}${_isLate(rec) ? ' (Late)' : ''}'),
           if (rec['check_out_time'] != null)
-            Text('Check-out: ${_fmtTime(rec['check_out_time'])}${_isEarly(rec) ? ' (Early)' : ''}'),
-          Text('Hours: ${_hoursOf(rec).toStringAsFixed(2)}'),
+            LiveTranslatedText('Check-out: ${_fmtTime(rec['check_out_time'])}${_isEarly(rec) ? ' (Early)' : ''}'),
+          LiveTranslatedText('Hours: ${_hoursOf(rec).toStringAsFixed(2)}'),
         ]),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close'))],
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('Close'))],
       ),
     );
   }
@@ -752,30 +753,30 @@ class _WorkerAttendanceDetailPageState
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (context, setModalState) {
         return AlertDialog(
-          title: Text('Log Payment for ${widget.worker.name}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          title: LiveTranslatedText('Log Payment for ${widget.worker.name}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(
               controller: amountCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Amount (₹)', prefixIcon: Icon(Icons.currency_rupee)),
+              decoration: const InputDecoration(label: LiveTranslatedText('Amount (₹)'), prefixIcon: Icon(Icons.currency_rupee)),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: type,
               items: ['Salary', 'Advance', 'Bonus', 'Other']
-                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                  .map((t) => DropdownMenuItem(value: t, child: LiveTranslatedText(t)))
                   .toList(),
               onChanged: (v) => setModalState(() => type = v ?? 'Salary'),
-              decoration: const InputDecoration(labelText: 'Type'),
+              decoration: const InputDecoration(label: LiveTranslatedText('Type')),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: noteCtrl,
-              decoration: const InputDecoration(labelText: 'Note (optional)', prefixIcon: Icon(Icons.note_alt_outlined)),
+              decoration: const InputDecoration(label: LiveTranslatedText('Note (optional)'), prefixIcon: Icon(Icons.note_alt_outlined)),
             ),
           ]),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('Cancel')),
             ElevatedButton(
               onPressed: () async {
                 final amt = double.tryParse(amountCtrl.text.trim());
@@ -796,7 +797,7 @@ class _WorkerAttendanceDetailPageState
                 await _load();
               },
               style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: Colors.white),
-              child: const Text('Save'),
+              child: const LiveTranslatedText('Save'),
             ),
           ],
         );

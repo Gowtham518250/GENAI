@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -35,7 +36,7 @@ class ProductDiscoveryCard extends StatelessWidget {
         uri.scheme != 'https' ||
         uri.host.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('A safe HTTPS link is not available for this result.')),
+        const SnackBar(content: LiveTranslatedText('A safe HTTPS link is not available for this result.')),
       );
       return;
     }
@@ -43,13 +44,13 @@ class ProductDiscoveryCard extends StatelessWidget {
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!opened && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open this listing.')),
+          const SnackBar(content: LiveTranslatedText('Could not open this listing.')),
         );
       }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open this listing.')),
+          const SnackBar(content: LiveTranslatedText('Could not open this listing.')),
         );
       }
     }
@@ -59,7 +60,7 @@ class ProductDiscoveryCard extends StatelessWidget {
     final clean = (phone ?? '').trim();
     if (clean.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This shop has no public phone number in the listing.')),
+        const SnackBar(content: LiveTranslatedText('This shop has no public phone number in the listing.')),
       );
       return;
     }
@@ -68,13 +69,13 @@ class ProductDiscoveryCard extends StatelessWidget {
       final opened = await launchUrl(uri);
       if (!opened && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open the phone app.')),
+          const SnackBar(content: LiveTranslatedText('Could not open the phone app.')),
         );
       }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open the phone app.')),
+          const SnackBar(content: LiveTranslatedText('Could not open the phone app.')),
         );
       }
     }
@@ -98,7 +99,7 @@ class ProductDiscoveryCard extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(
+          child: LiveTranslatedText(
             title,
             style: GoogleFonts.inter(
               color: const Color(0xFF17264A),
@@ -113,7 +114,7 @@ class ProductDiscoveryCard extends StatelessWidget {
             color: const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text(
+          child: LiveTranslatedText(
             count.toString(),
             style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700),
           ),
@@ -153,7 +154,7 @@ class ProductDiscoveryCard extends StatelessWidget {
               const Icon(Icons.shopping_bag_rounded, color: Color(0xFF4F46E5), size: 22),
               const SizedBox(width: 9),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   'Product results for ' + productQuery,
                   style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF17264A)),
                 ),
@@ -161,7 +162,7 @@ class ProductDiscoveryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text(
+          LiveTranslatedText(
             'Online prices are ranked lowest first. Confirm the exact pack size before comparing.',
             style: GoogleFonts.inter(fontSize: 11.5, height: 1.45, color: const Color(0xFF64748B)),
           ),
@@ -204,7 +205,7 @@ class ProductDiscoveryCard extends StatelessWidget {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(9),
                       ),
-                      child: Text(
+                      child: LiveTranslatedText(
                         (entry.key + 1).toString(),
                         style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF334155)),
                       ),
@@ -217,28 +218,28 @@ class ProductDiscoveryCard extends StatelessWidget {
                           if (isCheapest)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 3),
-                              child: Text(
+                              child: LiveTranslatedText(
                                 purchaseAssistantMode
                                     ? 'BEST LISTED PRICE · VERIFY PACK'
                                     : 'LOWEST LISTED PRICE',
                                 style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: const Color(0xFF047857), letterSpacing: 0.3),
                               ),
                             ),
-                          Text(
+                          LiveTranslatedText(
                             title,
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF1E293B), height: 1.4),
                           ),
                           const SizedBox(height: 3),
-                          Text(source, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF64748B))),
+                          LiveTranslatedText(source, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF64748B))),
                           if (rating != null && rating.isNotEmpty)
-                            Text(
+                            LiveTranslatedText(
                               'Rating ' + rating + (reviews != null && reviews.isNotEmpty ? ' (' + reviews + ' reviews)' : ''),
                               style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF64748B)),
                             ),
                           if (delivery.isNotEmpty)
-                            Text(delivery, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF64748B))),
+                            LiveTranslatedText(delivery, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF64748B))),
                         ],
                       ),
                     ),
@@ -246,14 +247,14 @@ class ProductDiscoveryCard extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           _price(offer['price']),
                           style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w800, color: isCheapest ? const Color(0xFF047857) : const Color(0xFF17264A)),
                         ),
                         TextButton(
                           onPressed: () => _openLink(context, offer['url']?.toString()),
                           style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 5), minimumSize: const Size(0, 32), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                          child: const Text('Open'),
+                          child: const LiveTranslatedText('Open'),
                         ),
                       ],
                     ),
@@ -270,7 +271,7 @@ class ProductDiscoveryCard extends StatelessWidget {
             count: shops.length,
           ),
           const SizedBox(height: 6),
-          Text(
+          LiveTranslatedText(
             locationAvailable
                 ? 'Sorted by distance. Local stock and shelf prices are not confirmed by map listings.'
                 : 'Location is unavailable. Allow location access and ask again to find shops near you.',
@@ -308,10 +309,10 @@ class ProductDiscoveryCard extends StatelessWidget {
                         const Icon(Icons.store_rounded, size: 19, color: Color(0xFF4F46E5)),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(name, style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B))),
+                          child: LiveTranslatedText(name, style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B))),
                         ),
                         if (distance != null)
-                          Text(
+                          LiveTranslatedText(
                             distance.toStringAsFixed(1) + ' km',
                             style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF475569)),
                           ),
@@ -319,21 +320,21 @@ class ProductDiscoveryCard extends StatelessWidget {
                     ),
                     if (address.isNotEmpty) ...[
                       const SizedBox(height: 5),
-                      Text(address, style: GoogleFonts.inter(fontSize: 11, height: 1.4, color: const Color(0xFF475569))),
+                      LiveTranslatedText(address, style: GoogleFonts.inter(fontSize: 11, height: 1.4, color: const Color(0xFF475569))),
                     ],
                     if (rating != null && rating.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text('★ ' + rating + (openState.isNotEmpty ? '  •  ' + openState : ''),
+                        child: LiveTranslatedText('★ ' + rating + (openState.isNotEmpty ? '  •  ' + openState : ''),
                           style: GoogleFonts.inter(fontSize: 10.5, color: const Color(0xFF64748B))),
                       )
                     else if (openState.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text(openState, style: GoogleFonts.inter(fontSize: 10.5, color: const Color(0xFF64748B))),
+                        child: LiveTranslatedText(openState, style: GoogleFonts.inter(fontSize: 10.5, color: const Color(0xFF64748B))),
                       ),
                     const SizedBox(height: 8),
-                    Text(
+                    LiveTranslatedText(
                       productQuery + ' price / stock: call to confirm',
                       style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w700, color: const Color(0xFF92400E)),
                     ),
@@ -345,14 +346,14 @@ class ProductDiscoveryCard extends StatelessWidget {
                         OutlinedButton.icon(
                           onPressed: () => _openLink(context, shop['maps_url']?.toString()),
                           icon: const Icon(Icons.directions_rounded, size: 15),
-                          label: const Text('Directions'),
+                          label: const LiveTranslatedText('Directions'),
                           style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), visualDensity: VisualDensity.compact),
                         ),
                         if (phone.isNotEmpty)
                           OutlinedButton.icon(
                             onPressed: () => _callShop(context, phone),
                             icon: const Icon(Icons.call_rounded, size: 15),
-                            label: const Text('Call shop'),
+                            label: const LiveTranslatedText('Call shop'),
                             style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7), visualDensity: VisualDensity.compact),
                           ),
                       ],
@@ -376,7 +377,7 @@ class ProductDiscoveryCard extends StatelessWidget {
                   const Icon(Icons.info_outline_rounded, size: 17, color: Color(0xFF92400E)),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(note, style: GoogleFonts.inter(fontSize: 10.5, height: 1.45, color: const Color(0xFF92400E))),
+                    child: LiveTranslatedText(note, style: GoogleFonts.inter(fontSize: 10.5, height: 1.45, color: const Color(0xFF92400E))),
                   ),
                 ],
               ),
@@ -396,7 +397,7 @@ class ProductDiscoveryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Text(
+      child: LiveTranslatedText(
         text,
         style: GoogleFonts.inter(
           fontSize: 11.5,

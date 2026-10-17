@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -29,19 +30,19 @@ class SwipeToDelete extends StatelessWidget {
           return await showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Delete Item'),
-              content: Text(confirmMessage!),
+              title: const LiveTranslatedText('Delete Item'),
+              content: LiveTranslatedText(confirmMessage!),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
+                  child: const LiveTranslatedText('Cancel'),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
                   style: TextButton.styleFrom(
                     foregroundColor: const Color(0xFFEF4444),
                   ),
-                  child: const Text('Delete'),
+                  child: const LiveTranslatedText('Delete'),
                 ),
               ],
             ),
@@ -154,7 +155,7 @@ class SwipeActions extends StatelessWidget {
         children: [
           Icon(action.icon, color: action.iconColor),
           const SizedBox(width: 8),
-          Text(
+          LiveTranslatedText(
             action.label,
             style: GoogleFonts.poppins(
               fontSize: 14,

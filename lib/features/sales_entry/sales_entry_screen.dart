@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -47,7 +48,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
       if (!mounted) return;
       if (!hasPermission) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Microphone permission is required for voice billing.')),
+          const SnackBar(content: LiveTranslatedText('Microphone permission is required for voice billing.')),
         );
         return;
       }
@@ -85,7 +86,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
       if (!mounted) return;
       setState(() => _isListening = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not start recording. Check microphone permission and try again.')),
+        const SnackBar(content: LiveTranslatedText('Could not start recording. Check microphone permission and try again.')),
       );
     }
   }
@@ -104,7 +105,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
 
       if (audioPath == null || audioPath.trim().isEmpty || !await File(audioPath).exists()) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No audio was recorded. Please try again.')),
+          const SnackBar(content: LiveTranslatedText('No audio was recorded. Please try again.')),
         );
         return;
       }
@@ -117,7 +118,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
       if (message != null && message.trim().isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message),
+            content: LiveTranslatedText(message),
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 6),
           ),
@@ -126,7 +127,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Voice billing failed. Please retry or enter items manually.')),
+        const SnackBar(content: LiveTranslatedText('Voice billing failed. Please retry or enter items manually.')),
       );
     } finally {
       if (audioPath != null) {
@@ -158,7 +159,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
         elevation: 0,
         backgroundColor: Colors.white,
         centerTitle: true,
-        title: Text(
+        title: LiveTranslatedText(
           'New Sale',
           style: GoogleFonts.poppins(
             color: const Color(0xFF1E293B),
@@ -201,7 +202,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                       Expanded(
                         child: TextField(
                           decoration: InputDecoration(
-                            hintText: 'Search products or scan barcode...',
+                            hint: LiveTranslatedText('Search products or scan barcode...'),
                             hintStyle: GoogleFonts.poppins(
                               fontSize: 14,
                               color: const Color(0xFF94A3B8),
@@ -240,7 +241,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               'Smart Voice Input',
                               style: GoogleFonts.poppins(
                                 color: Colors.white,
@@ -249,7 +250,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
+                            LiveTranslatedText(
                               context.watch<SalesEntryProvider>().isVoiceProcessing
                                   ? 'Groq is transcribing and matching your inventory…'
                                   : _isListening
@@ -287,7 +288,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                 const SizedBox(height: 20),
                 
                 // Customer Section
-                Text(
+                LiveTranslatedText(
                   'CUSTOMER DETAILS',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
@@ -328,7 +329,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                   child: OutlinedButton.icon(
                     onPressed: provider.addEntry,
                     icon: const Icon(Icons.add_rounded, size: 18),
-                    label: const Text('Add Product Row'),
+                    label: const LiveTranslatedText('Add Product Row'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF4F46E5),
                       side: const BorderSide(color: Color(0xFF4F46E5)),
@@ -368,8 +369,8 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('Grand Total', style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFF64748B))),
-                            Text('₹${provider.totalAmount.toStringAsFixed(2)}', style: GoogleFonts.spaceMono(fontSize: 24, fontWeight: FontWeight.w800)),
+                            LiveTranslatedText('Grand Total', style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFF64748B))),
+                            LiveTranslatedText('₹${provider.totalAmount.toStringAsFixed(2)}', style: GoogleFonts.spaceMono(fontSize: 24, fontWeight: FontWeight.w800)),
                           ],
                         ),
                       ),
@@ -446,7 +447,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                                     children: [
                                       Icon(Icons.check_circle, color: Colors.white),
                                       SizedBox(width: 8),
-                                      Text('Sale saved successfully'),
+                                      LiveTranslatedText('Sale saved successfully'),
                                     ],
                                   ),
                                   backgroundColor: const Color(0xFF10B981),
@@ -463,7 +464,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                                     children: [
                                       Icon(Icons.error_outline, color: Colors.white),
                                       SizedBox(width: 8),
-                                      Text('Failed to save sale. Please try again.'),
+                                      LiveTranslatedText('Failed to save sale. Please try again.'),
                                     ],
                                   ),
                                   backgroundColor: const Color(0xFFEF4444),
@@ -541,7 +542,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                                     children: [
                                       Icon(Icons.check_circle, color: Colors.white),
                                       SizedBox(width: 8),
-                                      Text('Credit sale saved successfully'),
+                                      LiveTranslatedText('Credit sale saved successfully'),
                                     ],
                                   ),
                                   backgroundColor: const Color(0xFFF59E0B),
@@ -558,7 +559,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                                     children: [
                                       Icon(Icons.error_outline, color: Colors.white),
                                       SizedBox(width: 8),
-                                      Text('Failed to save credit sale. Please try again.'),
+                                      LiveTranslatedText('Failed to save credit sale. Please try again.'),
                                     ],
                                   ),
                                   backgroundColor: const Color(0xFFEF4444),
@@ -590,7 +591,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
                           ),
-                          child: Text('GENERATE BILL', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
+                          child: LiveTranslatedText('GENERATE BILL', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -618,7 +619,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             if (success && context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Sale saved successfully'),
+                                  content: LiveTranslatedText('Sale saved successfully'),
                                   backgroundColor: Color(0xFF10B981),
                                   duration: Duration(seconds: 2),
                                 ),
@@ -627,7 +628,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             } else if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Failed to save sale. Please try again.'),
+                                  content: LiveTranslatedText('Failed to save sale. Please try again.'),
                                   backgroundColor: Color(0xFFEF4444),
                                   duration: Duration(seconds: 3),
                                 ),
@@ -641,7 +642,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
                           ),
-                          child: Text('SAVE SALE', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
+                          child: LiveTranslatedText('SAVE SALE', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -669,7 +670,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             if (success && context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Credit sale saved successfully'),
+                                  content: LiveTranslatedText('Credit sale saved successfully'),
                                   backgroundColor: Color(0xFF10B981),
                                   duration: Duration(seconds: 2),
                                 ),
@@ -678,7 +679,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             } else if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Failed to save credit sale. Please try again.'),
+                                  content: LiveTranslatedText('Failed to save credit sale. Please try again.'),
                                   backgroundColor: Color(0xFFEF4444),
                                   duration: Duration(seconds: 3),
                                 ),
@@ -692,7 +693,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
                           ),
-                          child: Text('SAVE AS CREDIT', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
+                          child: LiveTranslatedText('SAVE AS CREDIT', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
                         ),
                       ),
                     ],
@@ -751,7 +752,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                       children: [
                         Icon(icon, color: Colors.white, size: 20),
                         const SizedBox(width: 8),
-                        Text(
+                        LiveTranslatedText(
                           label,
                           style: GoogleFonts.poppins(
                             fontSize: 14,
@@ -805,7 +806,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                 children: [
                   Icon(icon, color: color, size: 18),
                   const SizedBox(width: 6),
-                  Text(
+                  LiveTranslatedText(
                     label,
                     style: GoogleFonts.poppins(
                       fontSize: 12,

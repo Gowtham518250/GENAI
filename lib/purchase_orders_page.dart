@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
@@ -100,13 +101,13 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     final url = Uri.tryParse(rawUrl?.toString() ?? '');
     if (url == null || url.scheme != 'https' || url.host.isEmpty) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('The seller did not provide a usable product link.')),
+        const SnackBar(content: LiveTranslatedText('The seller did not provide a usable product link.')),
       );
       return;
     }
     final opened = await launchUrl(url, mode: LaunchMode.externalApplication);
     if (!opened && mounted) ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Could not open the seller link.')),
+      const SnackBar(content: LiveTranslatedText('Could not open the seller link.')),
     );
   }
 
@@ -211,7 +212,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         if (!mounted) return;
         setState(() => _isShoppingListening = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Voice search unavailable: ' + message)),
+          SnackBar(content: LiveTranslatedText('Voice search unavailable: ' + message)),
         );
       },
     );
@@ -231,7 +232,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LiveTranslatedText(
                 'Shopping preferences',
                 style: GoogleFonts.poppins(
                   color: _ink,
@@ -240,7 +241,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
+              LiveTranslatedText(
                 'Choose how far away to search for nearby shops.',
                 style: GoogleFonts.poppins(color: _muted, fontSize: 12),
               ),
@@ -249,7 +250,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                 RadioListTile<double>(
                   value: radius,
                   groupValue: _shoppingRadiusKm,
-                  title: Text(radius.round().toString() + ' km radius'),
+                  title: LiveTranslatedText(radius.round().toString() + ' km radius'),
                   activeColor: _primary,
                   contentPadding: EdgeInsets.zero,
                   onChanged: (value) {
@@ -265,7 +266,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       setState(() => _shoppingRadiusKm = selectedRadius);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LiveTranslatedText(
             'Nearby search radius set to ' +
                 selectedRadius.round().toString() +
                 ' km. It applies to your next search.',
@@ -279,7 +280,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     final cleaned = (phone ?? '').trim();
     if (cleaned.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This listing has no public phone number.')),
+        const SnackBar(content: LiveTranslatedText('This listing has no public phone number.')),
       );
       return;
     }
@@ -287,13 +288,13 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       final opened = await launchUrl(Uri(scheme: 'tel', path: cleaned));
       if (!opened && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open the phone app.')),
+          const SnackBar(content: LiveTranslatedText('Could not open the phone app.')),
         );
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open the phone app.')),
+          const SnackBar(content: LiveTranslatedText('Could not open the phone app.')),
         );
       }
     }
@@ -459,7 +460,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         'Purchase Shopping Assistant',
                         style: GoogleFonts.poppins(
                           color: _ink,
@@ -469,7 +470,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                         ),
                       ),
                       const SizedBox(height: 3),
-                      Text(
+                      LiveTranslatedText(
                         'Find products beyond your inventory',
                         style: GoogleFonts.poppins(color: const Color(0xFF5D6C89), fontSize: 11.5),
                       ),
@@ -513,7 +514,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                             color: const Color(0xFFF3F5FC),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Text(
+                          child: LiveTranslatedText(
                             'Hi! 👋 What product are you looking to buy? I can search online stores and nearby shops even if it is not in your inventory.',
                             style: GoogleFonts.poppins(color: _ink, fontSize: 12, height: 1.55),
                           ),
@@ -549,7 +550,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                                     child: CircularProgressIndicator(strokeWidth: 2, color: _primary),
                                   ),
                                   const SizedBox(width: 8),
-                                  Text('Searching listings…', style: GoogleFonts.poppins(color: _muted, fontSize: 11)),
+                                  LiveTranslatedText('Searching listings…', style: GoogleFonts.poppins(color: _muted, fontSize: 11)),
                                 ],
                               ),
                             ),
@@ -575,7 +576,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                                 bottomRight: Radius.circular(isUser ? 5 : 16),
                               ),
                             ),
-                            child: Text(
+                            child: LiveTranslatedText(
                               (message['text'] ?? '').toString(),
                               style: GoogleFonts.poppins(
                                 color: isUser ? Colors.white : _ink,
@@ -629,7 +630,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                           onSubmitted: (_) => _sendPurchaseShoppingQuery(),
                           style: GoogleFonts.poppins(color: _ink, fontSize: 12),
                           decoration: InputDecoration(
-                            hintText: 'Ask for any product or supplier…',
+                            hint: LiveTranslatedText('Ask for any product or supplier…'),
                             hintStyle: GoogleFonts.poppins(color: const Color(0xFF8792A8), fontSize: 10.5),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(vertical: 11),
@@ -668,7 +669,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                     const Icon(Icons.verified_user_outlined, size: 15, color: Color(0xFF7986A0)),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         'Online prices may vary. Confirm stock and final price with the seller.',
                         style: GoogleFonts.poppins(color: _muted, fontSize: 9.5, height: 1.4),
                       ),
@@ -712,7 +713,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
             children: [
               Icon(icon, size: 18, color: iconColor),
               const SizedBox(width: 7),
-              Text(label, style: GoogleFonts.poppins(color: _ink, fontSize: 10.5, fontWeight: FontWeight.w700)),
+              LiveTranslatedText(label, style: GoogleFonts.poppins(color: _ink, fontSize: 10.5, fontWeight: FontWeight.w700)),
             ],
           ),
         ),
@@ -746,7 +747,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
               children: [
                 Icon(icon, color: selected ? _primary : _ink, size: 18),
                 const SizedBox(width: 7),
-                Text(label, style: GoogleFonts.poppins(color: selected ? _primary : _ink, fontSize: 10.5, fontWeight: FontWeight.w700)),
+                LiveTranslatedText(label, style: GoogleFonts.poppins(color: selected ? _primary : _ink, fontSize: 10.5, fontWeight: FontWeight.w700)),
               ],
             ),
           ),
@@ -793,9 +794,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Search results will appear here', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w800, fontSize: 12)),
+                        LiveTranslatedText('Search results will appear here', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w800, fontSize: 12)),
                         const SizedBox(height: 4),
-                        Text(
+                        LiveTranslatedText(
                           'Search any product, even when it is not in your inventory. Online listings and nearby shop results will appear after you search.',
                           style: GoogleFonts.poppins(color: _muted, fontSize: 10.5, height: 1.45),
                         ),
@@ -833,7 +834,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
             child: const Icon(Icons.inventory_2_outlined, color: Color(0xFFCF8B18)),
           ),
           const SizedBox(width: 10),
-          Expanded(child: Text('Low-stock reorder suggestions',
+          Expanded(child: LiveTranslatedText('Low-stock reorder suggestions',
               style: GoogleFonts.poppins(color: _ink, fontSize: 14, fontWeight: FontWeight.w800))),
           IconButton(
             tooltip: 'Refresh stock and online prices',
@@ -843,7 +844,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                 : const Icon(Icons.refresh_rounded, color: _muted),
           ),
         ]),
-        Text(
+        LiveTranslatedText(
           'Items at or below your reorder threshold. Online listings are comparison hints, not confirmed wholesale quotes. Creating a PO here does not place an online order.',
           style: GoogleFonts.poppins(color: _muted, fontSize: 11, height: 1.55),
         ),
@@ -857,7 +858,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: const Color(0xFFF8FAFD), borderRadius: BorderRadius.circular(13)),
-            child: Text(
+            child: LiveTranslatedText(
               _reorderNotice.contains('SERPAPI_API_KEY')
                   ? 'No low-stock items were returned, or online price search needs configuration. Check inventory thresholds and backend settings.'
                   : 'No products are currently at or below their configured reorder level.',
@@ -871,7 +872,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         ],
         if (_reorderNotice.trim().isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text(_reorderNotice, style: GoogleFonts.poppins(color: const Color(0xFF7D8BA4), fontSize: 10, height: 1.35)),
+          LiveTranslatedText(_reorderNotice, style: GoogleFonts.poppins(color: const Color(0xFF7D8BA4), fontSize: 10, height: 1.35)),
         ],
       ]),
     );
@@ -904,24 +905,24 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: Text((item['product_name'] ?? 'Unnamed product').toString(),
+          Expanded(child: LiveTranslatedText((item['product_name'] ?? 'Unnamed product').toString(),
               style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w700, fontSize: 13))),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(color: urgencyColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
-            child: Text(urgency, style: GoogleFonts.poppins(color: urgencyColor, fontSize: 9, fontWeight: FontWeight.bold)),
+            child: LiveTranslatedText(urgency, style: GoogleFonts.poppins(color: urgencyColor, fontSize: 9, fontWeight: FontWeight.bold)),
           ),
         ]),
         const SizedBox(height: 7),
-        Text('Stock: ${stock.toStringAsFixed(stock % 1 == 0 ? 0 : 2)} • Reorder threshold: ${triggerStock.toStringAsFixed(triggerStock % 1 == 0 ? 0 : 2)} • Suggested quantity: $suggestedQty',
+        LiveTranslatedText('Stock: ${stock.toStringAsFixed(stock % 1 == 0 ? 0 : 2)} • Reorder threshold: ${triggerStock.toStringAsFixed(triggerStock % 1 == 0 ? 0 : 2)} • Suggested quantity: $suggestedQty',
             style: GoogleFonts.poppins(color: _muted, fontSize: 10.5, height: 1.5)),
         const SizedBox(height: 8),
         Wrap(spacing: 12, runSpacing: 5, children: [
-          Text('Recorded cost ${_money(recordedCost)}', style: GoogleFonts.poppins(color: const Color(0xFF53627E), fontSize: 11)),
-          if (bestPrice > 0) Text('Lowest online ${_money(bestPrice)}', style: GoogleFonts.poppins(color: const Color(0xFF07856D), fontWeight: FontWeight.bold, fontSize: 11)),
+          LiveTranslatedText('Recorded cost ${_money(recordedCost)}', style: GoogleFonts.poppins(color: const Color(0xFF53627E), fontSize: 11)),
+          if (bestPrice > 0) LiveTranslatedText('Lowest online ${_money(bestPrice)}', style: GoogleFonts.poppins(color: const Color(0xFF07856D), fontWeight: FontWeight.bold, fontSize: 11)),
           if (bestPrice > 0 && recordedCost > 0)
-            Text(bestPrice < recordedCost ? '₹${(recordedCost - bestPrice).toStringAsFixed(2)} lower' : bestPrice > recordedCost ? '₹${(bestPrice - recordedCost).toStringAsFixed(2)} higher' : 'Same as recorded cost',
+            LiveTranslatedText(bestPrice < recordedCost ? '₹${(recordedCost - bestPrice).toStringAsFixed(2)} lower' : bestPrice > recordedCost ? '₹${(bestPrice - recordedCost).toStringAsFixed(2)} higher' : 'Same as recorded cost',
                 style: GoogleFonts.poppins(color: bestPrice <= recordedCost ? const Color(0xFF16885E) : const Color(0xFFB7791F), fontSize: 11, fontWeight: FontWeight.w600)),
         ]),
         if (offers.isNotEmpty) ...[
@@ -929,20 +930,20 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           ...offers.take(3).map((offer) => Padding(
             padding: const EdgeInsets.only(top: 5),
             child: Row(children: [
-              Expanded(child: Text('${offer['source'] ?? 'Online seller'} · ${offer['title'] ?? item['product_name']}',
+              Expanded(child: LiveTranslatedText('${offer['source'] ?? 'Online seller'} · ${offer['title'] ?? item['product_name']}',
                   maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(color: _muted, fontSize: 10))),
               const SizedBox(width: 6),
-              Text(_money(offer['price']), style: GoogleFonts.poppins(color: _ink, fontSize: 10, fontWeight: FontWeight.w700)),
+              LiveTranslatedText(_money(offer['price']), style: GoogleFonts.poppins(color: _ink, fontSize: 10, fontWeight: FontWeight.w700)),
               TextButton(
                 onPressed: () => _openOffer(offer['url']),
                 style: TextButton.styleFrom(minimumSize: const Size(0, 28), padding: const EdgeInsets.symmetric(horizontal: 7), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                child: const Text('Open'),
+                child: const LiveTranslatedText('Open'),
               ),
             ]),
           )),
         ] else if ((item['online_lookup_message'] ?? '').toString().trim().isNotEmpty) ...[
           const SizedBox(height: 5),
-          Text(item['online_lookup_message'].toString(), style: GoogleFonts.poppins(color: const Color(0xFF8490A8), fontSize: 10)),
+          LiveTranslatedText(item['online_lookup_message'].toString(), style: GoogleFonts.poppins(color: const Color(0xFF8490A8), fontSize: 10)),
         ],
         const SizedBox(height: 8),
         Align(
@@ -950,7 +951,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           child: OutlinedButton.icon(
             onPressed: () => _showCreatePO(suggestion: item),
             icon: const Icon(Icons.playlist_add, size: 17),
-            label: Text('Draft purchase order ($suggestedQty)', style: const TextStyle(fontSize: 11)),
+            label: LiveTranslatedText('Draft purchase order ($suggestedQty)', style: const TextStyle(fontSize: 11)),
             style: OutlinedButton.styleFrom(
               foregroundColor: _primary,
               side: const BorderSide(color: Color(0xFFBFCBFF)),
@@ -998,9 +999,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(count.toString(), style: GoogleFonts.poppins(fontSize: 19, height: 1.1, fontWeight: FontWeight.w800, color: _ink)),
+                    LiveTranslatedText(count.toString(), style: GoogleFonts.poppins(fontSize: 19, height: 1.1, fontWeight: FontWeight.w800, color: _ink)),
                     const SizedBox(height: 3),
-                    Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 9.5, color: _muted)),
+                    LiveTranslatedText(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(fontSize: 9.5, color: _muted)),
                   ],
                 ),
               ),
@@ -1026,7 +1027,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
     return Padding(
       padding: const EdgeInsets.only(right: 7),
       child: ChoiceChip(
-        label: Text('$filter (' + _orderCount(filter).toString() + ')'),
+        label: LiveTranslatedText('$filter (' + _orderCount(filter).toString() + ')'),
         selected: selected,
         onSelected: (_) => setState(() => _orderFilter = filter),
         showCheckmark: false,
@@ -1056,27 +1057,27 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('PO #${po['id'] ?? i + 1}', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w800)),
+          LiveTranslatedText('PO #${po['id'] ?? i + 1}', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w800)),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
-            child: Text(statusLabel, style: GoogleFonts.poppins(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+            child: LiveTranslatedText(statusLabel, style: GoogleFonts.poppins(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
           ),
         ]),
         const SizedBox(height: 8),
-        Text(po['supplier_name']?.toString() ?? 'Supplier', style: GoogleFonts.poppins(color: _muted)),
+        LiveTranslatedText(po['supplier_name']?.toString() ?? 'Supplier', style: GoogleFonts.poppins(color: _muted)),
         const SizedBox(height: 4),
-        Text('₹${po['total_cost']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: const Color(0xFF079579), fontWeight: FontWeight.w800, fontSize: 18)),
+        LiveTranslatedText('₹${po['total_cost']?.toString() ?? '0'}', style: GoogleFonts.poppins(color: const Color(0xFF079579), fontWeight: FontWeight.w800, fontSize: 18)),
         if (status == 'PENDING') ...[
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: ElevatedButton.icon(
-              onPressed: () => _markDelivered(po['id']), icon: const Icon(Icons.check_rounded, size: 16), label: const Text('Mark received'),
+              onPressed: () => _markDelivered(po['id']), icon: const Icon(Icons.check_rounded, size: 16), label: const LiveTranslatedText('Mark received'),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16885E), foregroundColor: Colors.white),
             )),
             const SizedBox(width: 8),
             Expanded(child: ElevatedButton.icon(
-              onPressed: () => _cancelPO(po['id']), icon: const Icon(Icons.close, size: 16), label: const Text('Cancel'),
+              onPressed: () => _cancelPO(po['id']), icon: const Icon(Icons.close, size: 16), label: const LiveTranslatedText('Cancel'),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC4C58), foregroundColor: Colors.white),
             )),
           ]),
@@ -1189,7 +1190,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       debugPrint('❌ Failed to update local PO status: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not update purchase order: $e')),
+          SnackBar(content: LiveTranslatedText('Could not update purchase order: $e')),
         );
       }
     }
@@ -1230,7 +1231,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
       debugPrint('❌ Failed to cancel PO locally: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not cancel purchase order: $e')),
+          SnackBar(content: LiveTranslatedText('Could not cancel purchase order: $e')),
         );
       }
     }
@@ -1279,14 +1280,14 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Purchase order saved locally and queued for sync.')),
+          const SnackBar(content: LiveTranslatedText('✅ Purchase order saved locally and queued for sync.')),
         );
       }
     } catch (e) {
       debugPrint('❌ PO local save failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save purchase order: $e')),
+          SnackBar(content: LiveTranslatedText('Could not save purchase order: $e')),
         );
       }
     }
@@ -1324,19 +1325,19 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
               context: ctx,
               builder: (dCtx) => AlertDialog(
                 backgroundColor: _card,
-                title: const Text('Select Product', style: TextStyle(color: Colors.white)),
+                title: const LiveTranslatedText('Select Product', style: TextStyle(color: Colors.white)),
                 content: SizedBox(
                   width: double.maxFinite,
                   height: 340,
                   child: products.isEmpty
-                      ? const Center(child: Text('No products in inventory yet', style: TextStyle(color: Colors.white38)))
+                      ? const Center(child: LiveTranslatedText('No products in inventory yet', style: TextStyle(color: Colors.white38)))
                       : ListView.builder(
                           itemCount: products.length,
                           itemBuilder: (_, i) {
                             final p = products[i];
                             return ListTile(
-                              title: Text(p['product_name']?.toString() ?? 'Unknown', style: const TextStyle(color: Colors.white)),
-                              subtitle: Text('Stock: ${p['current_stock'] ?? 0}', style: const TextStyle(color: Colors.white38)),
+                              title: LiveTranslatedText(p['product_name']?.toString() ?? 'Unknown', style: const TextStyle(color: Colors.white)),
+                              subtitle: LiveTranslatedText('Stock: ${p['current_stock'] ?? 0}', style: const TextStyle(color: Colors.white38)),
                               onTap: () => Navigator.pop(dCtx, p),
                             );
                           },
@@ -1352,15 +1353,15 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
               context: ctx,
               builder: (dCtx) => AlertDialog(
                 backgroundColor: _card,
-                title: Text(selected['product_name']?.toString() ?? 'Item', style: const TextStyle(color: Colors.white)),
+                title: LiveTranslatedText(selected['product_name']?.toString() ?? 'Item', style: const TextStyle(color: Colors.white)),
                 content: Column(mainAxisSize: MainAxisSize.min, children: [
                   _field(qtyC, 'Quantity', numeric: true),
                   const SizedBox(height: 12),
                   _field(costC, 'Unit Cost (₹)', numeric: true),
                 ]),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(dCtx, false), child: const Text('Cancel')),
-                  TextButton(onPressed: () => Navigator.pop(dCtx, true), child: const Text('Add')),
+                  TextButton(onPressed: () => Navigator.pop(dCtx, false), child: const LiveTranslatedText('Cancel')),
+                  TextButton(onPressed: () => Navigator.pop(dCtx, true), child: const LiveTranslatedText('Add')),
                 ],
               ),
             );
@@ -1389,13 +1390,13 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('New Purchase Order', style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  LiveTranslatedText('New Purchase Order', style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   _field(supplierC, 'Supplier Name'),
                   const SizedBox(height: 12),
                   _field(notesC, 'Notes (optional)'),
                   const SizedBox(height: 16),
-                  Text('Items (at least one required)', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                  LiveTranslatedText('Items (at least one required)', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   ...orderItems.asMap().entries.map((e) {
                     final i = e.key;
@@ -1405,8 +1406,8 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(10)),
                       child: Row(children: [
-                        Expanded(child: Text('${it['product_name']}', style: const TextStyle(color: Colors.white))),
-                        Text('${it['quantity']} × ₹${it['unit_cost']}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                        Expanded(child: LiveTranslatedText('${it['product_name']}', style: const TextStyle(color: Colors.white))),
+                        LiveTranslatedText('${it['quantity']} × ₹${it['unit_cost']}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
                         IconButton(
                           icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 20),
                           onPressed: () => setModalState(() => orderItems.removeAt(i)),
@@ -1417,11 +1418,11 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                   OutlinedButton.icon(
                     onPressed: pickProduct,
                     icon: const Icon(Icons.add, color: Colors.indigoAccent),
-                    label: const Text('Add Item', style: TextStyle(color: Colors.indigoAccent)),
+                    label: const LiveTranslatedText('Add Item', style: TextStyle(color: Colors.indigoAccent)),
                     style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.indigoAccent)),
                   ),
                   const SizedBox(height: 12),
-                  Text('Estimated Total: ₹${total.toStringAsFixed(2)}',
+                  LiveTranslatedText('Estimated Total: ₹${total.toStringAsFixed(2)}',
                       style: GoogleFonts.poppins(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -1431,12 +1432,12 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                         final supplierName = supplierC.text.trim();
                         if (supplierName.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Supplier name is required')));
+                            const SnackBar(content: LiveTranslatedText('Supplier name is required')));
                           return;
                         }
                         if (orderItems.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Add at least one item')));
+                            const SnackBar(content: LiveTranslatedText('Add at least one item')));
                           return;
                         }
                         final payload = {
@@ -1448,7 +1449,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                         await _createPurchaseOrder(payload);
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.indigoAccent, padding: const EdgeInsets.symmetric(vertical: 14)),
-                      child: const Text('Create PO', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const LiveTranslatedText('Create PO', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -1484,7 +1485,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         foregroundColor: _ink,
         surfaceTintColor: _bg,
         elevation: 0,
-        title: Text(
+        title: LiveTranslatedText(
           'Purchase Orders',
           style: GoogleFonts.poppins(color: _ink, fontSize: 21, fontWeight: FontWeight.w800),
         ),
@@ -1492,7 +1493,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           TextButton.icon(
             onPressed: () => _scrollToSection(_ordersSectionKey, navigationIndex: 1),
             icon: const Icon(Icons.description_outlined, size: 18),
-            label: Text(
+            label: LiveTranslatedText(
               'My Orders',
               style: GoogleFonts.poppins(color: _ink, fontSize: 9.5, fontWeight: FontWeight.w700),
             ),
@@ -1511,7 +1512,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
         elevation: 6,
         onPressed: _showCreatePO,
         icon: const Icon(Icons.add_rounded),
-        label: Text(
+        label: LiveTranslatedText(
           'Create Purchase Order',
           style: GoogleFonts.poppins(fontSize: 10.5, fontWeight: FontWeight.w700),
         ),
@@ -1559,11 +1560,11 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               'Your purchase orders',
                               style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w800, fontSize: 15),
                             ),
-                            Text(
+                            LiveTranslatedText(
                               'Track supplier orders and delivery status',
                               style: GoogleFonts.poppins(color: _muted, fontSize: 10.5),
                             ),
@@ -1610,9 +1611,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                         children: [
                           const Icon(Icons.receipt_long_outlined, color: Color(0xFF8A96B2), size: 32),
                           const SizedBox(height: 8),
-                          Text('No purchase orders yet', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w700)),
+                          LiveTranslatedText('No purchase orders yet', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
-                          Text(
+                          LiveTranslatedText(
                             'Create a draft when you are ready to order from a supplier.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(color: _muted, fontSize: 10.5, height: 1.45),
@@ -1627,9 +1628,9 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                         children: [
                           const Icon(Icons.filter_alt_off_rounded, color: Color(0xFF94A3B8), size: 30),
                           const SizedBox(height: 8),
-                          Text('No ' + _orderFilter.toLowerCase() + ' orders', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w700)),
+                          LiveTranslatedText('No ' + _orderFilter.toLowerCase() + ' orders', style: GoogleFonts.poppins(color: _ink, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
-                          Text('Choose another status to view your purchase orders.', textAlign: TextAlign.center, style: GoogleFonts.poppins(color: _muted, fontSize: 10.5)),
+                          LiveTranslatedText('Choose another status to view your purchase orders.', textAlign: TextAlign.center, style: GoogleFonts.poppins(color: _muted, fontSize: 10.5)),
                         ],
                       ),
                     )
@@ -1681,7 +1682,7 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
                     child: Icon(icon, color: selected ? _primary : const Color(0xFF8090AA), size: 22),
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  LiveTranslatedText(
                     label,
                     style: GoogleFonts.poppins(
                       color: selected ? _primary : const Color(0xFF71809A),

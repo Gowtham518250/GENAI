@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -82,7 +83,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
             Icon(Icons.check_circle, color: const Color(0xFF6366F1).withValues(alpha: 0.4)),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 'Selected: $fileName',
                 style: const TextStyle(color: Colors.white),
               ),
@@ -174,7 +175,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
             Icon(Icons.analytics, color: AppColors.primary),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 'Analysis completed! View results below',
                 style: TextStyle(color: Colors.white),
               ),
@@ -227,7 +228,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           AppLocalizations.of(context).uploadData,
                           style: const TextStyle(
                             fontSize: 18,
@@ -236,7 +237,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        LiveTranslatedText(
                           'Supported formats: CSV, Excel (XLSX/XLS), JSON',
                           style: TextStyle(
                             fontSize: 14,
@@ -271,7 +272,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                             color: selectedBytes != null ? const Color(0xFF6366F1) : const Color(0xFF9CA3AF),
                           ),
                         const SizedBox(height: 12),
-                          Text(
+                          LiveTranslatedText(
                             selectedBytes != null ? selectedFileName! : AppLocalizations.of(context).selectFile,
                             style: TextStyle(
                               fontSize: 16,
@@ -284,7 +285,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                           ),
                         if (selectedBytes != null) ...[
                           const SizedBox(height: 8),
-                          Text(
+                          LiveTranslatedText(
                             '${(selectedBytes!.length / 1024).toStringAsFixed(1)} KB',
                             style: TextStyle(
                               fontSize: 14,
@@ -305,7 +306,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                     OutlinedButton.icon(
                       onPressed: pickFile,
                       icon: const Icon(Icons.swap_horiz, size: 18),
-                      label: const Text('Change File'),
+                      label: const LiveTranslatedText('Change File'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF6366F1),
                         side: BorderSide(color: const Color(0xFF6366F1).withValues(alpha: 0.5)),
@@ -342,7 +343,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           AppLocalizations.of(context).askYourQuestion,
                           style: const TextStyle(
                             fontSize: 18,
@@ -351,7 +352,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        LiveTranslatedText(
                           'Write a natural language question about your data',
                           style: TextStyle(
                             fontSize: 14,
@@ -375,7 +376,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                   maxLines: 3,
                   style: const TextStyle(fontSize: 16, color: Color(0xFF1F2937)),
                   decoration: InputDecoration(
-                    hintText: 'e.g., "Show total sales by product category"',
+                    hint: LiveTranslatedText('e.g., "Show total sales by product category"'),
                     hintStyle: TextStyle(color: Colors.white54),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.all(20),
@@ -389,7 +390,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              const LiveTranslatedText(
                 'Try these examples:',
                 style: TextStyle(
                   fontSize: 14,
@@ -417,7 +418,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                               : const Color(0xFF2A2A38),
                         ),
                       ),
-                      child: Text(
+                      child: LiveTranslatedText(
                         queryExamples[index],
                         style: TextStyle(
                           fontSize: 13,
@@ -459,7 +460,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: Text(
+                        child: LiveTranslatedText(
                           AppLocalizations.of(context).analysisResults,
                           style: const TextStyle(
                             fontSize: 18,
@@ -479,7 +480,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                             children: [
                               Icon(Icons.timer, color: const Color(0xFF0097A7), size: 14),
                               const SizedBox(width: 4),
-                              Text(
+                              LiveTranslatedText(
                                 '${executionTime?.toStringAsFixed(2) ?? '0.00'}s',
                                 style: TextStyle(
                                   color: const Color(0xFF0097A7),
@@ -504,7 +505,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             '📊 ${AppLocalizations.of(context).analysisSummary}',
                             style: const TextStyle(
                               fontSize: 18,
@@ -513,7 +514,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Text(
+                          LiveTranslatedText(
                             queryAnswer!,
                             style: const TextStyle(
                               fontSize: 15,
@@ -526,7 +527,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                     ),
                   if (resultData.isNotEmpty) ...[
                     const SizedBox(height: 20),
-                    Text(
+                    LiveTranslatedText(
                       '📋 ${AppLocalizations.of(context).detailedData}',
                       style: TextStyle(
                         fontSize: 16,
@@ -569,7 +570,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                             ),
                             columns: resultData.first.keys.map((key) {
                               return DataColumn(
-                                label: Text(
+                                label: LiveTranslatedText(
                                   key.toString(),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
@@ -589,7 +590,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                                   return DataCell(
                                     Container(
                                       constraints: const BoxConstraints(minWidth: 100),
-                                      child: Text(
+                                      child: LiveTranslatedText(
                                         value?.toString() ?? '',
                                         style: TextStyle(
                                           color: Color(0xFF374151),
@@ -610,7 +611,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Chip(
-                          label: Text(
+                          label: LiveTranslatedText(
                             '${resultData.length} rows shown',
                             style: const TextStyle(
                               fontSize: 12,
@@ -673,7 +674,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
             Icon(icon, color: iconColor),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 message,
                 style: const TextStyle(
                   color: Colors.white,
@@ -731,7 +732,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                 const SizedBox(height: 24),
                 
                 // Title
-                Text(
+                LiveTranslatedText(
                   AppLocalizations.of(context).uploadData,
                   style: const TextStyle(
                     fontSize: 22,
@@ -786,7 +787,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      LiveTranslatedText(
                         'Upload any CSV, Excel, or JSON file and get instant SQL analysis',
                         style: TextStyle(
                           fontSize: 14,
@@ -839,12 +840,12 @@ class _DataUploadPageState extends State<DataUploadPage> {
                                     ),
                                     const SizedBox(width: 12),
                                     if (isAnalyzing)
-                                      const Text(
+                                      const LiveTranslatedText(
                                         'Analyzing your data...',
                                         style: TextStyle(fontSize: 16),
                                       )
                                     else
-                                      const Text(
+                                      const LiveTranslatedText(
                                         'Processing...',
                                         style: TextStyle(fontSize: 16),
                                       ),
@@ -855,7 +856,7 @@ class _DataUploadPageState extends State<DataUploadPage> {
                                   children: [
                                     const Icon(Icons.psychology, size: 22),
                                     const SizedBox(width: 12),
-                                    const Text(
+                                    const LiveTranslatedText(
                                       'Analyze Data',
                                       style: TextStyle(
                                         fontSize: 16,

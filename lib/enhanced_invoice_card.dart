@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
@@ -150,7 +151,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                LiveTranslatedText(
                                   'Invoice #${widget.invoiceNumber}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
@@ -161,7 +162,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
+                                LiveTranslatedText(
                                   widget.customerName,
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
@@ -175,7 +176,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(
+                                LiveTranslatedText(
                                   '₹${widget.totalAmount}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 16,
@@ -193,7 +194,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                                     color: statusColor.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     widget.status,
                                     style: GoogleFonts.poppins(
                                       fontSize: 10,
@@ -231,7 +232,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                         color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       ),
                       const SizedBox(width: 6),
-                      Text(
+                      LiveTranslatedText(
                         'Due: ${widget.dueDate}',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
@@ -293,7 +294,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             'Items',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
@@ -315,7 +316,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      LiveTranslatedText(
                                         item.name,
                                         style: GoogleFonts.poppins(
                                           fontSize: 12,
@@ -325,7 +326,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                                               : Colors.black87,
                                         ),
                                       ),
-                                      Text(
+                                      LiveTranslatedText(
                                         'Qty: ${item.quantity}',
                                         style: GoogleFonts.poppins(
                                           fontSize: 11,
@@ -337,7 +338,7 @@ class _EnhancedInvoiceCardState extends State<EnhancedInvoiceCard>
                                     ],
                                   ),
                                 ),
-                                Text(
+                                LiveTranslatedText(
                                   '₹${item.amount}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
@@ -400,7 +401,7 @@ class _EnhancedInvoiceFormState extends State<EnhancedInvoiceForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
-              Text(
+              LiveTranslatedText(
                 'Create New Invoice',
                 style: GoogleFonts.poppins(
                   fontSize: 20,
@@ -444,7 +445,7 @@ class _EnhancedInvoiceFormState extends State<EnhancedInvoiceForm> {
                       setState(() => _lineItems.add(InvoiceLineItem()));
                     },
                     icon: const Icon(Icons.add_rounded),
-                    label: const Text('Add Item'),
+                    label: const LiveTranslatedText('Add Item'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6366F1),
                     ),
@@ -461,7 +462,7 @@ class _EnhancedInvoiceFormState extends State<EnhancedInvoiceForm> {
                     if (_formKey.currentState!.validate()) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Invoice created successfully!'),
+                          content: LiveTranslatedText('Invoice created successfully!'),
                         ),
                       );
                     }
@@ -470,7 +471,7 @@ class _EnhancedInvoiceFormState extends State<EnhancedInvoiceForm> {
                     backgroundColor: const Color(0xFF6366F1),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     'Create Invoice',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                   ),
@@ -500,7 +501,7 @@ class _EnhancedInvoiceFormState extends State<EnhancedInvoiceForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             title,
             style: GoogleFonts.poppins(
               fontSize: 14,

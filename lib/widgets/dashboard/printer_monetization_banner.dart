@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,7 +31,7 @@ class PrinterMonetizationBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   '🖨️ Bluetooth Printer — ₹1,999',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
@@ -38,7 +39,7 @@ class PrinterMonetizationBanner extends StatelessWidget {
                     color: const Color(0xFF92400E),
                   ),
                 ),
-                Text(
+                LiveTranslatedText(
                   'Print bills instantly. WhatsApp us to order!',
                   style: GoogleFonts.poppins(
                     fontSize: 10.5,
@@ -62,7 +63,7 @@ class PrinterMonetizationBanner extends StatelessWidget {
                 color: const Color(0xFFF59E0B),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 'Order',
                 style: GoogleFonts.poppins(
                   fontSize: 11,

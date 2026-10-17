@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 /// 📡 RevenueRadarChart
 /// Most sold products by QUANTITY — spider web polygon radar
 /// Dark premium card with glowing fills + horizontal bar legend
@@ -42,7 +43,7 @@ class RevenueRadarChart extends StatelessWidget {
           children: [
             Icon(Icons.radar, size: 48, color: Colors.white.withValues(alpha: 0.2)),
             const SizedBox(height: 12),
-            Text('No quantity data', style: GoogleFonts.poppins(color: Colors.white38, fontSize: 13)),
+            LiveTranslatedText('No quantity data', style: GoogleFonts.poppins(color: Colors.white38, fontSize: 13)),
           ],
         ),
       );
@@ -170,7 +171,7 @@ class RevenueRadarChart extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               'Volume Radar',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
@@ -178,7 +179,7 @@ class RevenueRadarChart extends StatelessWidget {
                                 color: Colors.white,
                               ),
                             ),
-                            Text(
+                            LiveTranslatedText(
                               'Most sold products by quantity',
                               style: GoogleFonts.poppins(fontSize: 11, color: Colors.white38),
                             ),
@@ -191,7 +192,7 @@ class RevenueRadarChart extends StatelessWidget {
                             color: const Color(0xFF1E293B),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Text(
+                          child: LiveTranslatedText(
                             '${totalQty.toStringAsFixed(0)} units',
                             style: GoogleFonts.poppins(
                               fontSize: 10,
@@ -285,7 +286,7 @@ class RevenueRadarChart extends StatelessWidget {
                             children: [
                               SizedBox(
                                 width: 80,
-                                child: Text(
+                                child: LiveTranslatedText(
                                   item.key,
                                   style: GoogleFonts.poppins(
                                     fontSize: 10,
@@ -323,7 +324,7 @@ class RevenueRadarChart extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              Text(
+                              LiveTranslatedText(
                                 item.value % 1 == 0
                                     ? item.value.toInt().toString()
                                     : item.value.toStringAsFixed(1),

@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -49,7 +50,7 @@ class QueryHistoryView extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   'Past Q&A History',
                   style: GoogleFonts.inter(
                     fontSize: 14,
@@ -58,7 +59,7 @@ class QueryHistoryView extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
+              LiveTranslatedText(
                 '${history.length} saved',
                 style: GoogleFonts.inter(
                   fontSize: 10.5,
@@ -74,7 +75,7 @@ class QueryHistoryView extends StatelessWidget {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('Clear all'),
+                child: const LiveTranslatedText('Clear all'),
               ),
             ],
           ),
@@ -121,7 +122,7 @@ class QueryHistoryView extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            LiveTranslatedText(
                               item.question,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
@@ -133,7 +134,7 @@ class QueryHistoryView extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 7),
-                            Text(
+                            LiveTranslatedText(
                               item.answer,
                               maxLines: 5,
                               overflow: TextOverflow.ellipsis,
@@ -146,7 +147,7 @@ class QueryHistoryView extends StatelessWidget {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Text(
+                                LiveTranslatedText(
                                   _formatDate(item.createdAt),
                                   style: GoogleFonts.inter(
                                     fontSize: 9.5,
@@ -155,7 +156,7 @@ class QueryHistoryView extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 10),
                                 if (item.resultCount > 0)
-                                  Text(
+                                  LiveTranslatedText(
                                     '${item.resultCount} result(s)',
                                     style: GoogleFonts.inter(
                                       fontSize: 9.5,

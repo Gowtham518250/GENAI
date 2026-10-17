@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -106,7 +107,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
 
     if (newQuantity > item.maxQuantity) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Only ${item.maxQuantity} items available')),
+        SnackBar(content: LiveTranslatedText('Only ${item.maxQuantity} items available')),
       );
       return;
     }
@@ -143,7 +144,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
 
     await _saveCartData();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Moved to Saved for Later')),
+      const SnackBar(content: LiveTranslatedText('Moved to Saved for Later')),
     );
   }
 
@@ -166,7 +167,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
 
     await _saveCartData();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Moved to Cart')),
+      const SnackBar(content: LiveTranslatedText('Moved to Cart')),
     );
   }
 
@@ -194,7 +195,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
     } catch (e) {
       setState(() => _isProcessing = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Checkout failed: $e')),
+        SnackBar(content: LiveTranslatedText('Checkout failed: $e')),
       );
     }
   }
@@ -208,13 +209,13 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
           children: [
             const Icon(Icons.check_circle, color: Colors.green, size: 32),
             const SizedBox(width: 12),
-            Text('Order Placed!', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+            LiveTranslatedText('Order Placed!', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Your order has been placed successfully', style: GoogleFonts.poppins()),
+            LiveTranslatedText('Your order has been placed successfully', style: GoogleFonts.poppins()),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
@@ -226,7 +227,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
                 children: [
                   const Icon(Icons.local_shipping, size: 32, color: Colors.green),
                   const SizedBox(height: 8),
-                  Text(
+                  LiveTranslatedText(
                     'Estimated Delivery: 3-5 business days',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
                   ),
@@ -241,7 +242,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
               Navigator.of(context).pop(); // Close dialog
               Navigator.of(context).pop(); // Go back to previous screen
             },
-            child: const Text('Continue Shopping'),
+            child: const LiveTranslatedText('Continue Shopping'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -249,7 +250,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
               // Navigate to order tracking
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[600]),
-            child: const Text('Track Order'),
+            child: const LiveTranslatedText('Track Order'),
           ),
         ],
       ),
@@ -261,7 +262,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text('Shopping Cart', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('Shopping Cart', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
@@ -278,7 +279,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
                 _saveCartData();
               },
               icon: const Icon(Icons.delete_outline),
-              label: const Text('Clear'),
+              label: const LiveTranslatedText('Clear'),
             ),
         ],
       ),
@@ -295,12 +296,12 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
         children: [
           Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          Text(
+          LiveTranslatedText(
             'Your cart is empty',
             style: GoogleFonts.poppins(fontSize: 18, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             'Add items to get started',
             style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[500]),
           ),
@@ -308,7 +309,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[600]),
-            child: const Text('Start Shopping'),
+            child: const LiveTranslatedText('Start Shopping'),
           ),
         ],
       ),
@@ -330,7 +331,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
                   children: [
                     Icon(Icons.lightbulb, color: Colors.orange[600]),
                     const SizedBox(width: 8),
-                    Text('Suggestions', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                    LiveTranslatedText('Suggestions', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -344,7 +345,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
             padding: const EdgeInsets.all(16),
             children: [
               if (_cartItems.isNotEmpty) ...[
-                Text(
+                LiveTranslatedText(
                   'Cart Items (${_cartItems.length})',
                   style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -353,7 +354,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
               ],
               if (_savedForLater.isNotEmpty) ...[
                 const SizedBox(height: 24),
-                Text(
+                LiveTranslatedText(
                   'Saved for Later (${_savedForLater.length})',
                   style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -381,7 +382,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
       child: Row(
         children: [
           Expanded(
-            child: Text(
+            child: LiveTranslatedText(
               suggestion.message,
               style: GoogleFonts.poppins(fontSize: 12),
             ),
@@ -390,7 +391,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
             onPressed: () {
               // Handle suggestion action
             },
-            child: Text(suggestion.action, style: GoogleFonts.poppins(fontSize: 12, color: Colors.orange[600])),
+            child: LiveTranslatedText(suggestion.action, style: GoogleFonts.poppins(fontSize: 12, color: Colors.orange[600])),
           ),
         ],
       ),
@@ -422,18 +423,18 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     item.name,
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(item.brand, style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 12)),
+                  LiveTranslatedText(item.brand, style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 12)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         '₹${item.price}',
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
@@ -442,7 +443,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
                       ),
                       if (item.discount > 0) ...[
                         const SizedBox(width: 8),
-                        Text(
+                        LiveTranslatedText(
                           '₹${(item.price / (1 - item.discount / 100)).toInt()}',
                           style: GoogleFonts.poppins(
                             decoration: TextDecoration.lineThrough,
@@ -457,7 +458,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
                             color: Colors.green,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(
+                          child: LiveTranslatedText(
                             '${item.discount}% OFF',
                             style: GoogleFonts.poppins(
                               color: Colors.white,
@@ -488,7 +489,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       ),
-                      Text(
+                      LiveTranslatedText(
                         '${item.quantity}',
                         style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                       ),
@@ -545,14 +546,14 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     item.name,
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  LiveTranslatedText(
                     '₹${item.price}',
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
@@ -599,7 +600,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
           const SizedBox(height: 16),
           
           // Delivery slot selection
-          Text('Delivery Slot', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          LiveTranslatedText('Delivery Slot', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -612,9 +613,9 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
                 value: _selectedDeliverySlot,
                 isExpanded: true,
                 items: const [
-                  DropdownMenuItem(value: 'Standard Delivery (3-5 days)', child: Text('Standard Delivery (3-5 days)')),
-                  DropdownMenuItem(value: 'Express Delivery (1-2 days)', child: Text('Express Delivery (1-2 days) - ₹99')),
-                  DropdownMenuItem(value: 'Same Day Delivery', child: Text('Same Day Delivery - ₹149')),
+                  DropdownMenuItem(value: 'Standard Delivery (3-5 days)', child: LiveTranslatedText('Standard Delivery (3-5 days)')),
+                  DropdownMenuItem(value: 'Express Delivery (1-2 days)', child: LiveTranslatedText('Express Delivery (1-2 days) - ₹99')),
+                  DropdownMenuItem(value: 'Same Day Delivery', child: LiveTranslatedText('Same Day Delivery - ₹149')),
                 ],
                 onChanged: (value) {
                   setState(() => _selectedDeliverySlot = value!);
@@ -625,7 +626,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
           const SizedBox(height: 16),
           
           // Payment method selection
-          Text('Payment Method', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          LiveTranslatedText('Payment Method', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -651,7 +652,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
               ),
               child: _isProcessing
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : Text(
+                  : LiveTranslatedText(
                       'Place Order • ₹${(_totalAmount + _deliveryFee).toInt()}',
                       style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
@@ -668,13 +669,13 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.poppins(
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
             ),
           ),
-          Text(
+          LiveTranslatedText(
             amount >= 0 ? '₹${amount.toInt()}' : '-₹${amount.abs().toInt()}',
             style: GoogleFonts.poppins(
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
@@ -693,7 +694,7 @@ class _EnhancedShoppingCartState extends State<EnhancedShoppingCart> {
         children: [
           Icon(_getPaymentIcon(icon), size: 16),
           const SizedBox(width: 4),
-          Text(label, style: GoogleFonts.poppins(fontSize: 12)),
+          LiveTranslatedText(label, style: GoogleFonts.poppins(fontSize: 12)),
         ],
       ),
       selected: isSelected,

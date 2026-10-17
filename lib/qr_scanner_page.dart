@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -361,18 +362,18 @@ class _QrScannerPageState extends State<QrScannerPage> with SingleTickerProvider
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_heatmapResult!['name'] ?? '', 
+            LiveTranslatedText(_heatmapResult!['name'] ?? '', 
                 style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text(_heatmapResult!['status'] ?? '', 
+            LiveTranslatedText(_heatmapResult!['status'] ?? '', 
                 style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
             if (_heatmapResult!['price'] != null) ...[
               const SizedBox(height: 8),
-              Text(_heatmapResult!['price'], 
+              LiveTranslatedText(_heatmapResult!['price'], 
                   style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900)),
             ],
             const SizedBox(height: 4),
-            Text('SKU: ${_heatmapResult!['sku']}', 
+            LiveTranslatedText('SKU: ${_heatmapResult!['sku']}', 
                 style: const TextStyle(color: Colors.white70, fontSize: 10)),
           ],
         ),
@@ -401,7 +402,7 @@ class _QrScannerPageState extends State<QrScannerPage> with SingleTickerProvider
               onPressed: () => Navigator.of(context).pop(),
             ),
             const Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 'Scan Barcode / QR',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -430,7 +431,7 @@ class _QrScannerPageState extends State<QrScannerPage> with SingleTickerProvider
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Icon(Icons.zoom_out_rounded, color: Colors.white54, size: 16),
-              Text(
+              LiveTranslatedText(
                 '${(_zoomFactor * 3 + 1).toStringAsFixed(1)}x',
                 style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
               ),
@@ -480,7 +481,7 @@ class _QrScannerPageState extends State<QrScannerPage> with SingleTickerProvider
             const Icon(Icons.check_circle_outline, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 _recentPaymentAlert!,
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
@@ -523,7 +524,7 @@ class _QrScannerPageState extends State<QrScannerPage> with SingleTickerProvider
                 _heatmapResult = null;
               });
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(_heatmapEnabled ? '🔥 Heatmap Velocity Mode ON' : '📷 Scanner Mode ON'),
+                content: LiveTranslatedText(_heatmapEnabled ? '🔥 Heatmap Velocity Mode ON' : '📷 Scanner Mode ON'),
                 duration: const Duration(seconds: 1),
               ));
             },

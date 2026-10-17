@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -27,7 +28,7 @@ class MorePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FC),
       appBar: AppBar(
-        title: Text('More', style: GoogleFonts.poppins(color: _ink, fontSize: 20, fontWeight: FontWeight.w800)),
+        title: LiveTranslatedText('More', style: GoogleFonts.poppins(color: _ink, fontSize: 20, fontWeight: FontWeight.w800)),
         backgroundColor: Colors.white,
         foregroundColor: _ink,
         surfaceTintColor: Colors.white,
@@ -55,9 +56,9 @@ class MorePage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Your shop workspace', style: GoogleFonts.poppins(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
+                            LiveTranslatedText('Your shop workspace', style: GoogleFonts.poppins(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
                             const SizedBox(height: 4),
-                            Text('Settings, team tools, reports and more in one place.', style: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.86), fontSize: 11, height: 1.4)),
+                            LiveTranslatedText('Settings, team tools, reports and more in one place.', style: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.86), fontSize: 11, height: 1.4)),
                           ],
                         ),
                       ),
@@ -68,7 +69,7 @@ class MorePage extends StatelessWidget {
                 Row(children: [
                   Container(width: 4, height: 22, decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(4))),
                   const SizedBox(width: 10),
-                  Text('Manage your shop', style: GoogleFonts.poppins(color: _ink, fontSize: 16, fontWeight: FontWeight.w800)),
+                  LiveTranslatedText('Manage your shop', style: GoogleFonts.poppins(color: _ink, fontSize: 16, fontWeight: FontWeight.w800)),
                 ]),
                 const SizedBox(height: 13),
                 GridView.builder(
@@ -93,9 +94,9 @@ class MorePage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Offline-first workspace', style: GoogleFonts.poppins(color: _ink, fontSize: 12, fontWeight: FontWeight.w700)),
+                            LiveTranslatedText('Offline-first workspace', style: GoogleFonts.poppins(color: _ink, fontSize: 12, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 3),
-                            Text('Keep working during connection drops. Pending changes sync through the app’s existing queue.', style: GoogleFonts.poppins(color: _muted, fontSize: 10.5, height: 1.4)),
+                            LiveTranslatedText('Keep working during connection drops. Pending changes sync through the app’s existing queue.', style: GoogleFonts.poppins(color: _muted, fontSize: 10.5, height: 1.4)),
                           ],
                         ),
                       ),
@@ -152,9 +153,9 @@ class _MoreActionCard extends StatelessWidget {
                 const Icon(Icons.arrow_outward_rounded, color: Color(0xFF94A3B8), size: 17),
               ]),
               const SizedBox(height: 10),
-              Text(action.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(color: const Color(0xFF172554), fontSize: 12, fontWeight: FontWeight.w800)),
+              LiveTranslatedText(action.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(color: const Color(0xFF172554), fontSize: 12, fontWeight: FontWeight.w800)),
               const SizedBox(height: 3),
-              Text(action.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(color: const Color(0xFF64748B), fontSize: 10, height: 1.3)),
+              LiveTranslatedText(action.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.poppins(color: const Color(0xFF64748B), fontSize: 10, height: 1.3)),
             ],
           ),
         ),

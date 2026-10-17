@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -55,7 +56,7 @@ class ResultCard extends StatelessWidget {
             children: [
               const Icon(Icons.insights_rounded, size: 16, color: Color(0xFF818CF8)),
               const SizedBox(width: 6),
-              Text(
+              LiveTranslatedText(
                 'Key Metric',
                 style: GoogleFonts.inter(
                   fontSize: 13,
@@ -130,7 +131,7 @@ class ResultCard extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: rows.map((r) => Text('• $r', style: GoogleFonts.inter(color: Colors.white))).toList(),
+          children: rows.map((r) => LiveTranslatedText('• $r', style: GoogleFonts.inter(color: Colors.white))).toList(),
         ),
       );
     }
@@ -149,7 +150,7 @@ class ResultCard extends StatelessWidget {
                 children: [
                   const Icon(Icons.table_chart_outlined, size: 16, color: Color(0xFF818CF8)),
                   const SizedBox(width: 6),
-                  Text(
+                  LiveTranslatedText(
                     'Result Details',
                     style: GoogleFonts.inter(
                       fontSize: 13,
@@ -165,7 +166,7 @@ class ResultCard extends StatelessWidget {
                   color: AppColors.brandLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   '${rows.length} ${rows.length == 1 ? "row" : "rows"}',
                   style: GoogleFonts.inter(
                     fontSize: 11,
@@ -210,7 +211,7 @@ class ResultCard extends StatelessWidget {
                 dividerThickness: 0.6,
                 columns: columnsList.map((colKey) {
                   return DataColumn(
-                    label: Text(
+                    label: LiveTranslatedText(
                       _humanizeLabel(colKey),
                       style: GoogleFonts.inter(
                         fontSize: 12.5,
@@ -237,7 +238,7 @@ class ResultCard extends StatelessWidget {
                         cellVal = rowItem[colKey];
                       }
                       return DataCell(
-                        Text(
+                        LiveTranslatedText(
                           _formatCellValue(colKey, cellVal),
                           style: GoogleFonts.inter(
                             fontSize: 13,
@@ -367,7 +368,7 @@ class _KpiMetricCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              LiveTranslatedText(
                 title.toUpperCase(),
                 style: GoogleFonts.inter(
                   fontSize: 11.5,
@@ -391,7 +392,7 @@ class _KpiMetricCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text(
+          LiveTranslatedText(
             formattedValue,
             style: GoogleFonts.inter(
               fontSize: 28,
@@ -402,7 +403,7 @@ class _KpiMetricCard extends StatelessWidget {
           ),
           if (queryContext != null && queryContext!.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text(
+            LiveTranslatedText(
               queryContext!,
               style: GoogleFonts.inter(
                 fontSize: 12,

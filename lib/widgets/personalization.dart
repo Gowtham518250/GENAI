@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -137,7 +138,7 @@ class _PersonalizationDashboardState extends State<PersonalizationDashboard> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(
+        title: LiveTranslatedText(
           'Customize Dashboard',
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
@@ -184,7 +185,7 @@ class _PersonalizationDashboardState extends State<PersonalizationDashboard> {
           ),
           child: Icon(widget.icon, color: widget.color),
         ),
-        title: Text(
+        title: LiveTranslatedText(
           widget.title,
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
@@ -262,7 +263,7 @@ class WeatherWidget extends StatelessWidget {
               Icon(Icons.location_on, size: 16, color: const Color(0xFF3B82F6)),
               const SizedBox(width: 4),
               Expanded(
-                child: Text(
+                child: LiveTranslatedText(
                   location,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
@@ -277,7 +278,7 @@ class WeatherWidget extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LiveTranslatedText(
                 '${temperature.toInt()}°',
                 style: GoogleFonts.poppins(
                   fontSize: 32,
@@ -286,7 +287,7 @@ class WeatherWidget extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              Text(
+              LiveTranslatedText(
                 condition,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -354,7 +355,7 @@ class _TipsWidgetState extends State<TipsWidget> {
             children: [
               Icon(Icons.lightbulb, color: const Color(0xFF8B5CF6)),
               const SizedBox(width: AppSpacing.sm),
-              Text(
+              LiveTranslatedText(
                 'Tip of the Day',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -365,7 +366,7 @@ class _TipsWidgetState extends State<TipsWidget> {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
+          LiveTranslatedText(
             _tips[_currentTipIndex],
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -493,7 +494,7 @@ class _CustomizableQuickActionsState extends State<CustomizableQuickActions> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              LiveTranslatedText(
                 'Quick Actions',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
@@ -567,7 +568,7 @@ class _CustomizableQuickActionsState extends State<CustomizableQuickActions> {
           children: [
             Icon(action.icon, size: 16, color: action.color),
             const SizedBox(width: AppSpacing.sm),
-            Text(
+            LiveTranslatedText(
               action.label,
               style: GoogleFonts.poppins(
                 fontSize: 12,
@@ -600,7 +601,7 @@ class _CustomizableQuickActionsState extends State<CustomizableQuickActions> {
           Icon(action.icon, size: 16, color: action.color),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(
+            child: LiveTranslatedText(
               action.label,
               style: GoogleFonts.poppins(fontSize: 12),
             ),

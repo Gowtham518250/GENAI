@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
@@ -274,12 +275,12 @@ class _ModernAnalyticsHubState extends State<ModernAnalyticsHub> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           'Analytics Hub',
           style: AppTypography.titleLarge,
         ),
         const SizedBox(height: 8),
-        Text(
+        LiveTranslatedText(
           'Real-time business insights and performance metrics',
           style: AppTypography.bodySmall,
         ),
@@ -291,7 +292,7 @@ class _ModernAnalyticsHubState extends State<ModernAnalyticsHub> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Period', style: AppTypography.bodySmall),
+        LiveTranslatedText('Period', style: AppTypography.bodySmall),
         const SizedBox(height: 12),
         SizedBox(
           height: 44,
@@ -319,7 +320,7 @@ class _ModernAnalyticsHubState extends State<ModernAnalyticsHub> {
                         boxShadow: isSelected ? AppShadows.subtle : null,
                       ),
                       child: Center(
-                        child: Text(
+                        child: LiveTranslatedText(
                           label,
                           style: GoogleFonts.poppins(
                             fontSize: 14,
@@ -345,7 +346,7 @@ class _ModernAnalyticsHubState extends State<ModernAnalyticsHub> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Key Metrics', style: AppTypography.titleSmall),
+        LiveTranslatedText('Key Metrics', style: AppTypography.titleSmall),
         const SizedBox(height: 16),
         GridView.count(
           crossAxisCount: 2,
@@ -393,7 +394,7 @@ class _ModernAnalyticsHubState extends State<ModernAnalyticsHub> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Chart Type', style: AppTypography.bodySmall),
+        LiveTranslatedText('Chart Type', style: AppTypography.bodySmall),
         const SizedBox(height: 12),
         SizedBox(
           height: 44,
@@ -419,7 +420,7 @@ class _ModernAnalyticsHubState extends State<ModernAnalyticsHub> {
                         ),
                       ),
                       child: Center(
-                        child: Text(
+                        child: LiveTranslatedText(
                           _chartLabels[index],
                           style: GoogleFonts.poppins(
                             fontSize: 14,
@@ -466,7 +467,7 @@ class _ModernAnalyticsHubState extends State<ModernAnalyticsHub> {
     final sales = widget.analyticsSales;
     if (sales.isEmpty) {
       return Center(
-        child: Text(
+        child: LiveTranslatedText(
           'No data available',
           style: AppTypography.bodySmall,
         ),
@@ -579,8 +580,8 @@ class _ModernAnalyticsHubState extends State<ModernAnalyticsHub> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTypography.titleSmall),
-                Text(subtitle, style: AppTypography.bodySmall),
+                LiveTranslatedText(title, style: AppTypography.titleSmall),
+                LiveTranslatedText(subtitle, style: AppTypography.bodySmall),
               ],
             ),
           ],
@@ -612,12 +613,12 @@ class _ModernAnalyticsHubState extends State<ModernAnalyticsHub> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.label, style: AppTypography.bodySmall),
+                LiveTranslatedText(item.label, style: AppTypography.bodySmall),
                 const SizedBox(height: 4),
-                Text(item.subtext, style: AppTypography.caption),
+                LiveTranslatedText(item.subtext, style: AppTypography.caption),
               ],
             ),
-            Text(item.value, style: AppTypography.titleSmall),
+            LiveTranslatedText(item.value, style: AppTypography.titleSmall),
           ],
         ),
         if (!isLast) ...[
@@ -671,7 +672,7 @@ class BarChartWidget extends StatelessWidget {
 
     if (topProductsList.isEmpty) {
       return Center(
-        child: Text('No product data', style: AppTypography.bodySmall),
+        child: LiveTranslatedText('No product data', style: AppTypography.bodySmall),
       );
     }
 
@@ -700,7 +701,7 @@ class BarChartWidget extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    LiveTranslatedText(
                       product.key.substring(0, (product.key.length < 8 ? product.key.length : 8)),
                       style: GoogleFonts.poppins(fontSize: 10),
                       maxLines: 1,
@@ -713,7 +714,7 @@ class BarChartWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
+        LiveTranslatedText(
           'Top 5 Products by Revenue',
           style: AppTypography.caption,
         ),
@@ -758,7 +759,7 @@ class LineChartWidget extends StatelessWidget {
 
     if (sortedDaysList.isEmpty) {
       return Center(
-        child: Text('No daily data', style: AppTypography.bodySmall),
+        child: LiveTranslatedText('No daily data', style: AppTypography.bodySmall),
       );
     }
 
@@ -796,7 +797,7 @@ class LineChartWidget extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      LiveTranslatedText(
                         day.key.day.toString(),
                         style: GoogleFonts.poppins(fontSize: 10),
                       ),
@@ -808,7 +809,7 @@ class LineChartWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
+        LiveTranslatedText(
           'Last 7 Days Revenue',
           style: AppTypography.caption,
         ),
@@ -870,7 +871,7 @@ class PieChartWidget extends StatelessWidget {
 
     if (topProductsList.isEmpty) {
       return Center(
-        child: Text('No product data', style: AppTypography.bodySmall),
+        child: LiveTranslatedText('No product data', style: AppTypography.bodySmall),
       );
     }
 
@@ -912,14 +913,14 @@ class PieChartWidget extends StatelessWidget {
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             topProducts.length.toString(),
                             style: GoogleFonts.poppins(
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          Text(
+                          LiveTranslatedText(
                             'Products',
                             style: AppTypography.caption,
                           ),
@@ -953,7 +954,7 @@ class PieChartWidget extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(
+                              child: LiveTranslatedText(
                                 '${percentage}%',
                                 style: GoogleFonts.poppins(fontSize: 12),
                                 overflow: TextOverflow.ellipsis,
@@ -970,7 +971,7 @@ class PieChartWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
+        LiveTranslatedText(
           'Product Mix',
           style: AppTypography.caption,
         ),
@@ -1029,7 +1030,7 @@ class RadarChartWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
+        LiveTranslatedText(
           'Key Metrics Summary',
           style: AppTypography.caption,
         ),

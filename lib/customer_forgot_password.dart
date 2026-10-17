@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -153,7 +154,7 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
     await Future.delayed(const Duration(milliseconds: 1000)); // Simulate API
     HapticFeedback.heavyImpact();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password Reset Successfully!'), backgroundColor: Colors.green));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Password Reset Successfully!'), backgroundColor: Colors.green));
     Navigator.pop(context);
   }
 
@@ -162,14 +163,14 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
       opacity: _fadeAnim,
       child: Column(
         children: [
-          Text('Enter your registered email to receive an OTP.', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
+          LiveTranslatedText('Enter your registered email to receive an OTP.', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
           const SizedBox(height: 24),
           TextField(
             controller: _emailController, 
             keyboardType: TextInputType.emailAddress,
             style: const TextStyle(color: Colors.white, fontSize: 18),
             decoration: InputDecoration(
-              hintText: 'Email Address', hintStyle: const TextStyle(color: Colors.white38),
+              hint: LiveTranslatedText('Email Address'), hintStyle: const TextStyle(color: Colors.white38),
               filled: true, fillColor: Colors.white.withOpacity(0.08),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               prefixIcon: const Icon(Icons.email, color: Colors.blueAccent),
@@ -181,7 +182,7 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
             child: ElevatedButton(
               onPressed: _isLoading ? null : _sendOtp,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-              child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : Text('Send OTP', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+              child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : LiveTranslatedText('Send OTP', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ),
         ],
@@ -194,7 +195,7 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
       opacity: _fadeAnim,
       child: Column(
         children: [
-          Text('Enter OTP sent to ${_emailController.text}', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
+          LiveTranslatedText('Enter OTP sent to ${_emailController.text}', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -223,7 +224,7 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
             child: ElevatedButton(
               onPressed: _isLoading ? null : _verifyOtp,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent.shade700, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-              child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : Text('Verify OTP', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+              child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : LiveTranslatedText('Verify OTP', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ),
           TextButton(
@@ -236,7 +237,7 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
                 setState(() => _error = result['message']?.toString() ?? 'Failed to resend OTP');
               }
             } : null,
-            child: Text(_timerSeconds > 0 ? 'Resend OTP in ${_timerSeconds}s' : 'Resend OTP', style: GoogleFonts.poppins(color: _timerSeconds > 0 ? Colors.white38 : Colors.blueAccent, fontWeight: FontWeight.w600)),
+            child: LiveTranslatedText(_timerSeconds > 0 ? 'Resend OTP in ${_timerSeconds}s' : 'Resend OTP', style: GoogleFonts.poppins(color: _timerSeconds > 0 ? Colors.white38 : Colors.blueAccent, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -248,13 +249,13 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
       opacity: _fadeAnim,
       child: Column(
         children: [
-          Text('Enter your new secure password.', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
+          LiveTranslatedText('Enter your new secure password.', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
           const SizedBox(height: 24),
           TextField(
             controller: _newPassController, obscureText: true,
             style: const TextStyle(color: Colors.white, fontSize: 18),
             decoration: InputDecoration(
-              hintText: 'New Password', hintStyle: const TextStyle(color: Colors.white38),
+              hint: LiveTranslatedText('New Password'), hintStyle: const TextStyle(color: Colors.white38),
               filled: true, fillColor: Colors.white.withOpacity(0.08),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               prefixIcon: const Icon(Icons.lock_outline, color: Colors.blueAccent),
@@ -266,7 +267,7 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
             child: ElevatedButton(
               onPressed: _isLoading ? null : _resetPassword,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.purpleAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-              child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : Text('Reset Password', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+              child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : LiveTranslatedText('Reset Password', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ),
         ],
@@ -290,7 +291,7 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
                 children: [
                   const Icon(Icons.lock_reset, size: 80, color: Colors.blueAccent),
                   const SizedBox(height: 16),
-                  Text('Forgot Password', style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                  LiveTranslatedText('Forgot Password', style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 40),
                   
                   AnimatedSwitcher(
@@ -303,7 +304,7 @@ class _CustomerForgotPasswordPageState extends State<CustomerForgotPasswordPage>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.redAccent.withOpacity(0.5))),
-                      child: Text(_error!, style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 13)),
+                      child: LiveTranslatedText(_error!, style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 13)),
                     ),
                   ],
                 ],

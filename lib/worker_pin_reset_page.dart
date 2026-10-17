@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -140,7 +141,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
       _startTimer();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('OTP sent to the owner email.'),
+          content: LiveTranslatedText('OTP sent to the owner email.'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -192,7 +193,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
       HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Worker attendance PIN reset successfully.'),
+          content: LiveTranslatedText('Worker attendance PIN reset successfully.'),
           backgroundColor: Color(0xFF16A34A),
           behavior: SnackBarBehavior.floating,
         ),
@@ -213,7 +214,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
         backgroundColor: _primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: Text(
+        title: LiveTranslatedText(
           'Reset Attendance PIN',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 18),
         ),
@@ -230,7 +231,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
               const SizedBox(height: 20),
               _sectionTitle('Owner verification', Icons.verified_user_rounded),
               const SizedBox(height: 10),
-              Text(
+              LiveTranslatedText(
                 'An OTP will be sent to the shop owner’s registered email before the worker PIN can be changed.',
                 style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600, height: 1.45),
               ),
@@ -248,7 +249,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
                     const Icon(Icons.verified_user_outlined, color: _primary),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         _ownerEmailLoading
                             ? 'Loading owner account…'
                             : (_ownerEmail == null
@@ -269,7 +270,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
                       ? null
                       : _sendOtp,
                   icon: const Icon(Icons.mark_email_read_outlined, size: 19),
-                  label: Text(
+                  label: LiveTranslatedText(
                     _loading && !_otpSent ? 'Sending OTP…' : 'Send verification OTP',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
                   ),
@@ -332,7 +333,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
                         : const Icon(Icons.check_circle_outline_rounded),
-                    label: Text(
+                    label: LiveTranslatedText(
                       _loading ? 'Resetting PIN…' : 'Reset worker PIN',
                       style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
                     ),
@@ -348,7 +349,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
                 Center(
                   child: TextButton(
                     onPressed: _loading || _remaining > 0 ? null : _sendOtp,
-                    child: Text(
+                    child: LiveTranslatedText(
                       _remaining > 0 ? 'Resend OTP in \${_remaining}s' : 'Resend OTP',
                       style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                     ),
@@ -365,7 +366,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: const Color(0xFFFECACA)),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     _error!,
                     style: GoogleFonts.poppins(
                       color: const Color(0xFFB91C1C),
@@ -404,15 +405,15 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
           CircleAvatar(
             radius: 25,
             backgroundColor: _primary.withValues(alpha: 0.10),
-            child: Text(initial, style: GoogleFonts.poppins(color: _primary, fontWeight: FontWeight.w800, fontSize: 19)),
+            child: LiveTranslatedText(initial, style: GoogleFonts.poppins(color: _primary, fontWeight: FontWeight.w800, fontSize: 19)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(worker.name, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700)),
-                Text(
+                LiveTranslatedText(worker.name, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700)),
+                LiveTranslatedText(
                   '${worker.position} • Attendance access',
                   style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade600),
                 ),
@@ -438,7 +439,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
           const Icon(Icons.shield_outlined, color: _primary),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LiveTranslatedText(
               'The PIN is changed on the server only after the owner OTP is validated.',
               style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFF4B5563), height: 1.4),
             ),
@@ -453,7 +454,7 @@ class _WorkerPinResetPageState extends State<WorkerPinResetPage> {
       children: [
         Icon(icon, size: 20, color: _primary),
         const SizedBox(width: 8),
-        Text(title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800)),
+        LiveTranslatedText(title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800)),
       ],
     );
   }

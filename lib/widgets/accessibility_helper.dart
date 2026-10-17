@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -76,7 +77,7 @@ class AccessibilityHelper {
   }) {
     return Semantics(
       label: semanticLabel ?? text,
-      child: Text(
+      child: LiveTranslatedText(
         text,
         style: (style ?? const TextStyle(fontSize: minFontSize)).copyWith(
           fontSize: (style?.fontSize ?? minFontSize) < minFontSize
@@ -140,7 +141,7 @@ class AccessibilityHelper {
       children: [
         Semantics(
           label: semanticLabel ?? label,
-          child: Text(
+          child: LiveTranslatedText(
             label,
             style: const TextStyle(
               fontSize: minFontSize,
@@ -167,7 +168,7 @@ class AccessibilityHelper {
         if (errorText != null)
           Semantics(
             label: 'Error: $errorText',
-            child: Text(
+            child: LiveTranslatedText(
               errorText!,
               style: TextStyle(
                 fontSize: minFontSize,
@@ -400,13 +401,13 @@ class AccessibleButton extends StatelessWidget {
                       children: [
                         Icon(icon, size: 20),
                         const SizedBox(width: 8),
-                        Text(
+                        LiveTranslatedText(
                           label,
                           style: const TextStyle(fontSize: AccessibilityHelper.minFontSize),
                         ),
                       ],
                     )
-                  : Text(
+                  : LiveTranslatedText(
                       label,
                       style: const TextStyle(fontSize: AccessibilityHelper.minFontSize),
                     ),

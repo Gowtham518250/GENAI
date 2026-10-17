@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import '../../visual_widgets.dart';
 import '../../customer_shop_service.dart';
@@ -73,7 +74,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     final inCart = _cart.where((c) => c['id'] == product['id']).fold<int>(0, (s, c) => s + (c['qty'] as int));
     if (inCart >= stock) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No more stock available')),
+        const SnackBar(content: LiveTranslatedText('No more stock available')),
       );
       return;
     }
@@ -87,7 +88,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       }
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${product['name']} added to cart!'), duration: const Duration(seconds: 1)),
+      SnackBar(content: LiveTranslatedText('${product['name']} added to cart!'), duration: const Duration(seconds: 1)),
     );
   }
 
@@ -96,14 +97,14 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceDark,
       appBar: AppBar(
-        title: Text(_shopName, style: const TextStyle(color: Colors.white)),
+        title: LiveTranslatedText(_shopName, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: Badge(
-              label: Text('${_cart.length}'),
+              label: LiveTranslatedText('${_cart.length}'),
               isLabelVisible: _cart.isNotEmpty,
               child: const Icon(Icons.shopping_cart, color: Colors.white),
             ),
@@ -131,9 +132,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                       children: [
                         const Icon(Icons.inventory_2_outlined, size: 64, color: Colors.white54),
                         const SizedBox(height: 16),
-                        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
+                        LiveTranslatedText(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
                         const SizedBox(height: 24),
-                        ElevatedButton(onPressed: _loadShop, child: const Text('Retry')),
+                        ElevatedButton(onPressed: _loadShop, child: const LiveTranslatedText('Retry')),
                       ],
                     ),
                   ),
@@ -161,16 +162,16 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                               child: _productImage(product['image_url']?.toString()),
                             ),
                             const SizedBox(height: 8),
-                            Text(product['name'],
+                            LiveTranslatedText(product['name']?.toString() ?? '',
                                 style: const TextStyle(
                                     color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis),
                             const SizedBox(height: 4),
-                            Text('₹${product['price']}',
+                            LiveTranslatedText('₹${product['price']}',
                                 style: const TextStyle(
                                     color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text('Stock: ${product['stock']}',
+                            LiveTranslatedText('Stock: ${product['stock']}',
                                 style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
                             const SizedBox(height: 8),
                             SizedBox(
@@ -182,7 +183,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                   foregroundColor: AppColors.primary,
                                   padding: const EdgeInsets.symmetric(vertical: 8),
                                 ),
-                                child: const Text('Add to Cart',
+                                child: const LiveTranslatedText('Add to Cart',
                                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                               ),
                             ),

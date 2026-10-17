@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -140,12 +141,12 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Reorder message'),
+          title: const LiveTranslatedText('Reorder message'),
           content: SelectableText(message),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Close'),
+              child: const LiveTranslatedText('Close'),
             ),
           ],
         ),
@@ -158,7 +159,7 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FC),
       appBar: AppBar(
-        title: const Text('Smart Reorder'),
+        title: const LiveTranslatedText('Smart Reorder'),
         backgroundColor: _primary,
         foregroundColor: Colors.white,
         actions: [
@@ -195,14 +196,14 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
                           children: [
                             Icon(Icons.insights_rounded, color: _primary),
                             SizedBox(width: 8),
-                            Text(
+                            LiveTranslatedText(
                               'Demand-based stockout forecast',
                               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                             ),
                           ],
                         ),
                         SizedBox(height: 8),
-                        Text(
+                        LiveTranslatedText(
                           'Uses seven days of sales saved on this owner device. '
                           'Suggestions are advisory only; review quantities before ordering.',
                           style: TextStyle(color: Color(0xFF667085), height: 1.45),
@@ -212,20 +213,20 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
                   ),
                   if (_usingLocalCache) ...[
                     const SizedBox(height: 10),
-                    const Text(
+                    const LiveTranslatedText(
                       'Offline mode: using cached inventory. Stock may have changed on the server.',
                       style: TextStyle(color: Color(0xFF9A6700), fontSize: 12),
                     ),
                   ],
                   if (_error != null) ...[
                     const SizedBox(height: 12),
-                    Text(_error!, style: const TextStyle(color: Colors.red)),
+                    LiveTranslatedText(_error!, style: const TextStyle(color: Colors.red)),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: TextButton.icon(
                         onPressed: _load,
                         icon: const Icon(Icons.refresh),
-                        label: const Text('Try again'),
+                        label: const LiveTranslatedText('Try again'),
                       ),
                     ),
                   ],
@@ -242,12 +243,12 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
                         children: [
                           Icon(Icons.inventory_2_outlined, size: 36, color: Color(0xFF667085)),
                           SizedBox(height: 10),
-                          Text(
+                          LiveTranslatedText(
                             'No stockout forecasts yet',
                             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                           ),
                           SizedBox(height: 6),
-                          Text(
+                          LiveTranslatedText(
                             'Forecasts appear after this device has recorded sales for a product. '
                             'Products without sales history are not given an invented estimate.',
                             textAlign: TextAlign.center,
@@ -257,7 +258,7 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
                       ),
                     )
                   else ...[
-                    Text(
+                    LiveTranslatedText(
                       '${_alerts.length} product(s) may run out in 5 days or less',
                       style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                     ),
@@ -287,7 +288,7 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     alert['product_name']?.toString() ?? 'Product',
                                     style: const TextStyle(
                                       fontSize: 16,
@@ -303,7 +304,7 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
                                         : const Color(0xFFFFF3CD),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     stockoutDays == 0 ? 'Out of stock' : '$stockoutDays days left',
                                     style: TextStyle(
                                       color: isUrgent
@@ -332,7 +333,7 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
                               child: OutlinedButton.icon(
                                 onPressed: suggestedQty <= 0 ? null : () => _openWhatsApp(alert),
                                 icon: const Icon(Icons.chat_rounded),
-                                label: const Text('Prepare supplier message'),
+                                label: const LiveTranslatedText('Prepare supplier message'),
                               ),
                             ),
                           ],
@@ -350,9 +351,9 @@ class _SmartReorderPageState extends State<SmartReorderPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Color(0xFF667085), fontSize: 12)),
+        LiveTranslatedText(label, style: const TextStyle(color: Color(0xFF667085), fontSize: 12)),
         const SizedBox(height: 3),
-        Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+        LiveTranslatedText(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
       ],
     );
   }

@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -12,7 +13,7 @@ class TermsOfServicePage extends StatelessWidget {
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF16213E),
-        title: Text('Terms of Service', style: GoogleFonts.poppins(color: Colors.white)),
+        title: LiveTranslatedText('Terms of Service', style: GoogleFonts.poppins(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
@@ -113,7 +114,7 @@ Last Updated: ${DateTime.now().year}
                   backgroundColor: const Color(0xFF6366F1),
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 ),
-                child: Text('I Accept', style: GoogleFonts.poppins(color: Colors.white)),
+                child: LiveTranslatedText('I Accept', style: GoogleFonts.poppins(color: Colors.white)),
               ),
             ),
           ],
@@ -126,7 +127,7 @@ Last Updated: ${DateTime.now().year}
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LiveTranslatedText(
           title,
           style: GoogleFonts.poppins(
             color: Colors.white,
@@ -135,7 +136,7 @@ Last Updated: ${DateTime.now().year}
           ),
         ),
         const SizedBox(height: 10),
-        Text(
+        LiveTranslatedText(
           content,
           style: GoogleFonts.poppins(
             color: Colors.white70,

@@ -1,3 +1,4 @@
+import '../../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -103,7 +104,7 @@ class SuggestedQuestionsBar extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
+              LiveTranslatedText(
                 'Suggested Questions',
                 style: GoogleFonts.inter(
                   fontSize: 13,
@@ -186,7 +187,7 @@ class _SuggestionChipItem extends StatelessWidget {
                   color: suggestion.accentColor,
                 ),
                 const SizedBox(width: 8),
-                Text(
+                LiveTranslatedText(
                   suggestion.title,
                   style: GoogleFonts.inter(
                     fontSize: 12.5,

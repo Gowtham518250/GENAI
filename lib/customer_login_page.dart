@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -169,7 +170,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
             maxLength: 10,
             decoration: InputDecoration(
               counterText: '',
-              hintText: 'Phone Number',
+              hint: LiveTranslatedText('Phone Number'),
               hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: Colors.white.withOpacity(0.08),
@@ -184,7 +185,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
             keyboardType: TextInputType.emailAddress,
             style: const TextStyle(color: Colors.white, fontSize: 16),
             decoration: InputDecoration(
-              hintText: 'Email Address (required for login)',
+              hint: LiveTranslatedText('Email Address (required for login)'),
               hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: Colors.white.withOpacity(0.08),
@@ -199,7 +200,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
             obscureText: true,
             style: const TextStyle(color: Colors.white, fontSize: 16),
             decoration: InputDecoration(
-              hintText: 'Password (required for login)',
+              hint: LiveTranslatedText('Password (required for login)'),
               hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: Colors.white.withOpacity(0.08),
@@ -213,7 +214,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
             child: ElevatedButton(
               onPressed: _isLoading ? null : _sendOtp,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 8, shadowColor: Colors.blueAccent.withOpacity(0.5)),
-              child: _isLoading ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text('Send OTP', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+              child: _isLoading ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : LiveTranslatedText('Send OTP', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ),
         ],
@@ -226,7 +227,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
       opacity: _fadeAnim,
       child: Column(
         children: [
-          Text('Enter OTP sent to +91 ${_phoneController.text}', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
+          LiveTranslatedText('Enter OTP sent to +91 ${_phoneController.text}', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -264,17 +265,17 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
             child: ElevatedButton(
               onPressed: _isLoading ? null : _verifyOtpAndLogin,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent.shade700, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 8, shadowColor: Colors.greenAccent.withOpacity(0.3)),
-              child: _isLoading ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text('Verify & Login', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+              child: _isLoading ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : LiveTranslatedText('Verify & Login', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ),
           const SizedBox(height: 20),
           TextButton(
             onPressed: _timerSeconds == 0 ? _sendOtp : null,
-            child: Text(_timerSeconds > 0 ? 'Resend OTP in ${_timerSeconds}s' : 'Resend OTP', style: GoogleFonts.poppins(color: _timerSeconds > 0 ? Colors.white38 : Colors.blueAccent, fontWeight: FontWeight.w600)),
+            child: LiveTranslatedText(_timerSeconds > 0 ? 'Resend OTP in ${_timerSeconds}s' : 'Resend OTP', style: GoogleFonts.poppins(color: _timerSeconds > 0 ? Colors.white38 : Colors.blueAccent, fontWeight: FontWeight.w600)),
           ),
           TextButton(
             onPressed: () => setState(() => _isOtpSent = false),
-            child: Text('Change Phone Number', style: GoogleFonts.poppins(color: Colors.white54, decoration: TextDecoration.underline)),
+            child: LiveTranslatedText('Change Phone Number', style: GoogleFonts.poppins(color: Colors.white54, decoration: TextDecoration.underline)),
           ),
         ],
       ),
@@ -300,8 +301,8 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
                     child: const Icon(Icons.storefront_rounded, size: 70, color: Colors.blueAccent),
                   ),
                   const SizedBox(height: 24),
-                  Text('AI Shop Pro', style: GoogleFonts.poppins(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-                  Text('Customer Portal', style: GoogleFonts.poppins(color: Colors.blueAccent, fontSize: 16, fontWeight: FontWeight.w500)),
+                  LiveTranslatedText('AI Shop Pro', style: GoogleFonts.poppins(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+                  LiveTranslatedText('Customer Portal', style: GoogleFonts.poppins(color: Colors.blueAccent, fontSize: 16, fontWeight: FontWeight.w500)),
                   const SizedBox(height: 48),
                   
                   AnimatedSwitcher(
@@ -317,7 +318,7 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
                       child: Row(children: [
                         const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
                         const SizedBox(width: 12),
-                        Expanded(child: Text(_error!, style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 13))),
+                        Expanded(child: LiveTranslatedText(_error!, style: GoogleFonts.poppins(color: Colors.redAccent, fontSize: 13))),
                       ]),
                     ),
                   ],
@@ -329,14 +330,14 @@ class _CustomerLoginPageState extends State<CustomerLoginPage> with SingleTicker
                         HapticFeedback.lightImpact();
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerForgotPasswordPage()));
                       },
-                      child: Text("Forgot Password?", style: GoogleFonts.poppins(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                      child: LiveTranslatedText("Forgot Password?", style: GoogleFonts.poppins(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(height: 32),
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text("New to AI Shop Pro? ", style: GoogleFonts.poppins(color: Colors.white54)),
+                      LiveTranslatedText("New to AI Shop Pro? ", style: GoogleFonts.poppins(color: Colors.white54)),
                       GestureDetector(
                         onTap: () { HapticFeedback.lightImpact(); Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerRegisterPage())); },
-                        child: Text("Create Account", style: GoogleFonts.poppins(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                        child: LiveTranslatedText("Create Account", style: GoogleFonts.poppins(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
                       )
                     ])
                   ]

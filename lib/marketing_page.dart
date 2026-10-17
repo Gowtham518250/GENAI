@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
@@ -51,7 +52,7 @@ class _MarketingPageState extends State<MarketingPage> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not launch WhatsApp. Is it installed?')),
+          const SnackBar(content: LiveTranslatedText('Could not launch WhatsApp. Is it installed?')),
         );
       }
     }
@@ -62,7 +63,7 @@ class _MarketingPageState extends State<MarketingPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text(
+        title: LiveTranslatedText(
           'Smart Remarketing',
           style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.black87),
         ),
@@ -85,7 +86,7 @@ class _MarketingPageState extends State<MarketingPage> {
                     children: [
                       Icon(Icons.auto_graph_rounded, size: 80, color: Colors.grey[300]),
                       const SizedBox(height: 16),
-                      Text(
+                      LiveTranslatedText(
                         'No dormant customers found.',
                         style: GoogleFonts.inter(fontSize: 16, color: Colors.grey[500]),
                       )
@@ -116,7 +117,7 @@ class _MarketingPageState extends State<MarketingPage> {
                                   children: [
                                     CircleAvatar(
                                       backgroundColor: Colors.blue[50],
-                                      child: Text(
+                                      child: LiveTranslatedText(
                                         opp['name']?.substring(0, 1).toUpperCase() ?? 'C',
                                         style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                                       ),
@@ -125,11 +126,11 @@ class _MarketingPageState extends State<MarketingPage> {
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
+                                        LiveTranslatedText(
                                           opp['name'] ?? 'Customer',
                                           style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
                                         ),
-                                        Text(
+                                        LiveTranslatedText(
                                           'Last seen: ${opp['days_since_last_purchase']} days ago',
                                           style: GoogleFonts.inter(fontSize: 12, color: Colors.red[400]),
                                         ),
@@ -155,14 +156,14 @@ class _MarketingPageState extends State<MarketingPage> {
                                     children: [
                                       const Icon(Icons.star, size: 16, color: Colors.orange),
                                       const SizedBox(width: 6),
-                                      Text(
+                                      LiveTranslatedText(
                                         'Favorite: ${opp['favorite_item']}',
                                         style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.orange[800]),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(
+                                  LiveTranslatedText(
                                     opp['suggested_message'] ?? '',
                                     style: GoogleFonts.inter(fontSize: 14, color: Colors.black87),
                                   ),
@@ -175,7 +176,7 @@ class _MarketingPageState extends State<MarketingPage> {
                               child: ElevatedButton.icon(
                                 onPressed: () => _sendWhatsAppMessage(opp['phone'], opp['suggested_message']),
                                 icon: const Icon(Icons.send, size: 18),
-                                label: const Text('Send WhatsApp Discount'),
+                                label: const LiveTranslatedText('Send WhatsApp Discount'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
                                   foregroundColor: Colors.white,

@@ -1,3 +1,4 @@
+import '../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -33,7 +34,7 @@ class RevenueBarChart extends StatelessWidget {
           children: [
             Icon(Icons.insert_chart_outlined, size: 48, color: Colors.grey[600]),
             const SizedBox(height: 16),
-            Text(
+            LiveTranslatedText(
               message,
               style: TextStyle(color: Colors.grey[500], fontSize: 14),
             ),
@@ -138,7 +139,7 @@ class RevenueBarChart extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         AppLocalizations.of(context).revenueLeaders,
                         style: TextStyle(
                           fontSize: 18,
@@ -159,7 +160,7 @@ class RevenueBarChart extends StatelessWidget {
                             const Icon(Icons.leaderboard,
                                 size: 14, color: Color(0xFF6366F1)),
                             const SizedBox(width: 6),
-                            Text(
+                            LiveTranslatedText(
                               'Top ${topItems.length} ${AppLocalizations.of(context).products}',
                               style: const TextStyle(
                                 color: Color(0xFF6366F1),
@@ -264,7 +265,7 @@ class RevenueBarChart extends StatelessWidget {
                                 if (index >= 0 && index < topItems.length) {
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 10),
-                                    child: Text(
+                                    child: LiveTranslatedText(
                                       topItems[index].key.length > 10
                                           ? '${topItems[index].key.substring(0, 10)}..'
                                           : topItems[index].key,
@@ -276,7 +277,7 @@ class RevenueBarChart extends StatelessWidget {
                                     ),
                                   );
                                 }
-                                return const Text('');
+                                return const LiveTranslatedText('');
                               },
                               reservedSize: 40,
                             ),
@@ -286,10 +287,10 @@ class RevenueBarChart extends StatelessWidget {
                               showTitles: true,
                               reservedSize: 45,
                               getTitlesWidget: (value, meta) {
-                                if (value == 0) return const Text('');
+                                if (value == 0) return const LiveTranslatedText('');
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 8),
-                                  child: Text(
+                                  child: LiveTranslatedText(
                                     '\u20b9${(value >= 1000 ? (value/1000).toStringAsFixed(1)+'k' : value.toInt().toString())}',
                                     style: TextStyle(
                                       fontSize: 9,
@@ -348,7 +349,7 @@ class RevenueBarChart extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      LiveTranslatedText(
                         '${AppLocalizations.of(context).revenueLeaders} per product',
                         style: TextStyle(
                           fontSize: 12,
