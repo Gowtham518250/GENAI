@@ -38,7 +38,43 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
   int _recordSeconds = 0;
   Timer? _recordTimer;
   bool _finalizingVoice = false;
+  bool _openingBillPreview = false;
   
+  Future<void> _openBillPreview(SalesEntryProvider provider) async {
+    if (_openingBillPreview) return;
+    setState(() => _openingBillPreview = true);
+    try {
+      await provider.generateBillPreview();
+      if (!mounted) return;
+      final invoiceNumber = provider.draftBillNumber;
+      if (invoiceNumber == null || invoiceNumber.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not allocate a bill number. Please try again.')),
+        );
+        return;
+      }
+      await showDialog<void>(
+        context: context,
+        builder: (_) => ChangeNotifierProvider.value(
+          value: provider,
+          child: BillPreviewDialog(invoiceNumber: invoiceNumber),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bill preview could not be opened. Please try again.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _openingBillPreview = false);
+      } else {
+        _openingBillPreview = false;
+      }
+    }
+  }
+
   Future<void> _startListening(BuildContext context) async {
     if (_finalizingVoice || context.read<SalesEntryProvider>().isVoiceProcessing) return;
 
@@ -390,19 +426,10 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
-                          isLoading: false,
+                          isLoading: _openingBillPreview || provider.isGeneratingBill,
                           onPressed: () async {
                             HapticFeedback.lightImpact();
-                            // Preview and saved invoice must use the same stable bill number.
-                            final invoiceNumber = await provider.ensureDraftBillNumber();
-                            if (!mounted) return;
-                            showDialog(
-                              context: context,
-                              builder: (_) => ChangeNotifierProvider.value(
-                                value: provider,
-                                child: BillPreviewDialog(invoiceNumber: invoiceNumber),
-                              ),
-                            );
+                            await _openBillPreview(provider);
                           },
                         ),
                       ),
@@ -572,17 +599,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                       ),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () async {
-                            final invoiceNumber = await provider.ensureDraftBillNumber();
-                            if (!mounted) return;
-                            showDialog(
-                              context: context,
-                              builder: (_) => ChangeNotifierProvider.value(
-                                value: provider,
-                                child: BillPreviewDialog(invoiceNumber: invoiceNumber),
-                              ),
-                            );
-                          },
+                          onPressed: _openingBillPreview ? null : () => _openBillPreview(provider),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF10B981),
                             foregroundColor: Colors.white,
@@ -590,7 +607,13 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
                           ),
-                          child: Text('GENERATE BILL', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
+                          child: _openingBillPreview || provider.isGeneratingBill
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : Text('GENERATE BILL', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5)),
                         ),
                       ),
                       const SizedBox(width: 8),

@@ -101,6 +101,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:telephony/telephony.dart';
 import 'payment_event.dart';
+import 'payment_event_deduplicator.dart';
+import 'payment_idempotency_service.dart';
 import 'sms_background_receiver.dart';
 import 'local_storage_service.dart';
 import 'sync_service.dart';
@@ -239,7 +241,9 @@ abstract class VoiceBuilder {
     // Keep native-script matches free of \b because regex word boundaries can
     // be ASCII-oriented in Dart.
     final englishCredit = RegExp(
-      r'\b(credited|credit|received|payment received|money received|deposited|added to|cashback)\b',
+      r'\b(credited|credit|received|payment received|money received|deposited|added to|cashback'
+      r'|paid to (?:your|you)|made to your|sent to (?:your|you)|has sent'
+      r'|amount credited|amount received|transferred to (?:your|you))\b',
     ).hasMatch(t);
     final romanizedCredit = RegExp(
       r'\b(jama(?:\s+hua|\s+ho gaya)?|prapt|paise\s+aaye|paisa\s+aaya|mil\s+gaya|credit\s+hua)\b',
@@ -250,7 +254,9 @@ abstract class VoiceBuilder {
     final credit = englishCredit || romanizedCredit || nativeCredit;
 
     final englishDebit = RegExp(
-      r'\b(debited|debit|sent|paid|payment to|deducted|withdrawn|spent|transferred to)\b',
+      r'\b(debited|debit|deducted|withdrawn|spent|purchase|you sent|you paid'
+      r'|sent to (?!your\b|you\b)|paid to (?!your\b|you\b)'
+      r'|payment to (?!your\b|you\b)|transferred to (?!your\b|you\b))\b',
     ).hasMatch(t);
     final romanizedDebit = RegExp(
       r'\b(kata(?:\s+gaya)?|kat gaya|nikala|bheja gaya|paise bheje|debit hua|paise kate)\b',
@@ -475,6 +481,7 @@ class BillContext {
     assert(amount > 0);
     // FIX: Always reset partial history when a new bill is set
     _partialReceived = 0;
+    _settlementReservation = null;
     expectedAmount     = amount;
     isActive           = true;
     setAt              = DateTime.now();
@@ -485,6 +492,7 @@ class BillContext {
     isActive         = false;
     setAt            = null;
     _partialReceived = 0;
+    _settlementReservation = null;
   }
 
   bool get isExpired {
@@ -493,6 +501,22 @@ class BillContext {
   }
 
   void recordPartial(double v) => _partialReceived += v;
+
+  String? _settlementReservation;
+
+  /// Reserve one exact bill settlement before any asynchronous work begins.
+  /// Competing notification channels cannot settle the same active bill twice.
+  bool tryReserveSettlement(String paymentFingerprint) {
+    if (isSettlementLocked) return false;
+    _settlementReservation = paymentFingerprint;
+    return true;
+  }
+
+  void releaseSettlementReservation(String paymentFingerprint) {
+    if (_settlementReservation == paymentFingerprint) {
+      _settlementReservation = null;
+    }
+  }
 
   /// How much has been received so far against this bill.
   double get partialReceived => _partialReceived;
@@ -505,11 +529,15 @@ class BillContext {
 
   DateTime? _lastSettlementAt;
   bool get isSettlementLocked {
+    if (_settlementReservation != null) return true;
     if (_lastSettlementAt == null) return false;
     return DateTime.now().difference(_lastSettlementAt!) < const Duration(seconds: 5);
   }
 
-  void markSettled() { _lastSettlementAt = DateTime.now(); }
+  void markSettled() {
+    _lastSettlementAt = DateTime.now();
+    _settlementReservation = null;
+  }
 
   BillMatchResult evaluate(double detected) {
     if (!isActive || isExpired || expectedAmount == null) {
@@ -655,7 +683,7 @@ class PdsConfig {
 
   // Dedup
   static const Duration dedupUtrTtl          = Duration(hours: 24);
-  static const Duration dedupHashTtl         = Duration(seconds: 30);
+  static const Duration dedupHashTtl         = Duration(minutes: 5);
   static const Duration dedupCleanupInterval = Duration(minutes: 5);
   // FIX-C: debounce save
   static const Duration dedupSaveDebounce    = Duration(seconds: 30);
@@ -681,7 +709,7 @@ class PdsConfig {
   static const Duration watchdogStaleThreshold = Duration(minutes: 5);
 
   // Voice
-  static const Duration voiceMinGap      = Duration(seconds: 2);
+  static const Duration voiceMinGap      = Duration(milliseconds: 350);
   static const int      voiceBurstCount  = 3;
   static const Duration voiceBurstWindow = Duration(seconds: 5);
   // FIX-3: language removed from PdsConfig — now on PaymentDetectionService
@@ -1492,6 +1520,11 @@ class PriorityVoiceQueue {
 
   void enqueue(PaymentEvent e, PaymentUiState ui) {
     if (!PdsConfig.isVoiceEnabled) return;
+    if (e.isFailed ||
+        VoiceBuilder.detectDirection(e.rawText) != PaymentDirection.credited) {
+      PdsLogger.d('VOICE', 'Non-credit or ambiguous payment announcement suppressed');
+      return;
+    }
 
     // Voice uses a stricter semantic identity than accounting/idempotency.
     // This blocks the same Android notification being delivered repeatedly
@@ -2333,6 +2366,8 @@ class PaymentDetectionService {
   StreamSubscription<AccessibilityEvent>? _accessSub;
 
   final Map<String, DateTime> _dedupStore = {};
+  final RecentPaymentEventDeduplicator _recentEventDeduplicator =
+      RecentPaymentEventDeduplicator();
   bool _dedupDirty = false;
 
   Timer? _tcmDrainTimer;
@@ -2458,9 +2493,18 @@ class PaymentDetectionService {
   }
 
   void repeatLastPayment() {
-    if (_lastConfirmed == null) return;
+    final event = _lastConfirmed;
+    if (event == null ||
+        VoiceBuilder.detectDirection(event.rawText) != PaymentDirection.credited) {
+      return;
+    }
     final text = VoiceBuilder.received(
-        _lastConfirmed!.amount, _lastConfirmed!.payerName, _voiceLanguage);
+      event.amount,
+      event.payerName,
+      _voiceLanguage,
+    );
+    // Manual repeat is an explicit user action, so it bypasses automatic
+    // dedup while still speaking only a verified incoming-credit direction.
     _voice.enqueueRaw(text, _VP.high);
   }
 
@@ -2631,6 +2675,7 @@ class PaymentDetectionService {
       if (!c.isClosed) c.close();
     }
     _activeFingerprints.clear();
+    _recentEventDeduplicator.clear();
     _isStarted = false;
     PdsLogger.i('SVC', 'Engine disposed');
   }
@@ -3119,16 +3164,22 @@ class PaymentDetectionService {
       detectionSource: source,
     );
     final fp = tempEvent.fingerprint;
-    if (_dedupStore.containsKey(fp) || _activeFingerprints.contains(fp)) {
+    final now = DateTime.now();
+    final existingExpiry = _dedupStore[fp];
+    if ((existingExpiry != null && now.isBefore(existingExpiry)) ||
+        _activeFingerprints.contains(fp)) {
       PdsLogger.d('L4.5', 'DUPLICATE BLOCKED EARLY: fp=$fp');
       _stats.recordDupe();
       return;
     }
+    if (existingExpiry != null) _dedupStore.remove(fp);
     _activeFingerprints.add(fp);
     _dedupStore[fp] = DateTime.now().add(
         isUtrFp ? PdsConfig.dedupUtrTtl : PdsConfig.dedupHashTtl);
     if (isUtrFp) _dedupDirty = true;
 
+    String? reservedBillSettlementKey;
+    bool billReservationHandedOff = false;
     try {
       // Layer 4.7: TCM Matching
       _PendingEntry? matched;
@@ -3177,13 +3228,15 @@ class PaymentDetectionService {
         switch (billResult) {
           case BillMatchResult.exact:
             billBoost = 0.20;
-            isBillSettled = true;
+            isBillSettled = billContext.tryReserveSettlement(fp);
+            if (isBillSettled) reservedBillSettlementKey = fp;
             break;
           case BillMatchResult.partial:
             final remaining = billContext.remainingAmount;
             if ((amount - remaining).abs() < 2.0) {
-              isBillSettled = true;
-              billBoost = 0.25;
+              isBillSettled = billContext.tryReserveSettlement(fp);
+              if (isBillSettled) reservedBillSettlementKey = fp;
+              billBoost = isBillSettled ? 0.25 : 0.0;
             } else {
               billBoost = 0.10;
             }
@@ -3449,6 +3502,16 @@ class PaymentDetectionService {
           ? PaymentDecision.likely
           : decision;
 
+      // A bill match can improve the score, but a LIKELY signal must never
+      // release/clear the active bill or be treated as a confirmed settlement.
+      if (isBillSettled && finalDecision != PaymentDecision.confirmed) {
+        if (reservedBillSettlementKey != null) {
+          billContext.releaseSettlementReservation(reservedBillSettlementKey);
+        }
+        reservedBillSettlementKey = null;
+        isBillSettled = false;
+      }
+
       final event = tempEvent.copyWith(
         id:               matched?.event.id,
         confidenceScore:  score,
@@ -3457,9 +3520,19 @@ class PaymentDetectionService {
         remainingAmount:  isPartial ? billContext.remainingAmount - amount : 0.0,
       );
 
+      // Correlate the same notification arriving via both Android notification
+      // and accessibility channels. Different UTRs still represent distinct
+      // transactions even when amounts match.
+      if (_recentEventDeduplicator.isDuplicate(event)) {
+        PdsLogger.i('DEDUP', 'Cross-channel duplicate suppressed: ' + event.fingerprint);
+        _stats.recordDupe();
+        return;
+      }
+
       // Layer 9: TCM & Emission
       if (source == 'notification' || source == 'accessibility') {
         _pendingBuffer.add(event, voiceSpoken: false);
+        if (isBillSettled) billReservationHandedOff = true;
         unawaited(_emit(event, isBillSettlement: isBillSettled));
         _pendingBuffer.markVoiceSpoken(event.id);
         return;
@@ -3469,6 +3542,7 @@ class PaymentDetectionService {
         if (matched != null && (matched.emitted || matched.voiceSpoken)) {
           PdsLogger.d('TCM', 'SMS matched emitted notification — SILENT RECORD');
           _behaviorMemory.record(amount, name, vpa);
+          if (isBillSettled) billReservationHandedOff = true;
           unawaited(_emit(event, isBillSettlement: isBillSettled, forceMute: true));
           return;
         }
@@ -3481,9 +3555,13 @@ class PaymentDetectionService {
             : event;
 
         if (matched != null) matched.emitted = true;
+        if (isBillSettled) billReservationHandedOff = true;
         unawaited(_emit(eventToEmit, isBillSettlement: isBillSettled));
       }
     } finally {
+      if (reservedBillSettlementKey != null && !billReservationHandedOff) {
+        billContext.releaseSettlementReservation(reservedBillSettlementKey);
+      }
       _activeFingerprints.remove(tempEvent.fingerprint);
     }
   }
@@ -3496,7 +3574,12 @@ class PaymentDetectionService {
     bool isBillSettlement = false,
     bool forceMute        = false,
   }) async {
-    if (event.decision == PaymentDecision.rejected) return;
+    if (event.decision == PaymentDecision.rejected) {
+      if (isBillSettlement) {
+        billContext.releaseSettlementReservation(event.fingerprint);
+      }
+      return;
+    }
 
     // Cross-device UTR check happens before UI/voice emission. Serialize
     // concurrent same-UTR events on this device, and await the registration
@@ -3505,6 +3588,7 @@ class PaymentDetectionService {
     if (event.decision == PaymentDecision.confirmed && utr != null && utr.isNotEmpty) {
       if (!_utrChecksInFlight.add(utr)) {
         PdsLogger.w('EMIT', 'Same UTR is already being verified; downgrade duplicate to LIKELY');
+        if (isBillSettlement) billContext.releaseSettlementReservation(event.fingerprint);
         final downgraded = event.copyWith(
           decision: PaymentDecision.likely,
           detectionSource: '${event.detectionSource}:local_utr_check_in_flight',
@@ -3513,8 +3597,10 @@ class PaymentDetectionService {
         return;
       }
       try {
-        final conflict = await _isUtrAlreadyRegistered(utr);
+        final conflict = await _isUtrAlreadyRegistered(utr)
+            .timeout(const Duration(milliseconds: 700));
         if (conflict) {
+          if (isBillSettlement) billContext.releaseSettlementReservation(event.fingerprint);
           final downgraded = event.copyWith(
             decision: PaymentDecision.likely,
             detectionSource: '${event.detectionSource}:cross_device_conflict_downgraded',
@@ -3522,7 +3608,8 @@ class PaymentDetectionService {
           await _emit(downgraded, isBillSettlement: false, forceMute: false);
           return;
         }
-        await _registerUtrConfirmed(utr, event.amount);
+        await _registerUtrConfirmed(utr, event.amount)
+            .timeout(const Duration(milliseconds: 700));
       } catch (e) {
         PdsLogger.w('EMIT', 'UTR check/register failed: $e, proceeding with local signal');
       } finally {
@@ -3574,37 +3661,39 @@ class PaymentDetectionService {
     // V26: Deduplicate history entries by ID (In-place update)
     history.addOrUpdate(ui);
 
-    if (event.decision == PaymentDecision.confirmed) _lastConfirmed = event;
-
-    // Await auto-settlement check
-    final matchedSaleId = await _tryAutoSettleInvoice(event);
-    final isSettled = isBillSettlement || matchedSaleId != null;
-
-    PaymentEvent finalEvent = (matchedSaleId != null
-            ? event.copyWith(
-                decision: PaymentDecision.confirmed,
-                saleId: matchedSaleId,
-              )
-            : event)
-        .copyWith(isBillMatch: isBillSettlement);
-    PaymentUiState finalUi = ui;
-    if (matchedSaleId != null) {
-      finalUi = ui.copyWith(
-        decision: PaymentDecision.confirmed,
-        isBillMatch: true,
-      );
-      if (kDebugMode) debugPrint('✅ Auto-upgraded likely event to CONFIRMED due to invoice match');
+    if (event.decision == PaymentDecision.confirmed &&
+        !event.isFailed &&
+        VoiceBuilder.detectDirection(event.rawText) == PaymentDirection.credited) {
+      _lastConfirmed = event;
     }
 
+    // Emit immediately; invoice mirror scans and cloud synchronization must not
+    // block the voice queue or leave the payment UI appearing to spin.
+    final finalEvent = event.copyWith(isBillMatch: isBillSettlement);
+    final finalUi = ui.copyWith(isBillMatch: isBillSettlement);
     _eventCtrl.add(finalEvent);
     _uiCtrl.add(finalUi);
-    
-    // Voice Rule: Bill settlement message PREVENTS standard amount voice
-    if (isSettled && !forceMute) {
-      final t = VoiceBuilder.received(finalEvent.amount, null, _voiceLanguage);
-      _voice.enqueueRaw('Payment Confirmed. $t', _VP.high, fingerprint: finalEvent.fingerprint);
+
+    // Voice only confirms unambiguous incoming credits.
+    final direction = VoiceBuilder.detectDirection(finalEvent.rawText);
+    final shouldAnnounce = !forceMute &&
+        !finalEvent.isFailed &&
+        direction == PaymentDirection.credited;
+    if (shouldAnnounce) {
+      if (isBillSettlement) {
+        // Direction is already verified as credited above; keep the selected
+        // language for the spoken receipt.
+        final spoken = VoiceBuilder.received(
+          finalEvent.amount,
+          finalEvent.payerName,
+          _voiceLanguage,
+        );
+        _voice.enqueueRaw(spoken, _VP.high, fingerprint: finalEvent.fingerprint);
+      } else {
+        _voice.enqueue(finalEvent, finalUi);
+      }
     } else if (!forceMute) {
-      _voice.enqueue(finalEvent, finalUi);
+      PdsLogger.d('VOICE', 'Announcement skipped: direction=' + direction.name);
     }
 
     // ANTI-03: queue LIKELY for merchant confirmation (FIX-D: fully wired)
@@ -3614,11 +3703,28 @@ class PaymentDetectionService {
       // credited/debited when the source text makes the direction clear.
     }
 
+    // Invoice mirror reconciliation is secondary and must not delay feedback.
+    // Only CONFIRMED events are eligible for automatic settlement.
+    unawaited(_tryAutoSettleInvoice(finalEvent).then((matchedSaleId) {
+      if (matchedSaleId == null) return;
+      final existing = history.findById(finalEvent.id);
+      if (existing != null) {
+        final updated = existing.copyWith(
+          decision: PaymentDecision.confirmed,
+          isBillMatch: true,
+        );
+        history.update(finalEvent.id, updated);
+        if (!_uiCtrl.isClosed) _uiCtrl.add(updated);
+      }
+      PdsLogger.i('AUTOSETTL', 'Invoice mirror settled in background: ' + matchedSaleId);
+    }).catchError((Object error, StackTrace stack) {
+      PdsLogger.e('AUTOSETTL', 'Background invoice reconciliation failed', error, stack);
+    }));
+
     // ANTI-07: async bank verification for CONFIRMED
     if (finalEvent.decision == PaymentDecision.confirmed &&
         PdsConfig.isBankVerifyEnabled) {
       unawaited(_verifyWithBank(finalEvent));
-
     }
   }
 
@@ -3626,9 +3732,15 @@ class PaymentDetectionService {
   // Partial payments excluded — shopkeeper already knows money is pending.
   Future<String?> _tryAutoSettleInvoice(PaymentEvent event) async {
     try {
-      if ((event.decision != PaymentDecision.confirmed &&
-              event.decision != PaymentDecision.likely) ||
-          event.amount <= 0) {
+      if (event.decision != PaymentDecision.confirmed ||
+          event.amount <= 0 ||
+          event.isFailed ||
+          VoiceBuilder.detectDirection(event.rawText) != PaymentDirection.credited) {
+        return null;
+      }
+      final paymentKey = 'invoice_payment_' + event.fingerprint;
+      if (await PaymentIdempotencyService.instance.isKeyUsed(paymentKey)) {
+        PdsLogger.i('AUTOSETTL', 'Duplicate invoice reconciliation skipped');
         return null;
       }
       final amount = event.amount;
@@ -3674,6 +3786,7 @@ class PaymentDetectionService {
           sale['paid_amount'] = total;
           sales[i] = sale;
           await LocalStorageService.saveSales(sales);
+          await PaymentIdempotencyService.instance.markKeyUsed(paymentKey);
 
           final invoiceNum = sale['invoice_number']?.toString() ??
               sale['sale_id']?.toString() ??
@@ -3716,6 +3829,7 @@ class PaymentDetectionService {
           invoice['paid_amount'] = total;
           invoices[i] = invoice;
           await LocalStorageService.saveLocalInvoices(invoices);
+          await PaymentIdempotencyService.instance.markKeyUsed(paymentKey);
 
           final invoiceNum = invoice['invoice_number']?.toString() ??
               invoice['sale_id']?.toString() ??
