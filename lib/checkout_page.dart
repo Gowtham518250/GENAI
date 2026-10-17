@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
@@ -21,7 +22,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Future<void> _placeOrder() async {
     if (_addressC.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter delivery address')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Please enter delivery address')));
       return;
     }
     setState(() => _placing = true);
@@ -38,10 +39,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
         if (!mounted) return;
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => OrderTrackingPage(orderId: orderId)));
       } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: ${jsonDecode(res.body)['detail'] ?? 'Error'}')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText('Failed: ${jsonDecode(res.body)['detail'] ?? 'Error'}')));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText('Error: $e')));
     } finally {
       if (mounted) setState(() => _placing = false);
     }
@@ -51,27 +52,27 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(backgroundColor: Colors.indigo, title: Text('Checkout', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold))),
+      appBar: AppBar(backgroundColor: Colors.indigo, title: LiveTranslatedText('Checkout', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Order Summary', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+          LiveTranslatedText('Order Summary', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           ...widget.cartItems.map((item) => Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Expanded(child: Text(item['product_name']?.toString() ?? '', style: GoogleFonts.poppins(fontWeight: FontWeight.w500))),
-              Text('x${item['quantity']}', style: GoogleFonts.poppins(color: Colors.grey)),
+              Expanded(child: LiveTranslatedText(item['product_name']?.toString() ?? '', style: GoogleFonts.poppins(fontWeight: FontWeight.w500))),
+              LiveTranslatedText('x${item['quantity']}', style: GoogleFonts.poppins(color: Colors.grey)),
               const SizedBox(width: 12),
-              Text('Rs ${((item['price'] ?? 0) as num).toDouble() * ((item['quantity'] ?? 1) as num).toDouble()}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.indigo)),
+              LiveTranslatedText('Rs ${((item['price'] ?? 0) as num).toDouble() * ((item['quantity'] ?? 1) as num).toDouble()}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.indigo)),
             ]),
           )),
           const Divider(height: 30),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text('Total', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text('Rs ${_total.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo)),
+            LiveTranslatedText('Total', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+            LiveTranslatedText('Rs ${_total.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo)),
           ]),
           const SizedBox(height: 24),
           TextField(
@@ -89,9 +90,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             value: _paymentMethod,
             decoration: InputDecoration(filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
             items: const [
-              DropdownMenuItem(value: 'CASH', child: Text('Cash on Delivery')),
-              DropdownMenuItem(value: 'UPI', child: Text('UPI Payment')),
-              DropdownMenuItem(value: 'ONLINE', child: Text('Online Payment')),
+              DropdownMenuItem(value: 'CASH', child: LiveTranslatedText('Cash on Delivery')),
+              DropdownMenuItem(value: 'UPI', child: LiveTranslatedText('UPI Payment')),
+              DropdownMenuItem(value: 'ONLINE', child: LiveTranslatedText('Online Payment')),
             ],
             onChanged: (v) => setState(() => _paymentMethod = v!),
           ),
@@ -102,7 +103,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               onPressed: _placing ? null : _placeOrder,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
               icon: _placing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.shopping_bag),
-              label: Text(_placing ? 'Placing...' : 'Place Order', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              label: LiveTranslatedText(_placing ? 'Placing...' : 'Place Order', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
         ]),
@@ -162,7 +163,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(backgroundColor: Colors.indigo, title: Text('Track Order #${widget.orderId}', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold))),
+      appBar: AppBar(backgroundColor: Colors.indigo, title: LiveTranslatedText('Track Order #${widget.orderId}', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold))),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: Colors.indigo))
           : Padding(
@@ -170,21 +171,21 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Icon(Icons.local_shipping, size: 48, color: Colors.indigo),
                 const SizedBox(height: 16),
-                Text('Order Status', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
+                LiveTranslatedText('Order Status', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 24),
                 Expanded(
                   child: Stepper(
                     currentStep: _currentStep,
                     controlsBuilder: (ctx, details) => const SizedBox.shrink(),
                     steps: List.generate(_steps.length, (i) => Step(
-                      title: Text(_stepLabels[i], style: GoogleFonts.poppins(fontWeight: i <= _currentStep ? FontWeight.bold : FontWeight.normal, color: i <= _currentStep ? Colors.indigo : Colors.grey)),
+                      title: LiveTranslatedText(_stepLabels[i], style: GoogleFonts.poppins(fontWeight: i <= _currentStep ? FontWeight.bold : FontWeight.normal, color: i <= _currentStep ? Colors.indigo : Colors.grey)),
                       content: const SizedBox.shrink(),
                       isActive: i <= _currentStep,
                       state: i < _currentStep ? StepState.complete : (i == _currentStep ? StepState.editing : StepState.indexed),
                     )),
                   ),
                 ),
-                Text('Auto-refreshes every 30s', style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12)),
+                LiveTranslatedText('Auto-refreshes every 30s', style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12)),
               ]),
             ),
     );

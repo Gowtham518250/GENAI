@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'data_protection_service.dart';
@@ -46,7 +47,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LiveTranslatedText(
             result 
               ? '✅ All data synced to backend!' 
               : '⚠️ Sync partially failed (retrying)',
@@ -68,7 +69,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
+          content: LiveTranslatedText(
             result 
               ? '✅ Local backup created!' 
               : '❌ Backup failed',
@@ -85,7 +86,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Data Protection'),
+        title: const LiveTranslatedText('Data Protection'),
         backgroundColor: _primary,
         elevation: 0,
       ),
@@ -107,7 +108,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           'Data Safety Status',
                           style: GoogleFonts.poppins(
                             fontSize: 16,
@@ -116,7 +117,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
+                        LiveTranslatedText(
                           _integrityStatus['status'] == 'success'
                               ? '✅ All data is safe and verified'
                               : '⚠️ Issues detected - run integrity check',
@@ -191,7 +192,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LiveTranslatedText(
                           'How Data Protection Works:',
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.bold,
@@ -199,7 +200,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
+                        LiveTranslatedText(
                           '• Every transaction stored locally AND on backend\n'
                           '• Auto-sync with 3x retry on network issues\n'
                           '• Integrity checks prevent data corruption\n'
@@ -225,7 +226,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LiveTranslatedText(
               title,
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -235,7 +236,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
             const SizedBox(height: 12),
             ...items.map((item) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(
+              child: LiveTranslatedText(
                 '• $item',
                 style: GoogleFonts.poppins(fontSize: 12),
               ),
@@ -257,7 +258,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LiveTranslatedText(
               title,
               style: GoogleFonts.poppins(
                 fontSize: 13,
@@ -266,7 +267,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
               ),
             ),
             const SizedBox(height: 8),
-            ...issues.map((issue) => Text(
+            ...issues.map((issue) => LiveTranslatedText(
               '⚠️ $issue',
               style: GoogleFonts.poppins(
                 fontSize: 11,
@@ -300,7 +301,7 @@ class _DataProtectionPageState extends State<DataProtectionPage> {
                 ),
               )
             : Icon(icon),
-        label: Text(label),
+        label: LiveTranslatedText(label),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,

@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'local_storage_service.dart';
@@ -102,7 +103,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text('Daily Closing', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('Daily Closing', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -123,7 +124,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Opening Cash Balance', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
+                        LiveTranslatedText('Opening Cash Balance', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
                         SizedBox(
                           width: 120,
                           child: TextField(
@@ -152,7 +153,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text('Actual Cash Being Handed Over', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
+                          child: LiveTranslatedText('Actual Cash Being Handed Over', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
                         ),
                         SizedBox(
                           width: 120,
@@ -188,14 +189,14 @@ class _DayClosingPageState extends State<DayClosingPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Closing Cash Balance', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.green.shade800)),
+                      LiveTranslatedText('Closing Cash Balance', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.green.shade800)),
                       const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Opening + Cash Collected - Returned\n= ₹${(_openingBalance + _totalCash - _totalBorrow).toStringAsFixed(0)}', 
+                          LiveTranslatedText('Opening + Cash Collected - Returned\n= ₹${(_openingBalance + _totalCash - _totalBorrow).toStringAsFixed(0)}', 
                               style: GoogleFonts.poppins(fontSize: 12, color: Colors.green.shade700)),
-                          Text('₹${(_openingBalance + _totalCash - _totalBorrow).toStringAsFixed(0)}', 
+                          LiveTranslatedText('₹${(_openingBalance + _totalCash - _totalBorrow).toStringAsFixed(0)}', 
                               style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.green.shade700)),
                         ],
                       ),
@@ -231,14 +232,14 @@ class _DayClosingPageState extends State<DayClosingPage> {
       ),
       child: Column(
         children: [
-          Text('Today\'s Total Revenue', style: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
+          LiveTranslatedText('Today\'s Total Revenue', style: GoogleFonts.poppins(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
           const SizedBox(height: 8),
-          Text('₹${total.toStringAsFixed(0)}', style: GoogleFonts.poppins(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+          LiveTranslatedText('₹${total.toStringAsFixed(0)}', style: GoogleFonts.poppins(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-            child: Text('${_todaySales.length} Total Bills Generated', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w500)),
+            child: LiveTranslatedText('${_todaySales.length} Total Bills Generated', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -249,7 +250,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Payment Breakdown', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1F2937))),
+        LiveTranslatedText('Payment Breakdown', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1F2937))),
         const SizedBox(height: 16),
         _buildMethodRow(Icons.money_rounded, 'Cash in Hand', _totalCash, Colors.green),
         const SizedBox(height: 12),
@@ -268,8 +269,8 @@ class _DayClosingPageState extends State<DayClosingPage> {
         children: [
           Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color, size: 20)),
           const SizedBox(width: 16),
-          Expanded(child: Text(label, style: GoogleFonts.poppins(fontWeight: FontWeight.w500, color: const Color(0xFF4B5563)))),
-          Text('₹${amount.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
+          Expanded(child: LiveTranslatedText(label, style: GoogleFonts.poppins(fontWeight: FontWeight.w500, color: const Color(0xFF4B5563)))),
+          LiveTranslatedText('₹${amount.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 16)),
         ],
       ),
     );
@@ -280,13 +281,13 @@ class _DayClosingPageState extends State<DayClosingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Recent Sales', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1F2937))),
+        LiveTranslatedText('Recent Sales', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1F2937))),
         const SizedBox(height: 16),
         ..._todaySales.take(5).map((s) => ListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text(s['customer_name'] ?? 'Guest Customer', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-          subtitle: Text(s['created_at']?.toString().substring(11, 16) ?? '', style: GoogleFonts.poppins(fontSize: 12)),
-          trailing: Text('₹${s['total_amount']}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF4F46E5))),
+          title: LiveTranslatedText(s['customer_name'] ?? 'Guest Customer', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+          subtitle: LiveTranslatedText(s['created_at']?.toString().substring(11, 16) ?? '', style: GoogleFonts.poppins(fontSize: 12)),
+          trailing: LiveTranslatedText('₹${s['total_amount']}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF4F46E5))),
         )),
       ],
     );
@@ -302,7 +303,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
           backgroundColor: const Color(0xFF111827),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
-        child: Text('CLOSE DAY & PREPARE REPORT', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+        child: LiveTranslatedText('CLOSE DAY & PREPARE REPORT', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
       ),
     );
   }
@@ -331,7 +332,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
             children: [
               Icon(Icons.message, color: Colors.green.shade700, size: 24),
               const SizedBox(width: 8),
-              Text('WhatsApp Report Ready', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.green.shade800)),
+              LiveTranslatedText('WhatsApp Report Ready', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.green.shade800)),
             ],
           ),
           const SizedBox(height: 16),
@@ -342,7 +343,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey.shade300),
             ),
-            child: Text(message, style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87)),
+            child: LiveTranslatedText(message, style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87)),
           ),
           const SizedBox(height: 16),
           Row(
@@ -351,7 +352,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
                 child: OutlinedButton.icon(
                   onPressed: () => setState(() => _showWhatsAppReport = false),
                   icon: const Icon(Icons.edit),
-                  label: const Text('Edit Amounts'),
+                  label: const LiveTranslatedText('Edit Amounts'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.grey.shade700,
                     side: BorderSide(color: Colors.grey.shade400),
@@ -363,7 +364,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
                 child: ElevatedButton.icon(
                   onPressed: () => _sendWhatsAppReport(),
                   icon: const Icon(Icons.send),
-                  label: const Text('Send to Owner'),
+                  label: const LiveTranslatedText('Send to Owner'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green.shade600,
                     foregroundColor: Colors.white,
@@ -390,7 +391,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
 
     if (ownerPhone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add your phone number in Shop Settings first')),
+        const SnackBar(content: LiveTranslatedText('Add your phone number in Shop Settings first')),
       );
       return;
     }
@@ -422,7 +423,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open WhatsApp automatically. You can use the Share/WhatsApp button from your phone.')),
+          const SnackBar(content: LiveTranslatedText('Could not open WhatsApp automatically. You can use the Share/WhatsApp button from your phone.')),
         );
       }
     }
@@ -431,7 +432,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
   void _confirmClosing() {
     if (_actualCashHandedOver <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter the actual cash being handed over')),
+        const SnackBar(content: LiveTranslatedText('Please enter the actual cash being handed over')),
       );
       return;
     }
@@ -440,31 +441,31 @@ class _DayClosingPageState extends State<DayClosingPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Verify Closing Amount?', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        title: LiveTranslatedText('Verify Closing Amount?', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Recorded Cash: ₹${_totalCash.toStringAsFixed(0)}', style: GoogleFonts.poppins()),
-            Text('Cash Handed Over: ₹${_actualCashHandedOver.toStringAsFixed(0)}', style: GoogleFonts.poppins()),
-            Text('Discrepancy: ₹${(_totalCash - _actualCashHandedOver).toStringAsFixed(0)}', 
+            LiveTranslatedText('Recorded Cash: ₹${_totalCash.toStringAsFixed(0)}', style: GoogleFonts.poppins()),
+            LiveTranslatedText('Cash Handed Over: ₹${_actualCashHandedOver.toStringAsFixed(0)}', style: GoogleFonts.poppins()),
+            LiveTranslatedText('Discrepancy: ₹${(_totalCash - _actualCashHandedOver).toStringAsFixed(0)}', 
               style: GoogleFonts.poppins(
                 color: (_totalCash - _actualCashHandedOver).abs() > 10 ? Colors.red : Colors.green,
                 fontWeight: FontWeight.bold,
               )),
             const SizedBox(height: 16),
-            Text('WhatsApp summary will be sent automatically to the owner.', style: GoogleFonts.poppins(fontSize: 12)),
+            LiveTranslatedText('WhatsApp summary will be sent automatically to the owner.', style: GoogleFonts.poppins(fontSize: 12)),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('CANCEL')),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
               _autoSendDailySummary(); // FIX-7: Auto-send instead of showing UI
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('CONFIRM CLOSING', style: TextStyle(color: Colors.white)),
+            child: const LiveTranslatedText('CONFIRM CLOSING', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -480,7 +481,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
       
       if (ownerPhone.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Owner phone not configured — day closed locally')),
+          const SnackBar(content: LiveTranslatedText('Owner phone not configured — day closed locally')),
         );
         Navigator.pop(context, true);
         return;
@@ -506,7 +507,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ Day closed! WhatsApp summary sent.'),
+              content: LiveTranslatedText('✅ Day closed! WhatsApp summary sent.'),
               backgroundColor: Colors.green,
             ),
           );
@@ -515,7 +516,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
         debugPrint('Error auto-sending WhatsApp: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Day closed. WhatsApp error: $e')),
+            SnackBar(content: LiveTranslatedText('Day closed. WhatsApp error: $e')),
           );
         }
       }
@@ -526,7 +527,7 @@ class _DayClosingPageState extends State<DayClosingPage> {
       debugPrint('Error in day closing: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Day closed with error: $e')),
+          SnackBar(content: LiveTranslatedText('Day closed with error: $e')),
         );
       }
       Navigator.pop(context, true);

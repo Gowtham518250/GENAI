@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'api_client.dart';
@@ -32,14 +33,14 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
   Future<void> _deleteAccount() async {
     if (!_acceptedTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please confirm that you understand the consequences')),
+        const SnackBar(content: LiveTranslatedText('Please confirm that you understand the consequences')),
       );
       return;
     }
 
     if (_confirmController.text != 'PERMANENT DELETE') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please type PERMANENT DELETE to confirm')),
+        const SnackBar(content: LiveTranslatedText('Please type PERMANENT DELETE to confirm')),
       );
       return;
     }
@@ -68,7 +69,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Account deleted successfully. All data has been cleared.'),
+            content: LiveTranslatedText('✅ Account deleted successfully. All data has been cleared.'),
             backgroundColor: Colors.green,
           ),
         );
@@ -80,7 +81,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error deleting account: $e'),
+            content: LiveTranslatedText('Error deleting account: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -92,7 +93,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Delete Account'),
+        title: const LiveTranslatedText('Delete Account'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -113,7 +114,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                   Icon(Icons.warning_rounded, color: Colors.red.shade700, size: 28),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
+                    child: LiveTranslatedText(
                       'This action cannot be undone',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
@@ -128,7 +129,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
             const SizedBox(height: 24),
 
             // Explanation
-            Text(
+            LiveTranslatedText(
               'When you delete your account:',
               style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
             ),
@@ -144,7 +145,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
             CheckboxListTile(
               value: _acceptedTerms,
               onChanged: (value) => setState(() => _acceptedTerms = value ?? false),
-              title: Text(
+              title: LiveTranslatedText(
                 'I understand and accept the permanent deletion of all my data',
                 style: GoogleFonts.poppins(fontSize: 14),
               ),
@@ -154,7 +155,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
             const SizedBox(height: 20),
 
             // Text confirmation
-            Text(
+            LiveTranslatedText(
               'Please type PERMANENT DELETE to confirm:',
               style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
             ),
@@ -188,7 +189,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                           strokeWidth: 2,
                         ),
                       )
-                    : Text(
+                    : LiveTranslatedText(
                         'Delete Account Permanently',
                         style: GoogleFonts.poppins(
                           color: Colors.white,
@@ -210,7 +211,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                   backgroundColor: Colors.grey.shade300,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   'Cancel',
                   style: GoogleFonts.poppins(
                     color: Colors.black,
@@ -232,9 +233,9 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const LiveTranslatedText('• ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           Expanded(
-            child: Text(
+            child: LiveTranslatedText(
               text,
               style: GoogleFonts.poppins(fontSize: 14, height: 1.4),
             ),

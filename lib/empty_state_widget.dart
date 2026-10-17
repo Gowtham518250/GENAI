@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
@@ -49,7 +50,7 @@ class EmptyStateWidget extends StatelessWidget {
             const SizedBox(height: 24),
             
             // Title
-            Text(
+            LiveTranslatedText(
               title,
               style: GoogleFonts.poppins(
                 fontSize: 20,
@@ -61,7 +62,7 @@ class EmptyStateWidget extends StatelessWidget {
             const SizedBox(height: 8),
             
             // Subtitle
-            Text(
+            LiveTranslatedText(
               subtitle,
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -76,7 +77,7 @@ class EmptyStateWidget extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onAction,
                 icon: const Icon(Icons.add_rounded),
-                label: Text(actionLabel ?? 'Add Item'),
+                label: LiveTranslatedText(actionLabel ?? 'Add Item'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: iconColor,
                   foregroundColor: Colors.white,
@@ -292,7 +293,7 @@ class NoDataWidget extends StatelessWidget {
             color: Colors.grey[400],
           ),
           const SizedBox(height: 16),
-          Text(
+          LiveTranslatedText(
             message,
             style: GoogleFonts.poppins(
               fontSize: 18,
@@ -302,7 +303,7 @@ class NoDataWidget extends StatelessWidget {
           ),
           if (submessage != null) ...[
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               submessage!,
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -316,7 +317,7 @@ class NoDataWidget extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRefresh,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Refresh'),
+              label: const LiveTranslatedText('Refresh'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6366F1),
               ),

@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:google_fonts/google_fonts.dart';
@@ -75,7 +76,7 @@ class _EmailSetupPageState extends State<EmailSetupPage> {
 
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Email saved for $email'), backgroundColor: const Color(0xFF10B981)),
+        SnackBar(content: LiveTranslatedText('Email saved for $email'), backgroundColor: const Color(0xFF10B981)),
       );
     }
   }
@@ -118,7 +119,7 @@ class _EmailSetupPageState extends State<EmailSetupPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Email setup', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('Email setup', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -134,7 +135,7 @@ class _EmailSetupPageState extends State<EmailSetupPage> {
                   color: _configured ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
                 ),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 _configured
                     ? 'Sender is configured. OTP emails are sent from this device (no backend).'
                     : 'OTP is sent from THIS app using Gmail SMTP. You must set sender email + App Password once.',
@@ -142,12 +143,12 @@ class _EmailSetupPageState extends State<EmailSetupPage> {
               ),
             ),
             const SizedBox(height: 20),
-            Text(
+            LiveTranslatedText(
               'How to get Gmail App Password',
               style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 15),
             ),
             const SizedBox(height: 8),
-            Text(
+            LiveTranslatedText(
               '1. Google Account → Security → 2-Step Verification ON\n'
               '2. App passwords → Mail → Other → copy 16-character password\n'
               '3. Paste below (with or without spaces)',
@@ -177,7 +178,7 @@ class _EmailSetupPageState extends State<EmailSetupPage> {
             ),
             if (_statusMessage != null) ...[
               const SizedBox(height: 12),
-              Text(
+              LiveTranslatedText(
                 _statusMessage!,
                 style: GoogleFonts.poppins(
                   fontSize: 13,
@@ -194,7 +195,7 @@ class _EmailSetupPageState extends State<EmailSetupPage> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 backgroundColor: const Color(0xFF6366F1),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 _saving ? 'Saving…' : 'Save credentials',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
@@ -203,7 +204,7 @@ class _EmailSetupPageState extends State<EmailSetupPage> {
             OutlinedButton(
               onPressed: _testing || !_configured ? null : _test,
               style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-              child: Text(
+              child: LiveTranslatedText(
                 _testing ? 'Sending test…' : 'Send test OTP email',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),

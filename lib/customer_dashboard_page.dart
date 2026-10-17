@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -72,11 +73,11 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (ctx, setDialogState) {
           return AlertDialog(
-            title: const Text('Rate this shop'),
+            title: const LiveTranslatedText('Rate this shop'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                const LiveTranslatedText(
                   'Your rating helps other customers compare shops.',
                 ),
                 const SizedBox(height: 16),
@@ -111,7 +112,7 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancel'),
+                child: const LiveTranslatedText('Cancel'),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -125,7 +126,7 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
                     Navigator.pop(dialogContext, true);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Thanks — your rating was recorded.'),
+                        content: LiveTranslatedText('Thanks — your rating was recorded.'),
                         backgroundColor: Color(0xFF059669),
                       ),
                     );
@@ -133,7 +134,7 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(
+                        content: LiveTranslatedText(
                           apiResult['message']?.toString() ??
                               'Unable to save the rating.',
                         ),
@@ -141,7 +142,7 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
                     );
                   }
                 },
-                child: const Text('Submit rating'),
+                child: const LiveTranslatedText('Submit rating'),
               ),
             ],
           );
@@ -180,17 +181,17 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Welcome back,', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 16)),
-          Text(_customerName, style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+          LiveTranslatedText('Welcome back,', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 16)),
+          LiveTranslatedText(_customerName, style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           ElevatedButton.icon(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopBrowserPage())),
             icon: const Icon(Icons.shopping_bag_outlined, color: Color(0xFF4F46E5)),
-            label: const Text('Discover & Order', style: TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.bold)),
+            label: const LiveTranslatedText('Discover & Order', style: TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
           ),
           const SizedBox(height: 10),
-          Text(
+          LiveTranslatedText(
             'Search any shop or product, compare prices, and use AI advice for cheaper or higher-rated options.',
             style: GoogleFonts.poppins(color: Colors.white70, fontSize: 11, height: 1.4),
           ),
@@ -216,7 +217,7 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
             child: Icon(c['icon'] as IconData, color: c['color'] as Color, size: 28),
           ),
           const SizedBox(height: 8),
-          Text(c['label'] as String, style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 12)),
+          LiveTranslatedText(c['label'] as String, style: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 12)),
         ],
       )).toList(),
     );
@@ -229,7 +230,7 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('AI Shop Pro', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 22)),
+        title: LiveTranslatedText('AI Shop Pro', style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 22)),
         actions: [
           _loggingOut
               ? const Padding(
@@ -252,20 +253,20 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
                 children: [
                   _buildBanner(),
                   const SizedBox(height: 32),
-                  Text('Categories', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                  LiveTranslatedText('Categories', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   _buildCategories(),
                   const SizedBox(height: 32),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Recent Orders', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-                      TextButton(onPressed: (){}, child: const Text('View All')),
+                      LiveTranslatedText('Recent Orders', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                      TextButton(onPressed: (){}, child: const LiveTranslatedText('View All')),
                     ],
                   ),
                   const SizedBox(height: 16),
                   _orders.isEmpty
-                      ? Center(child: Text('No recent orders. Start shopping!', style: GoogleFonts.poppins(color: Colors.grey)))
+                      ? Center(child: LiveTranslatedText('No recent orders. Start shopping!', style: GoogleFonts.poppins(color: Colors.grey)))
                       : Column(
                           children: _orders.map((tx) {
                             return Container(
@@ -287,15 +288,15 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text('Order #${tx['id'] ?? tx['order_id'] ?? '??'}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
-                                            Text(tx['created_at']?.toString() ?? 'Online Order', style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12)),
+                                            LiveTranslatedText('Order #${tx['id'] ?? tx['order_id'] ?? '??'}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
+                                            LiveTranslatedText(tx['created_at']?.toString() ?? 'Online Order', style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12)),
                                           ],
                                         ),
                                       ),
                                       Column(
                                         crossAxisAlignment: CrossAxisAlignment.end,
                                         children: [
-                                          Text(
+                                          LiveTranslatedText(
                                             'Rs ${tx['total_amount'] ?? tx['amount'] ?? 0}',
                                             style: GoogleFonts.poppins(
                                               fontWeight: FontWeight.bold,
@@ -304,7 +305,7 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
                                             ),
                                           ),
                                           const SizedBox(height: 4),
-                                          Text(
+                                          LiveTranslatedText(
                                             (tx['status'] ?? tx['order_status'] ?? '').toString(),
                                             style: GoogleFonts.poppins(
                                               color: Colors.grey.shade600,
@@ -322,7 +323,7 @@ class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
                                       child: TextButton.icon(
                                         onPressed: () => _rateOrder(Map<String, dynamic>.from(tx)),
                                         icon: const Icon(Icons.star_outline_rounded, size: 17),
-                                        label: const Text('Rate shop'),
+                                        label: const LiveTranslatedText('Rate shop'),
                                       ),
                                     ),
                                 ],

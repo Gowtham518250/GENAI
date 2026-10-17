@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -59,7 +60,7 @@ class _CustomerRegisterPageState extends State<CustomerRegisterPage> {
         await prefs.setString('user_name', data['name'] ?? data['user_name'] ?? _nameController.text.trim());
         await prefs.setString('user_email', _emailController.text.trim());
         
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration successful! Please login.'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LiveTranslatedText('Registration successful! Please login.'), backgroundColor: Colors.green));
         Navigator.pop(context);
       } else {
         setState(() {
@@ -105,7 +106,7 @@ class _CustomerRegisterPageState extends State<CustomerRegisterPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Create Account', style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                LiveTranslatedText('Create Account', style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 32),
                 _buildField('Full Name', Icons.person, _nameController),
                 _buildField('Email Address', Icons.email, _emailController),
@@ -115,7 +116,7 @@ class _CustomerRegisterPageState extends State<CustomerRegisterPage> {
                 _buildField('Full Address', Icons.home, _addressController),
                 
                 if (_error != null) ...[
-                  Text(_error!, style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  LiveTranslatedText(_error!, style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                 ],
                 const SizedBox(height: 16),
@@ -126,7 +127,7 @@ class _CustomerRegisterPageState extends State<CustomerRegisterPage> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _register,
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.green, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                    child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Sign Up', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const LiveTranslatedText('Sign Up', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],

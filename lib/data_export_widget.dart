@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -177,23 +178,23 @@ class _DataExportWidgetState extends State<DataExportWidget> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Export Complete'),
+        title: LiveTranslatedText('Export Complete'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('✅ $fileType file has been saved'),
+            LiveTranslatedText('✅ $fileType file has been saved'),
             const SizedBox(height: 8),
-            Text('${filteredSales.length} transactions exported'),
+            LiveTranslatedText('${filteredSales.length} transactions exported'),
             const SizedBox(height: 8),
-            Text('File: ${filePath.split('/').last}',
+            LiveTranslatedText('File: ${filePath.split('/').last}',
                 style: const TextStyle(fontSize: 12, color: Colors.grey)),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Done'),
+            child: const LiveTranslatedText('Done'),
           ),
           ElevatedButton.icon(
             onPressed: () async {
@@ -205,7 +206,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
               Navigator.pop(context);
             },
             icon: const Icon(Icons.share),
-            label: const Text('Share'),
+            label: const LiveTranslatedText('Share'),
           ),
         ],
       ),
@@ -243,7 +244,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
             children: [
               Icon(Icons.download, color: Colors.blue.shade700, size: 26),
               const SizedBox(width: 12),
-              Text(
+              LiveTranslatedText(
                 'Export Sales Data',
                 style: GoogleFonts.poppins(
                   fontSize: 18,
@@ -260,7 +261,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.green.shade400),
                   ),
-                  child: Text(
+                  child: LiveTranslatedText(
                     '✓ Ready',
                     style: TextStyle(
                       color: Colors.green.shade700,
@@ -274,7 +275,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
           const SizedBox(height: 16),
 
           // Time Range Selection
-          Text(
+          LiveTranslatedText(
             'Select Time Period:',
             style: GoogleFonts.poppins(
               fontSize: 13,
@@ -354,7 +355,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
           if (_selectedTimeRange == ExportTimeRange.custom && _customStartDate != null && _customEndDate != null)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
+              child: LiveTranslatedText(
                 'Selected: ${_customStartDate.toString().split(' ')[0]} to ${_customEndDate.toString().split(' ')[0]}',
                 style: const TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold),
               ),
@@ -362,7 +363,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
           const SizedBox(height: 16),
 
           // Format Selection
-          Text(
+          LiveTranslatedText(
             'Export Format:',
             style: GoogleFonts.poppins(
               fontSize: 13,
@@ -421,7 +422,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
               children: [
                 Column(
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       '${filteredSales.length}',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
@@ -429,7 +430,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
                         color: Colors.blue.shade900,
                       ),
                     ),
-                    Text(
+                    LiveTranslatedText(
                       'Transactions',
                       style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                     ),
@@ -438,7 +439,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
                 Container(width: 1, height: 30, color: Colors.blue.shade200),
                 Column(
                   children: [
-                    Text(
+                    LiveTranslatedText(
                       '₹${filteredSales.fold(0.0, (sum, sale) {
                         final val = sale['total_with_tax'] ?? sale['total'] ?? 0;
                         return sum + (double.tryParse(val.toString()) ?? 0.0);
@@ -449,7 +450,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
                         color: Colors.green.shade700,
                       ),
                     ),
-                    Text(
+                    LiveTranslatedText(
                       'Total Revenue',
                       style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                     ),
@@ -480,7 +481,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
                           : Colors.blue.shade300,
                 ),
               ),
-              child: Text(
+              child: LiveTranslatedText(
                 _statusMessage,
                 style: TextStyle(
                   fontSize: 12,
@@ -508,7 +509,7 @@ class _DataExportWidgetState extends State<DataExportWidget> {
                       ),
                     )
                   : const Icon(Icons.download_rounded),
-              label: Text(
+              label: LiveTranslatedText(
                 _isExporting ? 'Exporting...' : 'Export Now',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
@@ -560,7 +561,7 @@ class _TimeRangeChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
+            child: LiveTranslatedText(
               label,
               style: TextStyle(
                 fontSize: 12,
@@ -627,7 +628,7 @@ class _FormatRadio extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
+              child: LiveTranslatedText(
                 label,
                 style: TextStyle(
                   fontSize: 12,

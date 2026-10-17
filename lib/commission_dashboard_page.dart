@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'commission_tracking_service.dart';
@@ -36,7 +37,7 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('${widget.staffName} - Commissions',
+        title: LiveTranslatedText('${widget.staffName} - Commissions',
             style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF635BFF),
         elevation: 0,
@@ -105,7 +106,7 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
             const SizedBox(height: 24),
             
             // 📄 Pending Commissions List
-            Text('Pending Commissions',
+            LiveTranslatedText('Pending Commissions',
                 style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             
@@ -124,7 +125,7 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
                       border: Border.all(color: Colors.grey[300]!),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text('No pending commissions',
+                    child: LiveTranslatedText('No pending commissions',
                         style: GoogleFonts.poppins(color: Colors.grey)),
                   );
                 }
@@ -152,7 +153,7 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: Text('Request Payout',
+                child: LiveTranslatedText('Request Payout',
                     style: GoogleFonts.poppins(
                         color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
               ),
@@ -180,16 +181,16 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
         children: [
           Row(
             children: [
-              Text(icon, style: const TextStyle(fontSize: 20)),
+              LiveTranslatedText(icon, style: const TextStyle(fontSize: 20)),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(title,
+                child: LiveTranslatedText(title,
                     style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(value,
+          LiveTranslatedText(value,
               style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
         ],
       ),
@@ -211,9 +212,9 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Sale #${(commission['saleId'] as String).substring(0, 6)}',
+              LiveTranslatedText('Sale #${(commission['saleId'] as String).substring(0, 6)}',
                   style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold)),
-              Text(
+              LiveTranslatedText(
                 '₹${(commission['totalCommission'] as num).toStringAsFixed(2)}',
                 style: GoogleFonts.poppins(
                     fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF635BFF)),
@@ -224,9 +225,9 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Sale: ₹${(commission['saleAmount'] as num).toStringAsFixed(2)}',
+              LiveTranslatedText('Sale: ₹${(commission['saleAmount'] as num).toStringAsFixed(2)}',
                   style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600])),
-              Text('Rate: ${(commission['commissionRate'] as num).toStringAsFixed(1)}%',
+              LiveTranslatedText('Rate: ${(commission['commissionRate'] as num).toStringAsFixed(1)}%',
                   style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[600])),
             ],
           ),
@@ -242,7 +243,7 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Request Payout', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        title: LiveTranslatedText('Request Payout', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -267,7 +268,7 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const LiveTranslatedText('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -284,7 +285,7 @@ class _CommissionDashboardPageState extends State<CommissionDashboardPage> {
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF635BFF)),
-            child: const Text('Request', style: TextStyle(color: Colors.white)),
+            child: const LiveTranslatedText('Request', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
