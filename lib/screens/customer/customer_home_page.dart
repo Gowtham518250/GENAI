@@ -1,3 +1,4 @@
+import '../../live_translated_text.dart';
 import 'package:flutter/material.dart';
 import '../../visual_widgets.dart';
 import '../../customer_shop_service.dart';
@@ -96,7 +97,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceDark,
       appBar: AppBar(
-        title: Text(_shopName, style: const TextStyle(color: Colors.white)),
+        title: LiveTranslatedText(_shopName, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -161,7 +162,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                               child: _productImage(product['image_url']?.toString()),
                             ),
                             const SizedBox(height: 8),
-                            Text(product['name'],
+                            LiveTranslatedText(product['name']?.toString() ?? '',
                                 style: const TextStyle(
                                     color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                                 maxLines: 2,
