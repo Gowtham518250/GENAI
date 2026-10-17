@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -460,8 +461,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
               child: const Icon(Icons.storefront_rounded, color: Color(0xFF4F46E5)),
             ),
             const SizedBox(height: 11),
-            Text(
-              shop['shop_name']?.toString() ?? 'Shop',
+            LiveTranslatedText(shop['shop_name']?.toString() ?? 'Shop',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.poppins(fontWeight: FontWeight.w800, fontSize: 14),
@@ -514,8 +514,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    shop['shop_name']?.toString() ?? 'Shop',
+                  LiveTranslatedText(shop['shop_name']?.toString() ?? 'Shop',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w800),
                   ),
                   Text(
@@ -565,8 +564,7 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    product['product_name']?.toString() ?? 'Product',
+                  LiveTranslatedText(product['product_name']?.toString() ?? 'Product',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w800),
                   ),
                   Text(
@@ -625,12 +623,10 @@ class _ShopBrowserPageState extends State<ShopBrowserPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item['product_name']?.toString() ?? 'Product',
+                  LiveTranslatedText(item['product_name']?.toString() ?? 'Product',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w800),
                   ),
-                  Text(
-                    item['shop_name']?.toString() ?? 'Shop',
+                  LiveTranslatedText(item['shop_name']?.toString() ?? 'Shop',
                     style: GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 11),
                   ),
                   const SizedBox(height: 4),
@@ -742,7 +738,7 @@ class _ShopProductsPageState extends State<ShopProductsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(backgroundColor: Colors.indigo, title: Text(widget.shopName, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold))),
+      appBar: AppBar(backgroundColor: Colors.indigo, title: LiveTranslatedText(widget.shopName, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold))),
       floatingActionButton: _cartCount > 0
           ? FloatingActionButton.extended(
               onPressed: _goToCheckout,
@@ -767,7 +763,7 @@ class _ShopProductsPageState extends State<ShopProductsPage> {
                     CircleAvatar(backgroundColor: Colors.indigo.shade50, child: const Icon(Icons.inventory_2, color: Colors.indigo, size: 20)),
                     const SizedBox(width: 14),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(p['product_name']?.toString() ?? '', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                      LiveTranslatedText(p['product_name']?.toString() ?? '', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                       Text('Rs ${p['unit_price'] ?? p['price'] ?? 0}', style: GoogleFonts.poppins(color: Colors.indigo, fontWeight: FontWeight.bold)),
                     ])),
                     if (inCart > 0) Container(
