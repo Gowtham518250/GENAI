@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -21,7 +22,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xAA03030D),
-        title: Text(
+        title: LiveTranslatedText(
           '📊 Series A Investor Metrics',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
@@ -44,7 +45,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
               const SizedBox(height: 20),
 
               // Retention Curve Chart
-              Text(
+              LiveTranslatedText(
                 '📈 Retention Curve',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
@@ -57,7 +58,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
               const SizedBox(height: 20),
 
               // LTV Distribution
-              Text(
+              LiveTranslatedText(
                 '💰 LTV Distribution',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
@@ -70,7 +71,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
               const SizedBox(height: 20),
 
               // Churn Metrics
-              Text(
+              LiveTranslatedText(
                 '⚠️ Churn & Retention',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
@@ -83,7 +84,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
               const SizedBox(height: 20),
 
               // LTV:CAC Profitability
-              Text(
+              LiveTranslatedText(
                 '💹 LTV:CAC Profitability',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
@@ -99,7 +100,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
               ElevatedButton.icon(
                 onPressed: () => _exportPitchDeck(metrics),
                 icon: const Icon(Icons.download),
-                label: const Text('📥 Export Metrics'),
+                label: const LiveTranslatedText('📥 Export Metrics'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6366F1),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -132,7 +133,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             'Investor Pitch',
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -140,7 +141,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             headline['pitch'] ?? 'Loading metrics...',
             style: GoogleFonts.poppins(
               fontSize: 16,
@@ -149,7 +150,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
             ),
           ),
           const SizedBox(height: 12),
-          Text(
+          LiveTranslatedText(
             'Timestamp: ${metrics['timestamp']}',
             style: GoogleFonts.poppins(
               fontSize: 11,
@@ -186,9 +187,9 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
                     getTitlesWidget: (value, meta) {
                       const titles = ['Day 1', 'Day 7', 'Day 30', 'Day 60'];
                       if (value.toInt() < titles.length) {
-                        return Text(titles[value.toInt()]);
+                        return LiveTranslatedText(titles[value.toInt()]);
                       }
-                      return const Text('');
+                      return const LiveTranslatedText('');
                     },
                   ),
                 ),
@@ -196,7 +197,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
                   sideTitles: SideTitles(interval: 1, 
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
-                      return Text('${value.toInt()}%');
+                      return LiveTranslatedText('${value.toInt()}%');
                     },
                   ),
                 ),
@@ -237,7 +238,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
       ),
       child: Column(
         children: [
-          Text(
+          LiveTranslatedText(
             '₹${ltv['average_ltv'] ?? 0} Average LTV',
             style: GoogleFonts.poppins(
               fontSize: 16,
@@ -275,7 +276,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
             borderRadius: BorderRadius.circular(6),
           ),
           child: Center(
-            child: Text(
+            child: LiveTranslatedText(
               count.toString(),
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -286,7 +287,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
           ),
         ),
         const SizedBox(height: 6),
-        Text(
+        LiveTranslatedText(
           label,
           style: GoogleFonts.poppins(
             fontSize: 10,
@@ -313,14 +314,14 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Retention',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     color: const Color(0xFF047857),
                   ),
                 ),
-                Text(
+                LiveTranslatedText(
                   '${churn['retention_rate_percent'] ?? 0}%',
                   style: GoogleFonts.poppins(
                     fontSize: 20,
@@ -344,14 +345,14 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Churn',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     color: const Color(0xFF7F1D1D),
                   ),
                 ),
-                Text(
+                LiveTranslatedText(
                   '${churn['churn_rate_percent'] ?? 0}%',
                   style: GoogleFonts.poppins(
                     fontSize: 20,
@@ -384,7 +385,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          LiveTranslatedText(
             'Average Ratio',
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -392,7 +393,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
               color: const Color(0xFF92400E),
             ),
           ),
-          Text(
+          LiveTranslatedText(
             '${ltvcac['avg_ltv_cac_ratio'] ?? 0}x',
             style: GoogleFonts.poppins(
               fontSize: 28,
@@ -401,7 +402,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LiveTranslatedText(
             '${ltvcac['percent_profitable'] ?? 0}% shops profitable (≥3x)',
             style: GoogleFonts.poppins(
               fontSize: 12,
@@ -417,14 +418,14 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
+        title: LiveTranslatedText(
           'Export Metrics',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
         content: Container(
           constraints: const BoxConstraints(maxHeight: 300),
           child: SingleChildScrollView(
-            child: Text(
+            child: LiveTranslatedText(
               _formatMetricsForExport(metrics),
               style: GoogleFonts.poppins(fontSize: 12),
             ),
@@ -433,14 +434,14 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const LiveTranslatedText('Close'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
+                  content: LiveTranslatedText(
                     '📥 Metrics exported to CSV',
                     style: GoogleFonts.poppins(),
                   ),
@@ -448,7 +449,7 @@ class _InvestorAnalyticsDashboardState extends State<InvestorAnalyticsDashboard>
                 ),
               );
             },
-            child: const Text('Copy'),
+            child: const LiveTranslatedText('Copy'),
           ),
         ],
       ),

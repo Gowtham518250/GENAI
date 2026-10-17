@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 // =============================================================================
 // voice_billing_assistant.dart  —  V3 MULTI-LANGUAGE AI VOICE BILLING
 // =============================================================================
@@ -1594,7 +1595,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
   void _showSnack(String msg, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
+      content: LiveTranslatedText(msg),
       backgroundColor: isError ? Colors.deepOrange : const Color(0xFF00C853),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1667,7 +1668,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LiveTranslatedText(
                 'AI Voice Billing',
                 style: GoogleFonts.inter(
                   color: const Color(0xFF111827),
@@ -1676,7 +1677,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
+              LiveTranslatedText(
                 'Speak naturally. Review before billing.',
                 style: GoogleFonts.inter(
                   color: const Color(0xFF64748B),
@@ -1699,7 +1700,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
                 children: [
                   _buildBlinkDot(),
                   const SizedBox(width: 5),
-                  Text(
+                  LiveTranslatedText(
                     'Listening',
                     style: GoogleFonts.inter(
                       color: const Color(0xFF4F46E5),
@@ -1767,9 +1768,9 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(lang.flag, style: const TextStyle(fontSize: 12)),
+                  LiveTranslatedText(lang.flag, style: const TextStyle(fontSize: 12)),
                   const SizedBox(width: 5),
-                  Text(
+                  LiveTranslatedText(
                     lang.label,
                     style: GoogleFonts.inter(
                       color: selected
@@ -1812,7 +1813,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
                   color: Color(0xFF6366F1),
                 ),
                 const SizedBox(width: 7),
-                Text(
+                LiveTranslatedText(
                   'What I heard',
                   style: GoogleFonts.inter(
                     color: const Color(0xFF374151),
@@ -1831,7 +1832,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Process',
                       style: GoogleFonts.inter(
                         fontSize: 10,
@@ -1949,7 +1950,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
                       color: Color(0xFFD97706),
                     ),
                     const SizedBox(width: 8),
-                    Text(
+                    LiveTranslatedText(
                       'Please verify',
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w700,
@@ -1963,7 +1964,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
                 ..._parseWarnings.take(3).map(
                   (warning) => Padding(
                     padding: const EdgeInsets.only(bottom: 3),
-                    child: Text(
+                    child: LiveTranslatedText(
                       '• $warning',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -1996,7 +1997,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: LiveTranslatedText(
                     'AI understood: $_interpretedText',
                     style: GoogleFonts.inter(
                       color: const Color(0xFF3730A3),
@@ -2011,7 +2012,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Text('DETECTED ITEMS',
+          child: LiveTranslatedText('DETECTED ITEMS',
             style: GoogleFonts.rajdhani(
               color: const Color(0xFF42A5F5),
               fontSize: 11,
@@ -2096,7 +2097,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           subtitle: Row(
             children: [
               _miniField('Qty', _editControllers[idx]!['qty']!),
-              Text(' ${item.unit}  ·  ₹',
+              LiveTranslatedText(' ${item.unit}  ·  ₹',
                 style: GoogleFonts.rajdhani(color: const Color(0xFF546E7A), fontSize: 12)),
               _miniField('Price', _editControllers[idx]!['price']!),
               if (lowConf) ...[
@@ -2173,9 +2174,9 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${ParsedItems.where((e) => e.isConfirmed).length} selected',
+              LiveTranslatedText('${ParsedItems.where((e) => e.isConfirmed).length} selected',
                 style: GoogleFonts.rajdhani(color: const Color(0xFF7986CB), fontSize: 12)),
-              Text('₹${total.toStringAsFixed(2)}',
+              LiveTranslatedText('₹${total.toStringAsFixed(2)}',
                 style: GoogleFonts.rajdhani(
                   color: Colors.white,
                   fontSize: 20,
@@ -2194,7 +2195,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
               _lastFinalTranscript = '';
               _transcriptCtrl.clear();
             }),
-            child: Text('Clear', style: GoogleFonts.rajdhani(color: const Color(0xFF546E7A), fontSize: 14)),
+            child: LiveTranslatedText('Clear', style: GoogleFonts.rajdhani(color: const Color(0xFF546E7A), fontSize: 14)),
           ),
           const SizedBox(width: 8),
           ElevatedButton(
@@ -2205,7 +2206,7 @@ class _VoiceBillingAssistantState extends State<VoiceBillingAssistant>
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             ),
-            child: Text(
+            child: LiveTranslatedText(
             'Add to Bill',
             style: GoogleFonts.inter(
               fontSize: 10.5,

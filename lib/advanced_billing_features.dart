@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 /// Voice-First Billing Engine (Feature 1)
 /// Hindi+English mixed voice parsing into bill rows
 
@@ -94,7 +95,7 @@ class WhatsAppBillFormatter {
     if (phoneNumber.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Customer phone not provided'))
+          const SnackBar(content: LiveTranslatedText('Customer phone not provided'))
         );
       }
       return;
@@ -110,14 +111,14 @@ class WhatsAppBillFormatter {
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('WhatsApp not installed'))
+            const SnackBar(content: LiveTranslatedText('WhatsApp not installed'))
           );
         }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error opening WhatsApp: $e'))
+          SnackBar(content: LiveTranslatedText('Error opening WhatsApp: $e'))
         );
       }
     }
@@ -139,11 +140,11 @@ class SplitPaymentHandler {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx2, setState) => AlertDialog(
-          title: const Text('💰 Split Payment'),
+          title: const LiveTranslatedText('💰 Split Payment'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Total: ₹${totalAmount.toStringAsFixed(2)}'),
+              LiveTranslatedText('Total: ₹${totalAmount.toStringAsFixed(2)}'),
               const SizedBox(height: 20),
               TextField(
                 decoration: const InputDecoration(labelText: '💵 Cash Amount'),
@@ -157,14 +158,14 @@ class SplitPaymentHandler {
                 },
               ),
               const SizedBox(height: 10),
-              Text('📱 UPI Amount: ₹${upiAmount.toStringAsFixed(2)}',
+              LiveTranslatedText('📱 UPI Amount: ₹${upiAmount.toStringAsFixed(2)}',
                 style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: const LiveTranslatedText('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -174,7 +175,7 @@ class SplitPaymentHandler {
                   'payment_type': 'SPLIT'
                 });
               },
-              child: const Text('Confirm'),
+              child: const LiveTranslatedText('Confirm'),
             ),
           ],
         ),

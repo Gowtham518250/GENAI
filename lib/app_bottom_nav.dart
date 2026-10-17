@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,7 +46,7 @@ class _AppBottomNavState extends State<AppBottomNav> {
     if (!_isOwner && (index == 1 || index == 3 || index == 4)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Access Denied: Owner Privileges Required'),
+          content: LiveTranslatedText('Access Denied: Owner Privileges Required'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -129,15 +130,15 @@ class _AppBottomNavState extends State<AppBottomNav> {
             children: [
               const Icon(Icons.warning_amber_rounded, color: Colors.red),
               const SizedBox(width: 8),
-              const Text('Action Blocked', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              const LiveTranslatedText('Action Blocked', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
             ],
           ),
-          content: Text('You have $pendingCount offline sales pending. Please connect to the internet to sync them before logging out, otherwise they will be permanently lost.'),
+          content: LiveTranslatedText('You have $pendingCount offline sales pending. Please connect to the internet to sync them before logging out, otherwise they will be permanently lost.'),
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1B3A6B), foregroundColor: Colors.white),
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK, I WILL CONNECT'),
+              child: const LiveTranslatedText('OK, I WILL CONNECT'),
             ),
           ],
         ),
@@ -149,10 +150,10 @@ class _AppBottomNavState extends State<AppBottomNav> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Confirm Logout'),
-        content: const Text('Are you sure you want to log out?'),
+        title: const LiveTranslatedText('Confirm Logout'),
+        content: const LiveTranslatedText('Are you sure you want to log out?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('CANCEL')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger, foregroundColor: Colors.white),
             onPressed: () async {
@@ -174,7 +175,7 @@ class _AppBottomNavState extends State<AppBottomNav> {
                 Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
               }
             },
-            child: const Text('LOGOUT'),
+            child: const LiveTranslatedText('LOGOUT'),
           ),
         ],
       ),
@@ -217,7 +218,7 @@ class _ModernNavItem extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
+            LiveTranslatedText(
               label,
               style: GoogleFonts.poppins(
                 fontSize: 12,
@@ -274,7 +275,7 @@ class _CenterActionButton extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
+            LiveTranslatedText(
               'Add',
               style: GoogleFonts.inter(
                 fontSize: 11,

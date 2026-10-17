@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -315,7 +316,7 @@ class SaasButton extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                       ],
-                      Text(
+                      LiveTranslatedText(
                         label,
                         style: GoogleFonts.poppins(
                           fontSize: 16,
@@ -397,7 +398,7 @@ class _BackendLoadingOverlayState extends State<BackendLoadingOverlay> {
                           children: [
                             InfinityLoader(color: widget.accentColor, size: 84),
                             const SizedBox(height: 16),
-                            Text(
+                            LiveTranslatedText(
                               widget.title,
                               textAlign: TextAlign.center,
                               style: GoogleFonts.inter(
@@ -407,7 +408,7 @@ class _BackendLoadingOverlayState extends State<BackendLoadingOverlay> {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(
+                            LiveTranslatedText(
                               widget.subtitle,
                               textAlign: TextAlign.center,
                               style: GoogleFonts.inter(
@@ -585,17 +586,17 @@ class SectionHeader extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: AppTypography.titleMedium),
+            LiveTranslatedText(title, style: AppTypography.titleMedium),
             if (subtitle != null) ...[
               const SizedBox(height: 4),
-              Text(subtitle!, style: AppTypography.bodySmall),
+              LiveTranslatedText(subtitle!, style: AppTypography.bodySmall),
             ],
           ],
         ),
         if (onSeeAll != null)
           TextButton(
             onPressed: onSeeAll,
-            child: Text(
+            child: LiveTranslatedText(
               'See All',
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -645,9 +646,9 @@ class StatCard extends StatelessWidget {
             child: Icon(icon, color: iconColor ?? AppColors.primary),
           ),
           const SizedBox(height: 16),
-          Text(label, style: AppTypography.bodySmall),
+          LiveTranslatedText(label, style: AppTypography.bodySmall),
           const SizedBox(height: 8),
-          Text(value, style: AppTypography.titleSmall),
+          LiveTranslatedText(value, style: AppTypography.titleSmall),
           if (change != null) ...[
             const SizedBox(height: 8),
             Row(
@@ -658,7 +659,7 @@ class StatCard extends StatelessWidget {
                   size: 16,
                 ),
                 const SizedBox(width: 4),
-                Text(
+                LiveTranslatedText(
                   change!,
                   style: GoogleFonts.poppins(
                     fontSize: 13,
@@ -810,7 +811,7 @@ class _KpiGlassCardState extends State<KpiGlassCard>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Label
-                  Text(
+                  LiveTranslatedText(
                     widget.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -827,7 +828,7 @@ class _KpiGlassCardState extends State<KpiGlassCard>
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
-                    child: Text(
+                    child: LiveTranslatedText(
                       widget.value,
                       style: widget.isHighlighted
                           ? AppTypography.titleSmall.copyWith(
@@ -858,7 +859,7 @@ class _KpiGlassCardState extends State<KpiGlassCard>
                         : AppColors.danger,
                     size: 16,
                   ),
-                  Text(
+                  LiveTranslatedText(
                     '%',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -955,7 +956,7 @@ class _CompactProductRowState extends State<CompactProductRow> {
                       color: AppColors.brand.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       '${widget.index + 1}',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
@@ -966,7 +967,7 @@ class _CompactProductRowState extends State<CompactProductRow> {
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
+                    child: LiveTranslatedText(
                       name.isEmpty ? 'Product name…' : name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -980,7 +981,7 @@ class _CompactProductRowState extends State<CompactProductRow> {
                     ),
                   ),
                   if (price > 0) ...[
-                    Text(
+                    LiveTranslatedText(
                       '${qty.toStringAsFixed(0)}×₹${price.toStringAsFixed(0)}',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
@@ -1120,7 +1121,7 @@ class _ExpandedProductFieldsState extends State<ExpandedProductFields> {
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
+                      child: LiveTranslatedText(
                         'Product ${index + 1}',
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w700,

@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'payment_detection_service.dart';
@@ -151,7 +152,7 @@ class _MultiShopDashboardWidgetState extends State<MultiShopDashboardWidget> {
     if (!allowed || !mounted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Shop selection was blocked.')),
+          const SnackBar(content: LiveTranslatedText('Shop selection was blocked.')),
         );
       }
       return;
@@ -170,7 +171,7 @@ class _MultiShopDashboardWidgetState extends State<MultiShopDashboardWidget> {
           children: [
             _buildConsolidatedSummary(),
             const SizedBox(height: 24),
-            const Text(
+            const LiveTranslatedText(
               '📍 My Shops',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
@@ -201,7 +202,7 @@ class _MultiShopDashboardWidgetState extends State<MultiShopDashboardWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          const LiveTranslatedText(
             '📊 Today\'s Consolidated Report',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
@@ -231,7 +232,7 @@ class _MultiShopDashboardWidgetState extends State<MultiShopDashboardWidget> {
   Widget _buildMetric(String value, String label) {
     return Column(
       children: [
-        Text(
+        LiveTranslatedText(
           value,
           style: const TextStyle(
             fontSize: 20,
@@ -240,7 +241,7 @@ class _MultiShopDashboardWidgetState extends State<MultiShopDashboardWidget> {
           ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        LiveTranslatedText(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
@@ -266,7 +267,7 @@ class _MultiShopDashboardWidgetState extends State<MultiShopDashboardWidget> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
+                    child: LiveTranslatedText(
                       shop.name,
                       style: const TextStyle(
                         fontSize: 16,
@@ -281,7 +282,7 @@ class _MultiShopDashboardWidgetState extends State<MultiShopDashboardWidget> {
                       color: Colors.orange[200],
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
+                    child: LiveTranslatedText(
                       'Shop ${index + 1}',
                       style: TextStyle(
                         fontSize: 12,
@@ -299,7 +300,7 @@ class _MultiShopDashboardWidgetState extends State<MultiShopDashboardWidget> {
                     Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text(
+                      child: LiveTranslatedText(
                         shop.address!,
                         style: TextStyle(
                           fontSize: 12,
@@ -345,7 +346,7 @@ class _MultiShopDashboardWidgetState extends State<MultiShopDashboardWidget> {
   Widget _stat(String value, String label, Color color) {
     return Column(
       children: [
-        Text(
+        LiveTranslatedText(
           value,
           style: TextStyle(
             fontSize: 16,
@@ -353,7 +354,7 @@ class _MultiShopDashboardWidgetState extends State<MultiShopDashboardWidget> {
             color: color,
           ),
         ),
-        Text(
+        LiveTranslatedText(
           label,
           style: TextStyle(fontSize: 11, color: Colors.grey[600]),
         ),
@@ -385,11 +386,11 @@ class MyShopsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Shops'),
+        title: const LiveTranslatedText('My Shops'),
         backgroundColor: const Color(0xFF6366F1),
       ),
       body: const Center(
-        child: Text('Multi-shop dashboard - under construction'),
+        child: LiveTranslatedText('Multi-shop dashboard - under construction'),
       ),
     );
   }
