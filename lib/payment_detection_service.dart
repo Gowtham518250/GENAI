@@ -709,7 +709,7 @@ class PdsConfig {
   static const Duration watchdogStaleThreshold = Duration(minutes: 5);
 
   // Voice
-  static const Duration voiceMinGap      = Duration(seconds: 2);
+  static const Duration voiceMinGap      = Duration(milliseconds: 350);
   static const int      voiceBurstCount  = 3;
   static const Duration voiceBurstWindow = Duration(seconds: 5);
   // FIX-3: language removed from PdsConfig — now on PaymentDetectionService
