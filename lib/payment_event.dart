@@ -127,6 +127,10 @@ class PaymentEvent {
     return 'hash_${md5.convert(utf8.encode(payload))}';
   }
 
+  /// Canonical transaction direction used by detector, deduplication and voice policy.
+  /// Values are "credit", "debit", or "unknown".
+  String get transactionDirection => _transactionDirection(rawText);
+
   static String _transactionDirection(String text) {
     final t = text.toLowerCase();
 
