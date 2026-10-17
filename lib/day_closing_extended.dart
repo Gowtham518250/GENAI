@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'shop_profile_page.dart';
@@ -26,12 +27,12 @@ class DayClosingExtended {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text('💰 Actual Cash Handed Over'),
+        title: const LiveTranslatedText('💰 Actual Cash Handed Over'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              LiveTranslatedText(
                 'Recorded Cash: ₹${recordedCash.toStringAsFixed(0)}',
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
@@ -52,14 +53,14 @@ class DayClosingExtended {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const LiveTranslatedText('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
               final actualCash = double.tryParse(cashCtrl.text);
               if (actualCash == null) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(content: Text('Invalid amount')),
+                  const SnackBar(content: LiveTranslatedText('Invalid amount')),
                 );
                 return;
               }
@@ -75,7 +76,7 @@ class DayClosingExtended {
                 language: language,
               );
             },
-            child: const Text('Next'),
+            child: const LiveTranslatedText('Next'),
           ),
         ],
       ),
@@ -104,7 +105,7 @@ class DayClosingExtended {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text('📱 Send to Owner via WhatsApp'),
+        title: const LiveTranslatedText('📱 Send to Owner via WhatsApp'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -117,7 +118,7 @@ class DayClosingExtended {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.green[300]!),
                 ),
-                child: Text(
+                child: LiveTranslatedText(
                   message,
                   style: TextStyle(
                     fontFamily: 'Menlo',
@@ -143,7 +144,7 @@ class DayClosingExtended {
                       Icon(Icons.warning, color: Colors.amber[700]),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
+                        child: LiveTranslatedText(
                           'Discrepancy: ₹${discrepancy.abs().toStringAsFixed(0)}',
                           style: TextStyle(color: Colors.amber[700]),
                         ),
@@ -153,7 +154,7 @@ class DayClosingExtended {
                 ),
               
               const SizedBox(height: 12),
-              Text(
+              LiveTranslatedText(
                 'Owner: $ownerPhone',
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
@@ -163,7 +164,7 @@ class DayClosingExtended {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const LiveTranslatedText('Cancel'),
           ),
           ElevatedButton.icon(
             onPressed: () async {
@@ -171,7 +172,7 @@ class DayClosingExtended {
               await _sendViaWhatsApp(message, ownerPhone);
             },
             icon: const Icon(Icons.send),
-            label: const Text('Send to Owner'),
+            label: const LiveTranslatedText('Send to Owner'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
             ),
@@ -281,7 +282,7 @@ class _DayClosingWithWhatsAppWidgetState
               widget.onClosingComplete();
             },
             icon: const Icon(Icons.check_circle),
-            label: const Text('Confirm Day Close & Send Report'),
+            label: const LiveTranslatedText('Confirm Day Close & Send Report'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               backgroundColor: Colors.green,
@@ -298,14 +299,14 @@ class _DayClosingWithWhatsAppWidgetState
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
+          LiveTranslatedText(
             label,
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
               fontSize: isBold ? 16 : 14,
             ),
           ),
-          Text(
+          LiveTranslatedText(
             '₹${amount.toStringAsFixed(0)}',
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,

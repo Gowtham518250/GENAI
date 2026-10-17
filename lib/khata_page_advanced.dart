@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:google_fonts/google_fonts.dart';
@@ -227,7 +228,7 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('Record Payment', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
+              LiveTranslatedText('Record Payment', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
               IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx))
             ]),
             const SizedBox(height: 16),
@@ -235,7 +236,7 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
               decoration: InputDecoration(labelText: 'Amount (₹)', prefixIcon: const Icon(Icons.currency_rupee), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
             const SizedBox(height: 12),
             SegmentedButton<String>(
-              segments: const [ButtonSegment(value: 'CASH', label: Text('CASH')), ButtonSegment(value: 'UPI', label: Text('UPI'))],
+              segments: const [ButtonSegment(value: 'CASH', label: LiveTranslatedText('CASH')), ButtonSegment(value: 'UPI', label: LiveTranslatedText('UPI'))],
               selected: {method},
               onSelectionChanged: (s) => method = s.first,
             ),
@@ -254,7 +255,7 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: _success, minimumSize: const Size(double.infinity, 50)),
-              child: const Text('Record Payment', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const LiveTranslatedText('Record Payment', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -263,14 +264,14 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
   }
 
   void _showToast(String msg) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: const Color(0xFF1E293B)));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LiveTranslatedText(msg), backgroundColor: const Color(0xFF1E293B)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(title: const Text('Khata & Udhar', style: TextStyle(fontWeight: FontWeight.bold)),
+      appBar: AppBar(title: const LiveTranslatedText('Khata & Udhar', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white, elevation: 0, actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _loadKhata)]),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _primary))
@@ -308,16 +309,16 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
         children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('TOTAL OUTSTANDING', style: GoogleFonts.inter(fontSize: 11, color: Colors.white70)),
+              LiveTranslatedText('TOTAL OUTSTANDING', style: GoogleFonts.inter(fontSize: 11, color: Colors.white70)),
               const SizedBox(height: 4),
-              Text('₹${_totalOutstanding.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white)),
+              LiveTranslatedText('₹${_totalOutstanding.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white)),
             ]),
             Row(children: [
               Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
-                child: Text('$_pendingCount Pending', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))),
+                child: LiveTranslatedText('$_pendingCount Pending', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))),
               const SizedBox(width: 8),
               Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), decoration: BoxDecoration(color: trendColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
-                child: Row(children: [Icon(trendIcon, size: 14, color: trendColor), const SizedBox(width: 4), Text(_trend, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: trendColor))]),
+                child: Row(children: [Icon(trendIcon, size: 14, color: trendColor), const SizedBox(width: 4), LiveTranslatedText(_trend, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: trendColor))]),
               ),
             ]),
           ]),
@@ -339,9 +340,9 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
 
   Widget _buildMiniStat(String label, String value, Color color) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)), const SizedBox(width: 4), Text(label, style: GoogleFonts.inter(fontSize: 10, color: Colors.white70))]),
+      Row(children: [Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)), const SizedBox(width: 4), LiveTranslatedText(label, style: GoogleFonts.inter(fontSize: 10, color: Colors.white70))]),
       const SizedBox(height: 2),
-      Text(value, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+      LiveTranslatedText(value, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
     ]);
   }
 
@@ -366,7 +367,7 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
               children: ['ALL', 'OVERDUE', 'HIGH_BALANCE', 'HIGH_RISK'].map((f) => Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
-                  label: Text(f == 'ALL' ? 'All (${_customers.length})' : f),
+                  label: LiveTranslatedText(f == 'ALL' ? 'All (${_customers.length})' : f),
                   selected: _activeFilter == f,
                   onSelected: (_) => setState(() { _activeFilter = f; _applyFilter(); }),
                   selectedColor: _primary.withValues(alpha: 0.15),
@@ -382,10 +383,10 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
           tooltip: 'Sort',
           onSelected: (value) => setState(() { _sortBy = value; _applyFilter(); }),
           itemBuilder: (context) => [
-            const PopupMenuItem(value: 'BALANCE_DESC', child: Text('Balance: High to Low')),
-            const PopupMenuItem(value: 'BALANCE_ASC', child: Text('Balance: Low to High')),
-            const PopupMenuItem(value: 'OVERDUE_DESC', child: Text('Overdue Days')),
-            const PopupMenuItem(value: 'NAME_ASC', child: Text('Name (A-Z)')),
+            const PopupMenuItem(value: 'BALANCE_DESC', child: LiveTranslatedText('Balance: High to Low')),
+            const PopupMenuItem(value: 'BALANCE_ASC', child: LiveTranslatedText('Balance: Low to High')),
+            const PopupMenuItem(value: 'OVERDUE_DESC', child: LiveTranslatedText('Overdue Days')),
+            const PopupMenuItem(value: 'NAME_ASC', child: LiveTranslatedText('Name (A-Z)')),
           ],
         ),
       ],
@@ -417,7 +418,7 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
               CircleAvatar(
                 radius: 22,
                 backgroundColor: isHighRisk ? _danger.withValues(alpha: 0.1) : (isOverdue ? _warning.withValues(alpha: 0.1) : _primary.withValues(alpha: 0.1)),
-                child: Text(
+                child: LiveTranslatedText(
                   (c['customer_name'] ?? 'C')[0].toUpperCase(),
                   style: TextStyle(fontWeight: FontWeight.bold, color: isHighRisk ? _danger : (isOverdue ? _warning : _primary)),
                 ),
@@ -425,22 +426,22 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  Text(c['customer_name'] ?? 'Customer', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  LiveTranslatedText(c['customer_name'] ?? 'Customer', style: const TextStyle(fontWeight: FontWeight.bold)),
                   if (isHighRisk) const SizedBox(width: 6),
-                  if (isHighRisk) Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: _danger, borderRadius: BorderRadius.circular(4)), child: const Text('HIGH RISK', style: TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold))),
+                  if (isHighRisk) Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: _danger, borderRadius: BorderRadius.circular(4)), child: const LiveTranslatedText('HIGH RISK', style: TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold))),
                 ]),
-                if (c['customer_phone']?.isNotEmpty ?? false) Text(c['customer_phone'], style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                if (c['customer_phone']?.isNotEmpty ?? false) LiveTranslatedText(c['customer_phone'], style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 Row(children: [
-                  Text('${invoices.length} bill(s)', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  LiveTranslatedText('${invoices.length} bill(s)', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                   if (daysOverdue > 0) ...[
                     const SizedBox(width: 8),
-                    Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1), decoration: BoxDecoration(color: _warning.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4)), child: Text('$daysOverdue days overdue', style: const TextStyle(fontSize: 10, color: _warning, fontWeight: FontWeight.w600))),
+                    Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1), decoration: BoxDecoration(color: _warning.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4)), child: LiveTranslatedText('$daysOverdue days overdue', style: const TextStyle(fontSize: 10, color: _warning, fontWeight: FontWeight.w600))),
                   ],
                 ]),
               ])),
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text('₹${balance.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: _primary)),
-                if (c['earliest_due_date'] != null) Text('Due: ${c['earliest_due_date']}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                LiveTranslatedText('₹${balance.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: _primary)),
+                if (c['earliest_due_date'] != null) LiveTranslatedText('Due: ${c['earliest_due_date']}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
               ]),
             ],
           ),
@@ -457,10 +458,10 @@ class _KhataPageAdvancedState extends State<KhataPageAdvanced> {
   }
 
   Widget _buildAction(IconData icon, String label, Color color, VoidCallback onTap) {
-    return InkWell(onTap: onTap, child: Row(children: [Icon(icon, size: 16, color: color), const SizedBox(width: 4), Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color))]));
+    return InkWell(onTap: onTap, child: Row(children: [Icon(icon, size: 16, color: color), const SizedBox(width: 4), LiveTranslatedText(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color))]));
   }
 
   Widget _buildEmptyState() {
-    return const Center(child: Column(children: [SizedBox(height: 40), Icon(Icons.check_circle, size: 64, color: _success), SizedBox(height: 12), Text('All Udhar Clear!', style: TextStyle(fontWeight: FontWeight.bold)), Text('No pending balances found.', style: TextStyle(color: Colors.grey))]));
+    return const Center(child: Column(children: [SizedBox(height: 40), Icon(Icons.check_circle, size: 64, color: _success), SizedBox(height: 12), LiveTranslatedText('All Udhar Clear!', style: TextStyle(fontWeight: FontWeight.bold)), LiveTranslatedText('No pending balances found.', style: TextStyle(color: Colors.grey))]));
   }
 }

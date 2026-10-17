@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -130,14 +131,14 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Confirm inventory import?'),
-        content: Text(
+        title: const LiveTranslatedText('Confirm inventory import?'),
+        content: LiveTranslatedText(
           'This will import ' + _previewRows.length.toString() + ' rows into your inventory. '
           'Rows with an existing SKU will update that product. Nothing was changed during preview.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Review again')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Confirm upload')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const LiveTranslatedText('Review again')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const LiveTranslatedText('Confirm upload')),
         ],
       ),
     );
@@ -298,7 +299,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Edit row ' + (row['row_number'] ?? index + 2).toString()),
+        title: LiveTranslatedText('Edit row ' + (row['row_number'] ?? index + 2).toString()),
         content: SizedBox(
           width: 460,
           child: SingleChildScrollView(
@@ -319,8 +320,8 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Save row')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const LiveTranslatedText('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const LiveTranslatedText('Save row')),
         ],
       ),
     );
@@ -368,7 +369,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
-        title: Text('Upload Inventory', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: LiveTranslatedText('Upload Inventory', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black,
         elevation: 0,
@@ -396,7 +397,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
                       child: OutlinedButton.icon(
                         onPressed: _pickFile,
                         icon: const Icon(Icons.swap_horiz_rounded),
-                        label: const Text('Choose another file'),
+                        label: const LiveTranslatedText('Choose another file'),
                         style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
                       ),
                     ),
@@ -408,7 +409,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
                             ? _confirmUpload
                             : null,
                         icon: const Icon(Icons.cloud_upload_rounded),
-                        label: Text('Confirm & Upload ' + _previewRows.length.toString() + ' rows'),
+                        label: LiveTranslatedText('Confirm & Upload ' + _previewRows.length.toString() + ' rows'),
                         style: FilledButton.styleFrom(backgroundColor: _accent, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
                       ),
                     ),
@@ -419,7 +420,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
                       child: FilledButton.icon(
                         onPressed: _selectedFile != null ? _analyzeFile : null,
                         icon: const Icon(Icons.auto_awesome_rounded),
-                        label: const Text('Analyze & Preview'),
+                        label: const LiveTranslatedText('Analyze & Preview'),
                         style: FilledButton.styleFrom(
                           backgroundColor: _accent,
                           foregroundColor: Colors.white,
@@ -458,17 +459,17 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
               children: [
                 Icon(Icons.cloud_upload_rounded, size: 60, color: _accent),
                 const SizedBox(height: 14),
-                Text('Upload File or Image', style: GoogleFonts.poppins(fontSize: 19, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black87)),
+                LiveTranslatedText('Upload File or Image', style: GoogleFonts.poppins(fontSize: 19, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black87)),
                 const SizedBox(height: 8),
-                Text('CSV, XLSX, XLS, JSON, TXT, JPG, PNG, WEBP and more', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                LiveTranslatedText('CSV, XLSX, XLS, JSON, TXT, JPG, PNG, WEBP and more', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600])),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   decoration: BoxDecoration(color: _accent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                  child: Text('Click to browse', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: _accent)),
+                  child: LiveTranslatedText('Click to browse', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: _accent)),
                 ),
                 const SizedBox(height: 10),
-                Text('AI reads the file, matches columns, and lets you review everything before import.', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                LiveTranslatedText('AI reads the file, matches columns, and lets you review everything before import.', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600])),
               ],
             ),
           ),
@@ -493,8 +494,8 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_selectedFileName ?? file.path.split(Platform.pathSeparator).last, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
-                Text((fileSize / 1024 / 1024).toStringAsFixed(2) + ' MB • Ready for AI analysis', style: GoogleFonts.poppins(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                LiveTranslatedText(_selectedFileName ?? file.path.split(Platform.pathSeparator).last, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
+                LiveTranslatedText((fileSize / 1024 / 1024).toStringAsFixed(2) + ' MB • Ready for AI analysis', style: GoogleFonts.poppins(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600])),
               ],
             ),
           ),
@@ -523,16 +524,16 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
       children: [
         Row(
           children: [
-            Expanded(child: Text('Review before upload', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700))),
+            Expanded(child: LiveTranslatedText('Review before upload', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700))),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(color: _accent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(18)),
-              child: Text('Groq AI', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: _accent)),
+              child: LiveTranslatedText('Groq AI', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: _accent)),
             ),
           ],
         ),
         const SizedBox(height: 6),
-        Text('Detected ' + _previewRows.length.toString() + ' rows. No inventory changes happen until you confirm.', style: GoogleFonts.poppins(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+        LiveTranslatedText('Detected ' + _previewRows.length.toString() + ' rows. No inventory changes happen until you confirm.', style: GoogleFonts.poppins(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600])),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -543,7 +544,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
         ),
         if (_columnMapping.values.any((value) => value is String && value.isNotEmpty)) ...[
           const SizedBox(height: 16),
-          Text('AI column matching', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
+          LiveTranslatedText('AI column matching', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -551,7 +552,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
             children: _columnMapping.entries
                 .where((entry) => entry.value is String && (entry.value as String).isNotEmpty)
                 .map((entry) => Chip(
-                      label: Text(entry.value.toString() + '  →  ' + _fieldTitle(entry.key), style: const TextStyle(fontSize: 11)),
+                      label: LiveTranslatedText(entry.value.toString() + '  →  ' + _fieldTitle(entry.key), style: const TextStyle(fontSize: 11)),
                       visualDensity: VisualDensity.compact,
                       side: BorderSide(color: _accent.withValues(alpha: 0.25)),
                     ))
@@ -567,11 +568,11 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('AI notes', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
+                LiveTranslatedText('AI notes', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
                 const SizedBox(height: 4),
                 ..._warnings.map((warning) => Padding(
                       padding: const EdgeInsets.only(top: 3),
-                      child: Text('• ' + warning, style: GoogleFonts.poppins(fontSize: 11)),
+                      child: LiveTranslatedText('• ' + warning, style: GoogleFonts.poppins(fontSize: 11)),
                     )),
               ],
             ),
@@ -590,9 +591,9 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.poppins(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+          LiveTranslatedText(label, style: GoogleFonts.poppins(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600])),
           const SizedBox(height: 3),
-          Text(value, style: GoogleFonts.poppins(fontSize: 21, fontWeight: FontWeight.w700, color: color)),
+          LiveTranslatedText(value, style: GoogleFonts.poppins(fontSize: 21, fontWeight: FontWeight.w700, color: color)),
         ],
       ),
     );
@@ -624,10 +625,10 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
                 height: 36,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(color: _accent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                child: Text((index + 1).toString(), style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: _accent)),
+                child: LiveTranslatedText((index + 1).toString(), style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: _accent)),
               ),
               const SizedBox(width: 10),
-              Expanded(child: Text(name, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600))),
+              Expanded(child: LiveTranslatedText(name, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600))),
               IconButton(tooltip: 'Edit row', visualDensity: VisualDensity.compact, onPressed: () => _editRow(index), icon: const Icon(Icons.edit_outlined, color: _accent)),
             ],
           ),
@@ -652,7 +653,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: issues.map((issue) => Padding(
                       padding: const EdgeInsets.only(bottom: 3),
-                      child: Text('• ' + issue, style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFFDC2626))),
+                      child: LiveTranslatedText('• ' + issue, style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFFDC2626))),
                     )).toList(),
               ),
             ),
@@ -666,7 +667,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(color: isDark ? Colors.grey[850] : Colors.grey[100], borderRadius: BorderRadius.circular(8)),
-      child: Text(label + ': ' + value, style: GoogleFonts.poppins(fontSize: 10, color: isDark ? Colors.grey[200] : Colors.grey[800])),
+      child: LiveTranslatedText(label + ': ' + value, style: GoogleFonts.poppins(fontSize: 10, color: isDark ? Colors.grey[200] : Colors.grey[800])),
     );
   }
 
@@ -697,7 +698,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
         children: [
           Icon(success ? Icons.check_circle_outline : error ? Icons.error_outline : Icons.info_outline, color: color, size: 20),
           const SizedBox(width: 10),
-          Expanded(child: Text(_uploadMessage, style: GoogleFonts.poppins(fontSize: 12, color: color, fontWeight: FontWeight.w500))),
+          Expanded(child: LiveTranslatedText(_uploadMessage, style: GoogleFonts.poppins(fontSize: 12, color: color, fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -707,7 +708,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Download Templates', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+        LiveTranslatedText('Download Templates', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
         GridView.count(
           crossAxisCount: 2,
@@ -728,7 +729,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
 
   void _showTemplateHelp() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Use columns such as Product Name, SKU, Current Stock, Unit Price and Category. AI can match different header names.')),
+      const SnackBar(content: LiveTranslatedText('Use columns such as Product Name, SKU, Current Stock, Unit Price and Category. AI can match different header names.')),
     );
   }
 
@@ -745,7 +746,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
             children: [
               Icon(icon, color: _accent, size: 32),
               const SizedBox(height: 8),
-              Text(label, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+              LiveTranslatedText(label, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
             ],
           ),
         ),
@@ -757,7 +758,7 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Upload History', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+        LiveTranslatedText('Upload History', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
         ..._uploadHistory.map((item) => Container(
               margin: const EdgeInsets.only(bottom: 8),
@@ -771,8 +772,8 @@ class _InventoryUploadPageState extends State<InventoryUploadPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.fileName, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
-                        Text(item.importedCount.toString() + ' rows • ' + item.uploadTime.toString().split('.').first, style: GoogleFonts.poppins(fontSize: 10, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+                        LiveTranslatedText(item.fileName, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+                        LiveTranslatedText(item.importedCount.toString() + ' rows • ' + item.uploadTime.toString().split('.').first, style: GoogleFonts.poppins(fontSize: 10, color: isDark ? Colors.grey[400] : Colors.grey[600])),
                       ],
                     ),
                   ),

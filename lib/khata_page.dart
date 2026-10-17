@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
@@ -705,11 +706,11 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LiveTranslatedText(
                             'Settle Udhar / Payment',
                             style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B)),
                           ),
-                          Text(
+                          LiveTranslatedText(
                             customer['customer_name'] ?? 'Customer',
                             style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted),
                           ),
@@ -732,8 +733,8 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Current Pending Balance:', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500)),
-                        Text(
+                        LiveTranslatedText('Current Pending Balance:', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500)),
+                        LiveTranslatedText(
                           '₹${((customer['total_balance'] as num?)?.toDouble() ?? 0.0).toStringAsFixed(2)}',
                           style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: _primary),
                         ),
@@ -751,7 +752,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text('Payment Mode:', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+                  LiveTranslatedText('Payment Mode:', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 6),
                   Row(
                     children: ['CASH', 'UPI', 'CARD', 'TRANSFER'].map((method) {
@@ -767,7 +768,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: isSelected ? _primary : Colors.grey.shade300),
                             ),
-                            child: Text(
+                            child: LiveTranslatedText(
                               method,
                               textAlign: TextAlign.center,
                               style: GoogleFonts.inter(
@@ -1039,7 +1040,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                       ),
                       child: isSubmitting
                           ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : Text('Record Payment', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
+                          : LiveTranslatedText('Record Payment', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -1099,7 +1100,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w500)),
+        content: LiveTranslatedText(msg, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w500)),
         backgroundColor: const Color(0xFF1E293B),
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
@@ -1112,7 +1113,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(
+        title: LiveTranslatedText(
           'Khata & Pending Udhar',
           style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
         ),
@@ -1239,12 +1240,12 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'TOTAL OUTSTANDING UDHAR',
                     style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white70, letterSpacing: 0.8),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  LiveTranslatedText(
                     '₹${_totalOutstanding.toStringAsFixed(2)}',
                     style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white),
                   ),
@@ -1260,7 +1261,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                   children: [
                     const Icon(Icons.people_alt_outlined, color: Colors.white, size: 16),
                     const SizedBox(width: 6),
-                    Text(
+                    LiveTranslatedText(
                       '$_pendingCount Pending',
                       style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
@@ -1293,11 +1294,11 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
           children: [
             Container(width: 8, height: 8, decoration: BoxDecoration(color: badgeColor, shape: BoxShape.circle)),
             const SizedBox(width: 4),
-            Text(label, style: GoogleFonts.inter(fontSize: 11, color: Colors.white70)),
+            LiveTranslatedText(label, style: GoogleFonts.inter(fontSize: 11, color: Colors.white70)),
           ],
         ),
         const SizedBox(height: 2),
-        Text(value, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+        LiveTranslatedText(value, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
       ],
     );
   }
@@ -1364,7 +1365,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
     final activeColor = color ?? _primary;
 
     return ChoiceChip(
-      label: Text(label),
+      label: LiveTranslatedText(label),
       selected: isSelected,
       onSelected: (_) {
         setState(() {
@@ -1410,7 +1411,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                 CircleAvatar(
                   radius: 22,
                   backgroundColor: isOverdue ? _danger.withValues(alpha: 0.1) : _primary.withValues(alpha: 0.1),
-                  child: Text(
+                  child: LiveTranslatedText(
                     name.isNotEmpty ? name[0].toUpperCase() : 'C',
                     style: GoogleFonts.inter(
                       fontSize: 16,
@@ -1424,13 +1425,13 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                      LiveTranslatedText(name, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                       if (phone.isNotEmpty)
-                        Text(phone, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B))),
+                        LiveTranslatedText(phone, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B))),
                       if (isOverdue)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text(
+                          child: LiveTranslatedText(
                             '⚠️ Overdue by $daysOverdue days',
                             style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: _danger),
                           ),
@@ -1441,8 +1442,8 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('₹${balance.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: _primary)),
-                    Text('${invoices.length} bill(s)', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF94A3B8))),
+                    LiveTranslatedText('₹${balance.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: _primary)),
+                    LiveTranslatedText('${invoices.length} bill(s)', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF94A3B8))),
                   ],
                 ),
               ],
@@ -1477,7 +1478,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
           children: [
             Icon(icon, size: 16, color: color),
             const SizedBox(width: 4),
-            Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+            LiveTranslatedText(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
           ],
         ),
       ),
@@ -1492,12 +1493,12 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
           children: [
             Icon(Icons.check_circle_outline_rounded, size: 64, color: _success.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
-            Text(
+            LiveTranslatedText(
               'All Udhar Clear!',
               style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B)),
             ),
             const SizedBox(height: 4),
-            Text(
+            LiveTranslatedText(
               'No pending customer balances found.',
               style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B)),
             ),
@@ -1530,11 +1531,11 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Invoice performance', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                LiveTranslatedText('Invoice performance', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                 TextButton.icon(
                   onPressed: _exportSummary,
                   icon: const Icon(Icons.ios_share_rounded, size: 16),
-                  label: Text('Export', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+                  label: LiveTranslatedText('Export', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
                   style: TextButton.styleFrom(foregroundColor: _primary),
                 ),
               ],
@@ -1552,9 +1553,9 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('All invoices', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                      LiveTranslatedText('All invoices', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                       const SizedBox(height: 3),
-                      Text('Paid, partially paid and outstanding records', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF64748B))),
+                      LiveTranslatedText('Paid, partially paid and outstanding records', style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF64748B))),
                     ],
                   ),
                 ),
@@ -1564,7 +1565,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                     color: _primary.withValues(alpha: 0.09),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text('${_filteredInvoices.length} shown', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: _primary)),
+                  child: LiveTranslatedText('${_filteredInvoices.length} shown', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: _primary)),
                 ),
               ],
             ),
@@ -1646,7 +1647,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
         children: [
           if (isSelected) const Icon(Icons.check, size: 16, color: _primary) else const SizedBox(width: 16),
           const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+          LiveTranslatedText(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
         ],
       ),
     );
@@ -1678,7 +1679,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
             children: [
               const Icon(Icons.priority_high_rounded, size: 16, color: Color(0xFFEF4444)),
               const SizedBox(width: 6),
-              Text('Top Customers by Uncleared Amount', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+              LiveTranslatedText('Top Customers by Uncleared Amount', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
             ],
           ),
           const SizedBox(height: 14),
@@ -1701,12 +1702,12 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                         Row(
                           children: [
                             Expanded(
-                              child: Text(name,
+                              child: LiveTranslatedText(name,
                                   style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF334155)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
                             ),
-                            Text('₹${outstanding.toStringAsFixed(0)}',
+                            LiveTranslatedText('₹${outstanding.toStringAsFixed(0)}',
                                 style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: _danger)),
                           ],
                         ),
@@ -1721,7 +1722,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text('$invoiceCount unpaid/partial invoice(s)',
+                        LiveTranslatedText('$invoiceCount unpaid/partial invoice(s)',
                             style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF94A3B8))),
                       ],
                     ),
@@ -1780,12 +1781,12 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   'Invoice intelligence',
                   style: GoogleFonts.inter(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LiveTranslatedText(
                   'Track billing, collections and outstanding balances in one place.',
                   style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.82), fontSize: 11, height: 1.4),
                 ),
@@ -1801,9 +1802,9 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
             ),
             child: Column(
               children: [
-                Text('RECORDS', style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.78), fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 0.6)),
+                LiveTranslatedText('RECORDS', style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.78), fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 0.6)),
                 const SizedBox(height: 4),
-                Text('${_allInvoices.length}', style: GoogleFonts.inter(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w900)),
+                LiveTranslatedText('${_allInvoices.length}', style: GoogleFonts.inter(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w900)),
               ],
             ),
           ),
@@ -1865,14 +1866,14 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
             child: Icon(icon, color: color, size: 19),
           ),
           const SizedBox(height: 12),
-          Text(
+          LiveTranslatedText(
             value,
             style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w900, color: const Color(0xFF0F172A)),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
-          Text(
+          LiveTranslatedText(
             label,
             style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
           ),
@@ -1898,13 +1899,13 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Invoice payment status', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+          LiveTranslatedText('Invoice payment status', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
           const SizedBox(height: 16),
           if (total == 0)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
-                child: Text('Your payment breakdown will appear when invoices are available.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF94A3B8))),
+                child: LiveTranslatedText('Your payment breakdown will appear when invoices are available.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF94A3B8))),
               ),
             )
           else
@@ -1973,9 +1974,9 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
         Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 8),
         Expanded(
-          child: Text('$label ($count)', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF334155))),
+          child: LiveTranslatedText('$label ($count)', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF334155))),
         ),
-        Text('${pct.toStringAsFixed(0)}%', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+        LiveTranslatedText('${pct.toStringAsFixed(0)}%', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
       ],
     );
   }
@@ -2002,7 +2003,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
     final activeColor = color ?? _primary;
 
     return ChoiceChip(
-      label: Text(label),
+      label: LiveTranslatedText(label),
       selected: isSelected,
       onSelected: (_) => setState(() => _invoiceStatusFilter = key),
       selectedColor: activeColor.withValues(alpha: 0.15),
@@ -2064,24 +2065,24 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('#$invoiceNumber · $customerName',
+                LiveTranslatedText('#$invoiceNumber · $customerName',
                     style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
-                Text(dateStr.split('T').first, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF94A3B8))),
+                LiveTranslatedText(dateStr.split('T').first, style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF94A3B8))),
               ],
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('₹${total.toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w900, color: const Color(0xFF0F172A))),
+              LiveTranslatedText('₹${total.toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w900, color: const Color(0xFF0F172A))),
               const SizedBox(height: 2),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: Text(status, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor)),
+                child: LiveTranslatedText(status, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor)),
               ),
             ],
           ),
@@ -2143,8 +2144,8 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Invoice #$invoiceNumber', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
-                          Text(dateStr.split('T').first, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B))),
+                          LiveTranslatedText('Invoice #$invoiceNumber', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
+                          LiveTranslatedText(dateStr.split('T').first, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B))),
                         ],
                       ),
                       IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
@@ -2159,7 +2160,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                         CircleAvatar(
                           radius: 18,
                           backgroundColor: _primary.withValues(alpha: 0.1),
-                          child: Text(customerName.isNotEmpty ? customerName[0].toUpperCase() : 'C',
+                          child: LiveTranslatedText(customerName.isNotEmpty ? customerName[0].toUpperCase() : 'C',
                               style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: _primary)),
                         ),
                         const SizedBox(width: 10),
@@ -2167,27 +2168,27 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(customerName, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold)),
+                              LiveTranslatedText(customerName, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold)),
                               if (customerPhone.isNotEmpty)
-                                Text(customerPhone, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B))),
+                                LiveTranslatedText(customerPhone, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B))),
                             ],
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                          child: Text(status, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor)),
+                          child: LiveTranslatedText(status, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor)),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text('Line Items', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
+                  LiveTranslatedText('Line Items', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A))),
                   const SizedBox(height: 8),
                   Expanded(
                     child: lineItems.isEmpty
                         ? Center(
-                            child: Text('No line-item detail saved for this invoice',
+                            child: LiveTranslatedText('No line-item detail saved for this invoice',
                                 style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8))),
                           )
                         : ListView.separated(
@@ -2206,15 +2207,15 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                                   children: [
                                     Expanded(
                                       flex: 3,
-                                      child: Text('$name', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+                                      child: LiveTranslatedText('$name', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
                                     ),
                                     Expanded(
                                       flex: 1,
-                                      child: Text('x$qty', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B))),
+                                      child: LiveTranslatedText('x$qty', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B))),
                                     ),
                                     Expanded(
                                       flex: 2,
-                                      child: Text('₹${lineTotal.toStringAsFixed(0)}', textAlign: TextAlign.right, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
+                                      child: LiveTranslatedText('₹${lineTotal.toStringAsFixed(0)}', textAlign: TextAlign.right, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
                                     ),
                                   ],
                                 ),
@@ -2241,8 +2242,8 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B))),
-          Text(value, style: GoogleFonts.inter(fontSize: 14, fontWeight: bold ? FontWeight.bold : FontWeight.w500, color: color ?? const Color(0xFF0F172A))),
+          LiveTranslatedText(label, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B))),
+          LiveTranslatedText(value, style: GoogleFonts.inter(fontSize: 14, fontWeight: bold ? FontWeight.bold : FontWeight.w500, color: color ?? const Color(0xFF0F172A))),
         ],
       ),
     );
@@ -2280,12 +2281,12 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Export Summary', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        title: LiveTranslatedText('Export Summary', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         content: SingleChildScrollView(
           child: SelectableText(summary, style: GoogleFonts.inter(fontSize: 13, height: 1.5)),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const LiveTranslatedText('Close')),
           ElevatedButton.icon(
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: summary));
@@ -2293,7 +2294,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
               _showToast('📋 Summary copied to clipboard');
             },
             icon: const Icon(Icons.copy_rounded, size: 16),
-            label: const Text('Copy'),
+            label: const LiveTranslatedText('Copy'),
             style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: Colors.white),
           ),
         ],
@@ -2329,13 +2330,13 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
               ),
             ),
             const SizedBox(height: 14),
-            Text(
+            LiveTranslatedText(
               noRecords ? 'No invoice records yet' : 'No matching invoices',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B)),
             ),
             const SizedBox(height: 6),
-            Text(
+            LiveTranslatedText(
               noRecords
                   ? 'Invoices will appear here after a sale is saved or cloud sync completes. Paid invoices remain in analytics.'
                   : 'Try a different payment status or clear your search to see more invoices.',
@@ -2353,7 +2354,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
                   });
                 },
                 icon: const Icon(Icons.filter_alt_off_rounded, size: 17),
-                label: const Text('Clear filters'),
+                label: const LiveTranslatedText('Clear filters'),
                 style: TextButton.styleFrom(foregroundColor: _primary),
               ),
             ],
@@ -2361,7 +2362,7 @@ class _KhataPageState extends State<KhataPage> with SingleTickerProviderStateMix
             TextButton.icon(
               onPressed: _loadInvoiceAnalytics,
               icon: const Icon(Icons.refresh_rounded, size: 17),
-              label: const Text('Refresh invoices'),
+              label: const LiveTranslatedText('Refresh invoices'),
               style: TextButton.styleFrom(foregroundColor: _primary),
             ),
           ],

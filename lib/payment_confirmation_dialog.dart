@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'smart_payment_matcher_service.dart';
 import 'transaction_service.dart';
@@ -84,12 +85,12 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
               Icon(Icons.check_circle_outline,
                   color: Colors.green[600], size: 56),
               const SizedBox(height: 16),
-              const Text(
+              const LiveTranslatedText(
                 'Confirm payment?',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              Text(
+              LiveTranslatedText(
                 '₹${widget.payment.amount} via ${widget.payment.source}.\n'
                 'No UTR found — tap Confirm if you received this.',
                 textAlign: TextAlign.center,
@@ -104,7 +105,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
                         Navigator.pop(context);
                         widget.onDenied();
                       },
-                      child: const Text('Not received'),
+                      child: const LiveTranslatedText('Not received'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -119,7 +120,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green[600],
                       ),
-                      child: const Text('Yes, received'),
+                      child: const LiveTranslatedText('Yes, received'),
                     ),
                   ),
                 ],
@@ -160,14 +161,14 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LiveTranslatedText(
                         widget.confidence.status.replaceAll('_', ' '),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text(
+                      LiveTranslatedText(
                         widget.confidence.reason,
                         style: TextStyle(
                           fontSize: 12,
@@ -211,7 +212,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
             ExpansionTile(
               title: Row(
                 children: [
-                  Text(
+                  LiveTranslatedText(
                     'Confidence Score: ${widget.confidence.score.toStringAsFixed(0)}%',
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
@@ -251,7 +252,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
                         Icon(Icons.warning, color: Colors.orange[700], size: 18),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
+                          child: LiveTranslatedText(
                             'Multiple payments detected with same amount',
                             style: TextStyle(
                               fontSize: 13,
@@ -266,7 +267,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
                     ...widget.confidence.conflicts.map((conflict) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Text(
+                        child: LiveTranslatedText(
                           '• $conflict',
                           style: TextStyle(
                             fontSize: 11,
@@ -276,7 +277,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
                       );
                     }).toList(),
                     const SizedBox(height: 8),
-                    Text(
+                    LiveTranslatedText(
                       'Please verify which sale this payment is for',
                       style: TextStyle(
                         fontSize: 12,
@@ -296,7 +297,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
                 Expanded(
                   child: TextButton(
                     onPressed: _isProcessing ? null : _handleDeny,
-                    child: const Text('Not This Payment'),
+                    child: const LiveTranslatedText('Not This Payment'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -316,7 +317,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
                               valueColor: AlwaysStoppedAnimation(Colors.white),
                             ),
                           )
-                        : const Text(
+                        : const LiveTranslatedText(
                             'Confirm Payment',
                             style: TextStyle(color: Colors.white),
                           ),
@@ -331,7 +332,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
             TextButton.icon(
               onPressed: _showDetailedBreakdown,
               icon: const Icon(Icons.receipt_long, size: 16),
-              label: const Text('View Audit Details'),
+              label: const LiveTranslatedText('View Audit Details'),
               style: TextButton.styleFrom(
                 foregroundColor: Colors.blue[600],
               ),
@@ -379,14 +380,14 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
+        LiveTranslatedText(
           label,
           style: TextStyle(
             fontSize: fontSize,
             color: Colors.grey[600],
           ),
         ),
-        Text(
+        LiveTranslatedText(
           value,
           style: TextStyle(
             fontSize: large ? 18 : fontSize,
@@ -409,11 +410,11 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
+            LiveTranslatedText(
               entry.key.replaceAll(RegExp(r'_'), ' ').toUpperCase(),
               style: const TextStyle(fontSize: 11),
             ),
-            Text(
+            LiveTranslatedText(
               value,
               style: TextStyle(
                 fontSize: 11,
@@ -488,12 +489,12 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                const LiveTranslatedText(
                   'Matching Audit Trail',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                Text(
+                LiveTranslatedText(
                   'Payment Details:',
                   style: TextStyle(
                     fontSize: 14,
@@ -508,7 +509,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
                 _detailRow('Source', widget.payment.source),
                 _detailRow('Reference', widget.payment.reference ?? 'N/A'),
                 const SizedBox(height: 16),
-                Text(
+                LiveTranslatedText(
                   'Matching Score Breakdown:',
                   style: TextStyle(
                     fontSize: 14,
@@ -519,7 +520,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
                 const SizedBox(height: 8),
                 ..._buildScoreDetails(),
                 const SizedBox(height: 16),
-                Text(
+                LiveTranslatedText(
                   'Final Score: ${widget.confidence.score.toStringAsFixed(0)}%',
                   style: TextStyle(
                     fontSize: 16,
@@ -530,7 +531,7 @@ class _PaymentConfirmationDialogState extends State<PaymentConfirmationDialog> {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Close'),
+                  child: const LiveTranslatedText('Close'),
                 ),
               ],
             ),
