@@ -44,7 +44,9 @@ class _LiveTranslatedTextState extends State<LiveTranslatedText> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _queueTranslation(context.read<LanguageProvider>().locale.languageCode);
+    // Subscribe to locale changes so visible dynamic text is translated again
+    // immediately after the user changes language in Settings.
+    _queueTranslation(context.watch<LanguageProvider>().locale.languageCode);
   }
 
   @override
