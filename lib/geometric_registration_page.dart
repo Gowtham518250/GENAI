@@ -155,7 +155,7 @@ class _GeometricRegistrationPageState extends State<GeometricRegistrationPage> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _shapeType,
-                decoration: const InputDecoration(labelText: 'Shape type'),
+                decoration: const InputDecoration(label: LiveTranslatedText('Shape type')),
                 items: _shapeOptions
                     .map((option) => DropdownMenuItem(value: option, child: LiveTranslatedText(option)))
                     .toList(),
@@ -170,13 +170,13 @@ class _GeometricRegistrationPageState extends State<GeometricRegistrationPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Registration name'),
+                decoration: const InputDecoration(label: LiveTranslatedText('Registration name')),
                 validator: (value) => (value == null || value.trim().isEmpty) ? 'Enter a name' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _detailsController,
-                decoration: const InputDecoration(labelText: 'Details'),
+                decoration: const InputDecoration(label: LiveTranslatedText('Details')),
                 maxLines: 3,
                 validator: (value) => (value == null || value.trim().isEmpty) ? 'Enter details' : null,
               ),
