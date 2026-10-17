@@ -2504,7 +2504,9 @@ class PaymentDetectionService {
       _voiceLanguage,
       PaymentDirection.credited,
     );
-    _voice.enqueueRaw(text, _VP.high, fingerprint: event.fingerprint);
+    // Manual repeat is an explicit user action, so it bypasses automatic
+    // dedup while still speaking only a verified incoming-credit direction.
+    _voice.enqueueRaw(text, _VP.high);
   }
 
   // FIX-59: Cross-Device UTR Deduplication (Redis-backed)
