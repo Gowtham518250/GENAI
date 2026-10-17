@@ -1,35 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import 'app_localizations.dart';
-import 'language_provider.dart';
 import 'live_translation_service.dart';
 
-/// Display-only translation for static labels and dynamic text.
+/// A replacement Text widget that localizes dictionary-backed labels and
+/// translates other visible strings for display.
 ///
-/// Exact app dictionary matches use curated translations first, so common
-/// controls are immediate and work offline. Unlisted English data strings use
-/// the native on-device translator when the platform/language supports it.
-/// The original value in the repository/API is never modified.
+/// The original model/database value is never changed. Unsupported locales or
+/// failed/offline translation keep the source visible rather than hiding data.
 class LiveTranslatedText extends StatefulWidget {
   const LiveTranslatedText(
     this.text, {
     super.key,
     this.style,
+    this.strutStyle,
     this.textAlign,
-    this.maxLines,
-    this.overflow,
+    this.textDirection,
+    this.locale,
     this.softWrap,
+    this.overflow,
+    this.textScaler,
+    this.maxLines,
     this.semanticsLabel,
+    this.textWidthBasis,
+    this.textHeightBehavior,
+    this.selectionColor,
   });
 
   final String text;
   final TextStyle? style;
+  final StrutStyle? strutStyle;
   final TextAlign? textAlign;
-  final int? maxLines;
-  final TextOverflow? overflow;
+  final TextDirection? textDirection;
+  final Locale? locale;
   final bool? softWrap;
+  final TextOverflow? overflow;
+  final TextScaler? textScaler;
+  final int? maxLines;
   final String? semanticsLabel;
+  final TextWidthBasis? textWidthBasis;
+  final TextHeightBehavior? textHeightBehavior;
+  final Color? selectionColor;
 
   @override
   State<LiveTranslatedText> createState() => _LiveTranslatedTextState();
@@ -59,11 +70,20 @@ class _LiveTranslatedTextState extends State<LiveTranslatedText> {
     if (value.isEmpty ||
         value.contains('@') ||
         RegExp(r'^https?://', caseSensitive: false).hasMatch(value) ||
-        RegExp(r'^\+?[0-9][0-9 ()-]{6,}$').hasMatch(value) ||
-        RegExp(r'^[#A-Z0-9][A-Z0-9_./:#-]{4,}$').hasMatch(value)) {
+        RegExp(r'^\+?[0-9][0-9 ()-]{6,}$').hasMatch(value)) {
       return true;
     }
-    return value == value.toUpperCase() &&
+
+    // Preserve values such as ORD-20261017-13, invoice IDs and SKU codes.
+    if (RegExp(r'^[#A-Z0-9][A-Z0-9_./:#-]{4,}$').hasMatch(value) &&
+        RegExp(r'[0-9_./:#-]').hasMatch(value)) {
+      return true;
+    }
+
+    // Keep short all-capital tokens (UPI, GST, COD), but let statuses such as
+    // PENDING and CANCELLED translate as ordinary labels.
+    return value.length <= 4 &&
+        value == value.toUpperCase() &&
         RegExp(r'^[A-Z0-9 _./:#-]{2,}$').hasMatch(value);
   }
 
@@ -76,18 +96,22 @@ class _LiveTranslatedTextState extends State<LiveTranslatedText> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Subscribe to locale changes so visible text translates again immediately
-    // after the language is changed in Settings.
-    _queueTranslation(context.watch<LanguageProvider>().locale.languageCode);
+    // Localizations.localeOf subscribes this widget to MaterialApp locale
+    // changes without requiring the page to know about a particular provider.
+    _queueTranslation(
+      (widget.locale ?? Localizations.localeOf(context)).languageCode,
+    );
   }
 
   @override
   void didUpdateWidget(covariant LiveTranslatedText oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.text != widget.text) {
+    if (oldWidget.text != widget.text || oldWidget.locale != widget.locale) {
       _requestKey = null;
       _displayText = widget.text;
-      _queueTranslation(context.read<LanguageProvider>().locale.languageCode);
+      _queueTranslation(
+        (widget.locale ?? Localizations.localeOf(context)).languageCode,
+      );
     }
   }
 
@@ -102,20 +126,20 @@ class _LiveTranslatedTextState extends State<LiveTranslatedText> {
       return;
     }
 
-    // Use curated dictionary strings before invoking an on-device model.
+    // Curated dictionary strings are instant and work offline.
     final curated = _curatedTranslation(widget.text, targetCode);
     if (curated != null) {
       _displayText = curated;
       return;
     }
 
-    // Don't translate URLs, email addresses, phone numbers, or machine codes.
+    // Don't send URLs, emails, phone numbers or machine identifiers for
+    // translation. Those values must remain exact on screen.
     if (_shouldPreserve(widget.text)) {
       _displayText = widget.text;
       return;
     }
 
-    // Render source text immediately; replace it as soon as translation ends.
     _displayText = widget.text;
     LiveTranslationService.instance
         .translateForDisplay(widget.text, targetLanguageCode: targetCode)
@@ -132,11 +156,18 @@ class _LiveTranslatedTextState extends State<LiveTranslatedText> {
     return Text(
       _displayText.isEmpty ? widget.text : _displayText,
       style: widget.style,
+      strutStyle: widget.strutStyle,
       textAlign: widget.textAlign,
-      maxLines: widget.maxLines,
-      overflow: widget.overflow,
+      textDirection: widget.textDirection,
+      locale: widget.locale,
       softWrap: widget.softWrap,
+      overflow: widget.overflow,
+      textScaler: widget.textScaler,
+      maxLines: widget.maxLines,
       semanticsLabel: widget.semanticsLabel,
+      textWidthBasis: widget.textWidthBasis,
+      textHeightBehavior: widget.textHeightBehavior,
+      selectionColor: widget.selectionColor,
     );
   }
 }
