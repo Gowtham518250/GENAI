@@ -202,7 +202,7 @@ class _SalesEntryViewState extends State<_SalesEntryView> {
                       Expanded(
                         child: TextField(
                           decoration: InputDecoration(
-                            hintText: 'Search products or scan barcode...',
+                            hint: LiveTranslatedText('Search products or scan barcode...'),
                             hintStyle: GoogleFonts.poppins(
                               fontSize: 14,
                               color: const Color(0xFF94A3B8),

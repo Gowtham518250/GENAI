@@ -395,7 +395,7 @@ class _EnhancedBillingScreenState extends State<EnhancedBillingScreen>
                                 keyboardType: TextInputType.number,
                                 decoration: const InputDecoration(
                                   border: InputBorder.none,
-                                  hintText: 'Enter amount',
+                                  hint: LiveTranslatedText('Enter amount'),
                                   hintStyle: TextStyle(fontSize: 16),
                                 ),
                                 style: GoogleFonts.poppins(

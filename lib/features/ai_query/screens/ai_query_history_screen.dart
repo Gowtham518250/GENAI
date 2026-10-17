@@ -312,7 +312,7 @@ class _AiQueryHistoryScreenState extends State<AiQueryHistoryScreen> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search past questions and answers…',
+          hint: LiveTranslatedText('Search past questions and answers…'),
           hintStyle: GoogleFonts.inter(fontSize: 12.5, color: AppColors.textTertiary),
           prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF7367E8)),
           suffixIcon: _searchController.text.isEmpty ? null : IconButton(onPressed: _searchController.clear, icon: const Icon(Icons.close_rounded, size: 18)),

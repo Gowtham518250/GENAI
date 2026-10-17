@@ -1263,7 +1263,7 @@ class _AiQueryScreenState extends State<AiQueryScreen> {
             onSubmitted: (_) => _executeQuery(_queryController.text, languageCode: _inputLanguageCode),
             style: GoogleFonts.inter(fontSize: 14, height: 1.5, color: const Color(0xFF17264A), fontWeight: FontWeight.w500),
             decoration: InputDecoration(
-              hintText: 'Ask about sales, revenue, customers, stock…',
+              hint: LiveTranslatedText('Ask about sales, revenue, customers, stock…'),
               hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF9AA7BD), height: 1.5),
               prefixIcon: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF6878E8), size: 20),
               filled: true,

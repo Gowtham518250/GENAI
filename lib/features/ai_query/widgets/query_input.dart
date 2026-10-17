@@ -137,7 +137,7 @@ class _QueryInputCardState extends State<QueryInputCard> {
                     height: 1.4,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Ask about sales, revenue, customers, stock...',
+                    hint: LiveTranslatedText('Ask about sales, revenue, customers, stock...'),
                     hintStyle: GoogleFonts.inter(
                       fontSize: 14,
                       color: AppColors.textTertiary,
