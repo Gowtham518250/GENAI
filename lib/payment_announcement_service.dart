@@ -253,6 +253,26 @@ class PaymentAnnouncementService {
     );
   }
 
+  void speakPaymentInstant(String message, String language) {
+    if (_config.volume <= 0 || message.trim().isEmpty) return;
+    final lang = _lang.resolve(language);
+    final timeout = _voice.calculateTimeout(
+      message,
+      _config.budgetDeviceTimeoutMultiplier,
+    );
+
+    // Payment confirmations outrank routine prompts and tips. Clear only
+    // queued low-priority chatter; the currently speaking item finishes, and
+    // each payment is then spoken in sequence without overlapping another.
+    _queue.clearLowPriority();
+    _queue.enqueue(QueueItem(
+      priority: AnnouncementPriority.high,
+      ttsText: message,
+      timeoutSec: timeout,
+      task: () => _voice.speakRaw(message, lang.locale),
+    ));
+  }
+
   void speakSimple(String message, String language) {
     if (_config.volume <= 0) return;
     final lang = _lang.resolve(language);
