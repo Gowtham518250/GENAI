@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:google_fonts/google_fonts.dart';
@@ -38,7 +39,7 @@ class _TransactionIntegrationGuideState extends State<TransactionIntegrationGuid
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Transaction Integration', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        title: LiveTranslatedText('Transaction Integration', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         backgroundColor: _primary,
       ),
       body: SingleChildScrollView(
@@ -119,15 +120,15 @@ await TransactionService.saveTransaction(txn);
             _buildSection(
               'Features',
               [
-                Text('Transaction history with filters (type, source, date)'),
-                Text('Manual transaction recording form'),
-                Text('Automatic SMS parsing from banks'),
-                Text('UPI notification parsing'),
-                Text('WhatsApp message parsing'),
-                Text('Transaction details view'),
-                Text('Export to sales/invoices'),
-                Text('Duplicate detection by reference ID'),
-                Text('Today/period totals calculation'),
+                LiveTranslatedText('Transaction history with filters (type, source, date)'),
+                LiveTranslatedText('Manual transaction recording form'),
+                LiveTranslatedText('Automatic SMS parsing from banks'),
+                LiveTranslatedText('UPI notification parsing'),
+                LiveTranslatedText('WhatsApp message parsing'),
+                LiveTranslatedText('Transaction details view'),
+                LiveTranslatedText('Export to sales/invoices'),
+                LiveTranslatedText('Duplicate detection by reference ID'),
+                LiveTranslatedText('Today/period totals calculation'),
               ],
             ),
           ],
@@ -140,7 +141,7 @@ await TransactionService.saveTransaction(txn);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: _primary)),
+        LiveTranslatedText(title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: _primary)),
         const SizedBox(height: 12),
         ...children,
       ],
@@ -159,11 +160,11 @@ await TransactionService.saveTransaction(txn);
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12, color: _primary)),
+          LiveTranslatedText(label, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12, color: _primary)),
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: Text(
+            child: LiveTranslatedText(
               code,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
             ),
@@ -179,9 +180,9 @@ await TransactionService.saveTransaction(txn);
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
+          LiveTranslatedText(label, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12)),
           const SizedBox(height: 4),
-          Text(
+          LiveTranslatedText(
             formats,
             style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[700]),
           ),
@@ -202,14 +203,14 @@ await TransactionService.saveTransaction(txn);
               color: _primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text(
+            child: LiveTranslatedText(
               field,
               style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: _primary),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
+            child: LiveTranslatedText(
               description,
               style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[700]),
             ),

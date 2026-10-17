@@ -1,3 +1,4 @@
+import 'live_translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -262,7 +263,7 @@ class FestivalAlertsWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              LiveTranslatedText(
                 '🪔 Festival Stock Alerts',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
@@ -282,7 +283,7 @@ class FestivalAlertsWidget extends StatelessWidget {
           if (alerts.length > 3)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(
+              child: LiveTranslatedText(
                 '+ ${alerts.length - 3} more alert${alerts.length - 3 > 1 ? 's' : ''}',
                 style: GoogleFonts.poppins(fontSize: 12, color: Colors.amber.shade700),
               ),
@@ -301,13 +302,13 @@ class FestivalAlertsWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LiveTranslatedText(
                   alert.itemName,
                   style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                Text(
+                LiveTranslatedText(
                   '${alert.festivalName} (${alert.daysUntilFestival}d) • Need ${alert.recommendedReorderQty}',
                   style: GoogleFonts.poppins(fontSize: 12, color: Colors.amber.shade800),
                   maxLines: 1,
@@ -322,7 +323,7 @@ class FestivalAlertsWidget extends StatelessWidget {
               color: Colors.amber.shade200,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text(
+            child: LiveTranslatedText(
               '${alert.currentStock}',
               style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.bold),
             ),
