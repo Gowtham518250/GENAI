@@ -2498,11 +2498,10 @@ class PaymentDetectionService {
         VoiceBuilder.detectDirection(event.rawText) != PaymentDirection.credited) {
       return;
     }
-    final text = VoiceBuilder.receivedDirectional(
+    final text = VoiceBuilder.received(
       event.amount,
       event.payerName,
       _voiceLanguage,
-      PaymentDirection.credited,
     );
     // Manual repeat is an explicit user action, so it bypasses automatic
     // dedup while still speaking only a verified incoming-credit direction.
@@ -3682,11 +3681,12 @@ class PaymentDetectionService {
         direction == PaymentDirection.credited;
     if (shouldAnnounce) {
       if (isBillSettlement) {
-        final spoken = VoiceBuilder.receivedDirectional(
+        // Direction is already verified as credited above; keep the selected
+        // language for the spoken receipt.
+        final spoken = VoiceBuilder.received(
           finalEvent.amount,
           finalEvent.payerName,
           _voiceLanguage,
-          PaymentDirection.credited,
         );
         _voice.enqueueRaw(spoken, _VP.high, fingerprint: finalEvent.fingerprint);
       } else {
